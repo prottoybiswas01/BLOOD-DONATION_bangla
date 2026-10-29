@@ -1,45 +1,54 @@
 import mongoose from 'mongoose';
 import { ENV } from './env.js';
 
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
+let cached: MongooseCache = (global as any).mongoose;
+
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
 let isConnected = false;
 
 export async function connectDB(): Promise<boolean> {
-  // If already connected, reuse existing connection (vital for serverless function caching)
-  if ((mongoose.connection.readyState as number) === 1) {
+  // If connection already cached on global scope, reuse it
+  if (cached.conn && mongoose.connection.readyState === 1) {
     isConnected = true;
     return true;
-  }
-
-  // If connection is in progress, await it
-  if ((mongoose.connection.readyState as number) === 2) {
-    await new Promise((resolve) => {
-      mongoose.connection.once('open', resolve);
-      setTimeout(resolve, 5000);
-    });
-    if ((mongoose.connection.readyState as number) === 1) {
-      isConnected = true;
-      return true;
-    }
   }
 
   const uri = ENV.MONGO_URI || 'mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority';
 
-  try {
-    console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);
-    
-    // 5 second connection timeout so cloud serverless functions never hang
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-    });
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false, // Disables Mongoose buffering so requests never hang
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 3000, // Fail fast if unreachable (e.g. IP whitelist)
+      connectTimeoutMS: 3000,
+    };
 
+    console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);
+
+    cached.promise = mongoose.connect(uri, opts).then((m) => {
+      console.log('[Database] Successfully connected to MongoDB Atlas database.');
+      isConnected = true;
+      return m;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
     isConnected = true;
-    console.log('[Database] Successfully connected to MongoDB database.');
     return true;
   } catch (error: any) {
+    cached.promise = null;
     isConnected = false;
     console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
-    console.warn('[Database] Running in Fallback In-Memory Datastore mode with full seed data for local development/testing.');
+    console.warn('[Database] Running in Fallback In-Memory Datastore mode with full seed data.');
     return false;
   }
 }
@@ -47,4 +56,3 @@ export async function connectDB(): Promise<boolean> {
 export function isDatabaseConnected(): boolean {
   return isConnected && mongoose.connection.readyState === 1;
 }
-

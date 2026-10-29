@@ -65,10 +65,6 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // General Rate Limiting
 app.use('/api', generalRateLimiter);
 
-// Versioned API Routes (Support both /api/v1 and /v1 for Vercel serverless rewrites)
-app.use('/api/v1', apiRoutes);
-app.use('/v1', apiRoutes);
-
 // Health and Status Check
 app.get(['/', '/api', '/api/v1'], (req, res) => {
   res.json({
@@ -81,6 +77,11 @@ app.get(['/', '/api', '/api/v1'], (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Versioned & Root API Routes (Support /api/v1, /v1, and stripped paths for Vercel services)
+app.use('/api/v1', apiRoutes);
+app.use('/v1', apiRoutes);
+app.use('/', apiRoutes);
 
 // Fallback for missing routes
 app.use((req, res) => {

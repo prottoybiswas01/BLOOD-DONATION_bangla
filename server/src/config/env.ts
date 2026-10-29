@@ -9,7 +9,7 @@ export const ENV = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   SMS_PROVIDER: process.env.SMS_PROVIDER || 'mock', // 'mock' | 'bulksmsbd' | 'greenweb' | 'twilio'
   SMS_API_KEY: process.env.SMS_API_KEY || '',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
+  CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
   DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || '5', 10),
 };
 

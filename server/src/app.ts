@@ -5,11 +5,44 @@ import apiRoutes from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalRateLimiter } from './middleware/rateLimiter.js';
 import { ENV } from './config/env.js';
+import { connectDB } from './config/db.js';
+import { dataStore } from './services/dataStore.js';
 
 const app = express();
 
 // Trust reverse proxy (Vercel, Nginx, Render) for client IP rate limiting
 app.set('trust proxy', 1);
+
+// Auto-initialize MongoDB connection & data store in serverless / multi-service environments
+let isDbInitialized = false;
+let dbInitPromise: Promise<void> | null = null;
+
+async function ensureDbInitialized() {
+  if (isDbInitialized) return;
+  if (!dbInitPromise) {
+    dbInitPromise = (async () => {
+      try {
+        const isConnected = await connectDB();
+        if (isConnected) {
+          await dataStore.syncWithMongoDB();
+        }
+        isDbInitialized = true;
+      } catch (err) {
+        console.error('[Database Init Error in Express middleware]:', err);
+      } finally {
+        dbInitPromise = null;
+      }
+    })();
+  }
+  return dbInitPromise;
+}
+
+app.use(async (req, res, next) => {
+  if (!isDbInitialized) {
+    await ensureDbInitialized();
+  }
+  next();
+});
 
 // Security HTTP headers
 app.use(helmet({

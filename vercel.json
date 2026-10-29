@@ -8,8 +8,7 @@
     "server": {
       "root": "server",
       "framework": "express",
-      "buildCommand": "tsc",
-      "entrypoint": "dist/index.js"
+      "entrypoint": "src/index.ts"
     }
   },
   "rewrites": [

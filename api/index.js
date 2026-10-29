@@ -105603,29 +105603,27 @@ function errorHandler(err, req, res, next) {
 var app = (0, import_express15.default)();
 app.set("trust proxy", 1);
 var isDbInitialized = false;
-var dbInitPromise = null;
+var isInitializing = false;
 async function ensureDbInitialized() {
-  if (isDbInitialized) return;
-  if (!dbInitPromise) {
-    dbInitPromise = (async () => {
-      try {
-        const isConnected2 = await connectDB();
-        if (isConnected2) {
-          await dataStore.syncWithMongoDB();
-        }
-        isDbInitialized = true;
-      } catch (err) {
-        console.error("[Database Init Error in Express middleware]:", err);
-      } finally {
-        dbInitPromise = null;
-      }
-    })();
+  if (isDbInitialized || isInitializing) return;
+  isInitializing = true;
+  try {
+    const isConnected2 = await connectDB();
+    if (isConnected2) {
+      await dataStore.syncWithMongoDB();
+    }
+  } catch (err) {
+    console.warn("[Database Init Warning]:", err?.message);
+  } finally {
+    isDbInitialized = true;
+    isInitializing = false;
   }
-  return dbInitPromise;
 }
-app.use(async (req, res, next) => {
-  if (!isDbInitialized) {
-    await ensureDbInitialized();
+app.use((req, res, next) => {
+  if (!isDbInitialized && !isInitializing) {
+    ensureDbInitialized().catch((err) => {
+      console.warn("[Database Init Background Error]:", err?.message);
+    });
   }
   next();
 });

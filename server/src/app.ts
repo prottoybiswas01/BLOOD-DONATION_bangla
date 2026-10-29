@@ -13,33 +13,31 @@ const app = express();
 // Trust reverse proxy (Vercel, Nginx, Render) for client IP rate limiting
 app.set('trust proxy', 1);
 
-// Auto-initialize MongoDB connection & data store in serverless / multi-service environments
+// Auto-initialize MongoDB connection in background without blocking API requests
 let isDbInitialized = false;
-let dbInitPromise: Promise<void> | null = null;
+let isInitializing = false;
 
 async function ensureDbInitialized() {
-  if (isDbInitialized) return;
-  if (!dbInitPromise) {
-    dbInitPromise = (async () => {
-      try {
-        const isConnected = await connectDB();
-        if (isConnected) {
-          await dataStore.syncWithMongoDB();
-        }
-        isDbInitialized = true;
-      } catch (err) {
-        console.error('[Database Init Error in Express middleware]:', err);
-      } finally {
-        dbInitPromise = null;
-      }
-    })();
+  if (isDbInitialized || isInitializing) return;
+  isInitializing = true;
+  try {
+    const isConnected = await connectDB();
+    if (isConnected) {
+      await dataStore.syncWithMongoDB();
+    }
+  } catch (err: any) {
+    console.warn('[Database Init Warning]:', err?.message);
+  } finally {
+    isDbInitialized = true;
+    isInitializing = false;
   }
-  return dbInitPromise;
 }
 
-app.use(async (req, res, next) => {
-  if (!isDbInitialized) {
-    await ensureDbInitialized();
+app.use((req, res, next) => {
+  if (!isDbInitialized && !isInitializing) {
+    ensureDbInitialized().catch(err => {
+      console.warn('[Database Init Background Error]:', err?.message);
+    });
   }
   next();
 });

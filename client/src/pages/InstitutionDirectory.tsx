@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, Search, Plus, MapPin, Users, Globe, Mail, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 import { BANGLADESH_DIVISIONS } from '../data/bangladeshLocations';
 import { api } from '../api/client';
@@ -190,6 +191,13 @@ export const InstitutionDirectory: React.FC = () => {
                 </span>
                 <span className="text-appSuccess font-medium">✓ অনুমোদিত</span>
               </div>
+
+              <Link
+                to={`/institutions/${inst._id}`}
+                className="mt-3 block w-full py-2 text-center text-xs font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-xl transition border border-teal-200"
+              >
+                বিস্তারিত দেখুন ও রক্তের অনুরোধ পাঠান →
+              </Link>
             </div>
           ))}
         </div>

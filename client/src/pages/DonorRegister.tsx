@@ -276,7 +276,15 @@ export const DonorRegister: React.FC = () => {
                     </label>
                     <select
                       value={gender}
-                      onChange={e => setGender(e.target.value as any)}
+                      onChange={e => {
+                        const val = e.target.value as any;
+                        setGender(val);
+                        if (val === 'female') {
+                          setConsentToShareContact(false);
+                        } else {
+                          setConsentToShareContact(true);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-surface border border-appBorder rounded-lg text-sm text-mainText focus:ring-2 focus:ring-primary"
                     >
                       <option value="male">পুরুষ</option>
@@ -286,6 +294,30 @@ export const DonorRegister: React.FC = () => {
                     </select>
                   </div>
                 </div>
+
+                {/* Female Donor Safety Notice */}
+                {gender === 'female' && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
+                      <ShieldCheck className="w-5 h-5 text-rose-600 shrink-0" />
+                      <span>নারী রক্তদাতাদের বিশেষ নিরাপত্তা ও গোপনীয়তা সুরক্ষা</span>
+                    </div>
+                    <p className="text-xs text-rose-800 leading-relaxed">
+                      নারী রক্তদাতাদের ব্যক্তিগত নিরাপত্তা ও অনাকাঙ্ক্ষিত যোগাযোগ রোধে আপনার মোবাইল নম্বর প্ল্যাটফর্মে উন্মুক্ত থাকবে না। কেউ রক্তের প্রয়োজনে যোগাযোগ করতে চাইলে তা দায়িত্বপ্রাপ্ত সমন্বয়ক বা ভেরিফাইড চ্যানেলের মাধ্যমে পরিচালিত হবে।
+                    </p>
+                    <label className="flex items-start gap-2 pt-2 cursor-pointer border-t border-rose-200/60 mt-2">
+                      <input
+                        type="checkbox"
+                        checked={consentToShareContact}
+                        onChange={e => setConsentToShareContact(e.target.checked)}
+                        className="mt-0.5 rounded text-rose-600 focus:ring-rose-500"
+                      />
+                      <span className="text-xs font-semibold text-rose-900">
+                        (ঐচ্ছিক) আমি অবগত এবং জরুরি প্রয়োজনে প্ল্যাটফর্মে আমার ফোন নম্বর যাচাইকৃত গ্রহীতাদের দেখানোর বিশেষ সম্মতি প্রদান করছি
+                      </span>
+                    </label>
+                  </div>
+                )}
 
                 {/* Institution Affiliation */}
                 <div>
@@ -326,7 +358,7 @@ export const DonorRegister: React.FC = () => {
 
             {/* Privacy & Consent Preferences */}
             <div className="space-y-3 pt-3 border-t border-gray-100">
-              {role === 'DONOR' && (
+              {role === 'DONOR' && gender !== 'female' && (
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"

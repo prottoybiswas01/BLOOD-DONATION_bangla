@@ -11,6 +11,8 @@ export interface AuthenticatedUser {
   name: string;
   assignedDivision?: string;
   assignedInstitution?: string;
+  assignedInstitutions?: string[];
+  requirePasswordChangeAtFirstLogin?: boolean;
 }
 
 export interface AuthRequest extends Request {
@@ -19,6 +21,7 @@ export interface AuthRequest extends Request {
 
 /**
  * Require valid JWT authentication token
+ * Also strictly enforces accountStatus and first-login password change!
  */
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
@@ -33,12 +36,38 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, ENV.JWT_SECRET) as AuthenticatedUser;
-    // Check if user is still active in dataStore
     const user = dataStore.findUserById(decoded.userId);
-    if (!user || !user.isActive) {
+    if (!user) {
       res.status(403).json({
         success: false,
-        message: 'অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে অথবা পাওয়া যায়নি।'
+        message: 'ব্যবহারকারী অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।'
+      });
+      return;
+    }
+
+    // Check blocked or suspended status
+    if (
+      user.accountStatus === 'temporarily_blocked' || 
+      user.accountStatus === 'suspended' || 
+      user.accountStatus === 'deactivated' || 
+      !user.isActive
+    ) {
+      res.status(403).json({
+        success: false,
+        accountBlocked: true,
+        message: `আপনার অ্যাকাউন্টটি স্থগিত বা ব্লক করা হয়েছে। কারণ: ${user.blockReason || 'নিয়ম লঙ্ঘন বা প্রশাসনিক পর্যালোচনা'}`,
+        blockReason: user.blockReason
+      });
+      return;
+    }
+
+    // Check first-login password change requirement
+    const isChangingPasswordRoute = req.path.includes('/change-first-login-password') || req.path.includes('/logout');
+    if (user.requirePasswordChangeAtFirstLogin && !isChangingPasswordRoute) {
+      res.status(403).json({
+        success: false,
+        requirePasswordChange: true,
+        message: 'প্রথমবার লগইনে আপনার নতুন স্থায়ী পাসওয়ার্ড নির্ধারণ করা বাধ্যতামূলক।'
       });
       return;
     }
@@ -49,7 +78,9 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
       role: user.role,
       name: user.name,
       assignedDivision: user.assignedDivision,
-      assignedInstitution: user.assignedInstitution
+      assignedInstitution: user.assignedInstitution,
+      assignedInstitutions: user.assignedInstitutions,
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin
     };
     next();
   } catch (error) {
@@ -70,14 +101,15 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
     try {
       const decoded = jwt.verify(token, ENV.JWT_SECRET) as AuthenticatedUser;
       const user = dataStore.findUserById(decoded.userId);
-      if (user && user.isActive) {
+      if (user && user.isActive && user.accountStatus === 'active') {
         req.user = {
           userId: user._id,
           phone: user.phone,
           role: user.role,
           name: user.name,
           assignedDivision: user.assignedDivision,
-          assignedInstitution: user.assignedInstitution
+          assignedInstitution: user.assignedInstitution,
+          assignedInstitutions: user.assignedInstitutions
         };
       }
     } catch {
@@ -100,7 +132,17 @@ export function requireRoles(...roles: UserRole[]) {
       return;
     }
 
-    if (!roles.includes(req.user.role) && req.user.role !== 'SUPER_ADMIN') {
+    // Super Admin has universal platform bypass
+    if (req.user.role === 'SUPER_ADMIN') {
+      next();
+      return;
+    }
+
+    // Normalize DONOR/REQUESTER to MEMBER if required
+    const effectiveRole = (req.user.role === 'DONOR' || req.user.role === 'REQUESTER') ? 'MEMBER' : req.user.role;
+    const effectiveRoles = roles.map(r => (r === 'DONOR' || r === 'REQUESTER') ? 'MEMBER' : r);
+
+    if (!roles.includes(req.user.role) && !effectiveRoles.includes(effectiveRole)) {
       res.status(403).json({
         success: false,
         message: 'আপনার এই কার্যক্রমে অংশগ্রহণের প্রয়োজনীয় প্রশাসনিক অনুমতি নেই।'
@@ -164,7 +206,10 @@ export function requireInstitutionScope(req: AuthRequest, res: Response, next: N
   }
 
   const targetInstitutionId = req.params.institutionId || req.body.institutionId || req.query.institutionId;
-  if (targetInstitutionId && req.user.assignedInstitution && targetInstitutionId !== req.user.assignedInstitution) {
+  const isAssigned = req.user.assignedInstitution === targetInstitutionId || 
+    (req.user.assignedInstitutions && req.user.assignedInstitutions.includes(targetInstitutionId));
+
+  if (targetInstitutionId && !isAssigned) {
     res.status(403).json({
       success: false,
       message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত প্রতিষ্ঠানের রেকর্ড ব্যবস্থাপনা করতে পারবেন।'
@@ -174,4 +219,3 @@ export function requireInstitutionScope(req: AuthRequest, res: Response, next: N
 
   next();
 }
-

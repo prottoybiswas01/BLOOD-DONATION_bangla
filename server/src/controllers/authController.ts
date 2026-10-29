@@ -26,24 +26,31 @@ export const RegisterSchema = z.object({
   name: z.string().min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে').max(80),
   phone: z.string().regex(BD_PHONE_REGEX, 'সঠিক বাংলাদেশী মোবাইল নম্বর প্রদান করুন'),
   password: z.string().min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'),
-  role: z.enum(['DONOR', 'REQUESTER']).default('DONOR'),
+  role: z.enum(['MEMBER', 'DONOR', 'REQUESTER']).default('MEMBER'),
   email: z.string().email('সঠিক ইমেইল ঠিকানা দিন').optional().or(z.literal('')),
+  gender: z.enum(['male', 'female', 'unspecified', 'other']).default('unspecified'),
+  femaleSafetyAcknowledged: z.boolean().optional(),
+  femalePublicPhoneConsent: z.boolean().optional(),
   
-  // Donor Specific Fields
+  // Member / Donor Specific Fields
+  isDonor: z.boolean().default(true),
   bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
   division: z.string().optional(),
   district: z.string().optional(),
   upazila: z.string().optional(),
   dateOfBirth: z.string().optional(),
-  gender: z.enum(['male', 'female', 'other', 'unspecified']).optional(),
   institutionId: z.string().optional(),
-  consentToShareContact: z.boolean().default(true),
+  consentToShareContact: z.boolean().optional(),
   termsAccepted: z.boolean().refine(val => val === true, 'প্ল্যাটফর্মের শর্তাবলী ও নীতিমালা মেনে নেওয়া আবশ্যক')
 });
 
 export const LoginSchema = z.object({
   phone: z.string().regex(BD_PHONE_REGEX, 'সঠিক মোবাইল নম্বর দিন'),
   password: z.string().min(1, 'পাসওয়ার্ড আবশ্যক')
+});
+
+export const ChangeFirstLoginPasswordSchema = z.object({
+  newPassword: z.string().min(6, 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
 });
 
 /**
@@ -61,7 +68,6 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, purpose } = req.body;
   const phone = normalizePhone(rawPhone);
 
-  // Generate cryptographic secure 6-digit OTP
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   dataStore.saveOtp(phone, otpCode, purpose);
 
@@ -70,7 +76,7 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
   res.json({
     success: true,
     message: smsResult.message,
-    devOtp: smsResult.devOtp, // Only in dev mode
+    devOtp: smsResult.devOtp,
     isMock: ENV.NODE_ENV !== 'production' && ENV.SMS_PROVIDER === 'mock'
   });
 }
@@ -95,7 +101,6 @@ export async function register(req: Request, res: Response): Promise<void> {
   const data = req.body;
   const phone = normalizePhone(data.phone);
 
-  // Check if phone already registered
   const existingUser = dataStore.findUserByPhone(phone);
   if (existingUser) {
     res.status(409).json({
@@ -106,7 +111,8 @@ export async function register(req: Request, res: Response): Promise<void> {
   }
 
   // Age verification for donors (Minimum 18 years old)
-  if (data.role === 'DONOR' && data.dateOfBirth) {
+  const isDonorRegistration = data.isDonor !== false && (data.role === 'MEMBER' || data.role === 'DONOR');
+  if (isDonorRegistration && data.dateOfBirth) {
     const dob = new Date(data.dateOfBirth);
     const ageDiffMs = Date.now() - dob.getTime();
     const ageDate = new Date(ageDiffMs);
@@ -120,20 +126,34 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // Female donor privacy handling:
+  // If female, consentToShareContact is true only if femalePublicPhoneConsent was explicitly checked
+  let finalConsent = data.consentToShareContact ?? true;
+  if (data.gender === 'female') {
+    finalConsent = data.femalePublicPhoneConsent === true;
+  }
+
   const passwordHash = bcrypt.hashSync(data.password, 10);
   const newUser = dataStore.createUser({
     name: data.name,
     phone,
     email: data.email || undefined,
     passwordHash,
-    role: data.role,
+    role: data.role === 'DONOR' || data.role === 'REQUESTER' ? data.role : 'MEMBER',
+    accountStatus: 'active',
+    gender: data.gender,
+    femaleSafetyAcknowledged: data.femaleSafetyAcknowledged || false,
+    femalePublicPhoneConsent: data.femalePublicPhoneConsent || false,
+    division: data.division,
+    district: data.district,
+    upazila: data.upazila,
+    assignedInstitution: data.institutionId || undefined,
     isActive: true,
     isPhoneVerified: true
   });
 
-  // If registered as DONOR, create DonorProfile
   let donorProfile = null;
-  if (data.role === 'DONOR' && data.bloodGroup) {
+  if (isDonorRegistration && data.bloodGroup) {
     donorProfile = dataStore.createDonorProfile({
       userId: newUser._id,
       displayName: data.name,
@@ -145,7 +165,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       gender: data.gender || 'unspecified',
       availabilityStatus: 'available',
       institutionId: data.institutionId || undefined,
-      consentToShareContact: data.consentToShareContact !== false,
+      consentToShareContact: finalConsent,
       isPubliclyListed: true,
       emergencyAvailable: true
     });
@@ -156,7 +176,10 @@ export async function register(req: Request, res: Response): Promise<void> {
       userId: newUser._id,
       phone: newUser.phone,
       role: newUser.role,
-      name: newUser.name
+      name: newUser.name,
+      assignedDivision: newUser.assignedDivision,
+      assignedInstitution: newUser.assignedInstitution,
+      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin
     },
     ENV.JWT_SECRET,
     { expiresIn: '7d' }
@@ -168,7 +191,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     action: 'USER_REGISTERED',
     targetType: 'User',
     targetId: newUser._id,
-    details: { phone: newUser.phone, role: newUser.role }
+    details: { phone: newUser.phone, role: newUser.role, gender: newUser.gender }
   });
 
   res.status(201).json({
@@ -180,7 +203,10 @@ export async function register(req: Request, res: Response): Promise<void> {
       name: newUser.name,
       phone: newUser.phone,
       email: newUser.email,
-      role: newUser.role
+      role: newUser.role,
+      accountStatus: newUser.accountStatus,
+      gender: newUser.gender,
+      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin
     },
     donorProfile
   });
@@ -199,10 +225,18 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (!user.isActive) {
+  // Check blocked or suspended status
+  if (
+    user.accountStatus === 'temporarily_blocked' || 
+    user.accountStatus === 'suspended' || 
+    user.accountStatus === 'deactivated' || 
+    !user.isActive
+  ) {
     res.status(403).json({
       success: false,
-      message: 'আপনার অ্যাকাউন্টটি স্থগিত রাখা হয়েছে। সহায়তার জন্য প্রশাসকের সাথে যোগাযোগ করুন।'
+      accountBlocked: true,
+      message: `আপনার অ্যাকাউন্টটি স্থগিত রাখা হয়েছে। কারণ: ${user.blockReason || 'নিয়ম লঙ্ঘন বা প্রশাসনিক পর্যালোচনা'}`,
+      blockReason: user.blockReason
     });
     return;
   }
@@ -216,7 +250,6 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Update last login
   dataStore.updateUser(user._id, { lastLoginAt: new Date() });
 
   const token = jwt.sign(
@@ -226,7 +259,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       role: user.role,
       name: user.name,
       assignedDivision: user.assignedDivision,
-      assignedInstitution: user.assignedInstitution
+      assignedInstitution: user.assignedInstitution,
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin
     },
     ENV.JWT_SECRET,
     { expiresIn: '7d' }
@@ -236,7 +270,9 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   res.json({
     success: true,
-    message: 'লগইন সফল হয়েছে।',
+    message: user.requirePasswordChangeAtFirstLogin 
+      ? 'স্বাগতম! প্রথমবার প্রবেশের জন্য নতুন স্থায়ী পাসওয়ার্ড নির্ধারণ করুন।'
+      : 'লগইন সফল হয়েছে।',
     token,
     user: {
       _id: user._id,
@@ -244,10 +280,42 @@ export async function login(req: Request, res: Response): Promise<void> {
       phone: user.phone,
       email: user.email,
       role: user.role,
+      accountStatus: user.accountStatus,
+      gender: user.gender,
       assignedDivision: user.assignedDivision,
-      assignedInstitution: user.assignedInstitution
+      assignedInstitution: user.assignedInstitution,
+      assignedInstitutions: user.assignedInstitutions,
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin
     },
     donorProfile
+  });
+}
+
+export async function changeFirstLoginPassword(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const { newPassword } = req.body;
+  const success = dataStore.changeFirstLoginPassword(req.user.userId, newPassword);
+
+  if (!success) {
+    res.status(400).json({ success: false, message: 'পাসওয়ার্ড পরিবর্তন সম্পন্ন করা যায়নি।' });
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: 'FIRST_LOGIN_PASSWORD_CHANGED',
+    targetType: 'User',
+    targetId: req.user.userId
+  });
+
+  res.json({
+    success: true,
+    message: 'আপনার নতুন স্থায়ী পাসওয়ার্ড সফলভাবে সংরক্ষিত হয়েছে। এখন আপনি প্ল্যাটফর্মের সকল সেবা ব্যবহার করতে পারবেন।'
   });
 }
 
@@ -274,12 +342,16 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
       phone: user.phone,
       email: user.email,
       role: user.role,
+      accountStatus: user.accountStatus,
+      gender: user.gender,
+      blockReason: user.blockReason,
       assignedDivision: user.assignedDivision,
       assignedInstitution: user.assignedInstitution,
+      assignedInstitutions: user.assignedInstitutions,
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin,
       isPhoneVerified: user.isPhoneVerified
     },
     donorProfile,
     unreadNotifications
   });
 }
-

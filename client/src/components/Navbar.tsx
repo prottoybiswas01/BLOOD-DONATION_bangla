@@ -30,12 +30,14 @@ export const Navbar: React.FC = () => {
     if (!user) return '/login';
     switch (user.role) {
       case 'SUPER_ADMIN':
+      case 'ADMIN':
         return '/admin/dashboard';
       case 'DIVISION_COORDINATOR':
         return '/coordinator/dashboard';
       case 'INSTITUTION_MODERATOR':
         return '/moderator/dashboard';
       case 'DONOR':
+      case 'MEMBER':
         return '/donor/dashboard';
       case 'REQUESTER':
         return '/requester/dashboard';
@@ -48,13 +50,17 @@ export const Navbar: React.FC = () => {
     if (!user) return 'ড্যাশবোর্ড';
     switch (user.role) {
       case 'SUPER_ADMIN':
-        return 'সুপার এডমিন';
+        return 'সর্বোচ্চ প্রশাসক';
+      case 'ADMIN':
+        return 'প্ল্যাটফর্ম অ্যাডমিন';
       case 'DIVISION_COORDINATOR':
-        return 'বিভাগীয় প্যানেল';
+        return 'বিভাগীয় সমন্বয়';
       case 'INSTITUTION_MODERATOR':
-        return 'প্রতিষ্ঠান প্যানেল';
+        return 'প্রতিষ্ঠান মডারেটর';
       case 'DONOR':
-        return 'আমার ড্যাশবোর্ড';
+        return 'রক্তদাতা প্যানেল';
+      case 'MEMBER':
+        return 'সদস্য প্যানেল';
       case 'REQUESTER':
         return 'আমার অনুরোধ';
       default:

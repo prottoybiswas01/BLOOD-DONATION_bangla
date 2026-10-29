@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { FirstLoginPasswordModal } from './components/FirstLoginPasswordModal';
 
 // Pages
 import { Home } from './pages/Home';
@@ -14,6 +15,7 @@ import { Login } from './pages/Login';
 import { DonorDashboard } from './pages/DonorDashboard';
 import { RequesterDashboard } from './pages/RequesterDashboard';
 import { InstitutionDirectory } from './pages/InstitutionDirectory';
+import { InstitutionDetail } from './pages/InstitutionDetail';
 import { ModeratorDashboard } from './pages/ModeratorDashboard';
 import { CoordinatorDashboard } from './pages/CoordinatorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -53,6 +55,7 @@ export function App() {
       <AuthProvider>
         <div className="min-h-screen flex flex-col bg-page text-mainText selection:bg-red-100 selection:text-primary">
           <Navbar />
+          <FirstLoginPasswordModal />
           <main className="flex-1">
             <Routes>
               {/* Public Routes */}
@@ -61,6 +64,7 @@ export function App() {
               <Route path="/requests" element={<BloodRequests />} />
               <Route path="/create-request" element={<CreateBloodRequest />} />
               <Route path="/institutions" element={<InstitutionDirectory />} />
+              <Route path="/institutions/:id" element={<InstitutionDetail />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactHelp />} />
               <Route path="/safety" element={<SafetyInfo />} />
@@ -74,7 +78,7 @@ export function App() {
               <Route
                 path="/donor/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['DONOR', 'SUPER_ADMIN']}>
+                  <ProtectedRoute allowedRoles={['DONOR', 'MEMBER', 'SUPER_ADMIN']}>
                     <DonorDashboard />
                   </ProtectedRoute>
                 }
@@ -83,7 +87,7 @@ export function App() {
               <Route
                 path="/requester/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['REQUESTER', 'DONOR', 'SUPER_ADMIN']}>
+                  <ProtectedRoute allowedRoles={['REQUESTER', 'MEMBER', 'DONOR', 'SUPER_ADMIN']}>
                     <RequesterDashboard />
                   </ProtectedRoute>
                 }
@@ -110,7 +114,7 @@ export function App() {
               <Route
                 path="/admin/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
                     <AdminDashboard />
                   </ProtectedRoute>
                 }
@@ -128,4 +132,3 @@ export function App() {
 }
 
 export default App;
-

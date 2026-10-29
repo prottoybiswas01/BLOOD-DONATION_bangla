@@ -2,10 +2,14 @@ import { BloodGroup } from '../data/bangladeshLocations';
 
 export type UserRole = 
   | 'SUPER_ADMIN' 
+  | 'ADMIN'
   | 'DIVISION_COORDINATOR' 
   | 'INSTITUTION_MODERATOR' 
+  | 'MEMBER'
   | 'DONOR' 
   | 'REQUESTER';
+
+export type AccountStatus = 'active' | 'temporarily_blocked' | 'permanently_blocked' | 'suspended';
 
 export interface User {
   _id: string;
@@ -13,9 +17,18 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
+  gender?: 'male' | 'female' | 'unspecified' | 'other';
+  accountStatus?: AccountStatus;
+  blockReason?: string;
+  blockedBy?: string;
+  blockedAt?: string;
   assignedDivision?: string;
   assignedInstitution?: string;
+  assignedInstitutions?: string[];
   isPhoneVerified?: boolean;
+  requirePasswordChangeAtFirstLogin?: boolean;
+  femaleSafetyAcknowledged?: boolean;
+  femalePublicPhoneConsent?: boolean;
 }
 
 export interface DonorProfile {
@@ -93,8 +106,94 @@ export interface Institution {
   email?: string;
   phone?: string;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  assignedModeratorId?: string;
+  assignedModeratorIds?: string[];
   totalRegisteredDonors: number;
   description?: string;
+  verificationNotes?: string;
+}
+
+export type InstitutionRequestStatus = 'pending_review' | 'under_review' | 'approved' | 'rejected';
+
+export interface InstitutionRequest {
+  _id: string;
+  name: string;
+  nameBn: string;
+  code: string;
+  type: string;
+  division: string;
+  district: string;
+  upazila: string;
+  address: string;
+  applicantName: string;
+  applicantPhone: string;
+  applicantEmail?: string;
+  applicantRole?: string;
+  supportingDetails?: string;
+  status: InstitutionRequestStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  decisionReason?: string;
+  createdAt: string;
+}
+
+export interface ModeratorActivity {
+  _id: string;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  action: 'MEMBER_CREATED' | 'PROFILE_EDITED' | 'USER_BLOCKED' | 'USER_UNBLOCKED' | 'CONTACT_REQUEST_HANDLED' | string;
+  targetRecordId?: string;
+  targetRecordType?: string;
+  divisionScope?: string;
+  institutionScope?: string;
+  reason?: string;
+  result?: string;
+  createdAt: string;
+}
+
+export interface ContactRequest {
+  _id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterPhone: string;
+  institutionId: string;
+  targetBloodGroup: BloodGroup;
+  patientName: string;
+  hospitalName: string;
+  unitsRequired: number;
+  urgency: 'emergency' | 'urgent' | 'standard';
+  reason: string;
+  status: 'pending' | 'in_progress' | 'fulfilled' | 'cancelled';
+  moderatorNotes?: string;
+  handledAt?: string;
+  createdAt: string;
+}
+
+export interface AccountStatusHistory {
+  _id: string;
+  userId: string;
+  targetUserName?: string;
+  targetUserPhone?: string;
+  previousStatus: string;
+  newStatus: string;
+  changedBy: string;
+  changerName?: string;
+  changerRole?: string;
+  reason: string;
+  changedAt: string;
+}
+
+export interface AuditLog {
+  _id: string;
+  actorId: string;
+  actorRole: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  institutionScope?: string;
+  details?: any;
+  createdAt: string;
 }
 
 export interface NotificationItem {
@@ -107,4 +206,3 @@ export interface NotificationItem {
   isRead: boolean;
   createdAt: string;
 }
-

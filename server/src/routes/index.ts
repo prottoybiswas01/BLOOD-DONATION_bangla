@@ -8,6 +8,10 @@ import adminRoutes from './adminRoutes.js';
 import reportRoutes from './reportRoutes.js';
 import locationRoutes from './locationRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import institutionRequestRoutes from './institutionRequestRoutes.js';
+import memberRoutes from './memberRoutes.js';
+import moderatorRoutes from './moderatorRoutes.js';
+import contactRequestRoutes from './contactRequestRoutes.js';
 
 const router = Router();
 
@@ -20,6 +24,10 @@ router.use('/admin', adminRoutes);
 router.use('/reports', reportRoutes);
 router.use('/locations', locationRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/institution-requests', institutionRequestRoutes);
+router.use('/members', memberRoutes);
+router.use('/moderators', moderatorRoutes);
+router.use('/contact-requests', contactRequestRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

@@ -53,6 +53,25 @@ export const api = {
 
   getMe: () => fetchWithAuth('/auth/me'),
 
+  changeFirstLoginPassword: (newPassword: string) =>
+    fetchWithAuth('/auth/change-first-login-password', {
+      method: 'POST',
+      body: JSON.stringify({ newPassword }),
+    }),
+
+  // Members & Moderator creation
+  createMemberByModerator: (payload: any) =>
+    fetchWithAuth('/members', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateMyProfile: (payload: any) =>
+    fetchWithAuth('/members/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   // Donors
   searchDonors: (params: Record<string, any>) => {
     const query = new URLSearchParams();
@@ -131,14 +150,71 @@ export const api = {
     return fetchWithAuth(`/institutions/moderator/dashboard${q}`);
   },
 
+  // Institution Registration Requests (Workflow)
+  submitInstitutionRequest: (payload: any) =>
+    fetchWithAuth('/institution-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getInstitutionRequests: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/institution-requests?${query.toString()}`);
+  },
+
+  reviewInstitutionRequest: (id: string, payload: { status: 'approved' | 'rejected' | 'under_review'; decisionReason: string }) =>
+    fetchWithAuth(`/institution-requests/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // Institutional Contact Requests
+  submitContactRequest: (payload: any) =>
+    fetchWithAuth('/contact-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getContactRequests: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/contact-requests?${query.toString()}`);
+  },
+
+  updateContactRequestStatus: (id: string, payload: { status: string; moderatorNotes?: string }) =>
+    fetchWithAuth(`/contact-requests/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // Moderator Activities
+  getModeratorActivities: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/moderators/activities?${query.toString()}`);
+  },
+
+  getDivisionModeratorsSummary: (division?: string) => {
+    const q = division ? `?division=${division}` : '';
+    return fetchWithAuth(`/moderators/summary${q}`);
+  },
+
   // Coordinator
   getCoordinatorDashboard: (division?: string) => {
     const q = division ? `?division=${division}` : '';
     return fetchWithAuth(`/coordinators/dashboard${q}`);
   },
 
-  // Admin
+  // Admin & User Management
   getAdminOverview: () => fetchWithAuth('/admin/overview'),
+
   getAdminUsers: (params: Record<string, any> = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -146,21 +222,45 @@ export const api = {
     });
     return fetchWithAuth(`/admin/users?${query.toString()}`);
   },
+
+  getAdminUserById: (id: string) => fetchWithAuth(`/admin/users/${id}`),
+
+  adminEditUserProfile: (id: string, payload: any) =>
+    fetchWithAuth(`/admin/users/${id}/profile`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   updateUserRole: (id: string, payload: any) =>
     fetchWithAuth(`/admin/users/${id}/role`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
-  toggleUserStatus: (id: string) =>
-    fetchWithAuth(`/admin/users/${id}/status`, {
-      method: 'PATCH',
+
+  blockUser: (id: string, reason: string, status = 'temporarily_blocked') =>
+    fetchWithAuth(`/admin/users/${id}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, status }),
     }),
-  updateInstitutionStatus: (id: string, status: string) =>
+
+  unblockUser: (id: string, reason: string) =>
+    fetchWithAuth(`/admin/users/${id}/unblock`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  getBlockedUsers: () => fetchWithAuth('/admin/blocked-users'),
+
+  getAccountStatusHistories: () => fetchWithAuth('/admin/status-history'),
+
+  updateInstitutionStatus: (id: string, status: string, verificationNote?: string) =>
     fetchWithAuth(`/admin/institutions/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, verificationNote }),
     }),
+
   getAuditLogs: () => fetchWithAuth('/admin/audit-logs'),
+
   getContactAccessLogs: () => fetchWithAuth('/admin/contact-access-logs'),
 
   // Reports
@@ -194,4 +294,3 @@ export const api = {
       method: 'PATCH',
     }),
 };
-

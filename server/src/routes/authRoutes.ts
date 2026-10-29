@@ -5,10 +5,12 @@ import {
   register, 
   login, 
   getMe,
+  changeFirstLoginPassword,
   RequestOtpSchema,
   VerifyOtpSchema,
   RegisterSchema,
-  LoginSchema
+  LoginSchema,
+  ChangeFirstLoginPasswordSchema
 } from '../controllers/authController.js';
 import { validateBody } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -21,6 +23,6 @@ router.post('/verify-otp', authRateLimiter, validateBody(VerifyOtpSchema), verif
 router.post('/register', authRateLimiter, validateBody(RegisterSchema), register);
 router.post('/login', authRateLimiter, validateBody(LoginSchema), login);
 router.get('/me', requireAuth, getMe);
+router.post('/change-first-login-password', requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
 
 export default router;
-

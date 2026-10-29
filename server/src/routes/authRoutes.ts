@@ -23,3 +23,4 @@ router.post('/login', authRateLimiter, validateBody(LoginSchema), login);
 router.get('/me', requireAuth, getMe);
 
 export default router;
+

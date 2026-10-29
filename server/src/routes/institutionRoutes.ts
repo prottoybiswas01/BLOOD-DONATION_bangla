@@ -17,3 +17,4 @@ router.get('/:id', getInstitutionById);
 router.post('/', optionalAuth, validateBody(CreateInstitutionSchema), createInstitution);
 
 export default router;
+

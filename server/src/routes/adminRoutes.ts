@@ -26,3 +26,4 @@ router.get('/audit-logs', getAuditLogs);
 router.get('/contact-access-logs', getContactAccessLogs);
 
 export default router;
+

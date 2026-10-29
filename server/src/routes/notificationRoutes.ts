@@ -8,3 +8,4 @@ router.get('/', requireAuth, getNotifications);
 router.patch('/:id/read', requireAuth, markAsRead);
 
 export default router;
+

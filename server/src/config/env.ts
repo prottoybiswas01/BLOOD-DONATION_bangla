@@ -12,3 +12,4 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
   DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || '5', 10),
 };
+

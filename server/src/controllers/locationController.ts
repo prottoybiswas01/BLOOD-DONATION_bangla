@@ -43,3 +43,4 @@ export function getUpazilasByDistrict(req: Request, res: Response): void {
     upazilas: district.upazilas
   });
 }
+

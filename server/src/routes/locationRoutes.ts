@@ -12,3 +12,4 @@ router.get('/divisions/:divisionId/districts', getDistrictsByDivision);
 router.get('/divisions/:divisionId/districts/:districtId/upazilas', getUpazilasByDistrict);
 
 export default router;
+

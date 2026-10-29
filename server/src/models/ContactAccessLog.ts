@@ -51,3 +51,4 @@ export const ContactAccessLogModel = mongoose.model<IContactAccessLog>(
   'ContactAccessLog', 
   ContactAccessLogSchema
 );
+

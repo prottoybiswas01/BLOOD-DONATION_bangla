@@ -111,3 +111,4 @@ export const SafetyInfo: React.FC = () => {
     </div>
   );
 };
+

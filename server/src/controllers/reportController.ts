@@ -108,3 +108,4 @@ export async function resolveReport(req: AuthRequest, res: Response): Promise<vo
     report
   });
 }
+

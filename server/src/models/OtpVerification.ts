@@ -35,3 +35,4 @@ export const OtpVerificationModel = mongoose.model<IOtpVerification>(
   'OtpVerification', 
   OtpVerificationSchema
 );
+

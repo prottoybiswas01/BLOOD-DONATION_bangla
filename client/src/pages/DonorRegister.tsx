@@ -437,3 +437,4 @@ export const DonorRegister: React.FC = () => {
     </div>
   );
 };
+

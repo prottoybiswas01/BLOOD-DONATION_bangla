@@ -70,3 +70,4 @@ export const PrivacyTerms: React.FC = () => {
     </div>
   );
 };
+

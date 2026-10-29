@@ -68,3 +68,4 @@ const ReportSchema = new Schema<IReport>(
 );
 
 export const ReportModel = mongoose.model<IReport>('Report', ReportSchema);
+

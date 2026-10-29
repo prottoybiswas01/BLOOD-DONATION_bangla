@@ -174,3 +174,4 @@ export function requireInstitutionScope(req: AuthRequest, res: Response, next: N
 
   next();
 }
+

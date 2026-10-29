@@ -282,3 +282,4 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
     unreadNotifications
   });
 }
+

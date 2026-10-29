@@ -217,3 +217,4 @@ export async function getContactAccessLogs(req: AuthRequest, res: Response): Pro
     logs: logsWithDetails
   });
 }
+

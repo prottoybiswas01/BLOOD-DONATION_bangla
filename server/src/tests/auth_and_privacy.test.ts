@@ -78,3 +78,4 @@ test('6. Expired requests are updated and excluded from active emergencies', () 
   const foundExpired = searchResult.requests.find(r => r.patientName === 'Expired Patient');
   assert.strictEqual(foundExpired, undefined, 'Expired requests must not appear in active search feed');
 });
+

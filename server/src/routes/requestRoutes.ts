@@ -20,3 +20,4 @@ router.post('/', requireAuth, validateBody(CreateBloodRequestSchema), createRequ
 router.patch('/:id/status', requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
 
 export default router;
+

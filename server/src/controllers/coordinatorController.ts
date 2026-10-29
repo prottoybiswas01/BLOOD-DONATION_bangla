@@ -63,3 +63,4 @@ export async function getCoordinatorDashboard(req: AuthRequest, res: Response): 
     reports: divisionReports
   });
 }
+

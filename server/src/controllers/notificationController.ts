@@ -29,3 +29,4 @@ export async function markAsRead(req: AuthRequest, res: Response): Promise<void>
     message: success ? 'বিজ্ঞপ্তিটি পঠিত হিসেবে চিহ্নিত করা হয়েছে।' : 'বিজ্ঞপ্তি পাওয়া যায়নি।'
   });
 }
+

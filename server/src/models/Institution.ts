@@ -63,3 +63,4 @@ const InstitutionSchema = new Schema<IInstitution>(
 );
 
 export const InstitutionModel = mongoose.model<IInstitution>('Institution', InstitutionSchema);
+

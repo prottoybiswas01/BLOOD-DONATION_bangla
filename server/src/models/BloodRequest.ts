@@ -95,3 +95,4 @@ BloodRequestSchema.index({ status: 1, requiredDate: -1 });
 BloodRequestSchema.index({ division: 1, status: 1 });
 
 export const BloodRequestModel = mongoose.model<IBloodRequest>('BloodRequest', BloodRequestSchema);
+

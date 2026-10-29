@@ -356,3 +356,4 @@ export const InstitutionDirectory: React.FC = () => {
     </div>
   );
 };
+

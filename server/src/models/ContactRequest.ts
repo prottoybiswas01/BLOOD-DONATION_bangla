@@ -55,3 +55,4 @@ export const ContactRequestModel = mongoose.model<IContactRequest>(
   'ContactRequest',
   ContactRequestSchema
 );
+

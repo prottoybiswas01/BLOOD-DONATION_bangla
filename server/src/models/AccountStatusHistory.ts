@@ -38,3 +38,4 @@ export const AccountStatusHistoryModel = mongoose.model<IAccountStatusHistory>(
   'AccountStatusHistory',
   AccountStatusHistorySchema
 );
+

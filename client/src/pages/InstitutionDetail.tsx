@@ -420,3 +420,4 @@ export const InstitutionDetail: React.FC = () => {
     </div>
   );
 };
+

@@ -168,3 +168,4 @@ export async function updateMyProfile(req: AuthRequest, res: Response): Promise<
     profile: updatedProfile
   });
 }
+

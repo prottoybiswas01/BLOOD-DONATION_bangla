@@ -13,3 +13,4 @@ router.get('/activities', getModeratorActivities);
 router.get('/summary', getDivisionModeratorsSummary);
 
 export default router;
+

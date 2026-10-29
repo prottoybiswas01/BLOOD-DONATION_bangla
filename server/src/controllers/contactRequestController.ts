@@ -120,3 +120,4 @@ export async function updateContactRequestStatus(req: AuthRequest, res: Response
     contactRequest: updated
   });
 }
+

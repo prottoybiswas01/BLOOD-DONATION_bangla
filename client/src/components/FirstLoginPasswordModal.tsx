@@ -139,3 +139,4 @@ export const FirstLoginPasswordModal: React.FC = () => {
     </div>
   );
 };
+

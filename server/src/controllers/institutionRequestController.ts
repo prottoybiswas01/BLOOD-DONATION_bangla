@@ -104,3 +104,4 @@ export async function reviewInstitutionRequest(req: AuthRequest, res: Response):
     institution: result.institution
   });
 }
+

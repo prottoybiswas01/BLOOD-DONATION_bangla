@@ -104,7 +104,6 @@ export interface StoredInstitution {
   assignedModeratorIds?: string[];
   totalRegisteredDonors: number;
   description?: string;
-  verificationNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }

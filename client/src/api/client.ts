@@ -1,4 +1,5 @@
-const API_BASE = '/api/v1';
+const rawBase = ((import.meta as any).env?.VITE_API_URL as string) || '/api/v1';
+const API_BASE = rawBase.replace(/\/+$/, '');
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');

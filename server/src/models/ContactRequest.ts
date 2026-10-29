@@ -4,10 +4,11 @@ import { BloodGroup, BLOOD_GROUPS } from '../data/bangladeshLocations.js';
 export type ContactRequestStatus = 'pending' | 'in_progress' | 'fulfilled' | 'cancelled';
 
 export interface IContactRequest extends Document {
-  requesterId: mongoose.Types.ObjectId;
+  _id: any;
+  requesterId: any;
   requesterName: string;
   requesterPhone: string;
-  institutionId: mongoose.Types.ObjectId;
+  institutionId: any;
   targetBloodGroup: BloodGroup;
   patientName: string;
   hospitalName: string;
@@ -15,7 +16,7 @@ export interface IContactRequest extends Document {
   urgency: 'emergency' | 'urgent' | 'standard';
   reason: string;
   status: ContactRequestStatus;
-  assignedModeratorId?: mongoose.Types.ObjectId;
+  assignedModeratorId?: any;
   moderatorNotes?: string;
   handledAt?: Date;
   createdAt: Date;
@@ -24,10 +25,11 @@ export interface IContactRequest extends Document {
 
 const ContactRequestSchema = new Schema<IContactRequest>(
   {
-    requesterId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    _id: { type: String },
+    requesterId: { type: Schema.Types.Mixed, required: true, index: true },
     requesterName: { type: String, required: true },
     requesterPhone: { type: String, required: true },
-    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true, index: true },
+    institutionId: { type: Schema.Types.Mixed, required: true, index: true },
     targetBloodGroup: { type: String, enum: BLOOD_GROUPS, required: true },
     patientName: { type: String, required: true },
     hospitalName: { type: String, required: true },
@@ -40,7 +42,7 @@ const ContactRequestSchema = new Schema<IContactRequest>(
       default: 'pending',
       index: true
     },
-    assignedModeratorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    assignedModeratorId: { type: Schema.Types.Mixed },
     moderatorNotes: { type: String, trim: true },
     handledAt: { type: Date }
   },

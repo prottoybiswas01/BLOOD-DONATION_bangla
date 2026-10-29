@@ -8,6 +8,7 @@ export type InstitutionRequestStatus =
   | 'suspended';
 
 export interface IInstitutionRequest extends Document {
+  _id: any;
   name: string;
   nameBn: string;
   code: string;
@@ -22,16 +23,17 @@ export interface IInstitutionRequest extends Document {
   applicantRole?: string;
   supportingDetails?: string;
   status: InstitutionRequestStatus;
-  reviewedBy?: mongoose.Types.ObjectId;
+  reviewedBy?: any;
   decisionReason?: string;
   reviewedAt?: Date;
-  createdInstitutionId?: mongoose.Types.ObjectId;
+  createdInstitutionId?: any;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const InstitutionRequestSchema = new Schema<IInstitutionRequest>(
   {
+    _id: { type: String },
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, required: true, trim: true },
     code: { type: String, required: true, uppercase: true, trim: true },
@@ -55,10 +57,10 @@ const InstitutionRequestSchema = new Schema<IInstitutionRequest>(
       default: 'pending_review',
       index: true
     },
-    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewedBy: { type: Schema.Types.Mixed },
     decisionReason: { type: String, trim: true },
     reviewedAt: { type: Date },
-    createdInstitutionId: { type: Schema.Types.ObjectId, ref: 'Institution' }
+    createdInstitutionId: { type: Schema.Types.Mixed }
   },
   {
     timestamps: true

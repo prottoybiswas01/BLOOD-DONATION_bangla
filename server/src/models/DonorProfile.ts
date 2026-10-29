@@ -4,7 +4,8 @@ import { BloodGroup, BLOOD_GROUPS } from '../data/bangladeshLocations.js';
 export type AvailabilityStatus = 'available' | 'recently_donated' | 'temporarily_unavailable';
 
 export interface IDonorProfile extends Document {
-  userId: mongoose.Types.ObjectId;
+  _id: any;
+  userId: any;
   displayName: string;
   bloodGroup: BloodGroup;
   division: string;
@@ -16,7 +17,7 @@ export interface IDonorProfile extends Document {
   availabilityStatus: AvailabilityStatus;
   lastDonationDate?: Date;
   totalDonations: number;
-  institutionId?: mongoose.Types.ObjectId;
+  institutionId?: any;
   institutionMembershipVerified: boolean;
   consentToShareContact: boolean;
   preferredContactMethod: 'phone' | 'sms' | 'platform';
@@ -29,9 +30,9 @@ export interface IDonorProfile extends Document {
 
 const DonorProfileSchema = new Schema<IDonorProfile>(
   {
+    _id: { type: String },
     userId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true, 
       unique: true,
       index: true 
@@ -61,7 +62,7 @@ const DonorProfileSchema = new Schema<IDonorProfile>(
     },
     lastDonationDate: { type: Date },
     totalDonations: { type: Number, default: 0 },
-    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
+    institutionId: { type: Schema.Types.Mixed, index: true },
     institutionMembershipVerified: { type: Boolean, default: false },
     consentToShareContact: { type: Boolean, default: true },
     preferredContactMethod: { 

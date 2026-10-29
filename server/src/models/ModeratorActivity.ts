@@ -12,14 +12,15 @@ export type ActivityActionType =
   | 'PASSWORD_RESET_ASSISTED';
 
 export interface IModeratorActivity extends Document {
-  actorId: mongoose.Types.ObjectId;
+  _id: any;
+  actorId: any;
   actorName: string;
   actorRole: string;
   action: ActivityActionType;
   targetRecordId: string;
   targetRecordType: string;
   divisionScope?: string;
-  institutionScope?: mongoose.Types.ObjectId;
+  institutionScope?: any;
   reason?: string;
   result?: string;
   details?: Record<string, any>;
@@ -28,7 +29,8 @@ export interface IModeratorActivity extends Document {
 
 const ModeratorActivitySchema = new Schema<IModeratorActivity>(
   {
-    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    _id: { type: String },
+    actorId: { type: Schema.Types.Mixed, required: true, index: true },
     actorName: { type: String, required: true },
     actorRole: { type: String, required: true },
     action: { 
@@ -50,7 +52,7 @@ const ModeratorActivitySchema = new Schema<IModeratorActivity>(
     targetRecordId: { type: String, required: true },
     targetRecordType: { type: String, required: true },
     divisionScope: { type: String, index: true },
-    institutionScope: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
+    institutionScope: { type: Schema.Types.Mixed, index: true },
     reason: { type: String, trim: true },
     result: { type: String, trim: true },
     details: { type: Schema.Types.Mixed }

@@ -8,6 +8,9 @@ import { ENV } from './config/env.js';
 
 const app = express();
 
+// Trust reverse proxy (Vercel, Nginx, Render) for client IP rate limiting
+app.set('trust proxy', 1);
+
 // Security HTTP headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -15,7 +18,10 @@ app.use(helmet({
 
 // Cross-Origin Resource Sharing
 app.use(cors({
-  origin: [ENV.CLIENT_URL, 'http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000'],
+  origin: (origin, callback) => {
+    // Allow all origins (localhost, Vercel deployments, custom domains)
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -28,8 +34,22 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // General Rate Limiting
 app.use('/api', generalRateLimiter);
 
-// Versioned API Routes
+// Versioned API Routes (Support both /api/v1 and /v1 for Vercel serverless rewrites)
 app.use('/api/v1', apiRoutes);
+app.use('/v1', apiRoutes);
+
+// Health and Status Check
+app.get(['/', '/api', '/api/v1'], (req, res) => {
+  res.json({
+    success: true,
+    platform: 'বাংলাদেশ রক্তদান প্ল্যাটফর্ম (Bangladesh Blood Donation Platform)',
+    status: 'online',
+    version: '1.0.0',
+    environment: ENV.NODE_ENV,
+    apiBase: '/api/v1',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Fallback for missing routes
 app.use((req, res) => {

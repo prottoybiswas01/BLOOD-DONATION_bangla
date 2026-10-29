@@ -1,11 +1,17 @@
 import bcrypt from 'bcryptjs';
 import { BANGLADESH_DIVISIONS, BloodGroup } from '../data/bangladeshLocations.js';
-import { UserRole, AccountStatus, GenderType } from '../models/User.js';
-import { AvailabilityStatus } from '../models/DonorProfile.js';
-import { RequestStatus, UrgencyLevel } from '../models/BloodRequest.js';
-import { ActivityActionType } from '../models/ModeratorActivity.js';
-import { InstitutionRequestStatus } from '../models/InstitutionRequest.js';
-import { ContactRequestStatus } from '../models/ContactRequest.js';
+import { UserModel, UserRole, AccountStatus, GenderType } from '../models/User.js';
+import { DonorProfileModel, AvailabilityStatus } from '../models/DonorProfile.js';
+import { BloodRequestModel, RequestStatus, UrgencyLevel } from '../models/BloodRequest.js';
+import { ModeratorActivityModel, ActivityActionType } from '../models/ModeratorActivity.js';
+import { InstitutionRequestModel, InstitutionRequestStatus } from '../models/InstitutionRequest.js';
+import { ContactRequestModel, ContactRequestStatus } from '../models/ContactRequest.js';
+import { InstitutionModel } from '../models/Institution.js';
+import { AccountStatusHistoryModel } from '../models/AccountStatusHistory.js';
+import { ReportModel } from '../models/Report.js';
+import { NotificationModel } from '../models/Notification.js';
+import { ContactAccessLogModel } from '../models/ContactAccessLog.js';
+import { isDatabaseConnected } from '../config/db.js';
 
 export interface StoredUser {
   _id: string;
@@ -104,6 +110,7 @@ export interface StoredInstitution {
   assignedModeratorIds?: string[];
   totalRegisteredDonors: number;
   description?: string;
+  verificationNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -872,6 +879,114 @@ class DataStore {
     ];
   }
 
+  // --- MongoDB Atlas Synchronization & Persistence ---
+  async syncWithMongoDB(): Promise<void> {
+    try {
+      if (!isDatabaseConnected()) return;
+      const userCount = await UserModel.countDocuments();
+      if (userCount === 0) {
+        console.log('[Database] Fresh MongoDB Atlas cluster detected. Auto-seeding initial data...');
+        for (const u of this.users) await UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true });
+        for (const i of this.institutions) await InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true });
+        for (const d of this.donorProfiles) await DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true });
+        for (const r of this.bloodRequests) await BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true });
+        for (const ir of this.institutionRequests) await InstitutionRequestModel.findOneAndUpdate({ _id: ir._id }, ir, { upsert: true });
+        for (const cr of this.contactRequests) await ContactRequestModel.findOneAndUpdate({ _id: cr._id }, cr, { upsert: true });
+        for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
+        for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
+        for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
+        console.log('[Database] Auto-seeding completed successfully in MongoDB Atlas!');
+      } else {
+        console.log('[Database] Loading existing data from MongoDB Atlas...');
+        const dbUsers = await UserModel.find().lean();
+        if (dbUsers.length > 0) this.users = dbUsers as any;
+        const dbDonors = await DonorProfileModel.find().lean();
+        if (dbDonors.length > 0) this.donorProfiles = dbDonors as any;
+        const dbInsts = await InstitutionModel.find().lean();
+        if (dbInsts.length > 0) this.institutions = dbInsts as any;
+        const dbRequests = await BloodRequestModel.find().lean();
+        if (dbRequests.length > 0) this.bloodRequests = dbRequests as any;
+        const dbInstReqs = await InstitutionRequestModel.find().lean();
+        if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs as any;
+        const dbContactReqs = await ContactRequestModel.find().lean();
+        if (dbContactReqs.length > 0) this.contactRequests = dbContactReqs as any;
+        const dbActivities = await ModeratorActivityModel.find().lean();
+        if (dbActivities.length > 0) this.moderatorActivities = dbActivities as any;
+        const dbHistories = await AccountStatusHistoryModel.find().lean();
+        if (dbHistories.length > 0) this.accountStatusHistories = dbHistories as any;
+        console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
+      }
+    } catch (err: any) {
+      console.warn('[Database Sync Warning]:', err.message);
+    }
+  }
+
+  persistUser(user: StoredUser) {
+    if (isDatabaseConnected()) {
+      UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistDonorProfile(profile: StoredDonorProfile) {
+    if (isDatabaseConnected()) {
+      DonorProfileModel.findOneAndUpdate({ _id: profile._id }, profile, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistInstitution(inst: StoredInstitution) {
+    if (isDatabaseConnected()) {
+      InstitutionModel.findOneAndUpdate({ _id: inst._id }, inst, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistBloodRequest(req: StoredBloodRequest) {
+    if (isDatabaseConnected()) {
+      BloodRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistInstitutionRequest(req: StoredInstitutionRequest) {
+    if (isDatabaseConnected()) {
+      InstitutionRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistContactRequest(req: StoredContactRequest) {
+    if (isDatabaseConnected()) {
+      ContactRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistModeratorActivity(act: StoredModeratorActivity) {
+    if (isDatabaseConnected()) {
+      ModeratorActivityModel.create(act).catch(() => {});
+    }
+  }
+
+  persistAccountStatusHistory(hist: StoredAccountStatusHistory) {
+    if (isDatabaseConnected()) {
+      AccountStatusHistoryModel.create(hist).catch(() => {});
+    }
+  }
+
+  persistReport(rep: StoredReport) {
+    if (isDatabaseConnected()) {
+      ReportModel.findOneAndUpdate({ _id: rep._id }, rep, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistContactAccessLog(cal: StoredContactAccessLog) {
+    if (isDatabaseConnected()) {
+      ContactAccessLogModel.create(cal).catch(() => {});
+    }
+  }
+
+  persistNotification(n: StoredNotification) {
+    if (isDatabaseConnected()) {
+      NotificationModel.create(n).catch(() => {});
+    }
+  }
+
   // --- User Methods ---
   findUserById(id: string): StoredUser | undefined {
     return this.users.find(u => u._id === id);
@@ -910,6 +1025,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.users.push(newUser);
+    this.persistUser(newUser);
     return newUser;
   }
 
@@ -917,6 +1033,7 @@ class DataStore {
     const user = this.findUserById(id);
     if (!user) return null;
     Object.assign(user, update, { updatedAt: new Date() });
+    this.persistUser(user);
     return user;
   }
 
@@ -1001,6 +1118,7 @@ class DataStore {
     user.passwordHash = bcrypt.hashSync(newPassword, 10);
     user.requirePasswordChangeAtFirstLogin = false;
     user.updatedAt = new Date();
+    this.persistUser(user);
     return true;
   }
 
@@ -1035,9 +1153,10 @@ class DataStore {
     targetUser.blockedBy = params.actorId;
     targetUser.blockedAt = new Date();
     targetUser.updatedAt = new Date();
+    this.persistUser(targetUser);
 
     // Record in AccountStatusHistory
-    this.accountStatusHistories.unshift({
+    const histEntry: StoredAccountStatusHistory = {
       _id: 'ash_' + Date.now() + Math.random().toString(36).substring(2, 6),
       userId: targetUser._id,
       targetUserName: targetUser.name,
@@ -1049,7 +1168,9 @@ class DataStore {
       actorRole: params.actorRole,
       reason: params.reason,
       createdAt: new Date()
-    });
+    };
+    this.accountStatusHistories.unshift(histEntry);
+    this.persistAccountStatusHistory(histEntry);
 
     // Record in ModeratorActivity if actor is moderator or coordinator
     this.logModeratorActivity({
@@ -1087,9 +1208,10 @@ class DataStore {
     targetUser.blockedBy = undefined;
     targetUser.blockedAt = undefined;
     targetUser.updatedAt = new Date();
+    this.persistUser(targetUser);
 
     // Record in AccountStatusHistory
-    this.accountStatusHistories.unshift({
+    const histEntry: StoredAccountStatusHistory = {
       _id: 'ash_' + Date.now() + Math.random().toString(36).substring(2, 6),
       userId: targetUser._id,
       targetUserName: targetUser.name,
@@ -1101,7 +1223,9 @@ class DataStore {
       actorRole: params.actorRole,
       reason: params.reason,
       createdAt: new Date()
-    });
+    };
+    this.accountStatusHistories.unshift(histEntry);
+    this.persistAccountStatusHistory(histEntry);
 
     // Record in ModeratorActivity
     this.logModeratorActivity({
@@ -1168,6 +1292,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.donorProfiles.push(newProfile);
+    this.persistDonorProfile(newProfile);
     return newProfile;
   }
 
@@ -1175,6 +1300,7 @@ class DataStore {
     const profile = this.findDonorProfileByUserId(userId);
     if (!profile) return null;
     Object.assign(profile, update, { updatedAt: new Date() });
+    this.persistDonorProfile(profile);
     return profile;
   }
 
@@ -1279,6 +1405,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.bloodRequests.unshift(newReq);
+    this.persistBloodRequest(newReq);
     return newReq;
   }
 
@@ -1286,6 +1413,7 @@ class DataStore {
     const req = this.findBloodRequestById(id);
     if (!req) return null;
     Object.assign(req, update, { updatedAt: new Date() });
+    this.persistBloodRequest(req);
     return req;
   }
 
@@ -1401,6 +1529,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.institutions.push(newInst);
+    this.persistInstitution(newInst);
     return newInst;
   }
 
@@ -1408,6 +1537,7 @@ class DataStore {
     const inst = this.findInstitutionById(id);
     if (!inst) return null;
     Object.assign(inst, update, { updatedAt: new Date() });
+    this.persistInstitution(inst);
     return inst;
   }
 
@@ -1433,6 +1563,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.institutionRequests.unshift(newReq);
+    this.persistInstitutionRequest(newReq);
 
     // Notify Division Coordinator and Super Admin
     const coordinators = this.users.filter(u => 
@@ -1509,6 +1640,8 @@ class DataStore {
       req.createdInstitutionId = createdInst._id;
     }
 
+    this.persistInstitutionRequest(req);
+
     return { 
       success: true, 
       message: params.status === 'approved' ? 'প্রতিষ্ঠান সফলভাবে অনুমোদিত ও যুক্ত হয়েছে।' : 'আবেদনটি বাতিল করা হয়েছে।',
@@ -1546,6 +1679,7 @@ class DataStore {
       createdAt: new Date()
     };
     this.moderatorActivities.unshift(entry);
+    this.persistModeratorActivity(entry);
     return entry;
   }
 
@@ -1622,6 +1756,7 @@ class DataStore {
       updatedAt: new Date()
     };
     this.contactRequests.unshift(newContactReq);
+    this.persistContactRequest(newContactReq);
 
     // Notify assigned moderator
     if (inst?.assignedModeratorId) {
@@ -1667,6 +1802,7 @@ class DataStore {
     const req = this.contactRequests.find(r => r._id === id);
     if (!req) return null;
     Object.assign(req, update, { updatedAt: new Date() });
+    this.persistContactRequest(req);
     return req;
   }
 

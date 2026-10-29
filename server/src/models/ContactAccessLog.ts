@@ -1,11 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IContactAccessLog extends Document {
-  viewerId: mongoose.Types.ObjectId;
-  donorUserId: mongoose.Types.ObjectId;
-  donorProfileId: mongoose.Types.ObjectId;
+  _id: any;
+  viewerId: any;
+  donorUserId: any;
+  donorProfileId: any;
   purpose: 'blood_request' | 'emergency_search' | 'direct_request';
-  relatedBloodRequestId?: mongoose.Types.ObjectId;
+  relatedBloodRequestId?: any;
   ipAddress?: string;
   userAgent?: string;
   createdAt: Date;
@@ -13,21 +14,19 @@ export interface IContactAccessLog extends Document {
 
 const ContactAccessLogSchema = new Schema<IContactAccessLog>(
   {
+    _id: { type: String },
     viewerId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true, 
       index: true 
     },
     donorUserId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true, 
       index: true 
     },
     donorProfileId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'DonorProfile', 
+      type: Schema.Types.Mixed, 
       required: true 
     },
     purpose: { 
@@ -35,7 +34,7 @@ const ContactAccessLogSchema = new Schema<IContactAccessLog>(
       enum: ['blood_request', 'emergency_search', 'direct_request'], 
       default: 'emergency_search' 
     },
-    relatedBloodRequestId: { type: Schema.Types.ObjectId, ref: 'BloodRequest' },
+    relatedBloodRequestId: { type: Schema.Types.Mixed },
     ipAddress: { type: String },
     userAgent: { type: String }
   },

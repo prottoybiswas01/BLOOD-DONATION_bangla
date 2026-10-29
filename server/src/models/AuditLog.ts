@@ -1,13 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAuditLog extends Document {
-  actorId: mongoose.Types.ObjectId;
+  _id: any;
+  actorId: any;
   actorRole: string;
   action: string;
   targetType: string;
   targetId?: string;
   divisionScope?: string;
-  institutionScope?: mongoose.Types.ObjectId;
+  institutionScope?: any;
   details?: Record<string, any>;
   ipAddress?: string;
   createdAt: Date;
@@ -15,9 +16,9 @@ export interface IAuditLog extends Document {
 
 const AuditLogSchema = new Schema<IAuditLog>(
   {
+    _id: { type: String },
     actorId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true,
       index: true 
     },
@@ -26,7 +27,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
     targetType: { type: String, required: true, index: true },
     targetId: { type: String },
     divisionScope: { type: String, index: true },
-    institutionScope: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
+    institutionScope: { type: Schema.Types.Mixed, index: true },
     details: { type: Schema.Types.Mixed },
     ipAddress: { type: String }
   },

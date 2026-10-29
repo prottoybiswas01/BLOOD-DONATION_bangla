@@ -19,6 +19,7 @@ export type AccountStatus =
 export type GenderType = 'male' | 'female' | 'unspecified' | 'other';
 
 export interface IUser extends Document {
+  _id: any;
   name: string;
   phone: string;
   email?: string;
@@ -26,16 +27,16 @@ export interface IUser extends Document {
   role: UserRole;
   accountStatus: AccountStatus;
   blockReason?: string;
-  blockedBy?: mongoose.Types.ObjectId;
+  blockedBy?: any;
   blockedAt?: Date;
   gender: GenderType;
   femaleSafetyAcknowledged?: boolean;
   femalePublicPhoneConsent?: boolean;
   assignedDivision?: string; // For DIVISION_COORDINATOR (e.g. 'dhaka')
-  assignedInstitution?: mongoose.Types.ObjectId; // For INSTITUTION_MODERATOR
-  assignedInstitutions?: mongoose.Types.ObjectId[]; // Multiple institutions support
+  assignedInstitution?: any; // For INSTITUTION_MODERATOR
+  assignedInstitutions?: any[]; // Multiple institutions support
   requirePasswordChangeAtFirstLogin?: boolean;
-  createdByModeratorId?: mongoose.Types.ObjectId;
+  createdByModeratorId?: any;
   division?: string;
   district?: string;
   upazila?: string;
@@ -48,6 +49,7 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
+    _id: { type: String },
     name: { type: String, required: true, trim: true },
     phone: { 
       type: String, 
@@ -72,7 +74,7 @@ const UserSchema = new Schema<IUser>(
       index: true
     },
     blockReason: { type: String, trim: true },
-    blockedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    blockedBy: { type: Schema.Types.Mixed },
     blockedAt: { type: Date },
     gender: { 
       type: String, 
@@ -82,10 +84,10 @@ const UserSchema = new Schema<IUser>(
     femaleSafetyAcknowledged: { type: Boolean, default: false },
     femalePublicPhoneConsent: { type: Boolean, default: false },
     assignedDivision: { type: String, trim: true, index: true },
-    assignedInstitution: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
-    assignedInstitutions: [{ type: Schema.Types.ObjectId, ref: 'Institution' }],
+    assignedInstitution: { type: Schema.Types.Mixed, index: true },
+    assignedInstitutions: [{ type: Schema.Types.Mixed }],
     requirePasswordChangeAtFirstLogin: { type: Boolean, default: false },
-    createdByModeratorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdByModeratorId: { type: Schema.Types.Mixed },
     division: { type: String, trim: true },
     district: { type: String, trim: true },
     upazila: { type: String, trim: true },

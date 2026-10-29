@@ -1,12 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAccountStatusHistory extends Document {
-  userId: mongoose.Types.ObjectId;
+  _id: any;
+  userId: any;
   targetUserName: string;
   targetUserPhone: string;
   oldStatus: string;
   newStatus: string;
-  actorId: mongoose.Types.ObjectId;
+  actorId: any;
   actorName: string;
   actorRole: string;
   reason: string;
@@ -16,12 +17,13 @@ export interface IAccountStatusHistory extends Document {
 
 const AccountStatusHistorySchema = new Schema<IAccountStatusHistory>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    _id: { type: String },
+    userId: { type: Schema.Types.Mixed, required: true, index: true },
     targetUserName: { type: String, required: true },
     targetUserPhone: { type: String, required: true },
     oldStatus: { type: String, required: true },
     newStatus: { type: String, required: true, index: true },
-    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    actorId: { type: Schema.Types.Mixed, required: true },
     actorName: { type: String, required: true },
     actorRole: { type: String, required: true },
     reason: { type: String, required: true, trim: true },

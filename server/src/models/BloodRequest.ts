@@ -13,7 +13,8 @@ export type RequestStatus =
 export type UrgencyLevel = 'emergency' | 'urgent' | 'standard';
 
 export interface IBloodRequest extends Document {
-  requesterId: mongoose.Types.ObjectId;
+  _id: any;
+  requesterId: any;
   patientName: string;
   bloodGroup: BloodGroup;
   unitsRequired: number;
@@ -30,7 +31,7 @@ export interface IBloodRequest extends Document {
   alternativeContactNumber?: string;
   status: RequestStatus;
   moderationNotes?: string;
-  institutionId?: mongoose.Types.ObjectId;
+  institutionId?: any;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -38,9 +39,9 @@ export interface IBloodRequest extends Document {
 
 const BloodRequestSchema = new Schema<IBloodRequest>(
   {
+    _id: { type: String },
     requesterId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true,
       index: true 
     },
@@ -83,7 +84,7 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
       index: true 
     },
     moderationNotes: { type: String, trim: true },
-    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
+    institutionId: { type: Schema.Types.Mixed, index: true },
     expiresAt: { type: Date, required: true, index: true }
   },
   {

@@ -12,13 +12,14 @@ export type ReportReason =
 export type ReportStatus = 'pending' | 'under_review' | 'resolved' | 'dismissed';
 
 export interface IReport extends Document {
-  reportedBy: mongoose.Types.ObjectId;
+  _id: any;
+  reportedBy: any;
   targetType: 'donor_profile' | 'blood_request' | 'institution' | 'user';
   targetId: string;
   reason: ReportReason;
   description: string;
   status: ReportStatus;
-  reviewedBy?: mongoose.Types.ObjectId;
+  reviewedBy?: any;
   resolutionNotes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -26,9 +27,9 @@ export interface IReport extends Document {
 
 const ReportSchema = new Schema<IReport>(
   {
+    _id: { type: String },
     reportedBy: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'User', 
+      type: Schema.Types.Mixed, 
       required: true,
       index: true 
     },

@@ -11,6 +11,7 @@ export type InstitutionType =
 export type InstitutionStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
 export interface IInstitution extends Document {
+  _id: any;
   name: string;
   nameBn: string;
   code: string;
@@ -23,15 +24,18 @@ export interface IInstitution extends Document {
   email?: string;
   phone?: string;
   status: InstitutionStatus;
-  assignedModeratorId?: mongoose.Types.ObjectId;
+  assignedModeratorId?: any;
+  assignedModeratorIds?: any[];
   totalRegisteredDonors: number;
   description?: string;
+  verificationNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const InstitutionSchema = new Schema<IInstitution>(
   {
+    _id: { type: String },
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, required: true, trim: true },
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
@@ -53,9 +57,11 @@ const InstitutionSchema = new Schema<IInstitution>(
       default: 'pending',
       index: true 
     },
-    assignedModeratorId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    assignedModeratorId: { type: Schema.Types.Mixed, index: true },
+    assignedModeratorIds: [{ type: Schema.Types.Mixed }],
     totalRegisteredDonors: { type: Number, default: 0 },
-    description: { type: String, trim: true }
+    description: { type: String, trim: true },
+    verificationNotes: { type: String, trim: true }
   },
   {
     timestamps: true

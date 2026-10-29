@@ -1,9 +1,13 @@
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { ENV } from './config/env.js';
+import { dataStore } from './services/dataStore.js';
 
 async function bootstrap() {
-  await connectDB();
+  const isConnected = await connectDB();
+  if (isConnected) {
+    await dataStore.syncWithMongoDB();
+  }
 
   const port = parseInt(ENV.PORT, 10);
   app.listen(port, () => {

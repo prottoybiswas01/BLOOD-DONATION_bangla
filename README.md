@@ -110,6 +110,44 @@ npm test
 
 ---
 
+## ☁️ Vercel ডিপ্লয়মেন্ট গাইড (Deploying to Vercel)
+
+প্ল্যাটফর্মটি Vercel-এ ফুলস্ট্যাক (React Frontend + Serverless Express API + MongoDB Atlas) হিসেবে নির্বিঘ্নে হোস্টিংয়ের জন্য সম্পূর্ণ কনফিগার করা আছে।
+
+### ধাপ ১: GitHub রিপোজিটরিতে কোড পুশ করুন
+প্রজেক্টের রুট ডিরেক্টরি থেকে কোড গিটহাবে পুশ করুন:
+```bash
+git add .
+git commit -m "Deploy: Vercel serverless integration and MongoDB Atlas configuration"
+git push origin master
+```
+
+### ধাপ ২: Vercel-এ প্রজেক্ট ইম্পোর্ট করুন
+1. [Vercel ড্যাশবোর্ড](https://vercel.com/dashboard)-এ যান এবং **"Add New..." > "Project"** নির্বাচন করুন।
+2. আপনার GitHub রিপোজিটরিটি সিলেক্ট করে **Import** বাটনে ক্লিক করুন।
+3. **Framework Preset**: `Vite` (স্বয়ংক্রিয়ভাবে ডিটেক্ট হবে)।
+4. **Root Directory**: `./` (ডিফল্ট রুট)।
+5. **Build and Output Settings**:
+   - Build Command: `npm run build`
+   - Output Directory: `client/dist`
+
+### ধাপ ৩: Environment Variables (পরিবেশ ভেরিয়েবল) যোগ করুন
+Vercel প্রজেক্ট সেটিংসে নিচের ভেরিয়েবলগুলো যুক্ত করুন:
+
+| ভেরিয়েবল নাম (Key) | মান (Value) |
+|---|---|
+| `MONGO_URI` | `mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority` |
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | `dev_bangladesh_blood_platform_key_2026` *(বা আপনার পছন্দের সিক্রেট)* |
+| `SMS_PROVIDER` | `mock` |
+
+### ধাপ ৪: ডিপ্লয় করুন (Deploy)
+**Deploy** বাটনে চাপ দিন। বিল্ড সম্পন্ন হলে Vercel আপনাকে একটি লাইভ ডোমেন দেবে (যেমন: `https://your-blood-platform.vercel.app`)।
+- ফ্রন্টএন্ড এবং ব্যাকএন্ড একই ডোমেনের অধীনে কাজ করবে (`/` এ React UI এবং `/api/*` এ Serverless API)।
+- ডেটাবেজ স্বয়ংক্রিয়ভাবে MongoDB Atlas ক্লাস্টারের সাথে সংযুক্ত ও সিঙ্ক্রোনাইজ হবে।
+
+---
+
 ## 📡 API ডকুমেন্টেশন (REST Endpoints)
 
 সমস্ত এন্ডপয়েন্ট `/api/v1` প্রিফিক্সে কার্যকর:

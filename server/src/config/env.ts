@@ -4,8 +4,8 @@ dotenv.config();
 export const ENV = {
   PORT: process.env.PORT || '5000',
   NODE_ENV: process.env.NODE_ENV || 'development',
-  MONGO_URI: process.env.MONGO_URI || '',
-  JWT_SECRET: process.env.JWT_SECRET || 'bangladesh_blood_donation_secret_key_2026_dev_only',
+  MONGO_URI: process.env.MONGO_URI || 'mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority',
+  JWT_SECRET: process.env.JWT_SECRET || 'dev_bangladesh_blood_platform_key_2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   SMS_PROVIDER: process.env.SMS_PROVIDER || 'mock', // 'mock' | 'bulksmsbd' | 'greenweb' | 'twilio'
   SMS_API_KEY: process.env.SMS_API_KEY || '',

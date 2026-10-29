@@ -4,15 +4,33 @@ import { ENV } from './env.js';
 let isConnected = false;
 
 export async function connectDB(): Promise<boolean> {
-  const uri = ENV.MONGO_URI || 'mongodb://127.0.0.1:27017/bangladesh_blood_db';
+  // If already connected, reuse existing connection (vital for serverless function caching)
+  if ((mongoose.connection.readyState as number) === 1) {
+    isConnected = true;
+    return true;
+  }
+
+  // If connection is in progress, await it
+  if ((mongoose.connection.readyState as number) === 2) {
+    await new Promise((resolve) => {
+      mongoose.connection.once('open', resolve);
+      setTimeout(resolve, 5000);
+    });
+    if ((mongoose.connection.readyState as number) === 1) {
+      isConnected = true;
+      return true;
+    }
+  }
+
+  const uri = ENV.MONGO_URI || 'mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority';
 
   try {
     console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);
     
-    // 3 second connection timeout to prevent hanging if no mongo instance is running locally
+    // 10 second connection timeout for reliable cloud database connections
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 3000,
-      connectTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
     });
 
     isConnected = true;

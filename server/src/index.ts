@@ -21,8 +21,26 @@ async function bootstrap() {
   });
 }
 
-bootstrap().catch(err => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Start listening only in standalone server mode, not when loaded as a Vercel serverless function
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.VERCEL_ENV
+);
+
+if (process.env.NODE_ENV !== 'test' && !isServerless) {
+  bootstrap().catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export default app;
+
+// Ensure CommonJS compatibility for Vercel Express runner
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = app;
+  module.exports.default = app;
+}
 

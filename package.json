@@ -1,0 +1,25 @@
+{
+  "name": "bangladesh-blood-platform",
+  "version": "1.0.0",
+  "description": "Bangladesh Blood Donation Platform - Connecting voluntary blood donors across Bangladesh",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "seed": "cd server && npm run seed",
+    "test:server": "cd server && npm run test"
+  },
+  "keywords": [
+    "blood-donation",
+    "bangladesh",
+    "health",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT"
+}

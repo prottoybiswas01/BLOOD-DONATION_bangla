@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { PlusCircle, Clock, CheckCircle2, AlertCircle, Phone, MapPin, Building2, Calendar } from 'lucide-react';
+import { 
+  PlusCircle, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Phone, 
+  MapPin, 
+  Building2, 
+  Calendar,
+  HeartHandshake,
+  RotateCcw,
+  Sparkles
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BloodRequest } from '../types';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { StatsCard } from '../components/ui/StatsCard';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 
 export const RequesterDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -33,7 +49,7 @@ export const RequesterDashboard: React.FC = () => {
     try {
       const res = await api.updateRequestStatus(id, { status });
       if (res.success) {
-        setMsg({ text: 'অনুরোধের অবস্থা হালনাগাদ করা হয়েছে।', type: 'success' });
+        setMsg({ text: 'অনুরোধের অবস্থা সফলভাবে হালনাগাদ করা হয়েছে।', type: 'success' });
         fetchMyRequests();
       }
     } catch (err: any) {
@@ -41,112 +57,184 @@ export const RequesterDashboard: React.FC = () => {
     }
   };
 
+  const openCount = requests.filter(r => r.status === 'open').length;
+  const fulfilledCount = requests.filter(r => r.status === 'fulfilled').length;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-mainText">আমার রক্তের অনুরোধসমূহ</h1>
-          <p className="text-xs text-subText mt-1">আপনার পোস্টকৃত সকল রক্তের আবেদন ব্যবস্থাপনা করুন</p>
+    <div className="min-h-screen bg-page pb-12">
+      {/* Top Header / Breadcrumb */}
+      <div className="bg-surface border-b border-appBorder px-4 sm:px-6 lg:px-8 py-3.5 shadow-soft">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Breadcrumb items={[{ label: 'রক্তপ্রার্থী ড্যাশবোর্ড' }]} />
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-black text-mainText tracking-tight">আমার রক্তের অনুরোধসমূহ</h1>
+              <Badge variant="primary" size="sm">রক্তপ্রার্থী প্যানেল</Badge>
+            </div>
+            <p className="text-xs text-subText mt-0.5">আপনার পোস্টকৃত রক্তের আবেদন ও ডোনার সংগ্রহের অগ্রগতি পরিচালনা করুন</p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchMyRequests}
+              isLoading={loading}
+              icon={<RotateCcw className="w-3.5 h-3.5" />}
+            >
+              হালনাগাদ
+            </Button>
+            <Link to="/create-request">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<PlusCircle className="w-4 h-4" />}
+                className="font-bold shadow-soft"
+              >
+                নতুন আবেদন তৈরি করুন
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link
-          to="/create-request"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-sm shadow transition-colors"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>নতুন আবেদন তৈরি করুন</span>
-        </Link>
       </div>
 
-      {msg && (
-        <div className={`p-4 rounded-xl text-xs font-semibold ${
-          msg.type === 'success' ? 'bg-green-50 text-appSuccess border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
-          {msg.text}
-        </div>
-      )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map(n => <div key={n} className="h-48 bg-gray-200 animate-pulse rounded-2xl"></div>)}
-        </div>
-      ) : requests.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-appBorder p-12 text-center space-y-3">
-          <Clock className="w-10 h-10 text-gray-400 mx-auto" />
-          <h3 className="text-lg font-bold text-mainText">আপনার কোনো রক্তের আবেদন নেই</h3>
-          <p className="text-xs text-subText">রোগীর জরুরি রক্তের প্রয়োজন হলে যেকোনো সময় আবেদন তৈরি করতে পারেন।</p>
-          <Link
-            to="/create-request"
-            className="inline-block mt-2 px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg"
-          >
-            আবেদন করুন
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {requests.map(req => (
-            <div key={req._id} className="bg-surface rounded-2xl border border-appBorder shadow-card p-5 space-y-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-white font-bold text-lg flex items-center justify-center">
-                    {req.bloodGroup}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-mainText text-base">{req.patientName}</h3>
-                    <p className="text-xs text-subText">{req.unitsRequired} ব্যাগ রক্ত প্রয়োজন</p>
-                  </div>
-                </div>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                  req.status === 'open' ? 'bg-green-100 text-appSuccess' :
-                  req.status === 'fulfilled' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {req.status === 'open' ? 'খোলা (সক্রিয়)' : req.status === 'fulfilled' ? 'রক্ত পাওয়া গেছে' : req.status}
-                </span>
-              </div>
-
-              <div className="text-xs text-subText space-y-1 bg-gray-50 p-3 rounded-xl">
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-mainText">{req.hospitalName}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                  <span>{req.hospitalAddress}, {req.district}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-tealAccent" />
-                  <span>তারিখ: {new Date(req.requiredDate).toLocaleDateString('bn-BD')}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 text-xs">
-                {req.status === 'open' && (
-                  <>
-                    <button
-                      onClick={() => handleUpdateStatus(req._id, 'fulfilled')}
-                      className="px-3 py-1.5 bg-appSuccess hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-                    >
-                      ✓ রক্ত পাওয়া গেছে
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(req._id, 'cancelled')}
-                      className="px-3 py-1.5 border border-appBorder hover:bg-gray-100 text-subText rounded-lg transition-colors"
-                    >
-                      বাতিল করুন
-                    </button>
-                  </>
-                )}
-                {req.status === 'fulfilled' && (
-                  <span className="text-xs text-appSuccess font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> সম্পন্ন হয়েছে
-                  </span>
-                )}
-              </div>
+        {/* Action Alert Banner */}
+        {msg && (
+          <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-soft animate-in fade-in duration-150 ${
+            msg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>{msg.text}</span>
             </div>
-          ))}
+            <button onClick={() => setMsg(null)} className="text-xs font-bold px-2">✕</button>
+          </div>
+        )}
+
+        {/* 3 Summary StatsCards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatsCard
+            title="মোট আবেদন"
+            value={requests.length}
+            subtitle="আপনার তৈরি সর্বমোট অনুরোধ"
+            icon={<Clock className="w-5 h-5" />}
+            iconColor="primary"
+          />
+          <StatsCard
+            title="বর্তমানে সক্রিয়"
+            value={openCount}
+            subtitle="রক্তদাতার সন্ধান চলছে"
+            icon={<HeartHandshake className="w-5 h-5" />}
+            iconColor="amber"
+          />
+          <StatsCard
+            title="রক্ত সংগ্রহ সম্পন্ন"
+            value={fulfilledCount}
+            subtitle="রক্তদাতা পাওয়া গেছে"
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            iconColor="emerald"
+          />
         </div>
-      )}
+
+        {/* Request List Cards */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2].map(n => (
+              <div key={n} className="h-48 bg-slate-100 animate-pulse rounded-2xl border border-appBorder"></div>
+            ))}
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="bg-surface rounded-3xl border border-appBorder shadow-soft p-12 text-center space-y-4 max-w-lg mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-primary flex items-center justify-center mx-auto shadow-soft">
+              <HeartHandshake className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-bold text-mainText">আপনার কোনো চলমান রক্তের আবেদন নেই</h3>
+            <p className="text-xs text-subText leading-relaxed">
+              রোগীর জরুরি রক্তের প্রয়োজন হলে যেকোনো সময় বিনামূল্যে রক্তের অনুরোধ পোস্ট করতে পারেন।
+            </p>
+            <Link to="/create-request" className="inline-block pt-1">
+              <Button variant="primary" size="md" icon={<PlusCircle className="w-4 h-4" />}>
+                জরুরি রক্তের আবেদন করুন
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {requests.map(req => (
+              <div key={req._id} className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-4 hover:border-red-200 transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-primary text-white font-black text-xl flex items-center justify-center shadow-soft">
+                      {req.bloodGroup}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-mainText text-base">{req.patientName}</h3>
+                      <p className="text-xs text-subText font-medium">{req.unitsRequired} ব্যাগ রক্ত প্রয়োজন</p>
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={req.status === 'open' ? 'success' : req.status === 'fulfilled' ? 'info' : 'neutral'} 
+                    size="sm" 
+                    dot
+                  >
+                    {req.status === 'open' ? 'সক্রিয় (খোলা)' : req.status === 'fulfilled' ? 'সম্পন্ন' : req.status}
+                  </Badge>
+                </div>
+
+                <div className="text-xs text-subText space-y-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="font-semibold text-mainText">{req.hospitalName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <span>{req.hospitalAddress}, {req.district}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>প্রয়োজনীয় তারিখ: {new Date(req.requiredDate).toLocaleDateString('bn-BD')}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-appBorder text-xs">
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    পোস্ট: {new Date(req.createdAt).toLocaleDateString('bn-BD')}
+                  </span>
+
+                  {req.status === 'open' && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => handleUpdateStatus(req._id, 'fulfilled')}
+                      >
+                        ✓ রক্ত পাওয়া গেছে
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUpdateStatus(req._id, 'cancelled')}
+                      >
+                        বাতিল
+                      </Button>
+                    </div>
+                  )}
+
+                  {req.status === 'fulfilled' && (
+                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>রক্ত সংগ্রহ সফল হয়েছে</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
-

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { PlusCircle, Search, Filter, AlertCircle, RotateCcw } from 'lucide-react';
+import { PlusCircle, Search, Filter, AlertCircle, RotateCcw, HeartPulse } from 'lucide-react';
 import { BLOOD_GROUPS } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
 import { RequestCard } from '../components/RequestCard';
@@ -8,6 +8,8 @@ import { ReportModal } from '../components/ReportModal';
 import { BloodRequest } from '../types';
 import { api } from '../api/client';
 import { DemoBanner } from '../components/DemoBanner';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 export const BloodRequests: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,40 +84,45 @@ export const BloodRequests: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <DemoBanner />
 
       {/* Header with CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-mainText flex items-center gap-2">
-            <PlusCircle className="w-7 h-7 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-black text-mainText flex items-center gap-3">
+            <span className="w-10 h-10 rounded-2xl bg-rose-100 text-primary flex items-center justify-center">
+              <HeartPulse className="w-5 h-5" />
+            </span>
             <span>চলমান রক্তের অনুরোধসমূহ</span>
           </h1>
           <p className="text-xs sm:text-sm text-subText mt-1">
-            জরুরি প্রয়োজনে হাসপাতালে রক্তের জন্য সাহায্য আবেদন
+            জরুরি প্রয়োজনে হাসপাতালে রক্তের জন্য সাহায্য আবেদন ও সাড়া প্রদান
           </p>
         </div>
 
-        <Link
-          to="/create-request"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow transition-colors text-sm"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>রক্তের আবেদন পোস্ট করুন</span>
+        <Link to="/create-request">
+          <Button
+            variant="primary"
+            size="md"
+            icon={<PlusCircle className="w-4 h-4" />}
+            className="shadow-soft"
+          >
+            রক্তের আবেদন পোস্ট করুন
+          </Button>
         </Link>
       </div>
 
       {/* Filter Box */}
-      <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-mainText">
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-7 space-y-6">
+        <div className="flex items-center justify-between border-b border-appBorder pb-4">
+          <div className="flex items-center gap-2.5 text-sm font-bold text-mainText">
             <Filter className="w-4 h-4 text-primary" />
             <span>ফিল্টার ও অনুসন্ধান</span>
           </div>
           <button
             onClick={handleReset}
-            className="flex items-center gap-1 text-xs text-subText hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-subText hover:text-primary active:scale-95 transition-all"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>রিসেট</span>
@@ -123,47 +130,53 @@ export const BloodRequests: React.FC = () => {
         </div>
 
         {/* Blood groups */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-semibold text-mainText mr-2">গ্রুপ:</span>
-          <button
-            onClick={() => { setBloodGroup(''); setPage(1); }}
-            className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
-              bloodGroup === ''
-                ? 'bg-primary text-white border-primary'
-                : 'bg-page text-mainText border-appBorder hover:bg-gray-100'
-            }`}
-          >
-            সকল
-          </button>
-          {BLOOD_GROUPS.map(bg => (
+        <div>
+          <label className="block text-xs font-bold text-mainText mb-2.5">
+            রক্তের গ্রুপ:
+          </label>
+          <div className="flex flex-wrap gap-2">
             <button
-              key={bg}
-              onClick={() => { setBloodGroup(bloodGroup === bg ? '' : bg); setPage(1); }}
-              className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
-                bloodGroup === bg
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-page text-mainText border-appBorder hover:bg-gray-100'
+              onClick={() => { setBloodGroup(''); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 ${
+                bloodGroup === ''
+                  ? 'bg-primary text-white border-primary shadow-soft'
+                  : 'bg-page text-mainText border-appBorder hover:bg-rose-50/60'
               }`}
             >
-              {bg}
+              সকল
             </button>
-          ))}
+            {BLOOD_GROUPS.map(bg => (
+              <button
+                key={bg}
+                onClick={() => { setBloodGroup(bloodGroup === bg ? '' : bg); setPage(1); }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 ${
+                  bloodGroup === bg
+                    ? 'bg-primary text-white border-primary shadow-soft'
+                    : 'bg-page text-mainText border-appBorder hover:bg-rose-50/60'
+                }`}
+              >
+                {bg}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Cascading Location Selector */}
-        <LocationSelector
-          division={division}
-          district={district}
-          upazila={upazila}
-          onDivisionChange={v => { setDivision(v); setPage(1); }}
-          onDistrictChange={v => { setDistrict(v); setPage(1); }}
-          onUpazilaChange={v => { setUpazila(v); setPage(1); }}
-        />
+        <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
+          <LocationSelector
+            division={division}
+            district={district}
+            upazila={upazila}
+            onDivisionChange={v => { setDivision(v); setPage(1); }}
+            onDistrictChange={v => { setDistrict(v); setPage(1); }}
+            onUpazilaChange={v => { setUpazila(v); setPage(1); }}
+          />
+        </div>
 
         {/* Urgency & Status filter pills */}
-        <div className="flex flex-wrap items-center gap-4 pt-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-mainText">জরুরিতা:</span>
+        <div className="flex flex-wrap items-center gap-6 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-mainText mr-1">জরুরিতা:</span>
             {[
               { id: '', label: 'সকল' },
               { id: 'emergency', label: 'জরুরি' },
@@ -173,10 +186,10 @@ export const BloodRequests: React.FC = () => {
               <button
                 key={u.id}
                 onClick={() => { setUrgencyLevel(u.id); setPage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                   urgencyLevel === u.id
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-surface text-subText border-appBorder hover:bg-gray-50'
+                    ? 'bg-primary text-white border-primary shadow-soft'
+                    : 'bg-surface text-subText border-appBorder hover:bg-slate-50'
                 }`}
               >
                 {u.label}
@@ -184,8 +197,8 @@ export const BloodRequests: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-mainText">অবস্থা:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-mainText mr-1">অবস্থা:</span>
             {[
               { id: '', label: 'সক্রিয় (খোলা)' },
               { id: 'fulfilled', label: 'সম্পন্ন' },
@@ -194,10 +207,10 @@ export const BloodRequests: React.FC = () => {
               <button
                 key={s.id}
                 onClick={() => { setStatus(s.id); setPage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                   status === s.id
-                    ? 'bg-gray-800 text-white border-gray-800'
-                    : 'bg-surface text-subText border-appBorder hover:bg-gray-50'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-soft'
+                    : 'bg-surface text-subText border-appBorder hover:bg-slate-50'
                 }`}
               >
                 {s.label}
@@ -208,39 +221,46 @@ export const BloodRequests: React.FC = () => {
       </div>
 
       {/* Results Header */}
-      <div className="flex items-center justify-between text-xs text-subText">
-        <span>মোট অনুরোধ: <strong>{totalCount} টি</strong></span>
-        <span>পৃষ্ঠা: {page} / {totalPages}</span>
+      <div className="flex items-center justify-between text-xs text-subText px-1">
+        <span>মোট আবেদন পাওয়া গেছে: <strong className="text-mainText font-bold">{totalCount} টি</strong></span>
+        <span>পৃষ্ঠা: <strong>{page}</strong> / {totalPages}</span>
       </div>
 
-      {/* Grid */}
+      {/* Results Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map(n => (
-            <div key={n} className="h-64 bg-gray-200 animate-pulse rounded-2xl"></div>
+            <div key={n} className="h-64 bg-slate-200/70 animate-pulse rounded-3xl"></div>
           ))}
         </div>
       ) : errorMsg ? (
-        <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-200 text-center">
-          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-primary" />
-          <p className="font-semibold">{errorMsg}</p>
+        <div className="bg-rose-50 text-rose-700 p-8 rounded-3xl border border-rose-200 text-center space-y-3">
+          <AlertCircle className="w-10 h-10 mx-auto text-primary" />
+          <p className="font-bold text-base">{errorMsg}</p>
+          <Button variant="outline" size="sm" onClick={fetchRequests}>পুনরায় চেষ্টা করুন</Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-appBorder p-12 text-center space-y-3">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto" />
-          <h3 className="font-bold text-mainText text-lg">কোনো রক্তের অনুরোধ পাওয়া যায়নি</h3>
-          <p className="text-xs text-subText max-w-md mx-auto">
-            আপনার অনুসন্ধান মানদণ্ডের সাথে মিলে এমন কোনো রক্তের অনুরোধ বর্তমানে নেই।
+        <div className="bg-surface rounded-3xl border border-appBorder p-12 text-center space-y-4 shadow-soft">
+          <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <PlusCircle className="w-8 h-8" />
+          </div>
+          <h3 className="font-black text-mainText text-xl">কোনো রক্তের অনুরোধ পাওয়া যায়নি</h3>
+          <p className="text-xs sm:text-sm text-subText max-w-md mx-auto leading-relaxed">
+            আপনার ফিল্টার অনুযায়ী কোনো রক্তের আবেদন পাওয়া যায়নি। প্রয়োজনে নতুন একটি রক্তের আবেদন তৈরি করতে পারেন।
           </p>
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold"
-          >
-            ফিল্টার রিসেট করুন
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              ফিল্টার রিসেট করুন
+            </Button>
+            <Link to="/create-request">
+              <Button variant="primary" size="sm">
+                নতুন রক্তের আবেদন তৈরি করুন
+              </Button>
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {requests.map(req => (
             <RequestCard
               key={req._id}
@@ -253,11 +273,11 @@ export const BloodRequests: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-6">
+        <div className="flex items-center justify-center gap-2 pt-8">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1.5 border border-appBorder rounded-lg text-xs font-medium disabled:opacity-50"
+            className="px-4 py-2 border border-appBorder bg-surface rounded-xl text-xs font-bold text-mainText disabled:opacity-40 hover:bg-slate-50 transition-all"
           >
             পূর্ববর্তী
           </button>
@@ -265,10 +285,10 @@ export const BloodRequests: React.FC = () => {
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`w-8 h-8 rounded-lg text-xs font-bold ${
+              className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
                 p === page
-                  ? 'bg-primary text-white'
-                  : 'bg-surface border border-appBorder text-mainText hover:bg-gray-50'
+                  ? 'bg-primary text-white shadow-soft'
+                  : 'bg-surface border border-appBorder text-mainText hover:bg-slate-50'
               }`}
             >
               {p}
@@ -277,7 +297,7 @@ export const BloodRequests: React.FC = () => {
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="px-3 py-1.5 border border-appBorder rounded-lg text-xs font-medium disabled:opacity-50"
+            className="px-4 py-2 border border-appBorder bg-surface rounded-xl text-xs font-bold text-mainText disabled:opacity-40 hover:bg-slate-50 transition-all"
           >
             পরবর্তী
           </button>
@@ -295,4 +315,3 @@ export const BloodRequests: React.FC = () => {
     </div>
   );
 };
-

@@ -14,12 +14,19 @@ import {
   Clock, 
   Send,
   Activity,
-  Lock
+  Lock,
+  RotateCcw,
+  UserCheck
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { BLOOD_GROUPS, BANGLADESH_DIVISIONS, BloodGroup } from '../data/bangladeshLocations';
 import { ContactRequest, ModeratorActivity } from '../types';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { StatsCard } from '../components/ui/StatsCard';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
+import { Modal } from '../components/ui/Modal';
 
 export const ModeratorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -90,8 +97,8 @@ export const ModeratorDashboard: React.FC = () => {
 
     try {
       const res = await api.createMemberByModerator({
-        name: memName,
-        phone: memPhone,
+        name: memName.trim(),
+        phone: memPhone.trim(),
         gender: memGender,
         bloodGroup: memBloodGroup,
         division: memDivision,
@@ -109,7 +116,6 @@ export const ModeratorDashboard: React.FC = () => {
           warning: res.warning || 'এই সাময়িক পাসওয়ার্ডটি পুনরায় দেখানো হবে না।'
         });
         setShowCreateModal(false);
-        // Reset form
         setMemName('');
         setMemPhone('');
         setMemUpazila('');
@@ -126,7 +132,7 @@ export const ModeratorDashboard: React.FC = () => {
 
   const handleCopyPassword = () => {
     if (!revealedCreds) return;
-    const textToCopy = `রক্তদান বাংলাদেশ - সদস্য লগইন তথ্য:\nনাম: ${revealedCreds.name}\nমোবাইল: ${revealedCreds.phone}\nসাময়িক পাসওয়ার্ড: ${revealedCreds.temporaryPassword}\n\nপ্রথমবার লগইন করে আপনার স্থায়ী পাসওয়ার্ড সেট করুন।`;
+    const textToCopy = `রক্তদান বাংলাদেশ - সদস্য লগইন তথ্য:\nনাম: ${revealedCreds.name}\nমোবাইল: ${revealedCreds.phone}\nসাময়িক পাসওয়ার্ড: ${revealedCreds.temporaryPassword}\n\nপ্রথমবার লগইন করে আপনার নতুন পাসওয়ার্ড পরিবর্তন করে নিন।`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -156,14 +162,20 @@ export const ModeratorDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="max-w-7xl mx-auto p-8"><div className="h-64 bg-gray-200 animate-pulse rounded-2xl"></div></div>;
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="h-64 bg-slate-100 animate-pulse rounded-3xl border border-appBorder"></div>
+      </div>
+    );
   }
 
   if (errorMsg) {
     return (
-      <div className="max-w-md mx-auto my-12 p-8 bg-surface rounded-2xl border border-appBorder shadow text-center space-y-3">
-        <AlertCircle className="w-12 h-12 text-primary mx-auto" />
-        <h3 className="font-bold text-mainText text-lg">অনুমতি নেই</h3>
+      <div className="max-w-md mx-auto my-12 p-8 bg-surface rounded-3xl border border-appBorder shadow-card text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h3 className="font-bold text-mainText text-lg">অনুমতি সীমাবদ্ধ</h3>
         <p className="text-xs text-subText">{errorMsg}</p>
       </div>
     );
@@ -183,545 +195,495 @@ export const ModeratorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-teal-800 to-tealAccent text-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold inline-block mb-2">
-            প্রতিষ্ঠান মডারেটর ড্যাশবোর্ড
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold">{institution?.nameBn}</h1>
-          <p className="text-xs text-teal-100 mt-1">{institution?.name} • কোড: {institution?.code}</p>
+    <div className="min-h-screen bg-page pb-12">
+      {/* Top Header / Breadcrumb Bar */}
+      <div className="bg-surface border-b border-appBorder px-4 sm:px-6 lg:px-8 py-4 shadow-soft">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Breadcrumb items={[{ label: 'প্রতিষ্ঠান মডারেটর ড্যাশবোর্ড' }]} />
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-black text-mainText tracking-tight">
+                {institution?.nameBn || 'শিক্ষাপ্রতিষ্ঠান'} রক্তদান কার্যক্রম
+              </h1>
+              <Badge variant="teal" size="sm">ক্যাম্পাস মডারেটর</Badge>
+            </div>
+            <p className="text-xs text-subText mt-0.5">
+              {institution?.name} • কোড: <span className="font-mono font-bold text-mainText">{institution?.code}</span> • দায়িত্বপ্রাপ্ত: {user?.name}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadDashboardData}
+              isLoading={loading}
+              icon={<RotateCcw className="w-3.5 h-3.5" />}
+            >
+              হালনাগাদ
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setShowCreateModal(true);
+                setMemberError(null);
+              }}
+              icon={<UserPlus className="w-4 h-4" />}
+              className="bg-teal-700 hover:bg-teal-800"
+            >
+              নতুন সদস্য যোগ করুন
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        {/* 4 Summary StatsCards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatsCard
+            title="মোট নিবন্ধিত সদস্য"
+            value={donors?.length || stats?.totalDonors || 0}
+            subtitle="ক্যাম্পাস রক্তদাতা পুল"
+            icon={<Users className="w-5 h-5" />}
+            iconColor="teal"
+            onClick={() => setActiveTab('roster')}
+          />
+          <StatsCard
+            title="রক্তদানে প্রস্তুত"
+            value={stats?.availableDonors || 0}
+            subtitle="বর্তমানে সক্রিয় দাতা"
+            icon={<Droplet className="w-5 h-5" />}
+            iconColor="emerald"
+          />
+          <StatsCard
+            title="যোগাযোগের অনুরোধ"
+            value={contactRequests.length}
+            subtitle="অনুমোদনের অপেক্ষায়"
+            icon={<HeartHandshake className="w-5 h-5" />}
+            iconColor="primary"
+            onClick={() => setActiveTab('contact_requests')}
+          />
+          <StatsCard
+            title="মডারেটর অ্যাক্টিভিটি"
+            value={activities.length}
+            subtitle="সংরক্ষিত কার্যক্রম হিস্ট্রি"
+            icon={<Activity className="w-5 h-5" />}
+            iconColor="purple"
+            onClick={() => setActiveTab('activities')}
+          />
+        </div>
+
+        {/* Blood Group Distribution Grid */}
+        <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-mainText flex items-center gap-2">
+              <Droplet className="w-4 h-4 text-primary" />
+              <span>প্রতিষ্ঠান রক্তদাতাদের গ্রুপভিত্তিক বিন্যাস:</span>
+            </span>
+            <span className="text-[11px] text-subText font-medium">রিয়েল-টাইম তথ্য</span>
+          </div>
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+            {BLOOD_GROUPS.map(bg => (
+              <div key={bg} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                <span className="text-xs font-extrabold text-primary block">{bg}</span>
+                <span className="text-lg font-black text-mainText block mt-0.5">{groupCounts[bg] || 0}</span>
+                <span className="text-[10px] text-subText font-medium">জন</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabs Bar */}
+        <div className="flex border-b border-appBorder gap-2 text-xs sm:text-sm font-bold overflow-x-auto pb-1">
           <button
-            onClick={() => {
-              setShowCreateModal(true);
-              setMemberError(null);
-            }}
-            className="px-4 py-2.5 bg-white text-teal-900 hover:bg-teal-50 font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2"
+            onClick={() => setActiveTab('roster')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'roster' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
           >
-            <UserPlus className="w-4 h-4 text-teal-700" />
-            <span>নতুন সদস্য যোগ করুন</span>
+            <Users className="w-4 h-4" />
+            <span>অধিভুক্ত সদস্য ও রক্তদাতা ({donors?.length || 0})</span>
           </button>
-          <div className="flex items-center gap-2 bg-white/10 p-2.5 rounded-xl text-xs font-semibold">
-            <ShieldCheck className="w-5 h-5 text-teal-200" />
-            <span>যাচাইকৃত প্রতিষ্ঠান পোর্টাল</span>
-          </div>
+          <button
+            onClick={() => setActiveTab('contact_requests')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'contact_requests' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <HeartHandshake className="w-4 h-4" />
+            <span>যোগাযোগের অনুরোধসমূহ ({contactRequests.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('activities')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'activities' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>মডারেশন ইতিহাস ({activities.length})</span>
+          </button>
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">মোট নিবন্ধিত সদস্য</span>
-          <span className="text-2xl font-extrabold text-mainText mt-1 block">{donors?.length || stats?.totalDonors || 0} জন</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">বর্তমানে রক্তদানে প্রস্তুত</span>
-          <span className="text-2xl font-extrabold text-appSuccess mt-1 block">{stats?.availableDonors || 0} জন</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">যোগাযোগের অনুরোধ</span>
-          <span className="text-2xl font-extrabold text-tealAccent mt-1 block">{contactRequests.length} টি</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">মডারেটর অ্যাক্টিভিটি</span>
-          <span className="text-2xl font-extrabold text-mainText mt-1 block">{activities.length} টি</span>
-        </div>
-      </div>
-
-      {/* Blood Group Distribution Bar */}
-      <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-mainText flex items-center gap-1.5">
-            <Droplet className="w-4 h-4 text-primary" />
-            <span>রক্তের গ্রুপভিত্তিক সদস্য সংখ্যা বিন্যাস:</span>
-          </span>
-          <span className="text-[11px] text-subText">রিয়েল-টাইম ডাটা</span>
-        </div>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {BLOOD_GROUPS.map(bg => (
-            <div key={bg} className="bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-center">
-              <span className="text-xs font-extrabold text-primary block">{bg}</span>
-              <span className="text-base font-bold text-gray-800 block mt-0.5">{groupCounts[bg] || 0}</span>
-              <span className="text-[10px] text-gray-400">জন</span>
+        {/* TAB 1: MEMBER ROSTER */}
+        {activeTab === 'roster' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <Users className="w-5 h-5 text-tealAccent" />
+                  <span>অধিভুক্ত রক্তদাতাদের তালিকা (যাচাইকৃত শিক্ষার্থী ও সদস্য)</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">রক্তদাতার গোপনীয়তা সুরক্ষিত অবস্থায় সংরক্ষিত</p>
+              </div>
+              <Badge variant="teal">মোট: {donors?.length || 0} জন</Badge>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-appBorder gap-4 text-sm font-semibold overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveTab('roster')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'roster' ? 'border-tealAccent text-tealAccent' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          অধিভুক্ত সদস্য ও রক্তদাতা ({donors?.length || 0})
-        </button>
-        <button
-          onClick={() => setActiveTab('contact_requests')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'contact_requests' ? 'border-tealAccent text-tealAccent' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          যোগাযোগের অনুরোধ ({contactRequests.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('activities')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'activities' ? 'border-tealAccent text-tealAccent' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          মডারেশন ইতিহাস ({activities.length})
-        </button>
-      </div>
-
-      {/* Tab 1: Member Roster */}
-      {activeTab === 'roster' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-appBorder">
-            <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-              <Users className="w-5 h-5 text-tealAccent" />
-              <span>অধিভুক্ত রক্তদাতাদের তালিকা (গোপনীয়তা সুরক্ষিত)</span>
-            </h3>
-            <span className="text-xs text-subText">ব্যক্তিগত মোবাইল নম্বর সংরক্ষিত</span>
-          </div>
-
-          {(!donors || donors.length === 0) ? (
-            <div className="text-center py-12 text-xs text-subText">এখনো কোনো সদস্য বা রক্তদাতা যুক্ত হননি।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">নাম</th>
-                    <th className="py-3 px-4">রক্তের গ্রুপ</th>
-                    <th className="py-3 px-4">অবস্থা</th>
-                    <th className="py-3 px-4">মোট রক্তদান</th>
-                    <th className="py-3 px-4">যোগাযোগ সম্মতি</th>
-                    <th className="py-3 px-4">সদস্যপদ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {donors.map((d: any) => (
-                    <tr key={d._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-mainText">{d.displayName}</div>
-                        <div className="text-[10px] text-gray-400 capitalize">{d.gender || 'unspecified'}</div>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-primary">{d.bloodGroup}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          d.availabilityStatus === 'available' ? 'bg-green-100 text-appSuccess' : 'bg-gray-100 text-subText'
-                        }`}>
-                          {d.availabilityStatus === 'available' ? 'প্রস্তুত' : 'বিরতি'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">{d.totalDonations || 0} বার</td>
-                      <td className="py-3 px-4">
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                          d.consentToShareContact ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
-                        }`}>
-                          {d.consentToShareContact ? 'উন্মুক্ত অনুমতি' : 'সুরক্ষিত/ব্যক্তিগত'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-tealAccent font-medium">✓ প্রত্যয়িত সদস্য</td>
+            {(!donors || donors.length === 0) ? (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                এখনো কোনো সদস্য বা রক্তদাতা যুক্ত হননি। "নতুন সদস্য যোগ করুন" বাটনে ক্লিক করে যোগ করতে পারেন।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">সদস্যের নাম</th>
+                      <th className="py-3 px-4">রক্তের গ্রুপ</th>
+                      <th className="py-3 px-4">উপলব্ধতা</th>
+                      <th className="py-3 px-4">মোট রক্তদান</th>
+                      <th className="py-3 px-4">যোগাযোগ সম্মতি</th>
+                      <th className="py-3 px-4">স্ট্যাটাস</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 2: Contact Requests Queue */}
-      {activeTab === 'contact_requests' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-appBorder">
-            <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-              <HeartHandshake className="w-5 h-5 text-primary" />
-              <span>রক্তপ্রত্যাশীদের প্রাতিষ্ঠানিক যোগাযোগের অনুরোধসমূহ</span>
-            </h3>
-            <span className="text-xs text-subText">সরাসরি প্রতিষ্ঠানের রক্তদাতা পুলের সাথে সমন্বয়</span>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {donors.map((d: any) => (
+                      <tr key={d._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-mainText">{d.displayName}</div>
+                          <div className="text-[10px] text-subText capitalize">{d.gender || 'unspecified'}</div>
+                        </td>
+                        <td className="py-3 px-4 font-black text-primary text-sm">{d.bloodGroup}</td>
+                        <td className="py-3 px-4">
+                          <Badge variant={d.availabilityStatus === 'available' ? 'success' : 'neutral'} dot size="sm">
+                            {d.availabilityStatus === 'available' ? 'প্রস্তুত' : 'বিরতি'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 font-mono font-medium">{d.totalDonations || 0} বার</td>
+                        <td className="py-3 px-4">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            d.consentToShareContact ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                          }`}>
+                            {d.consentToShareContact ? 'উন্মুক্ত অনুমতি' : 'সুরক্ষিত/ব্যক্তিগত'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-teal-700 font-semibold flex items-center gap-1">
+                          <UserCheck className="w-4 h-4 text-teal-600" />
+                          <span>প্রত্যয়িত সদস্য</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
+        )}
 
-          {contactRequests.length === 0 ? (
-            <div className="text-center py-12 text-xs text-subText">বর্তমানে কোনো যোগাযোগের অনুরোধ জমা নেই।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">অনুরোধকারী</th>
-                    <th className="py-3 px-4">রোগী ও হাসপাতাল</th>
-                    <th className="py-3 px-4">গ্রুপ ও পরিমাণ</th>
-                    <th className="py-3 px-4">জরুরিতা</th>
-                    <th className="py-3 px-4">অবস্থা</th>
-                    <th className="py-3 px-4 text-right">পদক্ষেপ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {contactRequests.map(req => (
-                    <tr key={req._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-mainText">{req.requesterName}</div>
-                        <div className="text-gray-400 font-mono text-[10px]">{req.requesterPhone}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold">{req.patientName}</div>
-                        <div className="text-subText text-[10px]">{req.hospitalName}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-primary mr-1">{req.targetBloodGroup}</span>
-                        <span className="text-subText">({req.unitsRequired} ব্যাগ)</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          req.urgency === 'emergency' ? 'bg-red-100 text-red-700' :
-                          req.urgency === 'urgent' ? 'bg-amber-100 text-amber-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {req.urgency === 'emergency' ? 'জরুরি' : req.urgency === 'urgent' ? 'অতি দ্রুত' : 'সাধারণ'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          req.status === 'fulfilled' ? 'bg-green-100 text-appSuccess' :
-                          req.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                          req.status === 'cancelled' ? 'bg-gray-100 text-gray-600' :
-                          'bg-amber-100 text-amber-800'
-                        }`}>
-                          {req.status === 'fulfilled' ? 'সম্পন্ন' : req.status === 'in_progress' ? 'চলমান' : req.status === 'cancelled' ? 'বাতিল' : 'অপেক্ষমাণ'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => {
-                            setHandlingReq(req);
-                            setReqStatus((req.status as any) || 'in_progress');
-                            setModeratorNotes(req.moderatorNotes || '');
-                          }}
-                          className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded font-semibold text-xs"
-                        >
-                          হালনাগাদ
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* TAB 2: CONTACT REQUESTS */}
+        {activeTab === 'contact_requests' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <HeartHandshake className="w-5 h-5 text-primary" />
+                  <span>রক্তপ্রত্যাশীদের প্রাতিষ্ঠানিক যোগাযোগের অনুরোধসমূহ</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">মডারেটরের মাধ্যমে ক্যাম্পাসের রক্তদাতাদের সাথে সমন্বয় করুন</p>
+              </div>
+              <Badge variant="primary">{contactRequests.length} টি অনুরোধ</Badge>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Tab 3: Activities */}
-      {activeTab === 'activities' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-            <Activity className="w-5 h-5 text-tealAccent" />
-            <span>প্রতিষ্ঠানের মডারেশন ও সদস্য সংযোজন ইতিহাস</span>
-          </h3>
-
-          {activities.length === 0 ? (
-            <div className="text-center py-10 text-xs text-subText">কোনো অ্যাক্টিভিটি পাওয়া যায়নি।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">অ্যাকশন</th>
-                    <th className="py-3 px-4">মডারেটর</th>
-                    <th className="py-3 px-4">বিবরণ / কারণ</th>
-                    <th className="py-3 px-4">সময়</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {activities.map(act => (
-                    <tr key={act._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 font-bold text-mainText">{act.action}</td>
-                      <td className="py-3 px-4">{act.actorName}</td>
-                      <td className="py-3 px-4 text-subText max-w-sm">{act.reason || 'সদস্য ব্যবস্থাপনা'}</td>
-                      <td className="py-3 px-4 text-subText">
-                        {new Date(act.createdAt).toLocaleString('bn-BD')}
-                      </td>
+            {contactRequests.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">কোনো যোগাযোগের অনুরোধ জমা নেই।</div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">অনুরোধকারী</th>
+                      <th className="py-3 px-4">জরুরিতা</th>
+                      <th className="py-3 px-4">রোগী ও প্রয়োজনীয়তা</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">পদক্ষেপ</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {contactRequests.map(req => (
+                      <tr key={req._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-mainText">{req.requesterName}</div>
+                          <div className="font-mono text-[10px] text-subText">{req.requesterPhone}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant={req.urgency === 'emergency' ? 'danger' : 'warning'} size="sm">
+                            {req.urgency}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-primary">{req.targetBloodGroup} রক্ত প্রয়োজন</div>
+                          <div className="text-slate-600 text-[11px] max-w-xs">{req.patientName ? `${req.patientName} (${req.hospitalName})` : req.reason}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant={req.status === 'fulfilled' ? 'success' : req.status === 'cancelled' ? 'neutral' : 'warning'} size="sm">
+                            {req.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              setHandlingReq(req);
+                              setReqStatus(req.status as any || 'in_progress');
+                              setModeratorNotes(req.moderatorNotes || '');
+                            }}
+                            className="bg-teal-700 hover:bg-teal-800"
+                          >
+                            সমন্বয় করুন
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: ACTIVITIES */}
+        {activeTab === 'activities' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-600" />
+                <span>মডারেটর কার্যকলাপ ও অডিট ইতিহাস</span>
+              </h3>
+              <p className="text-xs text-subText mt-0.5">আপনার অ্যাকাউন্ট থেকে সম্পন্ন হওয়া সকল প্রশাসনিক কাজের রেকর্ড</p>
             </div>
-          )}
-        </div>
-      )}
+
+            {activities.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">কোনো কার্যক্রমের রেকর্ড নেই।</div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">কার্যকলাপ</th>
+                      <th className="py-3 px-4">বিবরণ / কারণ</th>
+                      <th className="py-3 px-4">সময়</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {activities.map(act => (
+                      <tr key={act._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-teal-800">{act.action}</td>
+                        <td className="py-3 px-4 text-slate-700 max-w-sm">{act.reason || 'নিয়মিত মডারেশন'}</td>
+                        <td className="py-3 px-4 text-subText">{new Date(act.createdAt).toLocaleString('bn-BD')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
 
       {/* Manual Member Creation Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-teal-100 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-3 text-teal-700 mb-3">
-              <UserPlus className="w-6 h-6 shrink-0" />
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">নতুন সদস্য নিবন্ধন (ম্যানুয়াল সংযোজন)</h3>
-                <p className="text-xs text-gray-500">এককালীন সাময়িক পাসওয়ার্ড স্বয়ংক্রিয়ভাবে তৈরি হবে</p>
-              </div>
-            </div>
-
-            {memberError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{memberError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreateMember} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    সদস্যের নাম <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={memName}
-                    onChange={e => setMemName(e.target.value)}
-                    placeholder="পূর্ণ নাম লিখুন"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    মোবাইল নম্বর <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={memPhone}
-                    onChange={e => setMemPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    রক্তের গ্রুপ <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={memBloodGroup}
-                    onChange={e => setMemBloodGroup(e.target.value as BloodGroup)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold text-red-600 focus:ring-2 focus:ring-teal-500"
-                  >
-                    {BLOOD_GROUPS.map(bg => (
-                      <option key={bg} value={bg}>{bg}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">লিঙ্গ</label>
-                  <select
-                    value={memGender}
-                    onChange={e => {
-                      const val = e.target.value as any;
-                      setMemGender(val);
-                      if (val === 'female') {
-                        setMemConsent(false);
-                      } else {
-                        setMemConsent(true);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="unspecified">উল্লেখ নেই</option>
-                    <option value="male">পুরুষ</option>
-                    <option value="female">নারী</option>
-                    <option value="other">অন্যান্য</option>
-                  </select>
-                </div>
-              </div>
-
-              {memGender === 'female' && (
-                <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800 leading-relaxed">
-                  <div className="flex items-center gap-1.5 font-bold text-rose-700 mb-1">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>নারী সদস্য নিরাপত্তা সুরক্ষা:</span>
-                  </div>
-                  নারী সদস্যদের ব্যক্তিগত নিরাপত্তা রক্ষার্থে ফোন নম্বর শেয়ারিং ডিফল্টভাবে নিষ্ক্রিয় থাকবে।
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">বিভাগ</label>
-                  <select
-                    value={memDivision}
-                    onChange={e => setMemDivision(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs"
-                  >
-                    {BANGLADESH_DIVISIONS.map(d => (
-                      <option key={d.id} value={d.id}>{d.nameBn}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">জেলা</label>
-                  <input
-                    type="text"
-                    required
-                    value={memDistrict}
-                    onChange={e => setMemDistrict(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">উপজেলা / থানা</label>
-                <input
-                  type="text"
-                  value={memUpazila}
-                  onChange={e => setMemUpazila(e.target.value)}
-                  placeholder="যেমন: ধানমন্ডি / মিরপুর"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingMember}
-                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow transition disabled:opacity-50"
-                >
-                  {submittingMember ? 'যুক্ত হচ্ছে...' : 'সদস্য তৈরি করুন'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* One-Time Temporary Password Reveal Card / Modal */}
-      {revealedCreds && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-200 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-3 text-amber-600 mb-3">
-              <Lock className="w-6 h-6 shrink-0" />
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">এককালীন সাময়িক পাসওয়ার্ড</h3>
-                <p className="text-xs text-amber-700 font-semibold">সদস্যের নিকট নিরাপদে পৌঁছে দিন</p>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-900">
-              {revealedCreds.warning}
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2 mb-4 font-mono text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-500">নাম:</span>
-                <span className="font-bold text-gray-900 font-sans">{revealedCreds.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">মোবাইল:</span>
-                <span className="font-bold text-gray-900">{revealedCreds.phone}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span className="text-gray-500">সাময়িক পাসওয়ার্ড:</span>
-                <span className="text-base font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                  {revealedCreds.temporaryPassword}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleCopyPassword}
-                className="flex-1 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow"
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="প্রতিষ্ঠানের নতুন সদস্য নিবন্ধন"
+          description={`প্রতিষ্ঠান: ${institution?.nameBn}`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateModal(false)}>বাতিল</Button>
+              <Button 
+                variant="primary" 
+                size="sm" 
+                isLoading={submittingMember} 
+                onClick={handleCreateMember}
+                className="bg-teal-700 hover:bg-teal-800"
               >
-                {copied ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
-                <span>{copied ? 'কপি সম্পন্ন হয়েছে!' : 'লগইন তথ্য কপি করুন'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRevealedCreds(null)}
-                className="px-4 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100"
-              >
-                বন্ধ করুন
-              </button>
+                সদস্য তৈরি করুন
+              </Button>
+            </>
+          }
+        >
+          {memberError && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3 rounded-xl flex items-center gap-2 mb-4">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{memberError}</span>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Handling Contact Request Modal */}
-      {handlingReq && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">যোগাযোগের অনুরোধের অবস্থা হালনাগাদ</h3>
-            <p className="text-xs text-gray-500 mb-4">{handlingReq.patientName} • {handlingReq.targetBloodGroup}</p>
+          <form onSubmit={handleCreateMember} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">শিক্ষার্থী / সদস্যের নাম <span className="text-primary">*</span></label>
+              <input
+                type="text"
+                required
+                value={memName}
+                onChange={e => setMemName(e.target.value)}
+                placeholder="যেমন: রাফিদ হাসান"
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
 
-            <form onSubmit={handleUpdateContactRequest} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">মোবাইল নম্বর <span className="text-primary">*</span></label>
+              <input
+                type="tel"
+                required
+                value={memPhone}
+                onChange={e => setMemPhone(e.target.value)}
+                placeholder="01XXXXXXXXX"
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs font-mono focus:border-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">অবস্থা (Status)</label>
+                <label className="block text-xs font-bold text-mainText mb-1">রক্তের গ্রুপ <span className="text-primary">*</span></label>
                 <select
-                  value={reqStatus}
-                  onChange={e => setReqStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500"
+                  value={memBloodGroup}
+                  onChange={e => setMemBloodGroup(e.target.value as BloodGroup)}
+                  className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs font-bold text-primary"
                 >
-                  <option value="in_progress">চলমান (In Progress)</option>
-                  <option value="fulfilled">সম্পন্ন (Fulfilled)</option>
-                  <option value="cancelled">বাতিল (Cancelled)</option>
+                  {BLOOD_GROUPS.map(bg => (
+                    <option key={bg} value={bg}>{bg}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  মডারেটরের মন্তব্য বা অগ্রগতি বিবরণ
-                </label>
-                <textarea
-                  rows={3}
-                  value={moderatorNotes}
-                  onChange={e => setModeratorNotes(e.target.value)}
-                  placeholder="যেমন: রক্তদাতার সাথে যোগাযোগ সম্পন্ন হয়েছে..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="block text-xs font-bold text-mainText mb-1">লিঙ্গ</label>
+                <select
+                  value={memGender}
+                  onChange={e => setMemGender(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs"
+                >
+                  <option value="male">পুরুষ</option>
+                  <option value="female">নারী</option>
+                  <option value="unspecified">অন্যান্য</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 space-y-1">
+              <p className="font-bold flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                <span>এককালীন সাময়িক পাসওয়ার্ড সুরক্ষা:</span>
+              </p>
+              <p>সদস্য তৈরির পর একটি সাময়িক পাসওয়ার্ড প্রদর্শিত হবে যা শিক্ষার্থীকে প্রদান করতে হবে। প্রথম লগইনে পাসওয়ার্ড পরিবর্তন বাধ্যতামূলক।</p>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Temporary Password Reveal Modal */}
+      {revealedCreds && (
+        <Modal
+          isOpen={Boolean(revealedCreds)}
+          onClose={() => setRevealedCreds(null)}
+          title="সদস্য সফলভাবে তৈরি হয়েছে!"
+          description="লগইন তথ্য এখনই কপি করে সদস্যকে প্রদান করুন"
+          footer={<Button variant="primary" size="sm" onClick={() => setRevealedCreds(null)}>সম্পন্ন</Button>}
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+              <p className="text-xs text-emerald-800 font-semibold">সদস্যের সাময়িক এককালীন পাসওয়ার্ড তৈরি হয়েছে</p>
+              
+              <div className="p-3 bg-white rounded-xl border border-emerald-300 font-mono text-xl font-bold text-slate-800 tracking-wider">
+                {revealedCreds.temporaryPassword}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setHandlingReq(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingHandling}
-                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow transition"
-                >
-                  {submittingHandling ? 'সংরক্ষণ হচ্ছে...' : 'হালনাগাদ নিশ্চিত করুন'}
-                </button>
-              </div>
-            </form>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyPassword}
+                icon={copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                className="text-xs font-bold"
+              >
+                {copied ? 'কপি করা হয়েছে!' : 'লগইন তথ্য কপি করুন'}
+              </Button>
+            </div>
+
+            <div className="text-xs text-subText space-y-1">
+              <p>👤 <strong>নাম:</strong> {revealedCreds.name}</p>
+              <p>📱 <strong>মোবাইল:</strong> <span className="font-mono">{revealedCreds.phone}</span></p>
+              <p className="text-rose-600 font-semibold pt-1">⚠️ {revealedCreds.warning}</p>
+            </div>
           </div>
-        </div>
+        </Modal>
       )}
+
+      {/* Handling Contact Request Modal */}
+      {handlingReq && (
+        <Modal
+          isOpen={Boolean(handlingReq)}
+          onClose={() => setHandlingReq(null)}
+          title="যোগাযোগের অনুরোধ সমন্বয়"
+          description={`রোগী: ${handlingReq.patientName || handlingReq.reason || 'জরুরি রক্ত প্রয়োজন'}`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setHandlingReq(null)}>বাতিল</Button>
+              <Button 
+                variant="primary" 
+                size="sm" 
+                isLoading={submittingHandling} 
+                onClick={handleUpdateContactRequest}
+                className="bg-teal-700 hover:bg-teal-800"
+              >
+                সংরক্ষণ করুন
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleUpdateContactRequest} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">অবস্থা হালনাগাদ</label>
+              <select
+                value={reqStatus}
+                onChange={e => setReqStatus(e.target.value as any)}
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs font-semibold"
+              >
+                <option value="in_progress">প্রক্রিয়াধীন (In Progress)</option>
+                <option value="fulfilled">সম্পন্ন / রক্তদাতা পাওয়া গেছে (Fulfilled)</option>
+                <option value="cancelled">বাতিলকৃত (Cancelled)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">মডারেটর মন্তব্য ও পদক্ষেপ</label>
+              <textarea
+                rows={3}
+                value={moderatorNotes}
+                onChange={e => setModeratorNotes(e.target.value)}
+                placeholder="যেমন: ক্যাম্পাসের অমুক হলের রক্তদাতার সাথে যোগাযোগ করিয়ে দেওয়া হয়েছে..."
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
+          </form>
+        </Modal>
+      )}
+
     </div>
   );
 };

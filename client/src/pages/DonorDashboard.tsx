@@ -10,12 +10,22 @@ import {
   Edit3, 
   Save, 
   AlertCircle,
-  Plus
+  Plus,
+  Droplet,
+  User,
+  Phone,
+  Sparkles,
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { RequestCard } from '../components/RequestCard';
 import { BloodRequest, NotificationItem } from '../types';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { StatsCard } from '../components/ui/StatsCard';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 
 export const DonorDashboard: React.FC = () => {
   const { user, donorProfile, refreshUser } = useAuth();
@@ -44,7 +54,6 @@ export const DonorDashboard: React.FC = () => {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        // Load matching blood requests
         if (donorProfile) {
           const reqRes = await api.searchRequests({
             bloodGroup: donorProfile.bloodGroup,
@@ -56,7 +65,6 @@ export const DonorDashboard: React.FC = () => {
           }
         }
 
-        // Load notifications
         const notifRes = await api.getNotifications();
         if (notifRes.success && notifRes.notifications) {
           setNotifications(notifRes.notifications);
@@ -92,7 +100,7 @@ export const DonorDashboard: React.FC = () => {
     try {
       const res = await api.recordDonation();
       if (res.success) {
-        setMsg({ text: 'রক্তদানের তথ্য সফলভাবে লিপিবদ্ধ করা হয়েছে! আপনাকে আন্তরিক ধন্যবাদ।', type: 'success' });
+        setMsg({ text: 'রক্তদানের তথ্য সফলভাবে লিপিবদ্ধ করা হয়েছে! আপনার এই মানবিক অবদানকে স্যালুট।', type: 'success' });
         await refreshUser();
       }
     } catch (err: any) {
@@ -113,7 +121,7 @@ export const DonorDashboard: React.FC = () => {
         consentToShareContact
       });
       if (res.success) {
-        setMsg({ text: 'প্রোফাইলের সেটিংস সংরক্ষিত হয়েছে।', type: 'success' });
+        setMsg({ text: 'প্রোফাইলের সেটিংস সফলভাবে সংরক্ষিত হয়েছে।', type: 'success' });
         await refreshUser();
       }
     } catch (err: any) {
@@ -123,227 +131,318 @@ export const DonorDashboard: React.FC = () => {
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Welcome Card */}
-      <div className="bg-gradient-to-r from-red-600 to-primary text-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold inline-block">
-            স্বেচ্ছায় রক্তদাতা ড্যাশবোর্ড
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold">
-            স্বাগতম, {user?.name || 'রক্তদাতা'}!
-          </h1>
-          <p className="text-xs sm:text-sm text-red-100 flex items-center gap-2">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span>{donorProfile?.upazila ? `${donorProfile.upazila}, ` : ''}{donorProfile?.district}, {donorProfile?.division}</span>
-          </p>
-        </div>
+  // Calculate profile completion percentage
+  let profileCompletion = 70;
+  if (bio && bio.length > 5) profileCompletion += 15;
+  if (donorProfile?.district) profileCompletion += 15;
 
-        {/* Quick Stats Banner */}
-        <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
-          <div className="w-14 h-14 rounded-xl bg-white text-primary flex items-center justify-center font-black text-2xl shadow">
-            {donorProfile?.bloodGroup || 'A+'}
-          </div>
-          <div>
-            <span className="text-xs text-red-200 block">মোট রক্তদান:</span>
-            <span className="text-2xl font-bold">{donorProfile?.totalDonations || 0} বার</span>
-          </div>
+  return (
+    <div className="min-h-screen bg-page pb-12">
+      {/* Top Header / Breadcrumb */}
+      <div className="bg-surface border-b border-appBorder px-4 sm:px-6 lg:px-8 py-3.5 shadow-soft">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Breadcrumb items={[{ label: 'রক্তদাতা প্রোফাইল ও ড্যাশবোর্ড' }]} />
+          <Badge variant="success" size="sm" dot>স্বেচ্ছাসেবী রক্তদাতা</Badge>
         </div>
       </div>
 
-      {msg && (
-        <div className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 ${
-          msg.type === 'success' ? 'bg-green-50 text-appSuccess border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
-          {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
-          <span>{msg.text}</span>
-        </div>
-      )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
-      {/* Main Grid: Controls & Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Col 1 & 2: Status & Matching Requests */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Quick Actions: Availability & Record Donation */}
-          <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-            <h2 className="text-base font-bold text-mainText flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              <span>রক্তদানের বর্তমান অবস্থা ও অ্যাকশন</span>
-            </h2>
+        {/* Personalized Welcome Banner */}
+        <div className="bg-gradient-to-r from-red-700 via-primary to-rose-700 text-white rounded-3xl p-6 sm:p-8 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleStatusChange('available')}
-                disabled={loadingAction}
-                className={`p-3.5 rounded-xl border text-left transition-all ${
-                  availabilityStatus === 'available'
-                    ? 'border-appSuccess bg-green-50 shadow-sm'
-                    : 'border-appBorder hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-appSuccess"></span>
-                  <span className="text-sm font-bold text-mainText">রক্তদানে প্রস্তুত</span>
-                </div>
-                <p className="text-[11px] text-subText mt-1">জরুরি প্রয়োজনে রোগীরা আপনাকে খুঁজে পাবেন।</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleStatusChange('recently_donated')}
-                disabled={loadingAction}
-                className={`p-3.5 rounded-xl border text-left transition-all ${
-                  availabilityStatus === 'recently_donated'
-                    ? 'border-amber-500 bg-amber-50 shadow-sm'
-                    : 'border-appBorder hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                  <span className="text-sm font-bold text-mainText">সম্প্রতি রক্তদান করেছি</span>
-                </div>
-                <p className="text-[11px] text-subText mt-1">সুস্থতার জন্য ৩-৪ মাসের বিশ্রাম সময়কাল।</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleStatusChange('temporarily_unavailable')}
-                disabled={loadingAction}
-                className={`p-3.5 rounded-xl border text-left transition-all ${
-                  availabilityStatus === 'temporarily_unavailable'
-                    ? 'border-gray-500 bg-gray-100 shadow-sm'
-                    : 'border-appBorder hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
-                  <span className="text-sm font-bold text-mainText">সাময়িক বিরতিতে</span>
-                </div>
-                <p className="text-[11px] text-subText mt-1">অসুস্থতা বা ব্যস্ততার কারণে রক্তদানে অপারগ।</p>
-              </button>
+          <div className="space-y-3 relative z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-rose-100">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>স্বেচ্ছাসেবী মানবিক সেবক</span>
             </div>
-
-            {/* Record Voluntary Donation Action */}
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-mainText">আজকে কি রক্তদান সম্পন্ন করেছেন?</p>
-                <p className="text-[11px] text-subText">আপনার মানবিক অবদানের রেকর্ড যোগ করুন</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleRecordDonation}
-                disabled={loadingAction}
-                className="px-4 py-2 bg-appSuccess hover:bg-green-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>রক্তদান লিপিবদ্ধ করুন</span>
-              </button>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              স্বাগতম, {user?.name || 'সম্মানিত রক্তদাতা'}!
+            </h1>
+            <p className="text-xs sm:text-sm text-red-100 flex items-center gap-2">
+              <MapPin className="w-4 h-4 flex-shrink-0" />
+              <span>
+                {donorProfile?.upazila ? `${donorProfile.upazila}, ` : ''}{donorProfile?.district || 'ঢাকা'}, {donorProfile?.division || 'ঢাকা'}
+              </span>
+            </p>
           </div>
 
-          {/* Matching Blood Requests in Area */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-mainText flex items-center gap-2">
-                <HeartHandshake className="w-5 h-5 text-primary" />
-                <span>আপনার গ্রুপের জরুরি অনুরোধ ({donorProfile?.bloodGroup})</span>
-              </h2>
+          {/* Blood Group Emblem Card */}
+          <div className="flex items-center gap-4 bg-white/15 backdrop-blur-md p-4 rounded-2xl border border-white/25 shadow-soft relative z-10">
+            <div className="w-16 h-16 rounded-2xl bg-white text-primary flex items-center justify-center font-black text-2xl sm:text-3xl shadow-soft">
+              {donorProfile?.bloodGroup || 'O+'}
             </div>
-
-            {matchingRequests.length === 0 ? (
-              <div className="bg-surface rounded-2xl border border-appBorder p-8 text-center text-subText">
-                <CheckCircle2 className="w-8 h-8 text-appSuccess mx-auto mb-2" />
-                <p className="text-xs font-medium">আপনার এলাকায় এই মুহূর্তে রক্তের কোনো জরুরি অনুরোধ নেই।</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {matchingRequests.map(req => (
-                  <RequestCard key={req._id} request={req} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Col 3: Profile Settings & Notifications */}
-        <div className="space-y-6">
-          {/* Notifications Card */}
-          <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-5 space-y-3">
-            <h3 className="font-bold text-mainText text-sm flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" />
-              <span>বিজ্ঞপ্তি ও যোগাযোগ সতর্কতা</span>
-            </h3>
-
-            {notifications.length === 0 ? (
-              <p className="text-xs text-subText py-4 text-center">কোনো নতুন বিজ্ঞপ্তি নেই</p>
-            ) : (
-              <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                {notifications.map(n => (
-                  <div key={n._id} className="p-2.5 bg-page rounded-xl border border-appBorder text-xs space-y-1">
-                    <p className="font-semibold text-mainText">{n.title}</p>
-                    <p className="text-subText text-[11px]">{n.message}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Profile & Privacy Settings */}
-          <form onSubmit={handleSaveProfile} className="bg-surface rounded-2xl border border-appBorder shadow-card p-5 space-y-4">
-            <h3 className="font-bold text-mainText text-sm flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-primary" />
-              <span>প্রোফাইল ও গোপনীয়তা সেটিংস</span>
-            </h3>
-
             <div>
-              <label className="block text-xs font-semibold text-mainText mb-1">
-                সংক্ষিপ্ত পরিচিতি / বায়ো
-              </label>
-              <textarea
-                rows={2}
-                value={bio}
-                onChange={e => setBio(e.target.value)}
-                placeholder="নিজের সম্পর্কে সংক্ষেপে লিখুন..."
-                className="w-full px-3 py-2 bg-page border border-appBorder rounded-lg text-xs text-mainText focus:ring-2 focus:ring-primary"
-              />
+              <span className="text-xs text-rose-100 block font-medium">রক্তদানের ইতিহাস:</span>
+              <span className="text-2xl font-black text-white">{donorProfile?.totalDonations || 0} বার</span>
+              <span className="text-[10px] text-rose-200 block">জীবন বাঁচিয়েছেন</span>
             </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-xs text-mainText cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={emergencyAvailable}
-                  onChange={e => setEmergencyAvailable(e.target.checked)}
-                  className="rounded text-primary focus:ring-primary"
-                />
-                <span>জরুরি অবস্থায় দ্রুত সাড়া দিতে সম্মত</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs text-mainText cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consentToShareContact}
-                  onChange={e => setConsentToShareContact(e.target.checked)}
-                  className="rounded text-primary focus:ring-primary"
-                />
-                <span>অনুমোদিত অনুরোধে যোগাযোগের নম্বর দৃশ্যমান রাখা</span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loadingAction}
-              className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span>সেটিংস সংরক্ষণ করুন</span>
-            </button>
-          </form>
+          </div>
         </div>
+
+        {/* Status / Error Alert Message */}
+        {msg && (
+          <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-soft animate-in fade-in duration-150 ${
+            msg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
+              <span>{msg.text}</span>
+            </div>
+            <button onClick={() => setMsg(null)} className="text-xs font-bold px-2">✕</button>
+          </div>
+        )}
+
+        {/* 3 Summary StatsCards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatsCard
+            title="বর্তমান প্রাপ্যতা"
+            value={availabilityStatus === 'available' ? 'প্রস্তুত' : availabilityStatus === 'recently_donated' ? 'বিশ্রামে' : 'বিরতিতে'}
+            subtitle="জরুরি প্রয়োজনে রোগীরা আপনাকে খুঁজে পাবেন"
+            icon={<Clock className="w-5 h-5" />}
+            iconColor={availabilityStatus === 'available' ? 'emerald' : 'amber'}
+          />
+          <StatsCard
+            title="মোট মানবিক রক্তদান"
+            value={`${donorProfile?.totalDonations || 0} বার`}
+            subtitle={donorProfile?.lastDonationDate ? `সর্বশেষ: ${new Date(donorProfile.lastDonationDate).toLocaleDateString('bn-BD')}` : 'এখনো রক্তদান লিপিবদ্ধ করেননি'}
+            icon={<HeartHandshake className="w-5 h-5" />}
+            iconColor="primary"
+          />
+          <StatsCard
+            title="প্রোফাইল সম্পূর্ণতা"
+            value={`${profileCompletion}%`}
+            subtitle="তথ্য যত পূর্ণাঙ্গ, যোগাযোগ তত দ্রুত হবে"
+            icon={<User className="w-5 h-5" />}
+            iconColor="teal"
+          />
+        </div>
+
+        {/* Main Grid: Status Control & Matching Requests (Left) vs Settings & Notifications (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          {/* Left Column (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+
+            {/* Availability Control Card */}
+            <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+                <div>
+                  <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <span>রক্তদানের বর্তমান অবস্থা ও নিয়ন্ত্রণ</span>
+                  </h3>
+                  <p className="text-xs text-subText mt-0.5">আপনার রক্তদানের বর্তমান সক্ষমতা অনুযায়ী স্ট্যাটাস আপডেট রাখুন</p>
+                </div>
+                <Badge variant={availabilityStatus === 'available' ? 'success' : 'neutral'} dot size="sm">
+                  {availabilityStatus === 'available' ? 'সক্রিয় রক্তদাতা' : 'সাময়িক স্থগিত'}
+                </Badge>
+              </div>
+
+              {/* Status Option Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('available')}
+                  disabled={loadingAction}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    availabilityStatus === 'available'
+                      ? 'border-emerald-600 bg-emerald-50/60 shadow-soft'
+                      : 'border-appBorder hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-emerald-600 animate-pulse"></span>
+                    <span className="text-sm font-bold text-mainText">রক্তদানে প্রস্তুত</span>
+                  </div>
+                  <p className="text-[11px] text-subText mt-1.5 leading-relaxed">
+                    জরুরি প্রয়োজনে রোগীরা আপনাকে খুঁজে পাবেন ও অনুরোধ পাঠাতে পারবেন।
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('recently_donated')}
+                  disabled={loadingAction}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    availabilityStatus === 'recently_donated'
+                      ? 'border-amber-500 bg-amber-50/60 shadow-soft'
+                      : 'border-appBorder hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span className="text-sm font-bold text-mainText">সম্প্রতি রক্তদান করেছি</span>
+                  </div>
+                  <p className="text-[11px] text-subText mt-1.5 leading-relaxed">
+                    শারীরিক সুস্থতার জন্য ৩-৪ মাসের বিশ্রাম সময়কাল চলমান রয়েছে।
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange('temporarily_unavailable')}
+                  disabled={loadingAction}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    availabilityStatus === 'temporarily_unavailable'
+                      ? 'border-slate-500 bg-slate-100 shadow-soft'
+                      : 'border-appBorder hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-slate-400"></span>
+                    <span className="text-sm font-bold text-mainText">সাময়িক বিরতিতে</span>
+                  </div>
+                  <p className="text-[11px] text-subText mt-1.5 leading-relaxed">
+                    অসুস্থতা, ভ্রমণ বা ব্যক্তিগত ব্যস্ততার কারণে রক্তদানে অপারগ।
+                  </p>
+                </button>
+              </div>
+
+              {/* Medical Notice */}
+              <div className="p-3.5 bg-blue-50/70 rounded-xl border border-blue-100 text-xs text-blue-900 flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <strong>চিকিৎসাগত সতর্কতা:</strong> 'রক্তদানে প্রস্তুত' থাকার অর্থ এই নয় যে আপনি তাৎক্ষণিক যেকোনো ক্ষেত্রে চিকিৎসাগতভাবে উপযুক্ত। রক্তদানের পূর্বে রক্তচাপ, হিমোগ্লোবিন এবং চিকিৎসকের সাধারণ স্বাস্থ্য যাচাই নিশ্চিত করা জরুরি।
+                </p>
+              </div>
+
+              {/* Record Donation Action */}
+              <div className="pt-3 border-t border-appBorder flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-mainText">আজকে কি স্বেচ্ছায় রক্তদান সম্পন্ন করেছেন?</p>
+                  <p className="text-[11px] text-subText">আপনার রক্তদানের তারিখ ও ইতিহাসের রেকর্ড যুক্ত করুন</p>
+                </div>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleRecordDonation}
+                  isLoading={loadingAction}
+                  icon={<Plus className="w-4 h-4" />}
+                >
+                  রক্তদান লিপিবদ্ধ করুন
+                </Button>
+              </div>
+            </div>
+
+            {/* Relevant Blood Requests */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                    <HeartHandshake className="w-5 h-5 text-primary" />
+                    <span>আপনার রক্তের গ্রুপের জরুরি চাহিদা ({donorProfile?.bloodGroup || 'O+'})</span>
+                  </h3>
+                  <p className="text-xs text-subText mt-0.5">আপনার এলাকার আশেপাশে চলমান রক্তের অনুরোধসমূহ</p>
+                </div>
+                <Badge variant="primary">ম্যাচিং অনুরোধ: {matchingRequests.length} টি</Badge>
+              </div>
+
+              {matchingRequests.length === 0 ? (
+                <div className="bg-surface rounded-2xl border border-appBorder p-8 text-center text-subText space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+                  <p className="text-xs font-semibold text-mainText">এই মুহূর্তে আপনার এলাকায় জরুরি কোনো রক্তের অনুরোধ নেই।</p>
+                  <p className="text-[11px] text-slate-400">নতুন অনুরোধ এলে নোটিফিকেশনের মাধ্যমে জানানো হবে।</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {matchingRequests.map(req => (
+                    <RequestCard key={req._id} request={req} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Right Column (4 cols): Profile & Privacy Settings */}
+          <div className="lg:col-span-4 space-y-6">
+
+            {/* Notifications Card */}
+            <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-3">
+              <h3 className="font-bold text-mainText text-sm flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span>বিজ্ঞপ্তি ও নোটিফিকেশন</span>
+                </span>
+                <span className="text-[11px] text-subText font-mono font-bold">{notifications.length} টি</span>
+              </h3>
+
+              {notifications.length === 0 ? (
+                <p className="text-xs text-slate-400 py-6 text-center">নতুন কোনো বিজ্ঞপ্তি নেই</p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {notifications.map(n => (
+                    <div key={n._id} className="p-3 bg-slate-50 rounded-xl border border-appBorder text-xs space-y-1">
+                      <p className="font-bold text-mainText">{n.title}</p>
+                      <p className="text-subText text-[11px] leading-relaxed">{n.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Profile & Privacy Settings Form */}
+            <form onSubmit={handleSaveProfile} className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-4">
+              <h3 className="font-bold text-mainText text-sm flex items-center gap-2 pb-2 border-b border-appBorder">
+                <Edit3 className="w-4 h-4 text-primary" />
+                <span>প্রোফাইল ও গোপনীয়তা সেটিংস</span>
+              </h3>
+
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1.5">
+                  সংক্ষিপ্ত বায়ো / রক্তদানের বার্তা
+                </label>
+                <textarea
+                  rows={2}
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  placeholder="যেমন: যেকোনো জরুরি প্রয়োজনে রক্তদানে প্রস্তুত..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:bg-surface focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-3 pt-1">
+                <label className="flex items-start gap-2.5 text-xs text-mainText cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emergencyAvailable}
+                    onChange={e => setEmergencyAvailable(e.target.checked)}
+                    className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4"
+                  />
+                  <span className="text-slate-700 font-medium">জরুরি পরিস্থিতিতে দ্রুত সাড়া দিতে সম্মত</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 text-xs text-mainText cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentToShareContact}
+                    onChange={e => setConsentToShareContact(e.target.checked)}
+                    className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4"
+                  />
+                  <span className="text-slate-700 font-medium leading-relaxed">
+                    অনুমোদিত অনুরোধে যোগাযোগের নম্বর দৃশ্যমান রাখা (অবাঞ্ছিত কল রোধে দৈনিক সীমা নিয়ন্ত্রিত)
+                  </span>
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                isLoading={loadingAction}
+                icon={<Save className="w-4 h-4" />}
+                className="w-full font-bold shadow-soft"
+              >
+                সেটিংস সংরক্ষণ করুন
+              </Button>
+            </form>
+
+          </div>
+        </div>
+
       </div>
     </div>
   );
 };
-

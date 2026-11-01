@@ -7,17 +7,26 @@ import {
   Building2, 
   HeartHandshake, 
   CheckCircle2, 
-  XCircle,
-  Clock,
-  History,
-  Activity,
-  UserCheck,
-  UserX,
-  FileText
+  XCircle, 
+  Clock, 
+  History, 
+  Activity, 
+  UserCheck, 
+  UserX, 
+  FileText,
+  RotateCcw,
+  Search,
+  Filter,
+  Eye
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { InstitutionRequest, ModeratorActivity } from '../types';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { StatsCard } from '../components/ui/StatsCard';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
+import { Modal } from '../components/ui/Modal';
 
 export const CoordinatorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -134,14 +143,20 @@ export const CoordinatorDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="max-w-7xl mx-auto p-8"><div className="h-64 bg-gray-200 animate-pulse rounded-2xl"></div></div>;
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="h-64 bg-slate-100 animate-pulse rounded-3xl border border-appBorder"></div>
+      </div>
+    );
   }
 
   if (errorMsg) {
     return (
-      <div className="max-w-md mx-auto my-12 p-8 bg-surface rounded-2xl border border-appBorder shadow text-center space-y-3">
-        <AlertTriangle className="w-12 h-12 text-primary mx-auto" />
-        <h3 className="font-bold text-mainText text-lg">অনুমতি নেই</h3>
+      <div className="max-w-md mx-auto my-12 p-8 bg-surface rounded-3xl border border-appBorder shadow-card text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <h3 className="font-bold text-mainText text-lg">অনুমতি সীমাবদ্ধ</h3>
         <p className="text-xs text-subText">{errorMsg}</p>
       </div>
     );
@@ -150,467 +165,495 @@ export const CoordinatorDashboard: React.FC = () => {
   const { division, stats, requests } = data || {};
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 text-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">
-              বিভাগীয় সমন্বয়ক প্যানেল
-            </span>
-            <span className="px-3 py-1 bg-blue-500/30 rounded-full text-xs font-bold uppercase">
-              {division?.nameBn} বিভাগ
-            </span>
+    <div className="min-h-screen bg-page pb-12">
+      {/* Top Header / Breadcrumb Bar */}
+      <div className="bg-surface border-b border-appBorder px-4 sm:px-6 lg:px-8 py-4 shadow-soft">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Breadcrumb items={[{ label: 'বিভাগীয় সমন্বয়ক ড্যাশবোর্ড' }]} />
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-black text-mainText tracking-tight">
+                {division?.nameBn || 'বিভাগীয়'} সমন্বয় প্যানেল
+              </h1>
+              <Badge variant="info" size="sm">{division?.nameBn || 'বিভাগ'} সমন্বয়ক</Badge>
+            </div>
+            <p className="text-xs text-subText mt-0.5">
+              অনুমোদিত আঞ্চলিক সমন্বয়ক: <strong className="text-mainText">{user?.name}</strong> • দায়িত্বপ্রাপ্ত এলাকা: {division?.nameBn} ({division?.nameEn})
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold">{division?.nameBn} বিভাগ সমন্বয় কেন্দ্র</h1>
-          <p className="text-xs text-blue-100 mt-1">
-            দায়িত্বপ্রাপ্ত এলাকা: {division?.nameBn} ({division?.nameEn}) • অনুমোদিত সমন্বয়ক: {user?.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-white/10 p-3 rounded-xl">
-          <ShieldCheck className="w-6 h-6 text-blue-200" />
-          <span className="text-xs font-semibold">বিভাগীয় নিরাপত্তা ও মডারেশন</span>
-        </div>
-      </div>
 
-      {actionMsg && (
-        <div className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between ${
-          actionMsg.type === 'success' ? 'bg-green-50 text-appSuccess border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
-          <span>{actionMsg.text}</span>
-          <button onClick={() => setActionMsg(null)} className="text-xs font-bold px-2">✕</button>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">দায়িত্বপ্রাপ্ত মডারেটর</span>
-          <span className="text-2xl font-extrabold text-blue-900 mt-1 block">{moderators.length} জন</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">প্রতিষ্ঠানের নিবন্ধন আবেদন</span>
-          <span className="text-2xl font-extrabold text-tealAccent mt-1 block">{institutionRequests.length} টি</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">বিভাগে রক্তের অনুরোধ</span>
-          <span className="text-2xl font-extrabold text-mainText mt-1 block">{stats?.totalRequests || 0} টি</span>
-        </div>
-        <div className="bg-surface p-5 rounded-2xl border border-appBorder shadow-card">
-          <span className="text-xs text-subText block">সক্রিয় রক্তদাতা পুল</span>
-          <span className="text-2xl font-extrabold text-appSuccess mt-1 block">{stats?.availableDonors || 0} জন</span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-appBorder gap-4 text-sm font-semibold overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveTab('moderators')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'moderators' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          বিভাগীয় মডারেটরগণ ({moderators.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('institution_requests')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'institution_requests' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          প্রতিষ্ঠান আবেদন পর্যালোচনা ({institutionRequests.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('activities')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'activities' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          মডারেটর অ্যাক্টিভিটি লগ ({activities.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('requests')}
-          className={`pb-3 border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === 'requests' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
-          }`}
-        >
-          জরুরি রক্তের অনুরোধসমূহ
-        </button>
-      </div>
-
-      {/* Tab 1: Moderators List & Performance */}
-      {activeTab === 'moderators' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-appBorder">
-            <div>
-              <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-700" />
-                <span>{division?.nameBn} বিভাগের প্রাতিষ্ঠানিক মডারেটর তালিকা ও কার্যক্রম</span>
-              </h3>
-              <p className="text-xs text-subText">মডারেটরদের কর্মক্ষমতা, ম্যানুয়াল সদস্য সংযোজন ও স্ট্যাটাস পর্যবেক্ষণ</p>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadAllData}
+              isLoading={loading}
+              icon={<RotateCcw className="w-3.5 h-3.5" />}
+            >
+              হালনাগাদ
+            </Button>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 text-xs font-semibold border border-blue-200">
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
+              <span>আঞ্চলিক মডারেশন সক্রিয়</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          {moderators.length === 0 ? (
-            <div className="text-center py-12 text-xs text-subText">এই বিভাগে কোনো প্রতিষ্ঠান মডারেটর নিযুক্ত নেই।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">মডারেটরের নাম ও ফোন</th>
-                    <th className="py-3 px-4">দায়িত্বপ্রাপ্ত প্রতিষ্ঠান</th>
-                    <th className="py-3 px-4">যুক্তকৃত সদস্য</th>
-                    <th className="py-3 px-4">স্ট্যাটাস</th>
-                    <th className="py-3 px-4 text-right">পদক্ষেপ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {moderators.map((m: any) => {
-                    const isBlocked = m.accountStatus && m.accountStatus !== 'active';
-                    return (
-                      <tr key={m._id} className="hover:bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        {/* Action Alert Banner */}
+        {actionMsg && (
+          <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-soft animate-in fade-in duration-150 ${
+            actionMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {actionMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-rose-600" />}
+              <span>{actionMsg.text}</span>
+            </div>
+            <button onClick={() => setActionMsg(null)} className="text-xs font-bold px-2">✕</button>
+          </div>
+        )}
+
+        {/* 4 Summary StatsCards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatsCard
+            title="দায়িত্বপ্রাপ্ত মডারেটর"
+            value={moderators.length}
+            subtitle="ক্যাম্পাস ও প্রতিষ্ঠান"
+            icon={<Users className="w-5 h-5" />}
+            iconColor="blue"
+            onClick={() => setActiveTab('moderators')}
+          />
+          <StatsCard
+            title="প্রতিষ্ঠান আবেদন"
+            value={institutionRequests.length}
+            subtitle="পর্যালোচনা অপেক্ষমান"
+            icon={<Building2 className="w-5 h-5" />}
+            iconColor="teal"
+            onClick={() => setActiveTab('institution_requests')}
+          />
+          <StatsCard
+            title="বিভাগে রক্তের অনুরোধ"
+            value={stats?.totalRequests || 0}
+            subtitle="জরুরি রক্তদান কেস"
+            icon={<HeartHandshake className="w-5 h-5" />}
+            iconColor="primary"
+            onClick={() => setActiveTab('requests')}
+          />
+          <StatsCard
+            title="সক্রিয় রক্তদাতা পুল"
+            value={stats?.availableDonors || 0}
+            subtitle="অবস্থানরত রক্তদাতা"
+            icon={<ShieldCheck className="w-5 h-5" />}
+            iconColor="emerald"
+          />
+        </div>
+
+        {/* Tabs Bar */}
+        <div className="flex border-b border-appBorder gap-2 text-xs sm:text-sm font-bold overflow-x-auto pb-1">
+          <button
+            onClick={() => setActiveTab('moderators')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'moderators' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>বিভাগীয় মডারেটরগণ ({moderators.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('institution_requests')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'institution_requests' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>প্রতিষ্ঠান আবেদন পর্যালোচনা ({institutionRequests.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('activities')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'activities' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>মডারেটর অ্যাক্টিভিটি লগ ({activities.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'requests' ? 'border-primary text-primary' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <HeartHandshake className="w-4 h-4" />
+            <span>চলমান রক্তের অনুরোধসমূহ</span>
+          </button>
+        </div>
+
+        {/* TAB 1: MODERATORS */}
+        {activeTab === 'moderators' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-700" />
+                  <span>{division?.nameBn} বিভাগের প্রাতিষ্ঠানিক মডারেটর তালিকা</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">মডারেটরদের কার্যকারিতা ও সদস্য সংযোজন পর্যবেক্ষণ</p>
+              </div>
+              <Badge variant="info">মোট: {moderators.length} জন</Badge>
+            </div>
+
+            {moderators.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                এই বিভাগে বর্তমানে কোনো প্রতিষ্ঠান মডারেটর নিযুক্ত নেই।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">মডারেটর নাম</th>
+                      <th className="py-3 px-4">দায়িত্বপ্রাপ্ত প্রতিষ্ঠান</th>
+                      <th className="py-3 px-4">যুক্তকৃত সদস্য</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {moderators.map((m: any) => {
+                      const isBlocked = m.accountStatus && m.accountStatus !== 'active';
+                      return (
+                        <tr key={m._id} className="hover:bg-slate-50/70">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-mainText">{m.name}</div>
+                            <div className="font-mono text-[10px] text-subText">{m.phone}</div>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-slate-800">
+                            {m.assignedInstitution || 'অনির্ধারিত'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant="info" size="sm">
+                              {m.membersCreatedCount || 0} জন
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant={!isBlocked ? 'success' : 'danger'} dot>
+                              {!isBlocked ? 'সক্রিয়' : 'স্থগিত'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {!isBlocked ? (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setBlockingTarget(m);
+                                  setBlockReason('');
+                                }}
+                              >
+                                স্থগিত করুন
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleUnblockUser(m)}
+                              >
+                                সচল করুন
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: INSTITUTION REQUESTS */}
+        {activeTab === 'institution_requests' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-tealAccent" />
+                  <span>{division?.nameBn} বিভাগের প্রাতিষ্ঠানিক নিবন্ধন আবেদনসমূহ</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">আবেদন যাচাইপূর্বক অনুমোদন বা বাতিলের সিদ্ধান্ত প্রদান করুন</p>
+              </div>
+              <Badge variant="teal">আবেদন: {institutionRequests.length} টি</Badge>
+            </div>
+
+            {institutionRequests.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">এই বিভাগে কোনো আবেদন অপেক্ষমাণ নেই।</div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">প্রতিষ্ঠানের নাম</th>
+                      <th className="py-3 px-4">কোড ও ধরণ</th>
+                      <th className="py-3 px-4">ঠিকানা</th>
+                      <th className="py-3 px-4">আবেদনকারী</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">সিদ্ধান্ত গ্রহণ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {institutionRequests.map(req => (
+                      <tr key={req._id} className="hover:bg-slate-50/70">
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-mainText">{m.name}</div>
-                          <div className="text-gray-400 font-mono text-[10px]">{m.phone}</div>
+                          <div className="font-bold text-mainText">{req.nameBn}</div>
+                          <div className="text-[10px] text-subText">{req.name}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="font-medium text-gray-800">{m.assignedInstitution || 'অনির্ধারিত'}</span>
+                          <span className="font-mono font-bold text-xs">{req.code}</span>
+                          <div className="text-[10px] text-subText">{req.type}</div>
+                        </td>
+                        <td className="py-3 px-4">{req.district}, {req.division}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-medium text-mainText">{req.applicantName}</div>
+                          <div className="font-mono text-[10px] text-subText">{req.applicantPhone}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                            {m.membersCreatedCount || 0} জন
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            !isBlocked ? 'bg-green-100 text-appSuccess' : 'bg-red-100 text-red-600'
-                          }`}>
-                            {!isBlocked ? 'সক্রিয়' : 'স্থগিত'}
-                          </span>
+                          <Badge 
+                            variant={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'danger' : 'warning'} 
+                            size="sm"
+                          >
+                            {req.status === 'approved' ? 'অনুমোদিত' : req.status === 'rejected' ? 'বাতিল' : 'বিচারাধীন'}
+                          </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          {!isBlocked ? (
-                            <button
-                              onClick={() => {
-                                setBlockingTarget(m);
-                                setBlockReason('');
-                              }}
-                              className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-semibold"
-                            >
-                              স্থগিত করুন
-                            </button>
+                          {req.status === 'pending_review' || req.status === 'under_review' ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => {
+                                  setReviewingReq(req);
+                                  setReviewDecision('approved');
+                                  setDecisionReason('');
+                                }}
+                              >
+                                অনুমোদন
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setReviewingReq(req);
+                                  setReviewDecision('rejected');
+                                  setDecisionReason('');
+                                }}
+                              >
+                                বাতিল
+                              </Button>
+                            </div>
                           ) : (
-                            <button
-                              onClick={() => handleUnblockUser(m)}
-                              className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-appSuccess rounded text-xs font-semibold"
-                            >
-                              সচল করুন
-                            </button>
+                            <span className="text-slate-400 text-xs font-semibold">মীমাংসিত</span>
                           )}
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Tab 2: Institution Requests Decision */}
-      {activeTab === 'institution_requests' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-appBorder">
+        {/* TAB 3: ACTIVITIES */}
+        {activeTab === 'activities' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
             <div>
               <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-tealAccent" />
-                <span>{division?.nameBn} বিভাগের প্রাতিষ্ঠানিক নিবন্ধন আবেদনসমূহ</span>
+                <Activity className="w-5 h-5 text-indigo-600" />
+                <span>বিভাগীয় মডারেটর কার্যকলাপ ট্র্যাকিং</span>
               </h3>
-              <p className="text-xs text-subText">আবেদন যাচাইপূর্বক অনুমোদন বা প্রত্যাখ্যানের সিদ্ধান্ত গ্রহণ করুন</p>
+              <p className="text-xs text-subText mt-0.5">মডারেটরদের প্রতিটি কর্মকাণ্ডের বিস্তারিত হিস্ট্রি</p>
             </div>
+
+            {activities.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">কোনো অ্যাক্টিভিটি রেকর্ড নেই।</div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">কার্যকলাপ (Action)</th>
+                      <th className="py-3 px-4">মডারেটর</th>
+                      <th className="py-3 px-4">প্রতিষ্ঠান</th>
+                      <th className="py-3 px-4">বিবরণ / কারণ</th>
+                      <th className="py-3 px-4">সময়</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {activities.map(act => (
+                      <tr key={act._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-mainText">{act.action}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-800">{act.actorName}</td>
+                        <td className="py-3 px-4 font-mono text-[11px] text-subText">{act.institutionScope || 'N/A'}</td>
+                        <td className="py-3 px-4 max-w-xs text-slate-600">{act.reason || 'স্বাভাবিক কার্যক্রম'}</td>
+                        <td className="py-3 px-4 text-subText">
+                          {new Date(act.createdAt).toLocaleString('bn-BD')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
+        )}
 
-          {institutionRequests.length === 0 ? (
-            <div className="text-center py-12 text-xs text-subText">এই বিভাগে কোনো আবেদন অপেক্ষমাণ নেই।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">প্রতিষ্ঠানের নাম</th>
-                    <th className="py-3 px-4">কোড ও ধরণ</th>
-                    <th className="py-3 px-4">ঠিকানা ও জেলা</th>
-                    <th className="py-3 px-4">আবেদনকারীর তথ্য</th>
-                    <th className="py-3 px-4">বর্তমান অবস্থা</th>
-                    <th className="py-3 px-4 text-right">সিদ্ধান্ত গ্রহণ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {institutionRequests.map(req => (
-                    <tr key={req._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-mainText">{req.nameBn}</div>
-                        <div className="text-[10px] text-gray-400">{req.name}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-mono text-xs">{req.code}</span>
-                        <div className="text-[10px] text-gray-500">{req.type}</div>
-                      </td>
-                      <td className="py-3 px-4">{req.address}, {req.district}</td>
-                      <td className="py-3 px-4">
-                        <div>{req.applicantName}</div>
-                        <div className="text-[10px] text-gray-400 font-mono">{req.applicantPhone}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          req.status === 'approved' ? 'bg-green-100 text-appSuccess' :
-                          req.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                          'bg-amber-100 text-amber-800'
-                        }`}>
-                          {req.status === 'approved' ? 'অনুমোদিত' : req.status === 'rejected' ? 'বাতিল' : 'বিচারাধীন'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {req.status === 'pending_review' || req.status === 'under_review' ? (
-                          <div className="space-x-1.5">
-                            <button
-                              onClick={() => {
-                                setReviewingReq(req);
-                                setReviewDecision('approved');
-                                setDecisionReason('');
-                              }}
-                              className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-appSuccess rounded font-bold text-xs"
-                            >
-                              অনুমোদন
-                            </button>
-                            <button
-                              onClick={() => {
-                                setReviewingReq(req);
-                                setReviewDecision('rejected');
-                                setDecisionReason('');
-                              }}
-                              className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded font-bold text-xs"
-                            >
-                              বাতিল
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 text-[11px]">মীমাংসিত</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* TAB 4: BLOOD REQUESTS */}
+        {activeTab === 'requests' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                <HeartHandshake className="w-5 h-5 text-primary" />
+                <span>{division?.nameBn} বিভাগের চলমান রক্তের অনুরোধসমূহ</span>
+              </h3>
+              <p className="text-xs text-subText mt-0.5">হাসপাতাল ও এলাকাভিত্তিক সাম্প্রতিক রক্তের চাহিদা</p>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Tab 3: Activities */}
-      {activeTab === 'activities' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-            <Activity className="w-5 h-5 text-indigo-600" />
-            <span>বিভাগীয় মডারেটর কার্যকলাপ ট্র্যাকিং</span>
-          </h3>
-
-          {activities.length === 0 ? (
-            <div className="text-center py-10 text-xs text-subText">কোনো অ্যাক্টিভিটি রেকর্ড নেই।</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">কার্যকলাপ (Action)</th>
-                    <th className="py-3 px-4">মডারেটর</th>
-                    <th className="py-3 px-4">প্রতিষ্ঠান</th>
-                    <th className="py-3 px-4">বিবরণ / কারণ</th>
-                    <th className="py-3 px-4">সময়</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {activities.map(act => (
-                    <tr key={act._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-mainText">{act.action}</span>
-                      </td>
-                      <td className="py-3 px-4 font-semibold">{act.actorName}</td>
-                      <td className="py-3 px-4 font-mono text-[11px]">{act.institutionScope || 'N/A'}</td>
-                      <td className="py-3 px-4 max-w-xs text-subText">{act.reason || 'স্বাভাবিক কার্যক্রম'}</td>
-                      <td className="py-3 px-4 text-subText">
-                        {new Date(act.createdAt).toLocaleString('bn-BD')}
-                      </td>
+            {(!requests || requests.length === 0) ? (
+              <p className="text-xs text-slate-400 py-8 text-center">বিভাগে কোনো সক্রিয় রক্তের অনুরোধ নেই।</p>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">রোগীর নাম</th>
+                      <th className="py-3 px-4">রক্তের গ্রুপ</th>
+                      <th className="py-3 px-4">হাসপাতাল ও অবস্থান</th>
+                      <th className="py-3 px-4">প্রয়োজনীয় তারিখ</th>
+                      <th className="py-3 px-4">অবস্থা</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {requests.map((r: any) => (
+                      <tr key={r._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-mainText">{r.patientName}</td>
+                        <td className="py-3 px-4 font-black text-primary text-sm">{r.bloodGroup}</td>
+                        <td className="py-3 px-4">{r.hospitalName}, {r.district}</td>
+                        <td className="py-3 px-4">{new Date(r.requiredDate).toLocaleDateString('bn-BD')}</td>
+                        <td className="py-3 px-4">
+                          <Badge variant="success" size="sm">{r.status}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Tab 4: Division Blood Requests */}
-      {activeTab === 'requests' && (
-        <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 space-y-4">
-          <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-            <HeartHandshake className="w-5 h-5 text-primary" />
-            <span>{division?.nameBn} বিভাগের চলমান রক্তের অনুরোধসমূহ</span>
-          </h3>
-
-          {(!requests || requests.length === 0) ? (
-            <p className="text-xs text-subText py-6 text-center">বিভাগে কোনো রক্তের অনুরোধ নেই।</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-subText border-b border-appBorder uppercase">
-                  <tr>
-                    <th className="py-3 px-4">রোগী</th>
-                    <th className="py-3 px-4">গ্রুপ</th>
-                    <th className="py-3 px-4">হাসপাতাল ও জেলা</th>
-                    <th className="py-3 px-4">তারিখ</th>
-                    <th className="py-3 px-4">অবস্থা</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {requests.map((r: any) => (
-                    <tr key={r._id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 font-semibold text-mainText">{r.patientName}</td>
-                      <td className="py-3 px-4 font-bold text-primary">{r.bloodGroup}</td>
-                      <td className="py-3 px-4">{r.hospitalName}, {r.district}</td>
-                      <td className="py-3 px-4">{new Date(r.requiredDate).toLocaleDateString('bn-BD')}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-appSuccess">
-                          {r.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
 
       {/* Review Modal */}
       {reviewingReq && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">প্রাতিষ্ঠানিক আবেদন পর্যালোচনা</h3>
-            <p className="text-xs text-gray-500 mb-4">{reviewingReq.nameBn} ({reviewingReq.code})</p>
-
-            <form onSubmit={handleReviewSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">সিদ্ধান্ত</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setReviewDecision('approved')}
-                    className={`py-2 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition ${
-                      reviewDecision === 'approved'
-                        ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                        : 'bg-gray-50 text-gray-700 border-gray-200'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>অনুমোদন করুন</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReviewDecision('rejected')}
-                    className={`py-2 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition ${
-                      reviewDecision === 'rejected'
-                        ? 'bg-red-600 text-white border-red-600 shadow-sm'
-                        : 'bg-gray-50 text-gray-700 border-gray-200'
-                    }`}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>বাতিল করুন</span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  সিদ্ধান্তের লিখিত কারণ ও মন্তব্য <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  required
-                  minLength={5}
-                  rows={3}
-                  value={decisionReason}
-                  onChange={e => setDecisionReason(e.target.value)}
-                  placeholder="অনুমোদন বা বাতিলের কারণ স্পষ্ট করে লিখুন..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+        <Modal
+          isOpen={Boolean(reviewingReq)}
+          onClose={() => setReviewingReq(null)}
+          title="প্রাতিষ্ঠানিক আবেদন পর্যালোচনা"
+          description={`${reviewingReq.nameBn} (${reviewingReq.code})`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setReviewingReq(null)}>ফিরে যান</Button>
+              <Button variant="primary" size="sm" isLoading={submittingReview} onClick={handleReviewSubmit}>
+                সিদ্ধান্ত নিশ্চিত করুন
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleReviewSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-2">সিদ্ধান্তের ধরণ</label>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setReviewingReq(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                  onClick={() => setReviewDecision('approved')}
+                  className={`py-2.5 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                    reviewDecision === 'approved'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-soft'
+                      : 'bg-slate-50 text-slate-700 border-appBorder'
+                  }`}
                 >
-                  ফিরে যান
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>অনুমোদন করুন</span>
                 </button>
                 <button
-                  type="submit"
-                  disabled={submittingReview}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow transition disabled:opacity-50"
+                  type="button"
+                  onClick={() => setReviewDecision('rejected')}
+                  className={`py-2.5 text-xs font-bold rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                    reviewDecision === 'rejected'
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-soft'
+                      : 'bg-slate-50 text-slate-700 border-appBorder'
+                  }`}
                 >
-                  {submittingReview ? 'সংরক্ষণ হচ্ছে...' : 'সিদ্ধান্ত নিশ্চিত করুন'}
+                  <XCircle className="w-4 h-4" />
+                  <span>বাতিল করুন</span>
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                সিদ্ধান্তের লিখিত কারণ ও পর্যবেক্ষণ <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                required
+                minLength={5}
+                rows={3}
+                value={decisionReason}
+                onChange={e => setDecisionReason(e.target.value)}
+                placeholder="অনুমোদন বা বাতিলের সুনির্দিষ্ট কারণ ব্যাখ্যা করুন..."
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
+          </form>
+        </Modal>
       )}
 
-      {/* Block User Modal */}
+      {/* Block Moderator Modal */}
       {blockingTarget && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-red-100 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">মডারেটর অ্যাকাউন্ট স্থগিত</h3>
-            <p className="text-xs text-gray-500 mb-4">{blockingTarget.name} ({blockingTarget.phone})</p>
-
-            <form onSubmit={handleBlockUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  স্থগিতের সুনির্দিষ্ট কারণ <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  required
-                  minLength={5}
-                  rows={3}
-                  value={blockReason}
-                  onChange={e => setBlockReason(e.target.value)}
-                  placeholder="স্থগিতকরণের কারণ উল্লেখ করুন..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setBlockingTarget(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow"
-                >
-                  স্থগিত নিশ্চিত করুন
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal
+          isOpen={Boolean(blockingTarget)}
+          onClose={() => setBlockingTarget(null)}
+          title="মডারেটর অ্যাকাউন্ট সাময়িক স্থগিত"
+          description={`${blockingTarget.name} (${blockingTarget.phone})`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setBlockingTarget(null)}>বাতিল</Button>
+              <Button variant="danger" size="sm" onClick={handleBlockUser}>স্থগিত নিশ্চিত করুন</Button>
+            </>
+          }
+        >
+          <form onSubmit={handleBlockUser} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                স্থগিতের সুনির্দিষ্ট কারণ <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                required
+                minLength={5}
+                rows={3}
+                value={blockReason}
+                onChange={e => setBlockReason(e.target.value)}
+                placeholder="স্থগিতকরণের সুনির্দিষ্ট কারণ উল্লেখ করুন..."
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
+          </form>
+        </Modal>
       )}
+
     </div>
   );
 };

@@ -11,14 +11,21 @@ import {
   ArrowRight, 
   CheckCircle2, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  Award,
+  Clock,
+  Shield,
+  Activity
 } from 'lucide-react';
-import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
+import { BLOOD_GROUPS } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
 import { RequestCard } from '../components/RequestCard';
 import { BloodRequest } from '../types';
 import { api } from '../api/client';
 import { DemoBanner } from '../components/DemoBanner';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -57,29 +64,40 @@ export const Home: React.FC = () => {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-16 pb-16 bg-page">
       <DemoBanner />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-red-50/70 via-surface to-page pt-8 pb-14 border-b border-appBorder">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-primary border border-red-200">
-              <Heart className="w-3.5 h-3.5 fill-primary text-primary" />
-              জাতীয় স্বেচ্ছাসেবী রক্তদান উদ্যোগ
-            </span>
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-mainText tracking-tight leading-tight">
-              এক ব্যাগ রক্ত, <span className="text-primary">বাঁচায় একটি মূল্যবান প্রাণ</span>
+      <section className="relative overflow-hidden bg-gradient-to-b from-rose-50/70 via-surface to-page pt-10 pb-16 border-b border-appBorder">
+        {/* Subtle decorative background circles */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -right-20 w-96 h-96 rounded-full bg-rose-100/40 blur-3xl"></div>
+          <div className="absolute top-40 -left-20 w-80 h-80 rounded-full bg-teal-50/50 blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-rose-100/80 text-primary border border-rose-200/80 shadow-soft">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span>জাতীয় স্বেচ্ছাসেবী রক্তদান উদ্যোগ • বাংলাদেশ</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-mainText tracking-tight leading-[1.15]">
+              এক ব্যাগ রক্ত, <br className="hidden sm:inline" />
+              <span className="bg-gradient-to-r from-primary via-rose-700 to-primary-dark bg-clip-text text-transparent">
+                বাঁচায় একটি অমূল্য জীবন
+              </span>
             </h1>
-            <p className="text-base sm:text-lg text-subText leading-relaxed">
+
+            <p className="text-base sm:text-lg text-subText max-w-2xl mx-auto leading-relaxed">
               সরাসরি যোগাযোগ করুন আপনার নিকটস্থ স্বেচ্ছায় রক্তদাতাদের সাথে। কোনো মধ্যস্বত্বভোগী বা অর্থ লেনদেন ছাড়া সম্পূর্ণ নিঃস্বার্থ মানবিক সেবা।
             </p>
 
             {/* Quick Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
               <Link
                 to="/donors"
-                className="w-full sm:w-auto px-6 py-3.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform transform active:scale-95 text-base"
+                className="w-full sm:w-auto px-8 py-3.5 bg-primary hover:bg-primary-dark active:scale-[0.98] text-white font-bold rounded-2xl shadow-md hover:shadow-glow flex items-center justify-center gap-2.5 transition-all text-sm sm:text-base"
               >
                 <Search className="w-5 h-5" />
                 <span>রক্তদাতা খুঁজুন</span>
@@ -87,63 +105,124 @@ export const Home: React.FC = () => {
 
               <Link
                 to="/create-request"
-                className="w-full sm:w-auto px-6 py-3.5 bg-surface hover:bg-red-50 text-primary border-2 border-primary font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition-transform transform active:scale-95 text-base"
+                className="w-full sm:w-auto px-8 py-3.5 bg-surface hover:bg-rose-50/80 text-primary border-2 border-primary/40 hover:border-primary font-bold rounded-2xl shadow-soft flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] text-sm sm:text-base"
               >
-                <PlusCircle className="w-5 h-5" />
-                <span>রক্তের জন্য অনুরোধ করুন</span>
+                <PlusCircle className="w-5 h-5 text-primary" />
+                <span>রক্তের জন্য অনুরোধ পোস্ট করুন</span>
               </Link>
+            </div>
+
+            {/* Trust Badges Bar */}
+            <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto text-left">
+              <div className="p-3 bg-white/80 rounded-xl border border-appBorder shadow-soft flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-mainText">১০০% ফ্রি</p>
+                  <p className="text-[10px] text-subText">কোনো ফি নেই</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white/80 rounded-xl border border-appBorder shadow-soft flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-primary flex items-center justify-center font-bold">
+                  <Heart className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-mainText">যাচাইকৃত রক্তদাতা</p>
+                  <p className="text-[10px] text-subText">নিরাপদ পরিচয়</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white/80 rounded-xl border border-appBorder shadow-soft flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-mainText">৬৪ জেলা</p>
+                  <p className="text-[10px] text-subText">সারাদেশে বিস্তৃত</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white/80 rounded-xl border border-appBorder shadow-soft flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-mainText">২৪/৭ সেবা</p>
+                  <p className="text-[10px] text-subText">জরুরি হটলাইন</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Quick Search Widget */}
-          <div className="mt-10 max-w-4xl mx-auto bg-surface rounded-2xl border border-appBorder shadow-card p-6">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-4">
-              <Search className="w-5 h-5 text-primary" />
-              <h2 className="font-bold text-mainText text-base">দ্রুত রক্তদাতা সন্ধান করুন</h2>
+          <div className="mt-12 max-w-4xl mx-auto bg-surface rounded-3xl border border-appBorder shadow-elevated p-6 sm:p-8">
+            <div className="flex items-center justify-between border-b border-appBorder pb-4 mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-primary flex items-center justify-center font-bold">
+                  <Search className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-black text-mainText text-base sm:text-lg">দ্রুত রক্তদাতা সন্ধান করুন</h2>
+                  <p className="text-xs text-subText">আপনার কাঙ্ক্ষিত রক্তের গ্রুপ ও এলাকা নির্বাচন করুন</p>
+                </div>
+              </div>
+              <Badge variant="neutral" size="sm">সার্চ ফিল্টার</Badge>
             </div>
 
-            <form onSubmit={handleSearchSubmit} className="space-y-4">
+            <form onSubmit={handleSearchSubmit} className="space-y-6">
               {/* Blood group selection pills */}
               <div>
-                <label className="block text-xs font-semibold text-mainText mb-2">
+                <label className="block text-xs font-bold text-mainText mb-2.5">
                   রক্তের গ্রুপ নির্বাচন করুন:
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                  {BLOOD_GROUPS.map(bg => (
-                    <button
-                      key={bg}
-                      type="button"
-                      onClick={() => setSelectedGroup(selectedGroup === bg ? '' : bg)}
-                      className={`py-2 rounded-xl text-sm font-bold border transition-all ${
-                        selectedGroup === bg
-                          ? 'bg-primary text-white border-primary shadow-sm scale-105'
-                          : 'bg-page hover:bg-red-50 text-mainText border-appBorder'
-                      }`}
-                    >
-                      {bg}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+                  {BLOOD_GROUPS.map(bg => {
+                    const isSelected = selectedGroup === bg;
+                    return (
+                      <button
+                        key={bg}
+                        type="button"
+                        onClick={() => setSelectedGroup(isSelected ? '' : bg)}
+                        className={`py-3 rounded-2xl text-sm font-black border transition-all duration-150 active:scale-95 ${
+                          isSelected
+                            ? 'bg-primary text-white border-primary shadow-glow scale-105'
+                            : 'bg-page hover:bg-rose-50/70 text-mainText border-appBorder hover:border-rose-200'
+                        }`}
+                      >
+                        {bg}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Cascading Location Selector */}
-              <LocationSelector
-                division={division}
-                district={district}
-                upazila={upazila}
-                onDivisionChange={setDivision}
-                onDistrictChange={setDistrict}
-                onUpazilaChange={setUpazila}
-              />
+              <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                <LocationSelector
+                  division={division}
+                  district={district}
+                  upazila={upazila}
+                  onDivisionChange={setDivision}
+                  onDistrictChange={setDistrict}
+                  onUpazilaChange={setUpazila}
+                />
+              </div>
 
-              <div className="pt-2 flex justify-end">
-                <button
+              <div className="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-xs text-subText">
+                  {selectedGroup ? `নির্বাচিত গ্রুপ: ${selectedGroup}` : 'সব রক্তের গ্রুপ অন্তর্ভুক্ত থাকবে'}
+                </span>
+                <Button
                   type="submit"
-                  className="w-full sm:w-auto px-8 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow transition-colors flex items-center justify-center gap-2"
+                  variant="primary"
+                  size="lg"
+                  icon={<Search className="w-4 h-4" />}
+                  className="w-full sm:w-auto px-10 shadow-soft"
                 >
-                  <Search className="w-4 h-4" />
-                  <span>অনুসন্ধান করুন</span>
-                </button>
+                  রক্তদাতা খুঁজুন
+                </Button>
               </div>
             </form>
           </div>
@@ -153,47 +232,47 @@ export const Home: React.FC = () => {
       {/* Distinction Section: Donor Search vs Blood Requests */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-red-500 to-primary text-white p-6 rounded-2xl shadow-md flex flex-col justify-between">
-            <div className="space-y-3">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold inline-block">
+          <div className="bg-gradient-to-br from-rose-600 via-primary to-primary-dark text-white p-7 sm:p-8 rounded-3xl shadow-card flex flex-col justify-between relative overflow-hidden group">
+            <div className="space-y-3 relative z-10">
+              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold inline-block">
                 রক্তগ্রহীতাদের জন্য
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold">
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
                 জরুরি রক্তের সন্ধান করছেন?
               </h3>
-              <p className="text-sm text-red-100 leading-relaxed">
+              <p className="text-sm text-rose-100 leading-relaxed max-w-md">
                 আপনার কাঙ্ক্ষিত রক্তের গ্রুপ ও জেলার তথ্য দিয়ে তাত্ক্ষণিক রক্তদাতাদের খুঁজুন অথবা একটি জরুরি অনুরোধ পোস্ট করে দ্রুত সবার দৃষ্টি আকর্ষণ করুন।
               </p>
             </div>
-            <div className="pt-6">
+            <div className="pt-6 relative z-10">
               <Link
                 to="/donors"
-                className="inline-flex items-center gap-2 bg-white text-primary px-5 py-2.5 rounded-xl font-bold text-sm shadow hover:bg-red-50 transition-colors"
+                className="inline-flex items-center gap-2 bg-white text-primary px-6 py-3 rounded-2xl font-black text-sm shadow hover:bg-rose-50 active:scale-95 transition-all"
               >
-                <span>রক্তদাতা ডিরেক্টরি</span>
+                <span>রক্তদাতা ডিরেক্টরি দেখুন</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-teal-700 to-tealAccent text-white p-6 rounded-2xl shadow-md flex flex-col justify-between">
-            <div className="space-y-3">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold inline-block">
+          <div className="bg-gradient-to-br from-teal-800 via-teal-700 to-tealAccent text-white p-7 sm:p-8 rounded-3xl shadow-card flex flex-col justify-between relative overflow-hidden group">
+            <div className="space-y-3 relative z-10">
+              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold inline-block">
                 স্বেচ্ছাসেবীদের জন্য
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold">
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
                 আপনি কি রক্তদান করতে প্রস্তুত?
               </h3>
-              <p className="text-sm text-teal-100 leading-relaxed">
+              <p className="text-sm text-teal-100 leading-relaxed max-w-md">
                 একজন স্বেচ্ছায় রক্তদাতা হিসেবে নাম অন্তর্ভুক্ত করুন। আপনার এলাকার মুমূর্ষু রোগীর জীবন বাঁচাতে আপনার এগিয়ে আসা অত্যন্ত গুরুত্বপূর্ণ।
               </p>
             </div>
-            <div className="pt-6">
+            <div className="pt-6 relative z-10">
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 bg-white text-tealAccent px-5 py-2.5 rounded-xl font-bold text-sm shadow hover:bg-teal-50 transition-colors"
+                className="inline-flex items-center gap-2 bg-white text-tealAccent px-6 py-3 rounded-2xl font-black text-sm shadow hover:bg-teal-50 active:scale-95 transition-all"
               >
-                <span>রক্তদাতা হিসেবে নিবন্ধন</span>
+                <span>রক্তদাতা হিসেবে নিবন্ধন করুন</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -203,19 +282,22 @@ export const Home: React.FC = () => {
 
       {/* Emergency Blood Requests Stream */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-primary animate-ping"></span>
-              <h2 className="text-xl sm:text-2xl font-bold text-mainText">জরুরি রক্তের প্রয়োজনসমূহ</h2>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-3 w-3 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-mainText">জরুরি রক্তের প্রয়োজনসমূহ</h2>
             </div>
-            <p className="text-xs text-subText mt-0.5">
+            <p className="text-xs sm:text-sm text-subText mt-1">
               এই মুহূর্তে হাসপাতালে চিকিৎসাধীন রোগীদের রক্তের জরুরি আবেদন
             </p>
           </div>
           <Link
             to="/requests"
-            className="text-xs sm:text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+            className="text-xs sm:text-sm font-bold text-primary hover:text-primary-dark inline-flex items-center gap-1.5 transition-colors"
           >
             <span>সকল অনুরোধ দেখুন</span>
             <ArrowRight className="w-4 h-4" />
@@ -223,18 +305,19 @@ export const Home: React.FC = () => {
         </div>
 
         {loadingRequests ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map(n => (
-              <div key={n} className="h-48 bg-gray-200 animate-pulse rounded-xl"></div>
+              <div key={n} className="h-56 bg-slate-200/70 animate-pulse rounded-2xl"></div>
             ))}
           </div>
         ) : emergencyRequests.length === 0 ? (
-          <div className="bg-surface rounded-xl border border-appBorder p-8 text-center text-subText">
-            <CheckCircle2 className="w-10 h-10 text-appSuccess mx-auto mb-2" />
-            <p className="font-semibold text-sm">এই মুহূর্তে কোনো জরুরি রক্তের অনুরোধ নেই।</p>
+          <div className="bg-surface rounded-2xl border border-appBorder p-10 text-center text-subText shadow-soft">
+            <CheckCircle2 className="w-12 h-12 text-appSuccess mx-auto mb-3" />
+            <h3 className="font-bold text-mainText text-base mb-1">এই মুহূর্তে কোনো জরুরি রক্তের অনুরোধ নেই</h3>
+            <p className="text-xs text-subText max-w-sm mx-auto">সকল অনুরোধ সফলভাবে সম্পন্ন হয়েছে অথবা নতুন কোনো জরুরি অনুরোধ পাওয়া যায়নি।</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {emergencyRequests.map(req => (
               <RequestCard key={req._id} request={req} />
             ))}
@@ -243,41 +326,42 @@ export const Home: React.FC = () => {
       </section>
 
       {/* How It Works */}
-      <section className="bg-surface py-12 border-y border-appBorder">
+      <section className="bg-surface py-16 border-y border-appBorder">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold text-mainText">কিভাবে কাজ করে রক্তদান বাংলাদেশ</h2>
-            <p className="text-xs sm:text-sm text-subText mt-1">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <Badge variant="teal" size="sm" className="mb-2">সহজ ৩ ধাপ</Badge>
+            <h2 className="text-2xl sm:text-4xl font-black text-mainText">কিভাবে কাজ করে রক্তদান বাংলাদেশ</h2>
+            <p className="text-xs sm:text-sm text-subText mt-2">
               স্বচ্ছ, দ্রুত এবং সুরক্ষিত উপায়ে রক্তদাতা ও গ্রহীতাদের সংযোগ স্থাপন
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-page p-6 rounded-2xl border border-appBorder text-center space-y-3">
-              <div className="w-12 h-12 bg-red-100 text-primary font-bold text-lg rounded-2xl flex items-center justify-center mx-auto">
+            <div className="bg-page p-7 rounded-3xl border border-appBorder text-center space-y-4 hover:shadow-card transition-all">
+              <div className="w-14 h-14 bg-rose-100 text-primary font-black text-xl rounded-2xl flex items-center justify-center mx-auto shadow-soft">
                 ১
               </div>
-              <h3 className="font-bold text-base text-mainText">রক্তদাতা খুঁজুন বা অনুরোধ করুন</h3>
+              <h3 className="font-black text-lg text-mainText">রক্তদাতা খুঁজুন বা অনুরোধ করুন</h3>
               <p className="text-xs text-subText leading-relaxed">
                 রক্তের গ্রুপ ও অবস্থান নির্বাচন করে রক্তদাতাদের তালিকা দেখুন অথবা রোগীর সুনির্দিষ্ট তথ্য দিয়ে সরাসরি রক্তের পোস্ট দিন।
               </p>
             </div>
 
-            <div className="bg-page p-6 rounded-2xl border border-appBorder text-center space-y-3">
-              <div className="w-12 h-12 bg-teal-100 text-tealAccent font-bold text-lg rounded-2xl flex items-center justify-center mx-auto">
+            <div className="bg-page p-7 rounded-3xl border border-appBorder text-center space-y-4 hover:shadow-card transition-all">
+              <div className="w-14 h-14 bg-teal-100 text-tealAccent font-black text-xl rounded-2xl flex items-center justify-center mx-auto shadow-soft">
                 ২
               </div>
-              <h3 className="font-bold text-base text-mainText">সুরক্ষিত উপায়ে যোগাযোগ</h3>
+              <h3 className="font-black text-lg text-mainText">সুরক্ষিত উপায়ে যোগাযোগ</h3>
               <p className="text-xs text-subText leading-relaxed">
                 রক্তদাতার গোপনীয়তা বজায় রেখে অনুমোদিত লগইন প্রক্রিয়ার মাধ্যমে সরাসরি যোগাযোগের নম্বর দেখুন এবং কথা বলুন।
               </p>
             </div>
 
-            <div className="bg-page p-6 rounded-2xl border border-appBorder text-center space-y-3">
-              <div className="w-12 h-12 bg-green-100 text-appSuccess font-bold text-lg rounded-2xl flex items-center justify-center mx-auto">
+            <div className="bg-page p-7 rounded-3xl border border-appBorder text-center space-y-4 hover:shadow-card transition-all">
+              <div className="w-14 h-14 bg-emerald-100 text-appSuccess font-black text-xl rounded-2xl flex items-center justify-center mx-auto shadow-soft">
                 ৩
               </div>
-              <h3 className="font-bold text-base text-mainText">রক্তদান ও প্রাণ রক্ষা</h3>
+              <h3 className="font-black text-lg text-mainText">রক্তদান ও প্রাণ রক্ষা</h3>
               <p className="text-xs text-subText leading-relaxed">
                 হাসপাতালে উপস্থিত হয়ে স্বাস্থ্য পরীক্ষা ও ক্রস-ম্যাচিং সম্পন্ন করে রক্তদান করুন এবং একটি পরিবারকে নতুন আশা দিন।
               </p>
@@ -288,49 +372,49 @@ export const Home: React.FC = () => {
 
       {/* Educational & FAQs */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-surface rounded-2xl border border-appBorder p-6 sm:p-10 shadow-soft">
-          <div className="flex items-center gap-2 mb-6 text-primary font-bold text-xl">
-            <HelpCircle className="w-6 h-6" />
+        <div className="bg-surface rounded-3xl border border-appBorder p-7 sm:p-12 shadow-soft">
+          <div className="flex items-center gap-3 mb-8 text-primary font-black text-xl sm:text-2xl border-b border-appBorder pb-4">
+            <HelpCircle className="w-7 h-7" />
             <h2>সাধারণ জিজ্ঞাসা ও স্বাস্থ্য নির্দেশিকা</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <div className="space-y-2">
-              <h4 className="font-bold text-mainText flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <h4 className="font-black text-mainText text-base flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></span>
                 কে রক্তদান করতে পারবেন?
               </h4>
-              <p className="text-xs text-subText leading-relaxed pl-4">
+              <p className="text-xs text-subText leading-relaxed pl-4.5">
                 ১৮ থেকে ৬০ বছর বয়সী যেকোনো সুস্থ প্রাপ্তবয়স্ক নারী ও পুরুষ যাদের ওজন ন্যূনতম ৫০ কেজি এবং হিমোগ্লোবিন সন্তোষজনক, তারা প্রতি ৪ মাস পরপর নিরাপদে রক্তদান করতে পারেন।
               </p>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-bold text-mainText flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <h4 className="font-black text-mainText text-base flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></span>
                 রক্তদাতার ফোন নম্বর সরাসরি কেন দেখা যায় না?
               </h4>
-              <p className="text-xs text-subText leading-relaxed pl-4">
-                রক্তদাতাদের অবাঞ্ছিত কল, স্প্যামিং এবং তথ্য পাচার থেকে রক্ষা করতে শুধু লগইনকৃত ও যাচাইকৃত ব্যবহারকারীদের নির্দিষ্ট সীমার মধ্যে যোগাযোগের নম্বর দেখার অনুমতি দেওয়া হয়।
+              <p className="text-xs text-subText leading-relaxed pl-4.5">
+                রক্তদাতাদের অবাঞ্ছিত কল, স্প্যামিং এবং তথ্য অপব্যবহার থেকে রক্ষা করতে শুধু লগইনকৃত ও যাচাইকৃত ব্যবহারকারীদের নির্দিষ্ট সীমার মধ্যে যোগাযোগের নম্বর দেখার অনুমতি দেওয়া হয়।
               </p>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-bold text-mainText flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <h4 className="font-black text-mainText text-base flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></span>
                 রক্তদানের পর কি কোনো পার্শ্বপ্রতিক্রিয়া হয়?
               </h4>
-              <p className="text-xs text-subText leading-relaxed pl-4">
+              <p className="text-xs text-subText leading-relaxed pl-4.5">
                 রক্তদান সম্পূর্ণ স্বাভাবিক ও নিরাপদ একটি জৈবিক প্রক্রিয়া। রক্তদানের পর মানবদেহের তরল অংশ ২৪-৪৮ ঘণ্টার মধ্যে এবং রক্তকোষগুলো কয়েক সপ্তাহের মধ্যে নতুনভাবে পূর্ণ হয়ে যায়।
               </p>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-bold text-mainText flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <h4 className="font-black text-mainText text-base flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></span>
                 কোনো আর্থিক লেনদেন কি অনুমোদিত?
               </h4>
-              <p className="text-xs text-subText leading-relaxed pl-4">
+              <p className="text-xs text-subText leading-relaxed pl-4.5">
                 সম্পূর্ণ না। এই প্ল্যাটফর্মটি শতভাগ স্বেচ্ছাসেবী। রক্তের বিনিময়ে যেকোনো অর্থ দাবি বা প্রদান আইনত দণ্ডনীয় অপরাধ। এমন কোনো ঘটনা লক্ষ্য করলে সাথে সাথে রিপোর্ট করুন।
               </p>
             </div>
@@ -340,4 +424,3 @@ export const Home: React.FC = () => {
     </div>
   );
 };
-

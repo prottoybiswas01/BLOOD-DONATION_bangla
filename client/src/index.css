@@ -6,27 +6,38 @@
   body {
     @apply bg-page text-mainText font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Accessible focus indicators */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2;
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-surface;
   }
+}
+
+/* Subtle micro-interactions */
+.btn-interaction {
+  @apply transition-all duration-150 active:scale-[0.98];
+}
+
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5;
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: #CBD5E1;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #94A3B8;
 }
 

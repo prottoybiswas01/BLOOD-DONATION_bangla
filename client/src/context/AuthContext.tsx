@@ -7,7 +7,7 @@ interface AuthContextType {
   donorProfile: DonorProfile | null;
   unreadCount: number;
   isLoading: boolean;
-  login: (phone: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  login: (phone: string, pass: string) => Promise<{ success: boolean; message?: string; user?: User }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   setAuthData: (token: string, user: User, donorProfile?: DonorProfile | null) => void;
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('token', res.token);
         setUser(res.user);
         setDonorProfile(res.donorProfile || null);
-        return { success: true };
+        return { success: true, user: res.user };
       }
       return { success: false, message: res.message || 'লগইন ব্যর্থ হয়েছে।' };
     } catch (err: any) {

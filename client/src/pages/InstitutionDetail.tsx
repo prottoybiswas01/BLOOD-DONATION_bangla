@@ -7,19 +7,22 @@ import {
   Phone, 
   Mail, 
   Globe, 
-  HeartHandshake, 
   Send, 
   AlertCircle, 
   CheckCircle2, 
   ArrowLeft,
   ShieldCheck,
-  Droplet
+  Droplet,
+  GraduationCap
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Institution, DonorProfile } from '../types';
 import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
 import { useAuth } from '../context/AuthContext';
 import { DonorCard } from '../components/DonorCard';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 
 export const InstitutionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -97,7 +100,6 @@ export const InstitutionDetail: React.FC = () => {
         setTimeout(() => {
           setShowContactModal(false);
           setSubmitSuccess(null);
-          // reset form
           setPatientName('');
           setHospitalName('');
           setReason('');
@@ -126,13 +128,16 @@ export const InstitutionDetail: React.FC = () => {
 
   if (error || !institution) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <AlertCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-gray-800 mb-2">প্রতিষ্ঠান পাওয়া যায়নি</h2>
-        <p className="text-sm text-gray-500 mb-6">{error || 'অনুরোধকৃত প্রতিষ্ঠানটির তথ্য সিস্টেমে নেই।'}</p>
-        <Link to="/institutions" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold">
-          <ArrowLeft className="w-4 h-4" />
-          <span>প্রতিষ্ঠান তালিকায় ফিরুন</span>
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-100 text-primary flex items-center justify-center mx-auto">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-mainText">প্রতিষ্ঠান পাওয়া যায়নি</h2>
+        <p className="text-sm text-subText max-w-sm mx-auto">{error || 'অনুরোধকৃত প্রতিষ্ঠানটির তথ্য সিস্টেমে নেই।'}</p>
+        <Link to="/institutions">
+          <Button variant="primary" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
+            প্রতিষ্ঠান তালিকায় ফিরুন
+          </Button>
         </Link>
       </div>
     );
@@ -141,96 +146,97 @@ export const InstitutionDetail: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Back button */}
-      <Link to="/institutions" className="inline-flex items-center gap-1.5 text-xs text-subText hover:text-primary font-medium transition">
+      <Link to="/institutions" className="inline-flex items-center gap-1.5 text-xs text-subText hover:text-primary font-bold transition">
         <ArrowLeft className="w-4 h-4" />
         <span>প্রতিষ্ঠান তালিকায় ফিরে যান</span>
       </Link>
 
       {/* Institution Banner Card */}
-      <div className="bg-surface rounded-2xl border border-appBorder shadow-card p-6 sm:p-8">
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-appBorder">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-tealAccent shrink-0 shadow-sm">
-              <Building2 className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 shadow-soft">
+              <GraduationCap className="w-9 h-9" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 uppercase">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <Badge variant="teal" size="sm">
                   {institution.code}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                </Badge>
+                <Badge variant="neutral" size="sm">
                   {institution.type === 'university' ? 'বিশ্ববিদ্যালয়' : institution.type === 'college' ? 'কলেজ' : institution.type === 'medical' ? 'মেডিকেল কলেজ' : 'শিক্ষা প্রতিষ্ঠান'}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>অনুমোদিত রক্তদান ইউনিট</span>
-                </span>
+                </Badge>
+                <Badge variant="success" size="sm" dot>
+                  অনুমোদিত রক্তদান ইউনিট
+                </Badge>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-mainText">{institution.nameBn}</h1>
-              <p className="text-sm text-subText">{institution.name}</p>
+              <h1 className="text-2xl sm:text-3xl font-black text-mainText">{institution.nameBn}</h1>
+              <p className="text-sm text-subText mt-0.5">{institution.name}</p>
             </div>
           </div>
 
           {/* Action button: Send Contact Request */}
-          <button
+          <Button
+            variant="primary"
+            size="lg"
+            icon={<Send className="w-4 h-4" />}
             onClick={() => setShowContactModal(true)}
-            className="w-full sm:w-auto px-5 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
+            className="w-full md:w-auto shadow-soft"
           >
-            <Send className="w-4 h-4" />
-            <span>প্রতিষ্ঠানে রক্তের অনুরোধ পাঠান</span>
-          </button>
+            প্রতিষ্ঠানে রক্তের অনুরোধ পাঠান
+          </Button>
         </div>
 
         {/* Institution Details Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 text-xs text-subText">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
             <MapPin className="w-4 h-4 text-primary shrink-0" />
-            <span>{institution.address}, {institution.district}</span>
+            <span className="truncate">{institution.address}, {institution.district}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-tealAccent shrink-0" />
-            <span>মোট নিবন্ধিত রক্তদাতা: <strong className="text-mainText text-sm font-bold">{institution.totalRegisteredDonors || donors.length}</strong> জন</span>
+          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
+            <Users className="w-4 h-4 text-teal-700 shrink-0" />
+            <span>নিবন্ধিত রক্তদাতা: <strong className="text-mainText text-sm font-black">{institution.totalRegisteredDonors || donors.length}</strong> জন</span>
           </div>
           {institution.phone && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
               <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{institution.phone}</span>
+              <span className="font-mono">{institution.phone}</span>
             </div>
           )}
           {institution.email && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
               <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>{institution.email}</span>
+              <span className="font-mono truncate">{institution.email}</span>
             </div>
           )}
         </div>
 
         {institution.description && (
-          <p className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 leading-relaxed">
+          <p className="mt-4 pt-4 border-t border-appBorder text-xs text-slate-600 leading-relaxed">
             {institution.description}
           </p>
         )}
       </div>
 
       {/* Donors Section */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-mainText flex items-center gap-2">
+            <h2 className="text-xl font-black text-mainText flex items-center gap-2.5">
               <Droplet className="w-5 h-5 text-primary" />
               <span>এই প্রতিষ্ঠানের রক্তদাতাগণ ({filteredDonors.length} জন)</span>
             </h2>
-            <p className="text-xs text-subText">সরাসরি বা মডারেটরের মাধ্যমে দ্রুত যোগাযোগ করুন</p>
+            <p className="text-xs text-subText mt-0.5">সরাসরি বা মডারেটরের মাধ্যমে দ্রুত যোগাযোগ করুন</p>
           </div>
 
           {/* Filter by Blood Group */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedBloodGroup('')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                 selectedBloodGroup === ''
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-surface text-subText border border-appBorder hover:bg-gray-100'
+                  ? 'bg-primary text-white shadow-soft'
+                  : 'bg-surface text-subText border border-appBorder hover:bg-slate-50'
               }`}
             >
               সব গ্রুপ
@@ -238,11 +244,11 @@ export const InstitutionDetail: React.FC = () => {
             {BLOOD_GROUPS.map(bg => (
               <button
                 key={bg}
-                onClick={() => setSelectedBloodGroup(bg)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                onClick={() => setSelectedBloodGroup(selectedBloodGroup === bg ? '' : bg)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   selectedBloodGroup === bg
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-surface text-subText border border-appBorder hover:bg-gray-100'
+                    ? 'bg-primary text-white shadow-soft'
+                    : 'bg-surface text-subText border border-appBorder hover:bg-slate-50'
                 }`}
               >
                 {bg}
@@ -252,18 +258,13 @@ export const InstitutionDetail: React.FC = () => {
         </div>
 
         {filteredDonors.length === 0 ? (
-          <div className="bg-surface rounded-2xl border border-appBorder p-12 text-center text-subText space-y-2">
-            <Users className="w-10 h-10 mx-auto text-gray-300" />
-            <p className="text-sm font-semibold text-mainText">এই রক্তের গ্রুপের কোনো রক্তদাতা এখনো নিবন্ধিত নেই</p>
-            <p className="text-xs">আপনি কি এই প্রতিষ্ঠানের শিক্ষার্থী বা কর্মী? আজই রক্তদাতা হিসেবে যোগ দিন।</p>
-            <div className="pt-2">
-              <Link to="/register" className="inline-block px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm">
-                রক্তদাতা নিবন্ধন করুন
-              </Link>
-            </div>
+          <div className="bg-surface rounded-3xl border border-appBorder p-12 text-center text-subText shadow-soft space-y-3">
+            <Users className="w-12 h-12 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-mainText text-base">এই গ্রুপে কোনো রক্তদাতা নিবন্ধিত নেই</h3>
+            <p className="text-xs text-subText">অন্য কোনো রক্তের গ্রুপ নির্বাচন করে দেখুন অথবা সরাসরি অনুরোধ পাঠান।</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDonors.map(donor => (
               <DonorCard key={donor._id} donor={donor} />
             ))}
@@ -271,153 +272,127 @@ export const InstitutionDetail: React.FC = () => {
         )}
       </div>
 
-      {/* Contact Request Modal */}
+      {/* Contact Modal */}
       {showContactModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-red-50 text-primary flex items-center justify-center">
-                  <HeartHandshake className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">প্রতিষ্ঠানে রক্তের অনুরোধ</h3>
-                  <p className="text-xs text-gray-500">{institution.nameBn}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowContactModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-sm font-bold p-1"
-              >
-                ✕
-              </button>
+        <Modal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          title="প্রতিষ্ঠানের মডারেটরের কাছে রক্তের অনুরোধ"
+          description={`ক্যাম্পাসের রক্তদাতাদের মধ্যে সমন্বয় করতে এই আবেদনটি ${institution.nameBn}-এর মডারেটরের কাছে পাঠানো হবে।`}
+          footer={
+            submitSuccess ? undefined : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setShowContactModal(false)}>
+                  বাতিল
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  isLoading={submitting}
+                  onClick={handleContactSubmit as any}
+                >
+                  অনুরোধ পাঠান
+                </Button>
+              </>
+            )
+          }
+        >
+          {submitSuccess ? (
+            <div className="bg-emerald-50 text-emerald-800 p-8 rounded-2xl text-center space-y-3 border border-emerald-200">
+              <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-600" />
+              <p className="font-black text-lg">{submitSuccess}</p>
+              <p className="text-xs text-emerald-700">প্রতিষ্ঠানের মডারেটর শীঘ্রই আপনার সাথে যোগাযোগ করবেন।</p>
             </div>
+          ) : (
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              {submitError && (
+                <div className="bg-rose-50 text-rose-700 text-xs p-3 rounded-xl border border-rose-200">
+                  {submitError}
+                </div>
+              )}
 
-            {submitError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{submitError}</span>
-              </div>
-            )}
-
-            {submitSuccess && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{submitSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleContactSubmit} className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    প্রয়োজনীয় রক্তের গ্রুপ <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-xs font-bold text-mainText mb-1">রোগীর নাম *</label>
+                  <input
+                    type="text"
+                    required
+                    value={patientName}
+                    onChange={e => setPatientName(e.target.value)}
+                    placeholder="রোগীর নাম"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-mainText mb-1">রক্তের গ্রুপ *</label>
                   <select
                     value={targetBloodGroup}
                     onChange={e => setTargetBloodGroup(e.target.value as BloodGroup)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold text-red-600 focus:ring-2 focus:ring-primary"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs font-bold text-primary"
                   >
                     {BLOOD_GROUPS.map(bg => (
                       <option key={bg} value={bg}>{bg}</option>
                     ))}
                   </select>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    রক্তের ব্যাগ / ইউনিট
-                  </label>
+                  <label className="block text-xs font-bold text-mainText mb-1">প্রয়োজনীয় ব্যাগ *</label>
                   <input
                     type="number"
                     min={1}
                     max={10}
+                    required
                     value={unitsRequired}
                     onChange={e => setUnitsRequired(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-mainText mb-1">জরুরিতা *</label>
+                  <select
+                    value={urgency}
+                    onChange={e => setUrgency(e.target.value as any)}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                  >
+                    <option value="emergency">জরুরি (আজকেই)</option>
+                    <option value="urgent">অতি জরুরি (আগামীকাল)</option>
+                    <option value="standard">নিয়মিত</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  রোগীর নাম <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={patientName}
-                  onChange={e => setPatientName(e.target.value)}
-                  placeholder="যেমন: রোগীর পূর্ণ নাম"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  হাসপাতাল / ক্লিনিকের নাম ও ঠিকানা <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-xs font-bold text-mainText mb-1">হাসপাতালের নাম ও অবস্থান *</label>
                 <input
                   type="text"
                   required
                   value={hospitalName}
                   onChange={e => setHospitalName(e.target.value)}
-                  placeholder="যেমন: ঢাকা মেডিকেল কলেজ ও হাসপাতাল"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
+                  placeholder="যেমন: ঢাকা মেডিকেল কলেজ হাসপাতাল"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  জরুরিতা স্তর
-                </label>
-                <select
-                  value={urgency}
-                  onChange={e => setUrgency(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
-                >
-                  <option value="emergency">জরুরি (আজকের মধ্যে প্রয়োজন)</option>
-                  <option value="urgent">অতি দ্রুত (আগামী ২৪-৪৮ ঘণ্টার মধ্যে)</option>
-                  <option value="standard">সাধারণ (নির্ধারিত তারিখে)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  রক্তের কারণ ও সংক্ষিপ্ত বর্ণনা <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-xs font-bold text-mainText mb-1">রোগীর বিবরণ / কারণ *</label>
                 <textarea
-                  required
                   rows={2}
+                  required
                   value={reason}
                   onChange={e => setReason(e.target.value)}
-                  placeholder="রোগীর শারীরিক অবস্থা বা অপারেশনের বিবরণ লিখুন..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-primary"
+                  placeholder="অপারেশন / রক্তস্বল্পতা ইত্যাদির সংক্ষিপ্ত বিবরণ..."
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
                 />
               </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowContactModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || !!submitSuccess}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {submitting ? 'প্রেরণ হচ্ছে...' : 'অনুরোধ নিশ্চিত করুন'}
-                </button>
-              </div>
             </form>
-          </div>
-        </div>
+          )}
+        </Modal>
       )}
     </div>
   );
 };
-

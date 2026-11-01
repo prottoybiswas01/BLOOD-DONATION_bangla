@@ -1,104 +1,120 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HeartHandshake, Phone, Mail, MapPin, ShieldAlert } from 'lucide-react';
+import { HeartHandshake, Phone, ShieldCheck, Mail, MapPin, Heart, ExternalLink } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-surface border-t border-appBorder mt-16 pt-12 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Col 1: Platform Info */}
-          <div className="space-y-4 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 pt-14 pb-8 text-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          {/* Brand & Mission (2 cols) */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-soft">
                 <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="text-lg font-bold text-primary">বাংলাদেশ রক্তদান</span>
+              <div>
+                <span className="text-xl font-black text-white tracking-tight block">
+                  রক্তদান বাংলাদেশ
+                </span>
+                <span className="text-xs text-slate-400 font-medium">
+                  Bangladesh Blood Donation Platform
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-subText leading-relaxed">
-              স্বেচ্ছায় রক্তদানকে সহজ, নিরাপদ এবং প্রযুক্তিবান্ধব করতে বাংলাদেশের ৬৪ জেলার রক্তদাতা এবং গ্রহীতাদের এক সুতোয় বাঁধার জাতীয় মানবিক উদ্যোগ।
+            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-sm">
+              বাংলাদেশের প্রতিটি বিভাগ, জেলা এবং শিক্ষাপ্রতিষ্ঠানের স্বেচ্ছাসেবী রক্তদাতাদের একটি সুরক্ষিত, বিশ্বস্ত ও মানবিক নেটওয়ার্ক। জরুরি মুহূর্তে জীবন বাঁচাতে সরাসরি যোগাযোগ করুন।
             </p>
-            <div className="text-xs text-subText space-y-1">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-primary" />
-                <span>ঢাকা, বাংলাদেশ</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-primary" />
-                <span>support@blooddonationbd.org</span>
-              </div>
+            <div className="pt-2 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-emerald-400 rounded-full border border-slate-700">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                ১০০% বিনামূল্যে সেবা
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">
+                🔒 ডেটা সুরক্ষা নিয়ন্ত্রিত
+              </span>
             </div>
           </div>
 
-          {/* Col 2: Quick Links */}
-          <div>
-            <h4 className="text-sm font-semibold text-mainText mb-3">দ্রুত অনুসন্ধান</h4>
-            <ul className="space-y-2 text-xs text-subText">
+          {/* Quick Access */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm uppercase tracking-wider">দ্রুত নেভিগেশন</h4>
+            <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/donors" className="hover:text-primary transition-colors">রক্তদাতা খুঁজুন</Link>
+                <Link to="/donors" className="hover:text-white transition-colors">স্বেচ্ছাসেবী রক্তদাতা অনুসন্ধান</Link>
               </li>
               <li>
-                <Link to="/requests" className="hover:text-primary transition-colors">চলমান রক্তের অনুরোধ</Link>
+                <Link to="/requests" className="hover:text-white transition-colors">চলমান রক্তের অনুরোধসমূহ</Link>
               </li>
               <li>
-                <Link to="/create-request" className="hover:text-primary transition-colors">জরুরি রক্তের আবেদন</Link>
+                <Link to="/create-request" className="hover:text-white transition-colors">নতুন রক্তের আবেদন করুন</Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-primary transition-colors">রক্তদাতা হিসেবে নিবন্ধন</Link>
+                <Link to="/institutions" className="hover:text-white transition-colors">অনুমোদিত শিক্ষাপ্রতিষ্ঠান</Link>
               </li>
               <li>
-                <Link to="/institutions" className="hover:text-primary transition-colors">অংশগ্রহণকারী প্রতিষ্ঠান</Link>
+                <Link to="/register" className="hover:text-white transition-colors">রক্তদাতা হিসেবে নিবন্ধন</Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 3: Guidelines & Safety */}
-          <div>
-            <h4 className="text-sm font-semibold text-mainText mb-3">নির্দেশিকা ও নীতিমালা</h4>
-            <ul className="space-y-2 text-xs text-subText">
+          {/* Support & Safety */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm uppercase tracking-wider">সহায়তা ও নীতি</h4>
+            <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/safety" className="hover:text-primary transition-colors">রক্তদানের যোগ্যতা ও সতর্কতা</Link>
+                <Link to="/safety" className="hover:text-white transition-colors">রক্তদানের সাধারণ নির্দেশিকা</Link>
               </li>
               <li>
-                <Link to="/privacy-terms" className="hover:text-primary transition-colors">গোপনীয়তা রক্ষা নীতি</Link>
+                <Link to="/safety" className="hover:text-white transition-colors">নারী রক্তদাতাদের নিরাপত্তা নীতি</Link>
               </li>
               <li>
-                <Link to="/privacy-terms#terms" className="hover:text-primary transition-colors">ব্যবহারের শর্তাবলী</Link>
+                <Link to="/privacy-terms" className="hover:text-white transition-colors">গোপনীয়তা ও ব্যবহারের শর্তাবলী</Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-primary transition-colors">আমাদের লক্ষ্য ও উদ্দেশ্য</Link>
+                <Link to="/about" className="hover:text-white transition-colors">আমাদের লক্ষ্য ও উদ্দেশ্য</Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-primary transition-colors">যোগাযোগ ও সহায়তা</Link>
+                <Link to="/contact" className="hover:text-white transition-colors">অভিযোগ ও মতামত জানান</Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 4: Medical & Legal Disclaimer */}
-          <div className="bg-gray-50 p-4 rounded-xl border border-appBorder">
-            <div className="flex items-center gap-2 text-primary text-xs font-semibold mb-2">
-              <ShieldAlert className="w-4 h-4" />
-              <span>চিকিৎসা ও আইনি সতর্কতা</span>
+          {/* Emergency Hotlines */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm uppercase tracking-wider">জরুরি জরুরি হেল্পলাইন</h4>
+            <div className="space-y-2.5 text-xs">
+              <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1">
+                <p className="text-[11px] text-slate-400">জাতীয় জরুরি সেবা (অ্যাম্বুলেন্স / পুলিশ):</p>
+                <p className="text-base font-bold text-white flex items-center gap-1.5 font-mono">
+                  <Phone className="w-4 h-4 text-primary" />
+                  ৯৯৯ (টোল ফ্রি)
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1">
+                <p className="text-[11px] text-slate-400">স্বাস্থ্য বাতায়ন (২৪/৭ ডাক্তার পরামর্শ):</p>
+                <p className="text-base font-bold text-emerald-400 flex items-center gap-1.5 font-mono">
+                  <Phone className="w-4 h-4 text-emerald-400" />
+                  ১৬২৬৩
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] text-subText leading-relaxed">
-              এই প্ল্যাটফর্মটি স্বেচ্ছাসেবী সমন্বয়ক হিসেবে কাজ করে, কোনো সরাসরি স্বাস্থ্যসেবা বা রক্ত পরীক্ষা করে না। রক্তদানের চূড়ান্ত উপযুক্ততা কেবল রেজিস্টার্ড চিকিৎসক ও প্রত্যয়িত রক্ত পরিসঞ্চালন কেন্দ্র দ্বারাই নির্ধারিত হবে। রক্ত ক্রয়-বিক্রয় আইনত দণ্ডনীয় অপরাধ।
-            </p>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-appBorder pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-subText gap-4">
-          <p>© {new Date().getFullYear()} বাংলাদেশ রক্তদান প্ল্যাটফর্ম। সর্বস্বত্ব সংরক্ষিত।</p>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy-terms" className="hover:text-primary">প্রাইভেসি</Link>
-            <span>•</span>
-            <Link to="/privacy-terms#terms" className="hover:text-primary">শর্তাবলী</Link>
-            <span>•</span>
-            <Link to="/contact" className="hover:text-primary">হেল্পডেস্ক</Link>
+        {/* Bottom copyright & disclaimer */}
+        <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <p>
+            © {new Date().getFullYear()} বাংলাদেশ রক্তদান প্ল্যাটফর্ম। সর্বস্বত্ব সংরক্ষিত।
+          </p>
+          <div className="flex items-center gap-1 text-slate-400">
+            <span>নির্মিত হয়েছে</span>
+            <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+            <span>মানবতার কল্যাণে বাংলাদেশের প্রতিটি মানুষের জন্য</span>
           </div>
         </div>
       </div>
     </footer>
   );
 };
-

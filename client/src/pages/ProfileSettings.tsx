@@ -52,6 +52,17 @@ export const ProfileSettings: React.FC = () => {
   const [phoneChangeMsg, setPhoneChangeMsg] = useState<string | null>(null);
   const [pendingPhoneRequest, setPendingPhoneRequest] = useState<PhoneChangeRequest | null>(null);
 
+  // Institution Membership & Change States
+  const [showInstModal, setShowInstModal] = useState(false);
+  const [approvedInstitutions, setApprovedInstitutions] = useState<any[]>([]);
+  const [targetInstId, setTargetInstId] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [instDepartment, setInstDepartment] = useState('');
+  const [instChangeReason, setInstChangeReason] = useState('');
+  const [submittingInstChange, setSubmittingInstChange] = useState(false);
+  const [instChangeMsg, setInstChangeMsg] = useState<string | null>(null);
+  const [pendingInstRequest, setPendingInstRequest] = useState<any | null>(null);
+
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -67,17 +78,64 @@ export const ProfileSettings: React.FC = () => {
       setConsentToShareContact(donorProfile.consentToShareContact ?? true);
     }
 
-    // Check if user has an active pending phone change request
-    async function loadPhoneRequest() {
+    // Load active phone request and institution change request
+    async function loadRequests() {
       try {
-        const res = await api.getMyPhoneChangeRequest();
-        if (res.success && res.pendingRequest) {
-          setPendingPhoneRequest(res.pendingRequest);
+        const [phoneRes, instRes, instListRes] = await Promise.all([
+          api.getMyPhoneChangeRequest(),
+          api.getMyInstitutionChangeRequest(),
+          api.getInstitutions()
+        ]);
+        if (phoneRes.success && phoneRes.pendingRequest) {
+          setPendingPhoneRequest(phoneRes.pendingRequest);
+        }
+        if (instRes.success && instRes.pendingRequest) {
+          setPendingInstRequest(instRes.pendingRequest);
+        }
+        if (instListRes.success && instListRes.institutions) {
+          setApprovedInstitutions(instListRes.institutions);
         }
       } catch {}
     }
-    loadPhoneRequest();
+    loadRequests();
   }, [user, donorProfile]);
+
+  const handleSubmitInstChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetInstId) {
+      setInstChangeMsg('অনুগ্রহ করে একটি শিক্ষা প্রতিষ্ঠান নির্বাচন করুন।');
+      return;
+    }
+    if (instChangeReason.trim().length < 5) {
+      setInstChangeMsg('প্রতিষ্ঠান পরিবর্তনের সুনির্দিষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।');
+      return;
+    }
+
+    setSubmittingInstChange(true);
+    setInstChangeMsg(null);
+    try {
+      const res = await api.submitInstitutionChangeRequest({
+        targetInstitutionId: targetInstId,
+        studentOrStaffId: studentId.trim() || undefined,
+        department: instDepartment.trim() || undefined,
+        reason: instChangeReason.trim()
+      });
+
+      if (res.success) {
+        setShowInstModal(false);
+        setInstChangeReason('');
+        setProfileMsg({ text: res.message || 'প্রতিষ্ঠান পরিবর্তনের আবেদন জমা হয়েছে।', type: 'success' });
+        const myRes = await api.getMyInstitutionChangeRequest();
+        if (myRes.success && myRes.pendingRequest) setPendingInstRequest(myRes.pendingRequest);
+      } else {
+        setInstChangeMsg(res.message || 'আবেদন জমা দেওয়া সম্ভব হয়নি।');
+      }
+    } catch (err: any) {
+      setInstChangeMsg(err.message || 'আবেদন প্রক্রিয়াকরণে সমস্যা হয়েছে।');
+    } finally {
+      setSubmittingInstChange(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +212,8 @@ export const ProfileSettings: React.FC = () => {
         return '/admin/dashboard';
       case 'DIVISION_COORDINATOR':
         return '/coordinator/dashboard';
+      case 'INSTITUTION_HEAD':
+        return '/head/dashboard';
       case 'INSTITUTION_MODERATOR':
         return '/moderator/dashboard';
       case 'REQUESTER':
@@ -255,6 +315,57 @@ export const ProfileSettings: React.FC = () => {
         )}
       </div>
 
+      {/* PART 06: My Institution / প্রতিষ্ঠান সংযুক্তকরণ Section */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-appBorder pb-4">
+          <div>
+            <h2 className="text-base font-black text-mainText flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-teal-700" />
+              <span>আমার প্রতিষ্ঠান (My Institution)</span>
+            </h2>
+            <p className="text-xs text-subText mt-0.5">বিশ্ববিদ্যালয় বা কলেজ ক্যাম্পাসের সাথে যুক্ত হয়ে ক্যাম্পাস রক্তদান কার্যক্রমে অংশ নিন</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setShowInstModal(true);
+              setInstChangeMsg(null);
+            }}
+            className="text-xs font-bold text-teal-800 border-teal-200 hover:bg-teal-50"
+          >
+            প্রতিষ্ঠান পরিবর্তন / যুক্ত করুন
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div>
+            <span className="text-xs text-subText block mb-0.5">বর্তমান প্রতিষ্ঠান:</span>
+            <span className="text-sm font-bold text-mainText">
+              {user.assignedInstitution 
+                ? (approvedInstitutions.find(i => i._id === user.assignedInstitution)?.nameBn || 'অধিভুক্ত প্রতিষ্ঠান') 
+                : 'বর্তমানে কোনো শিক্ষা প্রতিষ্ঠানের সাথে সংযুক্ত নন'}
+            </span>
+          </div>
+          <Badge variant={user.assignedInstitution ? 'teal' : 'neutral'} size="sm">
+            {user.assignedInstitution ? 'ক্যাম্পাস সদস্য' : 'সাধারণ সদস্য'}
+          </Badge>
+        </div>
+
+        {/* Pending Institution Change Indicator */}
+        {pendingInstRequest && (
+          <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs sm:text-sm space-y-1">
+            <div className="flex items-center gap-2 font-bold text-teal-800">
+              <Clock className="w-4 h-4 text-teal-600" />
+              <span>প্রতিষ্ঠান পরিবর্তনের একটি আবেদন পর্যালোচনার অপেক্ষায় রয়েছে</span>
+            </div>
+            <p className="text-xs text-teal-800">
+              অনুরোধকৃত নতুন প্রতিষ্ঠান: <strong>{pendingInstRequest.targetInstitutionName}</strong> | কারণ: "{pendingInstRequest.reason}"
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Main Profile Details Form */}
       <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-6">
         <div className="border-b border-appBorder pb-4">
@@ -336,6 +447,34 @@ export const ProfileSettings: React.FC = () => {
                 onDistrictChange={setDistrict}
                 onUpazilaChange={setUpazila}
               />
+            </div>
+          </div>
+
+          {/* Privacy & Public Contact Visibility (PART 02) */}
+          <div className="p-4 bg-slate-50 rounded-2xl border border-appBorder space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label className="text-xs font-bold text-mainText block">
+                  পাবলিক অনুসন্ধানে সরাসরি যোগাযোগের অনুমতি (Privacy & Visibility)
+                </label>
+                <p className="text-[11px] text-subText mt-0.5 leading-relaxed">
+                  চিহ্নিত থাকলে জরুরি রক্তের সন্ধানে আসা যে কোনো ভিজিটর লগইন না করেই আপনার সাথে সরাসরি ফোনে যোগাযোগ করতে পারবেন। আনচেক করলে পাবলিক অনুসন্ধানে আপনার মোবাইল নম্বর সম্পূর্ণ গোপন থাকবে।
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
+                <input
+                  type="checkbox"
+                  checked={consentToShareContact}
+                  onChange={e => setConsentToShareContact(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+            <div className="flex items-center gap-2 pt-1 text-[11px]">
+              <span className={`font-semibold ${consentToShareContact ? 'text-emerald-700' : 'text-amber-700'}`}>
+                {consentToShareContact ? '✓ বর্তমানে নম্বর উন্মুক্ত রয়েছে' : '⚠ বর্তমানে নম্বর গোপন রাখা হয়েছে'}
+              </span>
             </div>
           </div>
 
@@ -432,6 +571,97 @@ export const ProfileSettings: React.FC = () => {
                 onChange={e => setChangeReason(e.target.value)}
                 placeholder="যেমন: পূর্বের সিমটি হারিয়ে গেছে / কর্মস্থলের নতুন নম্বর যুক্ত করতে চাই..."
                 className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Institution Change / Attachment Modal (PART 06) */}
+      {showInstModal && (
+        <Modal
+          isOpen={showInstModal}
+          onClose={() => setShowInstModal(false)}
+          title="শিক্ষা প্রতিষ্ঠান পরিবর্তন বা সংযুক্তিকরণের আবেদন"
+          description="আপনার পছন্দের বিশ্ববিদ্যালয় বা কলেজ নির্বাচন করে আবেদন করুন। সুপার এডমিন বা বিভাগীয় সমন্বয়ক কর্তৃক পর্যালোচনার পর অনুমোদন দেওয়া হবে।"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowInstModal(false)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingInstChange}
+                onClick={handleSubmitInstChange as any}
+                icon={<Send className="w-4 h-4" />}
+                className="bg-teal-700 hover:bg-teal-800"
+              >
+                আবেদন জমা দিন
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleSubmitInstChange} className="space-y-4">
+            {instChangeMsg && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {instChangeMsg}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                শিক্ষা প্রতিষ্ঠান নির্বাচন করুন *
+              </label>
+              <select
+                required
+                value={targetInstId}
+                onChange={e => setTargetInstId(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700"
+              >
+                <option value="">-- প্রতিষ্ঠান নির্বাচন করুন --</option>
+                {approvedInstitutions.map((inst: any) => (
+                  <option key={inst._id} value={inst._id}>
+                    {inst.nameBn} ({inst.nameEn || inst.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">শিক্ষার্থী / স্টাফ আইডি (যদি থাকে)</label>
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={e => setStudentId(e.target.value)}
+                  placeholder="ID: 1910..."
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">বিভাগ / অনুষদ (যদি থাকে)</label>
+                <input
+                  type="text"
+                  value={instDepartment}
+                  onChange={e => setInstDepartment(e.target.value)}
+                  placeholder="যেমন: CSE, BBA"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                প্রতিষ্ঠান পরিবর্তনের কারণ * (কমপক্ষে ৫ অক্ষর)
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={instChangeReason}
+                onChange={e => setInstChangeReason(e.target.value)}
+                placeholder="যেমন: নতুন শিক্ষাবর্ষে উক্ত প্রতিষ্ঠানে ভর্তি হয়েছি..."
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700"
               />
             </div>
           </form>

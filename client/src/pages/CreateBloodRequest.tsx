@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PlusCircle, AlertCircle, Building2, Phone, Calendar, CheckCircle2, Lock, HeartPulse, User } from 'lucide-react';
+import { PlusCircle, AlertCircle, Phone, Calendar, CheckCircle2, Lock, HeartPulse, User } from 'lucide-react';
 import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Institution } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
@@ -24,13 +23,12 @@ export const CreateBloodRequest: React.FC = () => {
   const [requiredDate, setRequiredDate] = useState(
     new Date(Date.now() + 86400000).toISOString().split('T')[0] // default tomorrow
   );
+  const [requiredWithin, setRequiredWithin] = useState('জরুরি, এখনই প্রয়োজন।');
   const [urgencyLevel, setUrgencyLevel] = useState<'emergency' | 'urgent' | 'standard'>('emergency');
   const [reason, setReason] = useState('');
   const [contactNumber, setContactNumber] = useState(user?.phone || '');
   const [alternativeContactNumber, setAlternativeContactNumber] = useState('');
-  const [institutionId, setInstitutionId] = useState('');
 
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -39,17 +37,31 @@ export const CreateBloodRequest: React.FC = () => {
     if (user?.phone && !contactNumber) {
       setContactNumber(user.phone);
     }
-
-    async function loadInsts() {
-      try {
-        const res = await api.getInstitutions();
-        if (res.success && res.institutions) {
-          setInstitutions(res.institutions);
-        }
-      } catch {}
-    }
-    loadInsts();
   }, [user]);
+
+  if (!user) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <div className="bg-surface rounded-3xl border border-appBorder p-8 shadow-card space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-red-50 text-primary flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-mainText">রক্তের অনুরোধ পোস্ট করতে লগইন করুন</h2>
+          <p className="text-xs text-subText leading-relaxed">
+            রোগীর সুরক্ষা ও ভুয়া আবেদন প্রতিরোধে প্ল্যাটফর্মে রক্তের জরুরি আবেদন পোস্ট করতে অ্যাকাউন্ট লগইন বাধ্যতামূলক।
+          </p>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <Link to="/login?redirect=/create-request">
+              <Button variant="primary" size="md">লগইন করুন</Button>
+            </Link>
+            <Link to="/register">
+              <Button variant="outline" size="md">নতুন অ্যাকাউন্ট তৈরি করুন</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +98,11 @@ export const CreateBloodRequest: React.FC = () => {
         district,
         upazila,
         requiredDate,
+        requiredWithin,
         urgencyLevel,
         reason,
         contactNumber,
-        alternativeContactNumber: alternativeContactNumber || undefined,
-        institutionId: institutionId || undefined
+        alternativeContactNumber: alternativeContactNumber || undefined
       });
 
       if (res.success) {
@@ -99,10 +111,10 @@ export const CreateBloodRequest: React.FC = () => {
           navigate('/requests');
         }, 2000);
       } else {
-        setErrorMsg(res.message || 'অনুরোধ প্রকাশ করা যায়নি।');
+        setErrorMsg(res.message || 'অনুরোধ পোস্ট করা যায়নি।');
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'অনুরোধ প্রকাশে সমস্যা হয়েছে।');
+      setErrorMsg(err.message || 'সার্ভারে সংযোগ স্থাপন সম্ভব হয়নি।');
     } finally {
       setLoading(false);
     }
@@ -289,7 +301,7 @@ export const CreateBloodRequest: React.FC = () => {
                 />
               </div>
 
-              {/* Date Required & Optional Institution Tag */}
+              {/* Date Required & Required Within Timeframe */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-mainText mb-1.5">
@@ -306,19 +318,21 @@ export const CreateBloodRequest: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-mainText mb-1.5">
-                    সংশ্লিষ্ট ক্যাম্পাস/প্রতিষ্ঠান (ঐচ্ছিক)
+                    রক্ত কত সময়ের মধ্যে প্রয়োজন? <span className="text-primary">*</span>
                   </label>
                   <select
-                    value={institutionId}
-                    onChange={e => setInstitutionId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-surface border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    value={requiredWithin}
+                    onChange={e => setRequiredWithin(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-surface border border-appBorder rounded-xl text-sm font-semibold text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
-                    <option value="">কোনো সুনির্দিষ্ট প্রতিষ্ঠান নয়</option>
-                    {institutions.map(inst => (
-                      <option key={inst._id} value={inst._id}>
-                        {inst.nameBn} ({inst.code})
-                      </option>
-                    ))}
+                    <option value="জরুরি, এখনই প্রয়োজন।">জরুরি, এখনই প্রয়োজন।</option>
+                    <option value="৬ ঘণ্টার মধ্যে">৬ ঘণ্টার মধ্যে</option>
+                    <option value="১২ ঘণ্টার মধ্যে">১২ ঘণ্টার মধ্যে</option>
+                    <option value="২৪ ঘণ্টার মধ্যে">২৪ ঘণ্টার মধ্যে</option>
+                    <option value="২ দিনের মধ্যে">২ দিনের মধ্যে</option>
+                    <option value="৩ দিনের মধ্যে">৩ দিনের মধ্যে</option>
+                    <option value="নির্দিষ্ট তারিখ ও সময়">নির্দিষ্ট তারিখ ও সময়</option>
                   </select>
                 </div>
               </div>

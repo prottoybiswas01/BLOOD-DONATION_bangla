@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { api } from '../api/client';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +30,14 @@ export const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Forgot Password Modal States
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotPhoneOrId, setForgotPhoneOrId] = useState('');
+  const [forgotReason, setForgotReason] = useState('');
+  const [submittingForgot, setSubmittingForgot] = useState(false);
+  const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
+  const [forgotErrorMsg, setForgotErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +61,8 @@ export const Login: React.FC = () => {
         navigate('/admin/dashboard');
       } else if (user?.role === 'DIVISION_COORDINATOR') {
         navigate('/coordinator/dashboard');
+      } else if (user?.role === 'INSTITUTION_HEAD') {
+        navigate('/head/dashboard');
       } else if (user?.role === 'INSTITUTION_MODERATOR') {
         navigate('/moderator/dashboard');
       } else {
@@ -58,6 +70,37 @@ export const Login: React.FC = () => {
       }
     } else {
       setErrorMsg(res.message || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।');
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPhoneOrId.trim()) {
+      setForgotErrorMsg('নিবন্ধিত মোবাইল নম্বর বা ইউজার আইডি দিন।');
+      return;
+    }
+
+    setSubmittingForgot(true);
+    setForgotErrorMsg(null);
+    setForgotSuccessMsg(null);
+
+    try {
+      const res = await api.submitForgotPassword({
+        phoneOrUserId: forgotPhoneOrId.trim(),
+        reason: forgotReason.trim() || undefined
+      });
+
+      if (res.success) {
+        setForgotSuccessMsg(res.message || 'আপনার পাসওয়ার্ড রিকভারির আবেদনটি গৃহীত হয়েছে। সংশ্লিষ্ট কর্তৃপক্ষ যাচাই করে সাময়িক পাসওয়ার্ড প্রদান করবেন।');
+        setForgotPhoneOrId('');
+        setForgotReason('');
+      } else {
+        setForgotErrorMsg(res.message || 'রিকভারি আবেদন সম্পন্ন করা যায়নি।');
+      }
+    } catch (err: any) {
+      setForgotErrorMsg(err.message || 'সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+    } finally {
+      setSubmittingForgot(false);
     }
   };
 
@@ -221,6 +264,17 @@ export const Login: React.FC = () => {
                 />
                 <span className="text-slate-600 font-medium">আমাকে মনে রাখুন</span>
               </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotModal(true);
+                  setForgotErrorMsg(null);
+                  setForgotSuccessMsg(null);
+                }}
+                className="text-primary hover:underline font-bold text-xs"
+              >
+                পাসওয়ার্ড ভুলে গেছেন?
+              </button>
             </div>
 
             <Button
@@ -285,10 +339,19 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleQuickLogin('01722222222')}
-                className="p-2 rounded-xl border border-appBorder bg-slate-50 hover:bg-purple-50 hover:border-purple-200 text-left transition-all col-span-2 sm:col-span-1"
+                className="p-2 rounded-xl border border-appBorder bg-slate-50 hover:bg-purple-50 hover:border-purple-200 text-left transition-all"
               >
                 <p className="font-bold text-slate-800 text-[11px]">📋 রক্তপ্রার্থী</p>
                 <p className="text-[10px] text-subText font-mono">01722222222</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('01700000008')}
+                className="p-2 rounded-xl border border-appBorder bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 text-left transition-all"
+              >
+                <p className="font-bold text-slate-800 text-[11px]">🏫 ঢাবি কর্তৃপক্ষ প্রধান</p>
+                <p className="text-[10px] text-subText font-mono">01700000008</p>
               </button>
             </div>
           </div>
@@ -304,6 +367,90 @@ export const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Recovery Modal */}
+      {showForgotModal && (
+        <Modal
+          isOpen={showForgotModal}
+          onClose={() => setShowForgotModal(false)}
+          title="পাসওয়ার্ড ভুলে গেছেন? (নিরাপদ ম্যানুয়াল রিকভারি)"
+          description="আমাদের প্ল্যাটফর্ম সম্পূর্ণ নিরাপদ পদ্ধতিতে দায়িত্বপ্রাপ্ত কর্মকর্তার মাধ্যমে এককালীন সাময়িক পাসওয়ার্ড প্রদান করে।"
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowForgotModal(false)}>
+                বন্ধ করুন
+              </Button>
+              {!forgotSuccessMsg && (
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={handleForgotSubmit}
+                  isLoading={submittingForgot}
+                >
+                  আবেদন জমা দিন
+                </Button>
+              )}
+            </div>
+          }
+        >
+          {forgotSuccessMsg ? (
+            <div className="space-y-3 py-2 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <p className="text-xs text-emerald-900 font-semibold leading-relaxed">
+                {forgotSuccessMsg}
+              </p>
+              <p className="text-[11px] text-subText">
+                সংশ্লিষ্ট বিভাগীয় সমন্বয়ক বা প্রতিষ্ঠান মডারেটর আপনার পরিচয় নিশ্চিত করে আপনাকে একটি সাময়িক ওয়ান-টাইম পাসওয়ার্ড প্রদান করবেন।
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotSubmit} className="space-y-4 text-xs">
+              {forgotErrorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{forgotErrorMsg}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">
+                  নিবন্ধিত মোবাইল নম্বর অথবা ইউজার আইডি <span className="text-primary">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={forgotPhoneOrId}
+                  onChange={e => setForgotPhoneOrId(e.target.value)}
+                  placeholder="যেমন: 01711000000 বা ইউজার আইডি"
+                  className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs font-mono text-mainText focus:bg-surface focus:border-primary transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">
+                  সমস্যার কারণ / বিস্তারিত বিবরণ (ঐচ্ছিক)
+                </label>
+                <textarea
+                  rows={3}
+                  value={forgotReason}
+                  onChange={e => setForgotReason(e.target.value)}
+                  placeholder="যেমন: পাসওয়ার্ড মনে নেই বা ফোনে মেসেজ পাচ্ছি না..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:bg-surface focus:border-primary transition-all"
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 space-y-1">
+                <p className="font-bold">🔒 গোপনীয়তা ও অনুমোদন প্রক্রিয়া:</p>
+                <p>
+                  আপনার আবেদনটি সরাসরি সংশ্লিষ্ট <strong>বিভাগীয় সমন্বয়ক</strong> বা আপনার <strong>শিক্ষা প্রতিষ্ঠানের মডারেটরের</strong> ড্যাশবোর্ডে পৌঁছাবে। তারা যাচাই করে একটি নিরাপদ সাময়িক ওয়ান-টাইম পাসওয়ার্ড ইস্যু করবেন।
+                </p>
+              </div>
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

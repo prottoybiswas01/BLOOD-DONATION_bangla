@@ -17,7 +17,10 @@ import {
   Lock,
   RotateCcw,
   UserCheck,
-  XCircle
+  XCircle,
+  Search,
+  KeyRound,
+  History
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +38,37 @@ export const ModeratorDashboard: React.FC = () => {
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [activities, setActivities] = useState<ModeratorActivity[]>([]);
   const [phoneChangeRequests, setPhoneChangeRequests] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'roster' | 'contact_requests' | 'activities' | 'phone_requests'>('roster');
+  const [recoveryRequests, setRecoveryRequests] = useState<any[]>([]);
+  const [instChanges, setInstChanges] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'roster' | 'contact_requests' | 'phone_requests' | 'password_recovery' | 'institution_changes' | 'activities'>('roster');
+
+  // Scoped User Search states (PART 04)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [searchResult, setSearchResult] = useState<any | null>(null);
+
+  // Password Recovery Approval Modal (PART 03)
+  const [approvingRecovery, setApprovingRecovery] = useState<any | null>(null);
+  const [recoveryApproveNotes, setRecoveryApproveNotes] = useState('');
+  const [submittingRecoveryApprove, setSubmittingRecoveryApprove] = useState(false);
+  const [revealedRecoveryCreds, setRevealedRecoveryCreds] = useState<{
+    phone: string;
+    temporaryPassword: string;
+    message: string;
+    warning: string;
+  } | null>(null);
+  const [copiedOtp, setCopiedOtp] = useState(false);
+
+  // Password Recovery Rejection Modal
+  const [rejectingRecovery, setRejectingRecovery] = useState<any | null>(null);
+  const [recoveryRejectReason, setRecoveryRejectReason] = useState('');
+  const [submittingRecoveryReject, setSubmittingRecoveryReject] = useState(false);
+
+  // Review Institution Change Modal (PART 06)
+  const [reviewingChangeReq, setReviewingChangeReq] = useState<any | null>(null);
+  const [changeDecision, setChangeDecision] = useState<'approved' | 'rejected'>('approved');
+  const [changeReviewNotes, setChangeReviewNotes] = useState('');
+  const [submittingChangeReview, setSubmittingChangeReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -76,17 +109,21 @@ export const ModeratorDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [dashRes, contactRes, actRes, phoneRes] = await Promise.all([
+      const [dashRes, contactRes, actRes, phoneRes, recRes, chgRes] = await Promise.all([
         api.getModeratorDashboard(),
         api.getContactRequests(),
         api.getModeratorActivities(),
-        api.getPhoneChangeRequests()
+        api.getPhoneChangeRequests(),
+        api.getPasswordRecoveryRequests(),
+        api.getInstitutionChangeRequests()
       ]);
 
       if (dashRes.success) setData(dashRes);
       if (contactRes.success) setContactRequests(contactRes.requests || []);
       if (actRes.success) setActivities(actRes.activities || []);
       if (phoneRes.success) setPhoneChangeRequests(phoneRes.requests || []);
+      if (recRes && recRes.success) setRecoveryRequests(recRes.requests || []);
+      if (chgRes && chgRes.success) setInstChanges(chgRes.requests || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'ড্যাশবোর্ড তথ্য লোড করতে সমস্যা হয়েছে।');
     } finally {
@@ -97,6 +134,96 @@ export const ModeratorDashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const handleScopedSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearchingUser(true);
+    setSearchResult(null);
+    try {
+      const res = await api.scopedUserSearch(searchQuery.trim());
+      setSearchResult(res);
+    } catch (err: any) {
+      setSearchResult({
+        success: false,
+        isOutOfScope: true,
+        guidanceBn: err.message || 'অনুসন্ধান প্রক্রিয়ায় ত্রুটি দেখা দিয়েছে।'
+      });
+    } finally {
+      setSearchingUser(false);
+    }
+  };
+
+  const handleApproveRecovery = async () => {
+    if (!approvingRecovery) return;
+    setSubmittingRecoveryApprove(true);
+    try {
+      const res = await api.approvePasswordRecoveryRequest(approvingRecovery._id, recoveryApproveNotes.trim() || undefined);
+      if (res.success && res.temporaryPassword) {
+        setRevealedRecoveryCreds({
+          phone: approvingRecovery.userPhone,
+          temporaryPassword: res.temporaryPassword,
+          message: res.message,
+          warning: res.securityNotice || 'এটি এককালীন ব্যবহারের জন্য। ব্যবহারকারী লগইন করার পর নতুন পাসওয়ার্ড সেট করতে বাধ্য থাকবে।'
+        });
+        setApprovingRecovery(null);
+        setRecoveryApproveNotes('');
+        loadDashboardData();
+      } else {
+        alert(res.message || 'পাসওয়ার্ড প্রদান প্রক্রিয়া ব্যর্থ হয়েছে।');
+      }
+    } catch (err: any) {
+      alert(err.message || 'অনুমোদন ব্যর্থ হয়েছে।');
+    } finally {
+      setSubmittingRecoveryApprove(false);
+    }
+  };
+
+  const handleRejectRecovery = async () => {
+    if (!rejectingRecovery) return;
+    if (recoveryRejectReason.trim().length < 5) {
+      alert('বাতিলের সুস্পষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।');
+      return;
+    }
+    setSubmittingRecoveryReject(true);
+    try {
+      const res = await api.rejectPasswordRecoveryRequest(rejectingRecovery._id, recoveryRejectReason.trim());
+      if (res.success) {
+        setRejectingRecovery(null);
+        setRecoveryRejectReason('');
+        loadDashboardData();
+      } else {
+        alert(res.message || 'বাতিল করা যায়নি।');
+      }
+    } catch (err: any) {
+      alert(err.message || 'ত্রুটি দেখা দিয়েছে।');
+    } finally {
+      setSubmittingRecoveryReject(false);
+    }
+  };
+
+  const handleReviewChangeRequest = async () => {
+    if (!reviewingChangeReq) return;
+    setSubmittingChangeReview(true);
+    try {
+      const res = await api.reviewInstitutionChangeRequest(reviewingChangeReq._id, {
+        status: changeDecision,
+        decisionReason: changeReviewNotes.trim() || (changeDecision === 'approved' ? 'অনুমোদিত' : 'বাতিল'),
+        reviewNotes: changeReviewNotes.trim() || undefined
+      });
+      if (res.success) {
+        setReviewingChangeReq(null);
+        setChangeReviewNotes('');
+        loadDashboardData();
+      } else {
+        alert(res.message || 'নিষ্পত্তি করা যায়নি।');
+      }
+    } catch (err: any) {
+      alert(err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।');
+    } finally {
+      setSubmittingChangeReview(false);
+    }
+  };
 
   const handleReviewPhoneRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,6 +433,76 @@ export const ModeratorDashboard: React.FC = () => {
             iconColor="purple"
             onClick={() => setActiveTab('activities')}
           />
+        </div>
+
+        {/* Scoped Profile Search (PART 04) */}
+        <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-black text-mainText flex items-center gap-2">
+              <Search className="w-4 h-4 text-teal-700" />
+              <span>প্রতিষ্ঠান স্কোপড প্রোফাইল অনুসন্ধান (Scoped User Search)</span>
+            </h2>
+            <p className="text-xs text-subText mt-0.5">
+              আইডি, ফোন নম্বর বা নাম দিয়ে আপনার প্রতিষ্ঠানের আওতাভুক্ত যে কোনো সদস্য অনুসন্ধান করুন
+            </p>
+          </div>
+
+          <form onSubmit={handleScopedSearch} className="flex gap-2">
+            <input
+              type="text"
+              required
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="মোবাইল নম্বর / আইডি / নাম লিখুন..."
+              className="flex-1 px-4 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs sm:text-sm text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700"
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={searchingUser}
+              className="bg-teal-700 hover:bg-teal-800"
+            >
+              অনুসন্ধান
+            </Button>
+          </form>
+
+          {searchResult && (
+            <div className="mt-3">
+              {searchResult.isOutOfScope ? (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-amber-800">অধিকারবর্হিভূত প্রোফাইল</h4>
+                    <p className="text-xs text-amber-700 mt-0.5">{searchResult.guidanceBn}</p>
+                  </div>
+                </div>
+              ) : searchResult.user ? (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg">
+                      {searchResult.user.name?.slice(0, 1)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-mainText text-sm">{searchResult.user.name}</h4>
+                        <Badge variant="teal" size="sm">{searchResult.user.role}</Badge>
+                        <Badge variant="neutral" size="sm">{searchResult.user.accountStatus}</Badge>
+                      </div>
+                      <p className="text-xs text-subText font-mono mt-0.5">
+                        ফোন: <strong>{searchResult.user.phone}</strong> | আইডি: {searchResult.user._id}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="success" size="sm">✓ প্রতিষ্ঠানভুক্ত প্রোফাইল</Badge>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-slate-100 text-slate-600 text-xs text-center">
+                  কোনো ব্যবহারকারী পাওয়া যায়নি।
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Blood Group Distribution Grid */}
@@ -896,6 +1093,165 @@ export const ModeratorDashboard: React.FC = () => {
         </Modal>
       )}
 
+      {/* Modal: Approve Recovery */}
+      {approvingRecovery && (
+        <Modal
+          isOpen={!!approvingRecovery}
+          onClose={() => setApprovingRecovery(null)}
+          title="পাসওয়ার্ড রিকভারি অনুমোদন"
+          description={`ব্যবহারকারী ${approvingRecovery.userName} (${approvingRecovery.userPhone})-কে এককালীন পাসওয়ার্ড প্রদান করা হবে।`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setApprovingRecovery(null)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingRecoveryApprove}
+                onClick={handleApproveRecovery}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                অনুমোদন ও পাসওয়ার্ড উৎপন্ন করুন
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+              <strong>আইনি নোটিশ:</strong> আবেদনকারীর সঠিক পরিচয় নিশ্চিত করার পরেই কেবল অনুমোদন করুন। এই পাসওয়ার্ড দিয়ে তিনি কেবল একবার লগইন করতে পারবেন।
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">অনুমোদনের নোট (ঐচ্ছিক)</label>
+              <textarea
+                rows={2}
+                value={recoveryApproveNotes}
+                onChange={e => setRecoveryApproveNotes(e.target.value)}
+                placeholder="সরাসরি কথা বলে পরিচয় নিশ্চিত করা হয়েছে..."
+                className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Reveal Temporary Password */}
+      {revealedRecoveryCreds && (
+        <Modal
+          isOpen={!!revealedRecoveryCreds}
+          onClose={() => setRevealedRecoveryCreds(null)}
+          title="এককালীন অস্থায়ী পাসওয়ার্ড প্রস্তুত"
+          footer={
+            <Button variant="primary" size="sm" onClick={() => setRevealedRecoveryCreds(null)}>
+              ঠিক আছে
+            </Button>
+          }
+        >
+          <div className="space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h4 className="font-bold text-mainText text-sm">
+              ব্যবহারকারীর ফোন: <span className="font-mono">{revealedRecoveryCreds.phone}</span>
+            </h4>
+            <div className="p-4 rounded-2xl bg-slate-900 text-white font-mono text-xl tracking-wider flex items-center justify-between">
+              <span>{revealedRecoveryCreds.temporaryPassword}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(revealedRecoveryCreds.temporaryPassword);
+                  setCopiedOtp(true);
+                  setTimeout(() => setCopiedOtp(false), 2000);
+                }}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400"
+              >
+                {copiedOtp ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-rose-600 font-semibold">
+              {revealedRecoveryCreds.warning}
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Reject Recovery */}
+      {rejectingRecovery && (
+        <Modal
+          isOpen={!!rejectingRecovery}
+          onClose={() => setRejectingRecovery(null)}
+          title="পাসওয়ার্ড রিকভারি আবেদন বাতিল"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setRejectingRecovery(null)}>
+                পিছনে যান
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingRecoveryReject}
+                onClick={handleRejectRecovery}
+                className="bg-rose-600 hover:bg-rose-700"
+              >
+                বাতিল নিশ্চিত করুন
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-mainText">বাতিলকরণের কারণ * (কমপক্ষে ৫ অক্ষর)</label>
+            <textarea
+              rows={3}
+              required
+              value={recoveryRejectReason}
+              onChange={e => setRecoveryRejectReason(e.target.value)}
+              placeholder="আবেদনকারীর পরিচয় যাচাই করা সম্ভব হয়নি..."
+              className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Review Institution Change */}
+      {reviewingChangeReq && (
+        <Modal
+          isOpen={!!reviewingChangeReq}
+          onClose={() => setReviewingChangeReq(null)}
+          title={`প্রতিষ্ঠান পরিবর্তন আবেদন ${changeDecision === 'approved' ? 'অনুমোদন' : 'বাতিল'}`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setReviewingChangeReq(null)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingChangeReview}
+                onClick={handleReviewChangeRequest}
+                className={changeDecision === 'approved' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-rose-600 hover:bg-rose-700'}
+              >
+                {changeDecision === 'approved' ? 'অনুমোদন করুন' : 'বাতিল করুন'}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3 text-xs">
+            <p className="text-subText">
+              আবেদনকারী: <strong>{reviewingChangeReq.userName}</strong> ({reviewingChangeReq.userPhone})
+            </p>
+            <p className="text-subText">
+              অনুরোধকৃত প্রতিষ্ঠান: <strong>{reviewingChangeReq.targetInstitutionName}</strong>
+            </p>
+            <label className="block text-xs font-bold text-mainText">প্রশাসনিক মন্তব্য / নোট</label>
+            <textarea
+              rows={3}
+              value={changeReviewNotes}
+              onChange={e => setChangeReviewNotes(e.target.value)}
+              placeholder="আবেদনটি পর্যবেক্ষণপূর্বক সিদ্ধান্ত গ্রহণ করা হলো..."
+              className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

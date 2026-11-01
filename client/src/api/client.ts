@@ -346,4 +346,75 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+
+  // PART 03: Password Recovery
+  submitForgotPassword: (payload: { phoneOrUserId: string; reason?: string }) =>
+    fetchWithAuth('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getPasswordRecoveryRequests: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/auth/recovery-requests?${query.toString()}`);
+  },
+
+  approvePasswordRecoveryRequest: (id: string, notes?: string) =>
+    fetchWithAuth(`/auth/recovery-requests/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
+
+  rejectPasswordRecoveryRequest: (id: string, reason: string) =>
+    fetchWithAuth(`/auth/recovery-requests/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  getPasswordRecoveryHistory: () =>
+    fetchWithAuth('/auth/recovery-history'),
+
+  // PART 04: Scoped Member Search
+  scopedUserSearch: (query: string) =>
+    fetchWithAuth(`/admin/users/scoped-search?query=${encodeURIComponent(query)}`),
+
+  // PART 05: Manual Institution Creation
+  manualCreateInstitution: (payload: Record<string, any>) =>
+    fetchWithAuth('/admin/institutions/manual', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  submitInstitutionApplication: (payload: Record<string, any>) =>
+    fetchWithAuth('/institution-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // PART 06: Institution Change Requests
+  submitInstitutionChangeRequest: (payload: { targetInstitutionId: string; studentOrStaffId?: string; department?: string; reason: string }) =>
+    fetchWithAuth('/institution-change', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getMyInstitutionChangeRequest: () =>
+    fetchWithAuth('/institution-change/my'),
+
+  getInstitutionChangeRequests: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/institution-change?${query.toString()}`);
+  },
+
+  reviewInstitutionChangeRequest: (id: string, payload: { status: 'approved' | 'rejected'; decisionReason?: string; reviewNotes?: string }) =>
+    fetchWithAuth(`/institution-change/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 };

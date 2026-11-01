@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, RotateCcw, Filter, AlertCircle, Users, CheckCircle } from 'lucide-react';
-import { BLOOD_GROUPS } from '../data/bangladeshLocations';
+import { Search, RotateCcw, Filter, AlertCircle, Users, CheckCircle, MapPin, Compass, Navigation } from 'lucide-react';
+import { BLOOD_GROUPS, BANGLADESH_DIVISIONS } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
 import { DonorCard } from '../components/DonorCard';
 import { ReportModal } from '../components/ReportModal';
@@ -10,6 +10,12 @@ import { api } from '../api/client';
 import { DemoBanner } from '../components/DemoBanner';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { 
+  detectUserDistrict, 
+  getSavedDefaultDistrict, 
+  saveDefaultDistrict, 
+  DetectedLocation 
+} from '../utils/geolocation';
 
 export const DonorSearch: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,6 +27,12 @@ export const DonorSearch: React.FC = () => {
   const [availabilityStatus, setAvailabilityStatus] = useState<string>(searchParams.get('availabilityStatus') || '');
   const [page, setPage] = useState<number>(parseInt(searchParams.get('page') || '1', 10));
 
+  // Geolocation states
+  const [isAutoLocationActive, setIsAutoLocationActive] = useState<boolean>(false);
+  const [detectingLocation, setDetectingLocation] = useState<boolean>(false);
+  const [detectedDistrictName, setDetectedDistrictName] = useState<string | null>(null);
+  const [locationDenied, setLocationDenied] = useState<boolean>(false);
+
   const [donors, setDonors] = useState<DonorProfile[]>([]);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -30,10 +42,47 @@ export const DonorSearch: React.FC = () => {
   // Reporting
   const [reportingDonorId, setReportingDonorId] = useState<string | null>(null);
 
+  // Automatically detect visitor location on initial mount if no district in URL
+  useEffect(() => {
+    const urlDistrict = searchParams.get('district');
+    if (urlDistrict) {
+      setDistrict(urlDistrict);
+      return;
+    }
+
+    const saved = getSavedDefaultDistrict();
+    if (saved?.district) {
+      setDistrict(saved.district);
+      if (saved.division) setDivision(saved.division);
+      setIsAutoLocationActive(true);
+      const divObj = BANGLADESH_DIVISIONS.find(d => d.id === saved.division);
+      const distObj = divObj?.districts.find(dst => dst.id === saved.district);
+      setDetectedDistrictName(distObj?.nameBn || saved.district);
+      return;
+    }
+
+    // Try browser geolocation
+    setDetectingLocation(true);
+    detectUserDistrict().then(res => {
+      setDetectingLocation(false);
+      if (res.success && res.location) {
+        setDistrict(res.location.district);
+        setDivision(res.location.division);
+        setDetectedDistrictName(res.location.districtNameBn);
+        setIsAutoLocationActive(true);
+      } else if (res.isPermissionDenied) {
+        setLocationDenied(true);
+      }
+    });
+  }, []);
+
   const fetchDonors = async () => {
     setLoading(true);
     setErrorMsg(null);
     try {
+      // Default local search shows maximum 7 donors per user requirement
+      const searchLimit = isAutoLocationActive ? 7 : 9;
+
       const res = await api.searchDonors({
         bloodGroup,
         division,
@@ -41,7 +90,7 @@ export const DonorSearch: React.FC = () => {
         upazila,
         availabilityStatus,
         page,
-        limit: 9,
+        limit: searchLimit,
       });
 
       if (res.success) {
@@ -69,7 +118,27 @@ export const DonorSearch: React.FC = () => {
     if (availabilityStatus) q.availabilityStatus = availabilityStatus;
     if (page > 1) q.page = String(page);
     setSearchParams(q, { replace: true });
-  }, [bloodGroup, division, district, upazila, availabilityStatus, page]);
+  }, [bloodGroup, division, district, upazila, availabilityStatus, page, isAutoLocationActive]);
+
+  const handleManualDistrictChange = (newDistrict: string) => {
+    setDistrict(newDistrict);
+    setUpazila('');
+    setPage(1);
+    setIsAutoLocationActive(false); // Switched to manual district
+  };
+
+  const handleManualDivisionChange = (newDivision: string) => {
+    setDivision(newDivision);
+    setDistrict('');
+    setUpazila('');
+    setPage(1);
+    setIsAutoLocationActive(false);
+  };
+
+  const handleManualUpazilaChange = (newUpazila: string) => {
+    setUpazila(newUpazila);
+    setPage(1);
+  };
 
   const handleReset = () => {
     setBloodGroup('');
@@ -78,6 +147,24 @@ export const DonorSearch: React.FC = () => {
     setUpazila('');
     setAvailabilityStatus('');
     setPage(1);
+    setIsAutoLocationActive(false);
+    setDetectedDistrictName(null);
+  };
+
+  const handleRequestLocationAgain = async () => {
+    setDetectingLocation(true);
+    setLocationDenied(false);
+    const res = await detectUserDistrict();
+    setDetectingLocation(false);
+    if (res.success && res.location) {
+      setDistrict(res.location.district);
+      setDivision(res.location.division);
+      setDetectedDistrictName(res.location.districtNameBn);
+      setIsAutoLocationActive(true);
+      setPage(1);
+    } else {
+      setLocationDenied(true);
+    }
   };
 
   return (
@@ -151,15 +238,47 @@ export const DonorSearch: React.FC = () => {
           </div>
         </div>
 
+        {/* Geolocation Detection Banner */}
+        {detectingLocation && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-2 text-xs text-blue-800">
+            <Navigation className="w-4 h-4 animate-spin text-blue-600 flex-shrink-0" />
+            <span>আপনার বর্তমান অবস্থান শনাক্ত করা হচ্ছে...</span>
+          </div>
+        )}
+
+        {isAutoLocationActive && detectedDistrictName && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-900 font-semibold shadow-soft">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>আপনার বর্তমান অবস্থান অনুযায়ী <strong>{detectedDistrictName}</strong> জেলার রক্তদাতাদের তালিকা দেখানো হচ্ছে (সর্বোচ্চ ৭ জন)।</span>
+            </div>
+            <button onClick={handleReset} className="text-emerald-700 hover:text-emerald-800 underline text-xs whitespace-nowrap">
+              সব জেলা দেখুন
+            </button>
+          </div>
+        )}
+
+        {locationDenied && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-900">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>স্বয়ংক্রিয় লোকেশন অনুমতি বন্ধ রয়েছে। আপনি নিচের ড্রপডাউন থেকে যেকোনো জেলা নির্বাচন করে রক্তদাতা খুঁজতে পারেন।</span>
+            </div>
+            <button onClick={handleRequestLocationAgain} className="px-2.5 py-1 text-xs font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg">
+              পুনরায় অনুমতি দিন
+            </button>
+          </div>
+        )}
+
         {/* Cascading Location Selector */}
         <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
           <LocationSelector
             division={division}
             district={district}
             upazila={upazila}
-            onDivisionChange={v => { setDivision(v); setPage(1); }}
-            onDistrictChange={v => { setDistrict(v); setPage(1); }}
-            onUpazilaChange={v => { setUpazila(v); setPage(1); }}
+            onDivisionChange={handleManualDivisionChange}
+            onDistrictChange={handleManualDistrictChange}
+            onUpazilaChange={handleManualUpazilaChange}
           />
         </div>
 

@@ -57,8 +57,10 @@ export async function getDonorById(req: Request, res: Response): Promise<void> {
   }
 
   const institution = profile.institutionId ? dataStore.findInstitutionById(profile.institutionId) : undefined;
+  const donorUser = dataStore.findUserById(profile.userId);
+  const isPublicContactAllowed = Boolean(profile.consentToShareContact);
 
-  // Never return private phone in public view
+  // Return phone strictly when donor gave explicit consent
   const safeProfile = {
     _id: profile._id,
     displayName: profile.displayName,
@@ -72,7 +74,8 @@ export async function getDonorById(req: Request, res: Response): Promise<void> {
     institutionName: institution?.nameBn || institution?.name,
     institutionMembershipVerified: profile.institutionMembershipVerified,
     emergencyAvailable: profile.emergencyAvailable,
-    consentToShareContact: profile.consentToShareContact,
+    consentToShareContact: isPublicContactAllowed,
+    phone: isPublicContactAllowed ? donorUser?.phone : undefined,
     bio: profile.bio,
     createdAt: profile.createdAt
   };

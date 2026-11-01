@@ -17,7 +17,7 @@ router.patch('/me', requireAuth, validateBody(UpdateProfileSchema), updateMyProf
 router.post(
   '/', 
   requireAuth, 
-  requireRoles('INSTITUTION_MODERATOR', 'DIVISION_COORDINATOR', 'ADMIN', 'SUPER_ADMIN'), 
+  requireRoles('INSTITUTION_MODERATOR', 'INSTITUTION_HEAD', 'DIVISION_COORDINATOR', 'ADMIN', 'SUPER_ADMIN'), 
   validateBody(CreateMemberByModeratorSchema), 
   createMemberByModerator
 );

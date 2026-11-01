@@ -56,7 +56,7 @@ export async function createMemberByModerator(req: AuthRequest, res: Response): 
   const phone = normalizePhone(data.phone);
 
   // Check institution scope
-  if (req.user.role === 'INSTITUTION_MODERATOR') {
+  if (req.user.role === 'INSTITUTION_MODERATOR' || req.user.role === 'INSTITUTION_HEAD') {
     const isAssigned = req.user.assignedInstitution === data.institutionId ||
       (req.user.assignedInstitutions && req.user.assignedInstitutions.includes(data.institutionId));
 

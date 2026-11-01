@@ -17,6 +17,7 @@ import { RequesterDashboard } from './pages/RequesterDashboard';
 import { InstitutionDirectory } from './pages/InstitutionDirectory';
 import { InstitutionDetail } from './pages/InstitutionDetail';
 import { ModeratorDashboard } from './pages/ModeratorDashboard';
+import { InstitutionHeadDashboard } from './pages/InstitutionHeadDashboard';
 import { CoordinatorDashboard } from './pages/CoordinatorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
@@ -63,7 +64,14 @@ export function App() {
               <Route path="/" element={<Home />} />
               <Route path="/donors" element={<DonorSearch />} />
               <Route path="/requests" element={<BloodRequests />} />
-              <Route path="/create-request" element={<CreateBloodRequest />} />
+              <Route 
+                path="/create-request" 
+                element={
+                  <ProtectedRoute>
+                    <CreateBloodRequest />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/institutions" element={<InstitutionDirectory />} />
               <Route path="/institutions/:id" element={<InstitutionDetail />} />
               <Route path="/about" element={<AboutUs />} />
@@ -109,6 +117,15 @@ export function App() {
                 element={
                   <ProtectedRoute allowedRoles={['INSTITUTION_MODERATOR', 'SUPER_ADMIN']}>
                     <ModeratorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/head/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['INSTITUTION_HEAD', 'SUPER_ADMIN']}>
+                    <InstitutionHeadDashboard />
                   </ProtectedRoute>
                 }
               />

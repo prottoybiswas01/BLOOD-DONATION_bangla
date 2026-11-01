@@ -12,6 +12,8 @@ import {
   updateInstitutionStatus, 
   getAuditLogs, 
   getContactAccessLogs,
+  searchScopedUser,
+  manualCreateInstitution,
   UpdateRoleSchema,
   BlockUserSchema,
   UnblockUserSchema,
@@ -22,7 +24,23 @@ import { validateBody } from '../middleware/validate.js';
 
 const router = Router();
 
-// Routes accessible by SUPER_ADMIN and ADMIN
+// Scoped Profile Search (Available to all authorized roles according to their scope)
+router.get(
+  '/users/scoped-search', 
+  requireAuth, 
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR', 'INSTITUTION_HEAD', 'INSTITUTION_MODERATOR'), 
+  searchScopedUser
+);
+
+// Manual Institution Creation (Only Super Admin and Division Coordinator)
+router.post(
+  '/institutions/manual',
+  requireAuth,
+  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR'),
+  manualCreateInstitution
+);
+
+// Routes accessible strictly by SUPER_ADMIN and ADMIN
 router.use(requireAuth, requireRoles('SUPER_ADMIN', 'ADMIN'));
 
 router.get('/overview', getAdminOverview);

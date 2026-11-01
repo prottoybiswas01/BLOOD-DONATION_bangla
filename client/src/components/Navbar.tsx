@@ -40,6 +40,8 @@ export const Navbar: React.FC = () => {
         return '/admin/dashboard';
       case 'DIVISION_COORDINATOR':
         return '/coordinator/dashboard';
+      case 'INSTITUTION_HEAD':
+        return '/head/dashboard';
       case 'INSTITUTION_MODERATOR':
         return '/moderator/dashboard';
       case 'DONOR':
@@ -61,6 +63,8 @@ export const Navbar: React.FC = () => {
         return <Badge variant="primary" size="sm">অ্যাডমিন</Badge>;
       case 'DIVISION_COORDINATOR':
         return <Badge variant="info" size="sm">বিভাগীয় সমন্বয়ক</Badge>;
+      case 'INSTITUTION_HEAD':
+        return <Badge variant="teal" size="sm">প্রতিষ্ঠান প্রধান</Badge>;
       case 'INSTITUTION_MODERATOR':
         return <Badge variant="teal" size="sm">প্রতিষ্ঠান মডারেটর</Badge>;
       case 'DONOR':

@@ -250,6 +250,41 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  // Check if user is logging in using an approved recovery request
+  const activeRecovery = dataStore.passwordRecoveryRequests.find(
+    r => r.userId === user._id && r.status === 'approved' && !r.isUsed
+  );
+
+  if (activeRecovery) {
+    if (activeRecovery.expiresAt && new Date() > new Date(activeRecovery.expiresAt)) {
+      activeRecovery.status = 'expired';
+      res.status(401).json({
+        success: false,
+        message: 'আপনার সাময়িক পাসওয়ার্ডটির মেয়াদ উত্তীর্ণ হয়েছে। অনুগ্রহ করে পুনরায় রিকভারি আবেদন করুন।'
+      });
+      return;
+    }
+
+    // Mark as used immediately upon successful verification
+    activeRecovery.isUsed = true;
+    activeRecovery.status = 'used';
+    activeRecovery.updatedAt = new Date();
+
+    dataStore.passwordRecoveryAudits.unshift({
+      _id: 'pra_' + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: activeRecovery._id,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      issuedBy: user._id,
+      issuedByName: user.name,
+      issuerRole: user.role,
+      action: 'LOGIN_USED',
+      reason: 'সাময়িক পাসওয়ার্ড সফলভাবে ব্যবহার করে প্রথম লগইন সম্পন্ন',
+      createdAt: new Date()
+    });
+  }
+
   dataStore.updateUser(user._id, { lastLoginAt: new Date() });
 
   const token = jwt.sign(
@@ -316,6 +351,149 @@ export async function changeFirstLoginPassword(req: AuthRequest, res: Response):
   res.json({
     success: true,
     message: 'আপনার নতুন স্থায়ী পাসওয়ার্ড সফলভাবে সংরক্ষিত হয়েছে। এখন আপনি প্ল্যাটফর্মের সকল সেবা ব্যবহার করতে পারবেন।'
+  });
+}
+
+// --- PART 03: Password Recovery Endpoints ---
+
+export async function submitForgotPassword(req: Request, res: Response): Promise<void> {
+  const { phoneOrUserId, reason } = req.body;
+  if (!phoneOrUserId || typeof phoneOrUserId !== 'string') {
+    res.status(400).json({ success: false, message: 'নিবন্ধিত মোবাইল নম্বর বা ইউজার আইডি প্রদান করুন।' });
+    return;
+  }
+
+  const result = dataStore.createPasswordRecoveryRequest(phoneOrUserId, reason);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+
+  res.json(result);
+}
+
+export async function getPasswordRecoveryRequests(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const user = dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  const { status } = req.query;
+  const requests = dataStore.getPasswordRecoveryRequests({
+    role: user.role,
+    division: user.assignedDivision,
+    institutionId: user.assignedInstitution,
+    status: status as string
+  });
+
+  res.json({
+    success: true,
+    requests,
+    total: requests.length
+  });
+}
+
+export async function approvePasswordRecoveryRequest(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const approver = dataStore.findUserById(req.user.userId);
+  if (!approver) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  const { id } = req.params;
+  const result = dataStore.approvePasswordRecoveryRequest(id, approver);
+
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: approver._id,
+    actorRole: approver.role,
+    action: 'PASSWORD_RECOVERY_APPROVED',
+    targetType: 'PasswordRecoveryRequest',
+    targetId: id
+  });
+
+  res.json(result);
+}
+
+export async function rejectPasswordRecoveryRequest(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const rejecter = dataStore.findUserById(req.user.userId);
+  if (!rejecter) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  if (!reason || reason.trim().length < 5) {
+    res.status(400).json({ success: false, message: 'আবেদন বাতিলের সুস্পষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।' });
+    return;
+  }
+
+  const result = dataStore.rejectPasswordRecoveryRequest(id, rejecter, reason);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: rejecter._id,
+    actorRole: rejecter.role,
+    action: 'PASSWORD_RECOVERY_REJECTED',
+    targetType: 'PasswordRecoveryRequest',
+    targetId: id,
+    details: { reason }
+  });
+
+  res.json(result);
+}
+
+export async function getPasswordRecoveryHistory(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const user = dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  // Only Super Admin and Division Coordinator can view recovery history
+  if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'DIVISION_COORDINATOR') {
+    res.status(403).json({ success: false, message: 'পাসওয়ার্ড রিকভারি হিস্ট্রি দেখার অনুমতি নেই।' });
+    return;
+  }
+
+  const history = dataStore.getPasswordRecoveryHistory({
+    role: user.role,
+    division: user.assignedDivision
+  });
+
+  res.json({
+    success: true,
+    history
   });
 }
 

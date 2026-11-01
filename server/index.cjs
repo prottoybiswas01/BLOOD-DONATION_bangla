@@ -18272,17 +18272,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router16(req, res, next) {
-        router16.handle(req, res, next);
+      function router17(req, res, next) {
+        router17.handle(req, res, next);
       }
-      setPrototypeOf(router16, proto);
-      router16.params = {};
-      router16._params = [];
-      router16.caseSensitive = opts.caseSensitive;
-      router16.mergeParams = opts.mergeParams;
-      router16.strict = opts.strict;
-      router16.stack = [];
-      return router16;
+      setPrototypeOf(router17, proto);
+      router17.params = {};
+      router17._params = [];
+      router17.caseSensitive = opts.caseSensitive;
+      router17.mergeParams = opts.mergeParams;
+      router17.strict = opts.strict;
+      router17.stack = [];
+      return router17;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -20891,7 +20891,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -20956,7 +20956,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router16({
+        this._router = new Router17({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -20965,17 +20965,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router16 = this._router;
+      var router17 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router16) {
+      if (!router17) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router16.handle(req, res, done);
+      router17.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -20995,15 +20995,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router16 = this._router;
+      var router17 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router16.use(path, fn2);
+          return router17.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router16.use(path, function mounted_app(req, res, next) {
+        router17.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -22820,7 +22820,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -22843,7 +22843,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router16;
+    exports2.Router = Router17;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -93562,7 +93562,7 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/app.ts
-var import_express16 = __toESM(require_express2());
+var import_express17 = __toESM(require_express2());
 var import_cors = __toESM(require_lib3());
 
 // node_modules/helmet/index.mjs
@@ -94133,7 +94133,7 @@ var helmet = Object.assign(
 );
 
 // src/routes/index.ts
-var import_express15 = __toESM(require_express2());
+var import_express16 = __toESM(require_express2());
 
 // src/routes/authRoutes.ts
 var import_express = __toESM(require_express2());
@@ -100755,6 +100755,7 @@ var BloodRequestSchema = new import_mongoose3.Schema(
     district: { type: String, required: true, index: true },
     upazila: { type: String, required: true, index: true },
     requiredDate: { type: Date, required: true, index: true },
+    requiredWithin: { type: String },
     urgencyLevel: {
       type: String,
       enum: ["emergency", "urgent", "standard"],
@@ -101147,6 +101148,9 @@ var DataStore = class {
   otps = [];
   notifications = [];
   phoneChangeRequests = [];
+  passwordRecoveryRequests = [];
+  passwordRecoveryAudits = [];
+  institutionChangeRequests = [];
   constructor() {
     this.seedInitialData();
   }
@@ -101223,6 +101227,24 @@ var DataStore = class {
         gender: "male",
         assignedInstitution: "inst_du",
         assignedInstitutions: ["inst_du"],
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_head",
+        name: "\u0985\u09A7\u09CD\u09AF\u09BE\u09AA\u0995 \u09A1. \u09AB\u099C\u09B2\u09C1\u09B2 \u09B9\u0995 (\u09A2\u09BE\u09AC\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8)",
+        phone: "01700000008",
+        email: "head@du.ac.bd",
+        passwordHash: defaultPasswordHash,
+        role: "INSTITUTION_HEAD",
+        accountStatus: "active",
+        gender: "male",
+        assignedInstitution: "inst_du",
+        assignedInstitutions: ["inst_du"],
+        division: "dhaka",
+        district: "dhaka",
         isActive: true,
         isPhoneVerified: true,
         createdAt: now,
@@ -101773,6 +101795,45 @@ var DataStore = class {
         updatedAt: now
       }
     ];
+    this.passwordRecoveryRequests = [
+      {
+        _id: "prr_1",
+        userId: "usr_donor_2",
+        userName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
+        phone: "01722222222",
+        userRole: "DONOR",
+        division: "dhaka",
+        district: "dhaka",
+        institutionId: "inst_du",
+        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        status: "pending",
+        reason: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C7 \u09B8\u09BE\u09B9\u09BE\u09AF\u09CD\u09AF \u0995\u09B0\u09C1\u09A8\u0964",
+        isUsed: false,
+        createdAt: new Date(Date.now() - 36e5 * 4),
+        updatedAt: now
+      }
+    ];
+    this.institutionChangeRequests = [
+      {
+        _id: "icr_1",
+        userId: "usr_donor_1",
+        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        phone: "01711111111",
+        userRole: "DONOR",
+        currentInstitutionId: void 0,
+        currentInstitutionName: void 0,
+        targetInstitutionId: "inst_du",
+        targetInstitutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        division: "dhaka",
+        district: "dhaka",
+        studentOrStaffId: "DU-CSE-2022-019",
+        department: "\u0995\u09AE\u09CD\u09AA\u09BF\u0989\u099F\u09BE\u09B0 \u09B8\u09BE\u09AF\u09BC\u09C7\u09A8\u09CD\u09B8",
+        reason: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC\u09C7 \u0985\u09A7\u09CD\u09AF\u09AF\u09BC\u09A8\u09B0\u09A4 \u09A5\u09BE\u0995\u09BE\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09C1\u09B2\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u099A\u09BE\u0987\u0964",
+        status: "pending",
+        createdAt: new Date(Date.now() - 36e5 * 5),
+        updatedAt: now
+      }
+    ];
   }
   // --- MongoDB Atlas Synchronization & Persistence ---
   async syncWithMongoDB() {
@@ -102163,6 +102224,8 @@ var DataStore = class {
     const paginated = result.slice(startIndex, startIndex + limit);
     const safeDonors = paginated.map((p) => {
       const institution = p.institutionId ? this.findInstitutionById(p.institutionId) : void 0;
+      const donorUser = this.findUserById(p.userId);
+      const isPublicContactAllowed = Boolean(p.consentToShareContact);
       return {
         _id: p._id,
         displayName: p.displayName,
@@ -102177,6 +102240,9 @@ var DataStore = class {
         institutionId: p.institutionId,
         institutionMembershipVerified: p.institutionMembershipVerified,
         emergencyAvailable: p.emergencyAvailable,
+        consentToShareContact: isPublicContactAllowed,
+        // Strictly return phone only if donor gave explicit public consent
+        phone: isPublicContactAllowed ? donorUser?.phone : void 0,
         bio: p.bio,
         createdAt: p.createdAt
       };
@@ -102206,6 +102272,7 @@ var DataStore = class {
       district: data.district || "dhaka",
       upazila: data.upazila || "",
       requiredDate: data.requiredDate || /* @__PURE__ */ new Date(),
+      requiredWithin: data.requiredWithin,
       urgencyLevel: data.urgencyLevel || "emergency",
       reason: data.reason || "",
       contactNumber: data.contactNumber || "",
@@ -102898,6 +102965,459 @@ var DataStore = class {
     }
     return false;
   }
+  // --- PART 03: Password Recovery & One-Time Password System ---
+  createPasswordRecoveryRequest(phoneOrUserId, reason) {
+    const cleanInput = phoneOrUserId.trim().replace(/^(\+880|880)/, "0");
+    const user = this.users.find((u) => u._id === cleanInput || u.phone === cleanInput);
+    if (!user) {
+      return {
+        success: false,
+        message: "\u09AA\u09CD\u09B0\u09A6\u09A4\u09CD\u09A4 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AC\u09BE \u0986\u0987\u09A1\u09BF \u09A6\u09BF\u09AF\u09BC\u09C7 \u0995\u09CB\u09A8\u09CB \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
+      };
+    }
+    if (user.accountStatus && user.accountStatus !== "active") {
+      return {
+        success: false,
+        message: "\u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u099F\u09BF \u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09AC\u09BE \u09A4\u09A6\u09A8\u09CD\u09A4\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B8\u09B9\u09BE\u09AF\u09BC\u09A4\u09BE \u09A1\u09C7\u09B8\u09CD\u0995\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+      };
+    }
+    const existing = this.passwordRecoveryRequests.find(
+      (r) => r.userId === user._id && r.status === "pending"
+    );
+    if (existing) {
+      return {
+        success: false,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09C1\u09A8\u09B0\u09C1\u09A6\u09CD\u09A7\u09BE\u09B0\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09CD\u09B0\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
+      };
+    }
+    const institution = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
+    const now = /* @__PURE__ */ new Date();
+    const requestId = "prr_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newRequest = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      division: user.division || "dhaka",
+      district: user.district || "dhaka",
+      institutionId: user.assignedInstitution,
+      institutionName: institution?.nameBn || institution?.name,
+      status: "pending",
+      reason: reason || "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09B2\u0997\u0987\u09A8 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE",
+      isUsed: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.passwordRecoveryRequests.unshift(newRequest);
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: newRequest._id,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      issuedBy: user._id,
+      issuedByName: user.name,
+      issuerRole: user.role,
+      action: "REQUEST_SUBMITTED",
+      reason: reason || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8",
+      createdAt: now
+    });
+    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN" || u.role === "ADMIN");
+    for (const admin of admins) {
+      this.createNotification({
+        userId: admin._id,
+        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} (${user.phone}) \u098F\u0995\u099F\u09BF \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "system",
+        link: "/admin/dashboard"
+      });
+    }
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === user.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
+        message: `${user.name} (${user.district}, ${user.division}) \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "system",
+        link: "/coordinator/dashboard"
+      });
+    }
+    if (user.assignedInstitution) {
+      const instOfficials = this.users.filter(
+        (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === user.assignedInstitution
+      );
+      for (const official of instOfficials) {
+        this.createNotification({
+          userId: official._id,
+          title: "\u{1F511} \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B8\u09A6\u09B8\u09CD\u09AF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF",
+          message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+          type: "system",
+          link: "/moderator/dashboard"
+        });
+      }
+    }
+    return {
+      success: true,
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u09AF\u09BE\u099A\u09BE\u0987 \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09AC\u09C7\u09A8\u0964"
+    };
+  }
+  getPasswordRecoveryRequests(filter) {
+    let list = this.passwordRecoveryRequests;
+    if (filter.status) {
+      list = list.filter((r) => r.status === filter.status);
+    }
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+    } else if (filter.role === "DIVISION_COORDINATOR") {
+      list = list.filter((r) => r.division === filter.division);
+    } else if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
+      list = list.filter((r) => r.institutionId === filter.institutionId);
+    } else {
+      return [];
+    }
+    return list.map((r) => ({
+      _id: r._id,
+      userId: r.userId,
+      userName: r.userName,
+      phone: r.phone,
+      userRole: r.userRole,
+      division: r.division,
+      district: r.district,
+      institutionId: r.institutionId,
+      institutionName: r.institutionName,
+      status: r.status,
+      reason: r.reason,
+      isUsed: r.isUsed,
+      expiresAt: r.expiresAt,
+      approvedBy: r.approvedBy,
+      approvedByName: r.approvedByName,
+      approvedByRole: r.approvedByRole,
+      approvedAt: r.approvedAt,
+      rejectionReason: r.rejectionReason,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }));
+  }
+  approvePasswordRecoveryRequest(requestId, approverUser) {
+    const req = this.passwordRecoveryRequests.find((r) => r._id === requestId);
+    if (!req) {
+      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (req.status !== "pending") {
+      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    if (approverUser.role === "DIVISION_COORDINATOR" && approverUser.assignedDivision !== req.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if ((approverUser.role === "INSTITUTION_MODERATOR" || approverUser.role === "INSTITUTION_HEAD") && approverUser.assignedInstitution !== req.institutionId) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const targetUser = this.findUserById(req.userId);
+    if (!targetUser) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u09B0 \u09AE\u09C2\u09B2 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const tempPass = "BD" + Math.floor(1e5 + Math.random() * 9e5);
+    const hash2 = bcryptjs_default.hashSync(tempPass, 10);
+    const now = /* @__PURE__ */ new Date();
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1e3);
+    req.status = "approved";
+    req.temporaryPasswordHash = hash2;
+    req.expiresAt = expiresAt;
+    req.approvedBy = approverUser._id;
+    req.approvedByName = approverUser.name;
+    req.approvedByRole = approverUser.role;
+    req.approvedAt = now;
+    req.updatedAt = now;
+    targetUser.passwordHash = hash2;
+    targetUser.requirePasswordChangeAtFirstLogin = true;
+    targetUser.updatedAt = now;
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: targetUser._id,
+      userName: targetUser.name,
+      phone: targetUser.phone,
+      issuedBy: approverUser._id,
+      issuedByName: approverUser.name,
+      issuerRole: approverUser.role,
+      action: "OTP_GENERATED",
+      reason: "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+      notes: `\u0987\u09B8\u09CD\u09AF\u09C1 \u0995\u09B0\u09C7\u099B\u09C7\u09A8: ${approverUser.name} (${approverUser.role})`,
+      createdAt: now
+    });
+    this.createNotification({
+      userId: targetUser._id,
+      title: "\u2705 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C7 \u0985\u09AC\u09BF\u09B2\u09AE\u09CD\u09AC\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8\u0964",
+      type: "account_status"
+    });
+    return {
+      success: true,
+      temporaryPassword: tempPass,
+      warning: "\u098F\u0987 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1\u099F\u09BF \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u0995\u09C7 \u09A8\u09BF\u09B0\u09BE\u09AA\u09A6 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u09A6\u09BF\u09A8\u0964 \u098F\u099F\u09BF \u09E8\u09EA \u0998\u09A3\u09CD\u099F\u09BE\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u09AC\u09BE\u09B0\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u09AF\u09CB\u0997\u09CD\u09AF\u0964"
+    };
+  }
+  rejectPasswordRecoveryRequest(requestId, rejecterUser, reason) {
+    const req = this.passwordRecoveryRequests.find((r) => r._id === requestId);
+    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const now = /* @__PURE__ */ new Date();
+    req.status = "rejected";
+    req.rejectionReason = reason;
+    req.updatedAt = now;
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: req.userId,
+      userName: req.userName,
+      phone: req.phone,
+      issuedBy: rejecterUser._id,
+      issuedByName: rejecterUser.name,
+      issuerRole: rejecterUser.role,
+      action: "REQUEST_REJECTED",
+      reason,
+      createdAt: now
+    });
+    return { success: true, message: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+  }
+  getPasswordRecoveryHistory(filter) {
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+      return this.passwordRecoveryAudits;
+    }
+    if (filter.role === "DIVISION_COORDINATOR") {
+      const validReqIds = new Set(
+        this.passwordRecoveryRequests.filter((r) => r.division === filter.division).map((r) => r._id)
+      );
+      return this.passwordRecoveryAudits.filter((a) => validReqIds.has(a.requestId));
+    }
+    return [];
+  }
+  // --- PART 04: Scoped Member Profile Search ---
+  scopedUserSearch(query, searcherUser) {
+    const clean = query.trim().toLowerCase();
+    const cleanPhone = clean.replace(/^(\+880|880)/, "0");
+    const targetUser = this.users.find(
+      (u) => u._id.toLowerCase() === clean || u.phone === cleanPhone || u.name.toLowerCase().includes(clean)
+    );
+    if (!targetUser) {
+      return {
+        success: false,
+        notFound: true,
+        message: "\u0995\u09CB\u09A8\u09CB \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
+      };
+    }
+    if (searcherUser.role === "SUPER_ADMIN" || searcherUser.role === "ADMIN") {
+    } else if (searcherUser.role === "DIVISION_COORDINATOR") {
+      if (targetUser.division !== searcherUser.assignedDivision) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0986\u09AA\u09A8\u09BE\u09B0 Assigned Division-\u098F\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09A8\u09C7\u0987\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F Division Coordinator \u0985\u09A5\u09AC\u09BE Authorized Administrator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+        };
+      }
+    } else if (searcherUser.role === "INSTITUTION_HEAD" || searcherUser.role === "INSTITUTION_MODERATOR") {
+      if (targetUser.assignedInstitution !== searcherUser.assignedInstitution) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964 \u09AC\u09BF\u09B8\u09CD\u09A4\u09BE\u09B0\u09BF\u09A4 \u09A4\u09A5\u09CD\u09AF\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 Moderator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+        };
+      }
+    } else {
+      return { success: false, outOfScope: true, message: "\u0985\u09A8\u09C1\u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC \u0985\u09A8\u09C1\u09AE\u09A4\u09BF \u09A8\u09C7\u0987\u0964" };
+    }
+    const inst = targetUser.assignedInstitution ? this.findInstitutionById(targetUser.assignedInstitution) : void 0;
+    const donor = this.donorProfiles.find((d) => d.userId === targetUser._id);
+    return {
+      success: true,
+      user: {
+        _id: targetUser._id,
+        name: targetUser.name,
+        phone: targetUser.phone,
+        role: targetUser.role,
+        accountStatus: targetUser.accountStatus,
+        division: targetUser.division,
+        district: targetUser.district,
+        upazila: targetUser.upazila,
+        gender: targetUser.gender,
+        assignedInstitution: targetUser.assignedInstitution,
+        institutionName: inst?.nameBn || inst?.name,
+        bloodGroup: donor?.bloodGroup,
+        totalDonations: donor?.totalDonations || 0,
+        createdAt: targetUser.createdAt
+      }
+    };
+  }
+  // --- PART 05 & 06: Institution Change Request & Membership Management ---
+  createInstitutionChangeRequest(data) {
+    const user = this.findUserById(data.userId);
+    if (!user) return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const targetInst = this.findInstitutionById(data.targetInstitutionId);
+    if (!targetInst) return { success: false, message: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const currentInst = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
+    const now = /* @__PURE__ */ new Date();
+    const requestId = "icr_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newReq = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      currentInstitutionId: user.assignedInstitution,
+      currentInstitutionName: currentInst?.nameBn || currentInst?.name,
+      targetInstitutionId: targetInst._id,
+      targetInstitutionName: targetInst.nameBn || targetInst.name,
+      division: targetInst.division,
+      district: targetInst.district,
+      studentOrStaffId: data.studentOrStaffId,
+      department: data.department,
+      reason: data.reason,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now
+    };
+    this.institutionChangeRequests.unshift(newReq);
+    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN");
+    for (const a of admins) {
+      this.createNotification({
+        userId: a._id,
+        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 "${targetInst.nameBn}" \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/admin/dashboard"
+      });
+    }
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === targetInst.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
+        message: `${user.name} "${targetInst.nameBn}" \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/coordinator/dashboard"
+      });
+    }
+    const targetOfficials = this.users.filter(
+      (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === targetInst._id
+    );
+    for (const o of targetOfficials) {
+      this.createNotification({
+        userId: o._id,
+        title: "\u{1F3EB} \u09A8\u09A4\u09C1\u09A8 \u09B8\u09A6\u09B8\u09CD\u09AF \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/moderator/dashboard"
+      });
+    }
+    return {
+      success: true,
+      message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09B2\u09C7 \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AC\u09C7\u0964"
+    };
+  }
+  getInstitutionChangeRequests(filter) {
+    let list = this.institutionChangeRequests;
+    if (filter.status) {
+      list = list.filter((r) => r.status === filter.status);
+    }
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+      return list;
+    }
+    if (filter.role === "DIVISION_COORDINATOR") {
+      return list.filter((r) => r.division === filter.division);
+    }
+    if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
+      return list.filter((r) => r.targetInstitutionId === filter.institutionId || r.currentInstitutionId === filter.institutionId);
+    }
+    return [];
+  }
+  reviewInstitutionChangeRequest(requestId, reviewerUser, status, decisionReason) {
+    const req = this.institutionChangeRequests.find((r) => r._id === requestId);
+    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    if (reviewerUser.role !== "SUPER_ADMIN" && reviewerUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099A\u09C2\u09A1\u09BC\u09BE\u09A8\u09CD\u09A4 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09C7\u09AC\u09B2 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09AC\u09BE \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09A6\u09BF\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if (reviewerUser.role === "DIVISION_COORDINATOR" && reviewerUser.assignedDivision !== req.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const now = /* @__PURE__ */ new Date();
+    req.status = status;
+    req.reviewedBy = reviewerUser._id;
+    req.reviewedByName = reviewerUser.name;
+    req.decisionReason = decisionReason;
+    req.updatedAt = now;
+    if (status === "approved") {
+      const targetUser = this.findUserById(req.userId);
+      if (targetUser) {
+        targetUser.assignedInstitution = req.targetInstitutionId;
+        targetUser.updatedAt = now;
+      }
+      const donor = this.donorProfiles.find((d) => d.userId === req.userId);
+      if (donor) {
+        donor.institutionId = req.targetInstitutionId;
+        donor.institutionMembershipVerified = true;
+        donor.updatedAt = now;
+      }
+      this.createNotification({
+        userId: req.userId,
+        title: "\u{1F389} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4!",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${req.targetInstitutionName}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        type: "institution_update"
+      });
+    } else {
+      this.createNotification({
+        userId: req.userId,
+        title: "\u274C \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09A8\u09BE\u0995\u099A",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BF\u09AC\u09C7\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u09AF\u09BC\u09A8\u09BF\u0964 \u0995\u09BE\u09B0\u09A3: ${decisionReason || "\u09AF\u09BE\u099A\u09BE\u0987\u09AF\u09BC\u09C7 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF"}`,
+        type: "institution_update"
+      });
+    }
+    return {
+      success: true,
+      message: status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    };
+  }
+  // Manual Institution Creation by SUPER_ADMIN or DIVISION_COORDINATOR
+  manualCreateInstitution(data, creatorUser) {
+    if (creatorUser.role !== "SUPER_ADMIN" && creatorUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u098F\u09AC\u0982 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if (creatorUser.role === "DIVISION_COORDINATOR" && creatorUser.assignedDivision !== data.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const existing = this.institutions.find((i) => i.code.toUpperCase() === data.code.toUpperCase() || i.name.toLowerCase() === data.name.toLowerCase());
+    if (existing) {
+      return { success: false, message: "\u098F\u0987 \u0995\u09CB\u09A1 \u09AC\u09BE \u09A8\u09BE\u09AE\u09C7\u09B0 \u098F\u0995\u099F\u09BF \u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    const now = /* @__PURE__ */ new Date();
+    const instId = "inst_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newInst = {
+      _id: instId,
+      name: data.name,
+      nameBn: data.nameBn,
+      code: data.code.toUpperCase(),
+      type: data.type || "university",
+      division: data.division,
+      district: data.district,
+      upazila: data.upazila,
+      address: data.address,
+      email: data.email,
+      phone: data.phone,
+      description: data.description,
+      status: "approved",
+      totalRegisteredDonors: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.institutions.unshift(newInst);
+    return {
+      success: true,
+      institution: newInst,
+      message: `\u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${newInst.nameBn}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`
+    };
+  }
 };
 var dataStore = new DataStore();
 
@@ -103214,6 +103734,35 @@ async function login(req, res) {
     });
     return;
   }
+  const activeRecovery = dataStore.passwordRecoveryRequests.find(
+    (r) => r.userId === user._id && r.status === "approved" && !r.isUsed
+  );
+  if (activeRecovery) {
+    if (activeRecovery.expiresAt && /* @__PURE__ */ new Date() > new Date(activeRecovery.expiresAt)) {
+      activeRecovery.status = "expired";
+      res.status(401).json({
+        success: false,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1\u099F\u09BF\u09B0 \u09AE\u09C7\u09AF\u09BC\u09BE\u09A6 \u0989\u09A4\u09CD\u09A4\u09C0\u09B0\u09CD\u09A3 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09AA\u09C1\u09A8\u09B0\u09BE\u09AF\u09BC \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C1\u09A8\u0964"
+      });
+      return;
+    }
+    activeRecovery.isUsed = true;
+    activeRecovery.status = "used";
+    activeRecovery.updatedAt = /* @__PURE__ */ new Date();
+    dataStore.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: activeRecovery._id,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      issuedBy: user._id,
+      issuedByName: user.name,
+      issuerRole: user.role,
+      action: "LOGIN_USED",
+      reason: "\u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09C7 \u09AA\u09CD\u09B0\u09A5\u09AE \u09B2\u0997\u0987\u09A8 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8",
+      createdAt: /* @__PURE__ */ new Date()
+    });
+  }
   dataStore.updateUser(user._id, { lastLoginAt: /* @__PURE__ */ new Date() });
   const token = import_jsonwebtoken.default.sign(
     {
@@ -103270,6 +103819,121 @@ async function changeFirstLoginPassword(req, res) {
   res.json({
     success: true,
     message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09A4\u09C1\u09A8 \u09B8\u09CD\u09A5\u09BE\u09AF\u09BC\u09C0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u098F\u0996\u09A8 \u0986\u09AA\u09A8\u09BF \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u09B8\u0995\u09B2 \u09B8\u09C7\u09AC\u09BE \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
+  });
+}
+async function submitForgotPassword(req, res) {
+  const { phoneOrUserId, reason } = req.body;
+  if (!phoneOrUserId || typeof phoneOrUserId !== "string") {
+    res.status(400).json({ success: false, message: "\u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09BF\u09A4 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AC\u09BE \u0987\u0989\u099C\u09BE\u09B0 \u0986\u0987\u09A1\u09BF \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C1\u09A8\u0964" });
+    return;
+  }
+  const result = dataStore.createPasswordRecoveryRequest(phoneOrUserId, reason);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  res.json(result);
+}
+async function getPasswordRecoveryRequests(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const user = dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { status } = req.query;
+  const requests = dataStore.getPasswordRecoveryRequests({
+    role: user.role,
+    division: user.assignedDivision,
+    institutionId: user.assignedInstitution,
+    status
+  });
+  res.json({
+    success: true,
+    requests,
+    total: requests.length
+  });
+}
+async function approvePasswordRecoveryRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const approver = dataStore.findUserById(req.user.userId);
+  if (!approver) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const result = dataStore.approvePasswordRecoveryRequest(id, approver);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  await logAuditEvent({
+    actorId: approver._id,
+    actorRole: approver.role,
+    action: "PASSWORD_RECOVERY_APPROVED",
+    targetType: "PasswordRecoveryRequest",
+    targetId: id
+  });
+  res.json(result);
+}
+async function rejectPasswordRecoveryRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const rejecter = dataStore.findUserById(req.user.userId);
+  if (!rejecter) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const { reason } = req.body;
+  if (!reason || reason.trim().length < 5) {
+    res.status(400).json({ success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8 \u09AC\u09BE\u09A4\u09BF\u09B2\u09C7\u09B0 \u09B8\u09C1\u09B8\u09CD\u09AA\u09B7\u09CD\u099F \u0995\u09BE\u09B0\u09A3 (\u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EB \u0985\u0995\u09CD\u09B7\u09B0) \u0989\u09B2\u09CD\u09B2\u09C7\u0996 \u0995\u09B0\u09C1\u09A8\u0964" });
+    return;
+  }
+  const result = dataStore.rejectPasswordRecoveryRequest(id, rejecter, reason);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  await logAuditEvent({
+    actorId: rejecter._id,
+    actorRole: rejecter.role,
+    action: "PASSWORD_RECOVERY_REJECTED",
+    targetType: "PasswordRecoveryRequest",
+    targetId: id,
+    details: { reason }
+  });
+  res.json(result);
+}
+async function getPasswordRecoveryHistory(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const user = dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN" && user.role !== "DIVISION_COORDINATOR") {
+    res.status(403).json({ success: false, message: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u09B9\u09BF\u09B8\u09CD\u099F\u09CD\u09B0\u09BF \u09A6\u09C7\u0996\u09BE\u09B0 \u0985\u09A8\u09C1\u09AE\u09A4\u09BF \u09A8\u09C7\u0987\u0964" });
+    return;
+  }
+  const history = dataStore.getPasswordRecoveryHistory({
+    role: user.role,
+    division: user.assignedDivision
+  });
+  res.json({
+    success: true,
+    history
   });
 }
 async function getMe(req, res) {
@@ -104253,6 +104917,11 @@ router.post("/register", authRateLimiter, validateBody(RegisterSchema), register
 router.post("/login", authRateLimiter, validateBody(LoginSchema), login);
 router.get("/me", requireAuth, getMe);
 router.post("/change-first-login-password", requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
+router.post("/forgot-password", authRateLimiter, submitForgotPassword);
+router.get("/recovery-requests", requireAuth, getPasswordRecoveryRequests);
+router.post("/recovery-requests/:id/approve", requireAuth, approvePasswordRecoveryRequest);
+router.post("/recovery-requests/:id/reject", requireAuth, rejectPasswordRecoveryRequest);
+router.get("/recovery-history", requireAuth, getPasswordRecoveryHistory);
 var authRoutes_default = router;
 
 // src/routes/donorRoutes.ts
@@ -104304,6 +104973,8 @@ async function getDonorById(req, res) {
     return;
   }
   const institution = profile.institutionId ? dataStore.findInstitutionById(profile.institutionId) : void 0;
+  const donorUser = dataStore.findUserById(profile.userId);
+  const isPublicContactAllowed = Boolean(profile.consentToShareContact);
   const safeProfile = {
     _id: profile._id,
     displayName: profile.displayName,
@@ -104317,7 +104988,8 @@ async function getDonorById(req, res) {
     institutionName: institution?.nameBn || institution?.name,
     institutionMembershipVerified: profile.institutionMembershipVerified,
     emergencyAvailable: profile.emergencyAvailable,
-    consentToShareContact: profile.consentToShareContact,
+    consentToShareContact: isPublicContactAllowed,
+    phone: isPublicContactAllowed ? donorUser?.phone : void 0,
     bio: profile.bio,
     createdAt: profile.createdAt
   };
@@ -104487,6 +105159,7 @@ var CreateBloodRequestSchema = external_exports.object({
   district: external_exports.string().min(1, "\u099C\u09C7\u09B2\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
   upazila: external_exports.string().min(1, "\u0989\u09AA\u099C\u09C7\u09B2\u09BE/\u09A5\u09BE\u09A8\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
   requiredDate: external_exports.string().min(1, "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u09A4\u09BE\u09B0\u09BF\u0996 \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  requiredWithin: external_exports.string().optional(),
   urgencyLevel: external_exports.enum(["emergency", "urgent", "standard"]).default("emergency"),
   reason: external_exports.string().min(5, "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u09B8\u0982\u0995\u09CD\u09B7\u09C7\u09AA\u09C7 \u09B2\u09BF\u0996\u09C1\u09A8"),
   contactNumber: external_exports.string().regex(BD_PHONE_REGEX2, "\u09B8\u09A0\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
@@ -104562,6 +105235,7 @@ async function createRequest(req, res) {
     district: data.district,
     upazila: data.upazila,
     requiredDate: reqDate,
+    requiredWithin: data.requiredWithin || void 0,
     urgencyLevel: data.urgencyLevel,
     reason: data.reason,
     contactNumber: data.contactNumber,
@@ -104823,7 +105497,7 @@ async function getInstitutionMembers(req, res) {
 // src/routes/institutionRoutes.ts
 var router4 = (0, import_express4.Router)();
 router4.get("/", getInstitutions);
-router4.get("/moderator/dashboard", requireAuth, requireRoles("INSTITUTION_MODERATOR", "SUPER_ADMIN"), getModeratorDashboard);
+router4.get("/moderator/dashboard", requireAuth, requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "SUPER_ADMIN"), getModeratorDashboard);
 router4.get("/:id", getInstitutionById);
 router4.get("/:id/members", getInstitutionMembers);
 router4.post("/", optionalAuth, validateBody(CreateInstitutionSchema), createInstitution);
@@ -105390,6 +106064,66 @@ async function updateInstitutionStatus(req, res) {
     institution
   });
 }
+async function searchScopedUser(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const searcher = dataStore.findUserById(req.user.userId);
+  if (!searcher) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { query } = req.query;
+  if (!query || typeof query !== "string" || !query.trim()) {
+    res.status(400).json({ success: false, message: "\u0985\u09A8\u09C1\u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0987\u0989\u099C\u09BE\u09B0 \u0986\u0987\u09A1\u09BF, \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AC\u09BE \u09A8\u09BE\u09AE \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C1\u09A8\u0964" });
+    return;
+  }
+  const result = dataStore.scopedUserSearch(query, searcher);
+  res.json(result);
+}
+async function manualCreateInstitution(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const creator = dataStore.findUserById(req.user.userId);
+  if (!creator) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { name, nameBn, code, type, division, district, upazila, address, email, phone, description } = req.body;
+  if (!name || !nameBn || !code || !division || !district || !address) {
+    res.status(400).json({ success: false, message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09A8\u09BE\u09AE, \u0995\u09CB\u09A1, \u09AC\u09BF\u09AD\u09BE\u0997, \u099C\u09C7\u09B2\u09BE \u098F\u09AC\u0982 \u09A0\u09BF\u0995\u09BE\u09A8\u09BE \u0986\u09AC\u09B6\u09CD\u09AF\u0995\u0964" });
+    return;
+  }
+  const result = dataStore.manualCreateInstitution({
+    name,
+    nameBn,
+    code,
+    type,
+    division,
+    district,
+    upazila: upazila || "",
+    address,
+    email,
+    phone,
+    description
+  }, creator);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  await logAuditEvent({
+    actorId: creator._id,
+    actorRole: creator.role,
+    action: "INSTITUTION_MANUALLY_CREATED",
+    targetType: "Institution",
+    targetId: result.institution?._id,
+    details: { code, division, district }
+  });
+  res.json(result);
+}
 
 // src/routes/coordinatorRoutes.ts
 var router5 = (0, import_express5.Router)();
@@ -105406,6 +106140,18 @@ var coordinatorRoutes_default = router5;
 // src/routes/adminRoutes.ts
 var import_express6 = __toESM(require_express2());
 var router6 = (0, import_express6.Router)();
+router6.get(
+  "/users/scoped-search",
+  requireAuth,
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_HEAD", "INSTITUTION_MODERATOR"),
+  searchScopedUser
+);
+router6.post(
+  "/institutions/manual",
+  requireAuth,
+  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  manualCreateInstitution
+);
 router6.use(requireAuth, requireRoles("SUPER_ADMIN", "ADMIN"));
 router6.get("/overview", getAdminOverview);
 router6.get("/users", getUsers);
@@ -105649,6 +106395,21 @@ var ReviewInstitutionRequestSchema = external_exports.object({
   decisionReason: external_exports.string().min(5, "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09AC\u09BE \u09AC\u09BE\u09A4\u09BF\u09B2\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EB \u0985\u0995\u09CD\u09B7\u09B0\u09C7 \u0989\u09B2\u09CD\u09B2\u09C7\u0996 \u0995\u09B0\u09A4\u09C7 \u09B9\u09AC\u09C7")
 });
 async function submitInstitutionRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: "\u09A8\u09A4\u09C1\u09A8 \u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09A4\u09C7 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09AA\u09CD\u09B0\u09A5\u09AE\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C1\u09A8\u0964"
+    });
+    return;
+  }
+  const allowedRoles = ["MEMBER", "DONOR", "REQUESTER"];
+  if (!allowedRoles.includes(req.user.role)) {
+    res.status(403).json({
+      success: false,
+      message: "\u09AA\u09CD\u09B0\u09B6\u09BE\u09B8\u09A8\u09BF\u0995 \u0995\u09B0\u09CD\u09AE\u0995\u09B0\u09CD\u09A4\u09BE (\u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995, \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09AC\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8) \u09A8\u09BF\u099C\u09C7 \u09A5\u09C7\u0995\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8 \u09A8\u09BE\u0964"
+    });
+    return;
+  }
   const data = req.body;
   const newReq = dataStore.createInstitutionRequest(data);
   res.status(201).json({
@@ -105717,7 +106478,7 @@ async function reviewInstitutionRequest(req, res) {
 
 // src/routes/institutionRequestRoutes.ts
 var router10 = (0, import_express10.Router)();
-router10.post("/", validateBody(SubmitInstitutionRequestSchema), submitInstitutionRequest);
+router10.post("/", requireAuth, validateBody(SubmitInstitutionRequestSchema), submitInstitutionRequest);
 router10.get("/", requireAuth, requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"), getInstitutionRequests);
 router10.patch(
   "/:id/review",
@@ -105772,7 +106533,7 @@ async function createMemberByModerator(req, res) {
   }
   const data = req.body;
   const phone = normalizePhone3(data.phone);
-  if (req.user.role === "INSTITUTION_MODERATOR") {
+  if (req.user.role === "INSTITUTION_MODERATOR" || req.user.role === "INSTITUTION_HEAD") {
     const isAssigned = req.user.assignedInstitution === data.institutionId || req.user.assignedInstitutions && req.user.assignedInstitutions.includes(data.institutionId);
     if (!isAssigned) {
       res.status(403).json({
@@ -105871,7 +106632,7 @@ router11.patch("/me", requireAuth, validateBody(UpdateProfileSchema), updateMyPr
 router11.post(
   "/",
   requireAuth,
-  requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
+  requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
   validateBody(CreateMemberByModeratorSchema),
   createMemberByModerator
 );
@@ -105991,11 +106752,11 @@ async function updateContactRequestStatus(req, res) {
 // src/routes/contactRequestRoutes.ts
 var router13 = (0, import_express13.Router)();
 router13.post("/", requireAuth, validateBody(CreateContactRequestSchema), submitContactRequest);
-router13.get("/", requireAuth, requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"), getContactRequests);
+router13.get("/", requireAuth, requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"), getContactRequests);
 router13.patch(
   "/:id/status",
   requireAuth,
-  requireRoles("INSTITUTION_MODERATOR", "SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "SUPER_ADMIN", "DIVISION_COORDINATOR"),
   validateBody(UpdateContactRequestSchema),
   updateContactRequestStatus
 );
@@ -106159,36 +106920,170 @@ router14.get("/my-request", requireAuth, getMyPhoneChangeRequest);
 router14.get(
   "/requests",
   requireAuth,
-  requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
+  requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
   getPhoneChangeRequests
 );
 router14.patch(
   "/requests/:id",
   requireAuth,
-  requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
+  requireRoles("INSTITUTION_MODERATOR", "INSTITUTION_HEAD", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
   validateBody(ReviewPhoneChangeSchema),
   reviewPhoneChangeRequest
 );
 var phoneChangeRoutes_default = router14;
 
-// src/routes/index.ts
+// src/routes/institutionChangeRoutes.ts
+var import_express15 = __toESM(require_express2());
+
+// src/controllers/institutionChangeController.ts
+var SubmitInstitutionChangeSchema = external_exports.object({
+  targetInstitutionId: external_exports.string().min(1, "\u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
+  studentOrStaffId: external_exports.string().optional(),
+  department: external_exports.string().optional(),
+  reason: external_exports.string().min(5, "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EB \u0985\u0995\u09CD\u09B7\u09B0\u09C7 \u0989\u09B2\u09CD\u09B2\u09C7\u0996 \u0995\u09B0\u09C1\u09A8")
+});
+var ReviewInstitutionChangeSchema = external_exports.object({
+  status: external_exports.enum(["approved", "rejected"]),
+  decisionReason: external_exports.string().min(5, "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09AC\u09BE \u09AC\u09BE\u09A4\u09BF\u09B2\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EB \u0985\u0995\u09CD\u09B7\u09B0\u09C7 \u0989\u09B2\u09CD\u09B2\u09C7\u0996 \u0995\u09B0\u09C1\u09A8")
+});
+async function submitInstitutionChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { targetInstitutionId, studentOrStaffId, department, reason } = req.body;
+  const result = dataStore.createInstitutionChangeRequest({
+    userId: req.user.userId,
+    targetInstitutionId,
+    studentOrStaffId,
+    department,
+    reason
+  });
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "INSTITUTION_CHANGE_REQUESTED",
+    targetType: "InstitutionChangeRequest",
+    targetId: targetInstitutionId,
+    details: { studentOrStaffId, department, reason }
+  });
+  res.status(201).json(result);
+}
+async function getInstitutionChangeRequests(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const user = dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { status } = req.query;
+  const requests = dataStore.getInstitutionChangeRequests({
+    role: user.role,
+    division: user.assignedDivision,
+    institutionId: user.assignedInstitution,
+    status
+  });
+  res.json({
+    success: true,
+    requests,
+    total: requests.length
+  });
+}
+async function reviewInstitutionChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const reviewer = dataStore.findUserById(req.user.userId);
+  if (!reviewer) {
+    res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const { status, decisionReason } = req.body;
+  const result = dataStore.reviewInstitutionChangeRequest(id, reviewer, status, decisionReason);
+  if (!result.success) {
+    res.status(403).json(result);
+    return;
+  }
+  await logAuditEvent({
+    actorId: reviewer._id,
+    actorRole: reviewer.role,
+    action: `INSTITUTION_CHANGE_${status.toUpperCase()}`,
+    targetType: "InstitutionChangeRequest",
+    targetId: id,
+    details: { decisionReason }
+  });
+  res.json(result);
+}
+async function getMyInstitutionChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const requests = dataStore.institutionChangeRequests.filter((r) => r.userId === req.user?.userId);
+  const pendingRequest = requests.find((r) => r.status === "pending");
+  res.json({
+    success: true,
+    pendingRequest,
+    history: requests
+  });
+}
+
+// src/routes/institutionChangeRoutes.ts
 var router15 = (0, import_express15.Router)();
-router15.use("/auth", authRoutes_default);
-router15.use("/donors", donorRoutes_default);
-router15.use("/requests", requestRoutes_default);
-router15.use("/institutions", institutionRoutes_default);
-router15.use("/coordinators", coordinatorRoutes_default);
-router15.use("/coordinator", coordinatorRoutes_default);
-router15.use("/admin", adminRoutes_default);
-router15.use("/reports", reportRoutes_default);
-router15.use("/locations", locationRoutes_default);
-router15.use("/notifications", notificationRoutes_default);
-router15.use("/institution-requests", institutionRequestRoutes_default);
-router15.use("/members", memberRoutes_default);
-router15.use("/moderators", moderatorRoutes_default);
-router15.use("/contact-requests", contactRequestRoutes_default);
-router15.use("/phone-change", phoneChangeRoutes_default);
-router15.get("/health", (req, res) => {
+router15.post(
+  "/",
+  requireAuth,
+  validateBody(SubmitInstitutionChangeSchema),
+  submitInstitutionChangeRequest
+);
+router15.get(
+  "/my",
+  requireAuth,
+  getMyInstitutionChangeRequest
+);
+router15.get(
+  "/",
+  requireAuth,
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_HEAD", "INSTITUTION_MODERATOR"),
+  getInstitutionChangeRequests
+);
+router15.patch(
+  "/:id/review",
+  requireAuth,
+  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  validateBody(ReviewInstitutionChangeSchema),
+  reviewInstitutionChangeRequest
+);
+var institutionChangeRoutes_default = router15;
+
+// src/routes/index.ts
+var router16 = (0, import_express16.Router)();
+router16.use("/auth", authRoutes_default);
+router16.use("/donors", donorRoutes_default);
+router16.use("/requests", requestRoutes_default);
+router16.use("/institutions", institutionRoutes_default);
+router16.use("/coordinators", coordinatorRoutes_default);
+router16.use("/coordinator", coordinatorRoutes_default);
+router16.use("/admin", adminRoutes_default);
+router16.use("/reports", reportRoutes_default);
+router16.use("/locations", locationRoutes_default);
+router16.use("/notifications", notificationRoutes_default);
+router16.use("/institution-requests", institutionRequestRoutes_default);
+router16.use("/institution-change", institutionChangeRoutes_default);
+router16.use("/members", memberRoutes_default);
+router16.use("/moderators", moderatorRoutes_default);
+router16.use("/contact-requests", contactRequestRoutes_default);
+router16.use("/phone-change", phoneChangeRoutes_default);
+router16.get("/health", (req, res) => {
   res.json({
     status: "ok",
     platform: "Bangladesh Blood Donation Platform API",
@@ -106196,7 +107091,7 @@ router15.get("/health", (req, res) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
-var routes_default = router15;
+var routes_default = router16;
 
 // src/middleware/errorHandler.ts
 function errorHandler(err, req, res, next) {
@@ -106211,7 +107106,7 @@ function errorHandler(err, req, res, next) {
 }
 
 // src/app.ts
-var app = (0, import_express16.default)();
+var app = (0, import_express17.default)();
 app.set("trust proxy", 1);
 var isDbInitialized = false;
 var isInitializing = false;
@@ -106249,8 +107144,8 @@ app.use((0, import_cors.default)({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.use(import_express16.default.json({ limit: "1mb" }));
-app.use(import_express16.default.urlencoded({ extended: true, limit: "1mb" }));
+app.use(import_express17.default.json({ limit: "1mb" }));
+app.use(import_express17.default.urlencoded({ extended: true, limit: "1mb" }));
 app.use("/api", generalRateLimiter);
 app.get(["/", "/api", "/api/v1"], (req, res) => {
   res.json({

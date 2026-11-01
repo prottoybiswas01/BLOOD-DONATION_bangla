@@ -25,6 +25,7 @@ export interface IBloodRequest extends Document {
   district: string;
   upazila: string;
   requiredDate: Date;
+  requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
   contactNumber: string;
@@ -60,6 +61,7 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
     district: { type: String, required: true, index: true },
     upazila: { type: String, required: true, index: true },
     requiredDate: { type: Date, required: true, index: true },
+    requiredWithin: { type: String },
     urgencyLevel: { 
       type: String, 
       enum: ['emergency', 'urgent', 'standard'], 

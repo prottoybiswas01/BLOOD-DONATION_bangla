@@ -11,8 +11,8 @@ import { validateBody } from '../middleware/validate.js';
 
 const router = Router();
 
-// Public submission of institution registration application
-router.post('/', validateBody(SubmitInstitutionRequestSchema), submitInstitutionRequest);
+// Logged-in submission of institution registration application
+router.post('/', requireAuth, validateBody(SubmitInstitutionRequestSchema), submitInstitutionRequest);
 
 // List applications: Super Admin, Admin (read only), Coordinator (division)
 router.get('/', requireAuth, requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'), getInstitutionRequests);

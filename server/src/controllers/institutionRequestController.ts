@@ -25,7 +25,25 @@ export const ReviewInstitutionRequestSchema = z.object({
   decisionReason: z.string().min(5, 'অনুমোদন বা বাতিলের কারণ কমপক্ষে ৫ অক্ষরে উল্লেখ করতে হবে')
 });
 
-export async function submitInstitutionRequest(req: Request, res: Response): Promise<void> {
+export async function submitInstitutionRequest(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'নতুন শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তি আবেদন জমা দিতে অনুগ্রহ করে প্রথমে লগইন করুন।'
+    });
+    return;
+  }
+
+  // Only regular members, donors, and requesters can apply (coordinators and moderators cannot self-apply)
+  const allowedRoles = ['MEMBER', 'DONOR', 'REQUESTER'];
+  if (!allowedRoles.includes(req.user.role)) {
+    res.status(403).json({
+      success: false,
+      message: 'প্রশাসনিক কর্মকর্তা (সমন্বয়ক, মডারেটর বা প্রতিষ্ঠান প্রধান) নিজে থেকে নতুন প্রতিষ্ঠান আবেদন করতে পারেন না।'
+    });
+    return;
+  }
+
   const data = req.body;
   const newReq = dataStore.createInstitutionRequest(data);
 

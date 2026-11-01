@@ -32,7 +32,10 @@ import {
   Phone,
   XCircle,
   Check,
-  Loader2
+  Loader2,
+  KeyRound,
+  Copy,
+  Plus
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -60,6 +63,9 @@ export const AdminDashboard: React.FC = () => {
     | 'status_history' 
     | 'contact_logs' 
     | 'audit_logs'
+    | 'password_recovery'
+    | 'institution_changes'
+    | 'recovery_history'
     | 'settings';
 
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -77,6 +83,49 @@ export const AdminDashboard: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [bloodRequests, setBloodRequests] = useState<any[]>([]);
   const [phoneRequests, setPhoneRequests] = useState<any[]>([]);
+  const [recoveryRequests, setRecoveryRequests] = useState<any[]>([]);
+  const [recoveryHistory, setRecoveryHistory] = useState<any[]>([]);
+  const [instChanges, setInstChanges] = useState<any[]>([]);
+
+  // Scoped User Search states (PART 04)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [searchResult, setSearchResult] = useState<any | null>(null);
+
+  // Password Recovery Approval Modal (PART 03)
+  const [approvingRecovery, setApprovingRecovery] = useState<any | null>(null);
+  const [recoveryApproveNotes, setRecoveryApproveNotes] = useState('');
+  const [submittingRecoveryApprove, setSubmittingRecoveryApprove] = useState(false);
+  const [revealedRecoveryCreds, setRevealedRecoveryCreds] = useState<{
+    phone: string;
+    temporaryPassword: string;
+    message: string;
+    warning: string;
+  } | null>(null);
+  const [copiedOtp, setCopiedOtp] = useState(false);
+
+  // Password Recovery Rejection Modal
+  const [rejectingRecovery, setRejectingRecovery] = useState<any | null>(null);
+  const [recoveryRejectReason, setRecoveryRejectReason] = useState('');
+  const [submittingRecoveryReject, setSubmittingRecoveryReject] = useState(false);
+
+  // Review Institution Change Modal (PART 06)
+  const [reviewingChangeReq, setReviewingChangeReq] = useState<any | null>(null);
+  const [changeDecision, setChangeDecision] = useState<'approved' | 'rejected'>('approved');
+  const [changeReviewNotes, setChangeReviewNotes] = useState('');
+  const [submittingChangeReview, setSubmittingChangeReview] = useState(false);
+
+  // Manual Institution Creation Modal (PART 05)
+  const [showManualInstModal, setShowManualInstModal] = useState(false);
+  const [instName, setInstName] = useState('');
+  const [instNameBn, setInstNameBn] = useState('');
+  const [instCode, setInstCode] = useState('');
+  const [instType, setInstType] = useState('university');
+  const [instDivision, setInstDivision] = useState('dhaka');
+  const [instDistrict, setInstDistrict] = useState('dhaka');
+  const [instUpazila, setInstUpazila] = useState('');
+  const [instAddress, setInstAddress] = useState('');
+  const [submittingManualInst, setSubmittingManualInst] = useState(false);
 
   // Filtering & Pagination
   const [userSearch, setUserSearch] = useState('');
@@ -129,7 +178,10 @@ export const AdminDashboard: React.FC = () => {
         instReqRes,
         instRes,
         reqsRes,
-        phoneReqsRes
+        phoneReqsRes,
+        recRes,
+        recHistRes,
+        chgRes
       ] = await Promise.all([
         api.getAdminOverview(),
         api.getAdminUsers({ search: userSearch }),
@@ -140,7 +192,10 @@ export const AdminDashboard: React.FC = () => {
         api.getInstitutionRequests(),
         api.getInstitutions(),
         api.searchRequests({ limit: 10 }),
-        api.getPhoneChangeRequests()
+        api.getPhoneChangeRequests(),
+        api.getPasswordRecoveryRequests(),
+        api.getPasswordRecoveryHistory(),
+        api.getInstitutionChangeRequests()
       ]);
 
       if (overviewRes.success) setStats(overviewRes.stats);
@@ -153,6 +208,9 @@ export const AdminDashboard: React.FC = () => {
       if (instRes.success) setInstitutions(instRes.institutions || []);
       if (reqsRes.success) setBloodRequests(reqsRes.requests || []);
       if (phoneReqsRes.success) setPhoneRequests(phoneReqsRes.requests || []);
+      if (recRes && recRes.success) setRecoveryRequests(recRes.requests || []);
+      if (recHistRes && recHistRes.success) setRecoveryHistory(recHistRes.history || []);
+      if (chgRes && chgRes.success) setInstChanges(chgRes.requests || []);
     } catch (err: any) {
       console.error('Admin data load failed:', err);
     } finally {
@@ -286,6 +344,135 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleScopedSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearchingUser(true);
+    setSearchResult(null);
+    try {
+      const res = await api.scopedUserSearch(searchQuery.trim());
+      setSearchResult(res);
+    } catch (err: any) {
+      setSearchResult({
+        success: false,
+        isOutOfScope: true,
+        guidanceBn: err.message || 'অনুসন্ধান প্রক্রিয়ায় ত্রুটি দেখা দিয়েছে।'
+      });
+    } finally {
+      setSearchingUser(false);
+    }
+  };
+
+  const handleApproveRecovery = async () => {
+    if (!approvingRecovery) return;
+    setSubmittingRecoveryApprove(true);
+    try {
+      const res = await api.approvePasswordRecoveryRequest(approvingRecovery._id, recoveryApproveNotes.trim() || undefined);
+      if (res.success && res.temporaryPassword) {
+        setRevealedRecoveryCreds({
+          phone: approvingRecovery.userPhone,
+          temporaryPassword: res.temporaryPassword,
+          message: res.message,
+          warning: res.securityNotice || 'এটি এককালীন ব্যবহারের জন্য। ব্যবহারকারী লগইন করার পর নতুন পাসওয়ার্ড সেট করতে বাধ্য থাকবে।'
+        });
+        setApprovingRecovery(null);
+        setRecoveryApproveNotes('');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'পাসওয়ার্ড প্রদান প্রক্রিয়া ব্যর্থ হয়েছে।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'অনুমোদন ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingRecoveryApprove(false);
+    }
+  };
+
+  const handleRejectRecovery = async () => {
+    if (!rejectingRecovery) return;
+    if (recoveryRejectReason.trim().length < 5) {
+      setMsg({ text: 'বাতিলের সুস্পষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।', type: 'error' });
+      return;
+    }
+    setSubmittingRecoveryReject(true);
+    try {
+      const res = await api.rejectPasswordRecoveryRequest(rejectingRecovery._id, recoveryRejectReason.trim());
+      if (res.success) {
+        setMsg({ text: 'রিকভারি আবেদনটি বাতিল করা হয়েছে।', type: 'success' });
+        setRejectingRecovery(null);
+        setRecoveryRejectReason('');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'বাতিল করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'ত্রুটি দেখা দিয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingRecoveryReject(false);
+    }
+  };
+
+  const handleReviewChangeRequest = async () => {
+    if (!reviewingChangeReq) return;
+    setSubmittingChangeReview(true);
+    try {
+      const res = await api.reviewInstitutionChangeRequest(reviewingChangeReq._id, {
+        status: changeDecision,
+        decisionReason: changeReviewNotes.trim() || (changeDecision === 'approved' ? 'অনুমোদিত' : 'বাতিল'),
+        reviewNotes: changeReviewNotes.trim() || undefined
+      });
+      if (res.success) {
+        setMsg({ text: res.message || 'প্রতিষ্ঠান পরিবর্তনের আবেদন নিষ্পত্তি সফল হয়েছে।', type: 'success' });
+        setReviewingChangeReq(null);
+        setChangeReviewNotes('');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'নিষ্পত্তি করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingChangeReview(false);
+    }
+  };
+
+  const handleManualCreateInstitution = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!instNameBn.trim() || !instCode.trim()) {
+      setMsg({ text: 'প্রতিষ্ঠানের বাংলা নাম এবং কোড আবশ্যক।', type: 'error' });
+      return;
+    }
+    setSubmittingManualInst(true);
+    try {
+      const res = await api.manualCreateInstitution({
+        name: instName.trim() || instNameBn.trim(),
+        nameBn: instNameBn.trim(),
+        code: instCode.trim().toUpperCase(),
+        type: instType,
+        division: instDivision,
+        district: instDistrict,
+        upazila: instUpazila.trim() || undefined,
+        address: instAddress.trim() || undefined
+      });
+
+      if (res.success) {
+        setMsg({ text: res.message || 'নতুন শিক্ষা প্রতিষ্ঠান সফলভাবে তৈরি ও সক্রিয় করা হয়েছে।', type: 'success' });
+        setShowManualInstModal(false);
+        setInstName('');
+        setInstNameBn('');
+        setInstCode('');
+        setInstAddress('');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'প্রতিষ্ঠান তৈরি করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'প্রতিষ্ঠান তৈরিতে ত্রুটি দেখা দিয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingManualInst(false);
+    }
+  };
+
   const handleOpenDrillDown = async (inst: any) => {
     setDrillDownInst(inst);
     setDrillDownLoading(true);
@@ -338,6 +525,18 @@ export const AdminDashboard: React.FC = () => {
           icon: <Phone className="w-4 h-4" />, 
           count: phoneRequests.filter(r => r.status === 'pending').length 
         },
+        {
+          key: 'password_recovery',
+          label: 'পাসওয়ার্ড রিকভারি',
+          icon: <KeyRound className="w-4 h-4" />,
+          count: recoveryRequests.filter(r => r.status === 'pending').length
+        },
+        {
+          key: 'institution_changes',
+          label: 'প্রতিষ্ঠান পরিবর্তন আবেদন',
+          icon: <Building2 className="w-4 h-4" />,
+          count: instChanges.filter(r => r.status === 'pending').length
+        },
         { key: 'blocked_users', label: 'স্থগিত ও ব্লককৃত', icon: <UserX className="w-4 h-4" />, count: blockedUsers.length },
       ]
     },
@@ -352,6 +551,7 @@ export const AdminDashboard: React.FC = () => {
       title: 'নিরাপত্তা ও অডিট',
       items: [
         { key: 'contact_logs', label: 'ফোন নম্বর অডিট', icon: <Eye className="w-4 h-4" />, count: contactLogs.length },
+        { key: 'recovery_history', label: 'রিকভারি অডিট ট্রেইল', icon: <History className="w-4 h-4" /> },
         { key: 'status_history', label: 'স্ট্যাটাস হিস্ট্রি', icon: <History className="w-4 h-4" />, count: statusHistories.length },
         { key: 'audit_logs', label: 'অডিট ট্রেইল', icon: <Lock className="w-4 h-4" />, count: auditLogs.length },
       ]
@@ -1768,6 +1968,278 @@ export const AdminDashboard: React.FC = () => {
         </Modal>
       )}
 
+      {/* Manual Institution Modal (PART 05) */}
+      {showManualInstModal && (
+        <Modal
+          isOpen={showManualInstModal}
+          onClose={() => setShowManualInstModal(false)}
+          title="নতুন শিক্ষা প্রতিষ্ঠান / ইউনিট সরাসরি তৈরি"
+          description="সুপার অ্যাডমিন হিসেবে যেকোনো বিভাগের অধীনে একটি প্রতিষ্ঠান তাৎক্ষণিকভাবে অনুমোদন ও সক্রিয় করুন।"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowManualInstModal(false)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingManualInst}
+                onClick={handleManualCreateInstitution as any}
+                className="bg-teal-700 hover:bg-teal-800"
+              >
+                প্রতিষ্ঠান সংরক্ষণ করুন
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleManualCreateInstitution} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">প্রতিষ্ঠানের বাংলা নাম *</label>
+              <input
+                type="text"
+                required
+                value={instNameBn}
+                onChange={e => setInstNameBn(e.target.value)}
+                placeholder="যেমন: ঢাকা কলেজ"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">ইংরেজি নাম</label>
+                <input
+                  type="text"
+                  value={instName}
+                  onChange={e => setInstName(e.target.value)}
+                  placeholder="Dhaka College"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">ইউনিক কোড *</label>
+                <input
+                  type="text"
+                  required
+                  value={instCode}
+                  onChange={e => setInstCode(e.target.value)}
+                  placeholder="DC"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs font-mono uppercase text-mainText"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">ধরণ</label>
+                <select
+                  value={instType}
+                  onChange={e => setInstType(e.target.value)}
+                  className="w-full px-2 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                >
+                  <option value="university">বিশ্ববিদ্যালয়</option>
+                  <option value="college">কলেজ</option>
+                  <option value="medical_college">মেডিকেল কলেজ</option>
+                  <option value="school">স্কুল ও অন্যান্য</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">বিভাগ</label>
+                <select
+                  value={instDivision}
+                  onChange={e => setInstDivision(e.target.value)}
+                  className="w-full px-2 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                >
+                  {BANGLADESH_DIVISIONS.map(d => (
+                    <option key={d.id} value={d.id}>{d.nameBn}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1">জেলা</label>
+                <input
+                  type="text"
+                  value={instDistrict}
+                  onChange={e => setInstDistrict(e.target.value)}
+                  placeholder="জেলা"
+                  className="w-full px-2 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">ঠিকানা / ক্যাম্পাস অবস্থান</label>
+              <input
+                type="text"
+                value={instAddress}
+                onChange={e => setInstAddress(e.target.value)}
+                placeholder="মিরপুর রোড, ঢাকা"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+              />
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal: Approve Recovery */}
+      {approvingRecovery && (
+        <Modal
+          isOpen={!!approvingRecovery}
+          onClose={() => setApprovingRecovery(null)}
+          title="পাসওয়ার্ড রিকভারি অনুমোদন"
+          description={`ব্যবহারকারী ${approvingRecovery.userName} (${approvingRecovery.userPhone})-কে এককালীন পাসওয়ার্ড প্রদান করা হবে।`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setApprovingRecovery(null)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingRecoveryApprove}
+                onClick={handleApproveRecovery}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                অনুমোদন ও পাসওয়ার্ড উৎপন্ন করুন
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+              <strong>আইনি নোটিশ:</strong> আবেদনকারীর সঠিক পরিচয় নিশ্চিত করার পরেই কেবল অনুমোদন করুন। এই পাসওয়ার্ড দিয়ে তিনি কেবল একবার লগইন করতে পারবেন।
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">অনুমোদনের নোট (ঐচ্ছিক)</label>
+              <textarea
+                rows={2}
+                value={recoveryApproveNotes}
+                onChange={e => setRecoveryApproveNotes(e.target.value)}
+                placeholder="সরাসরি কথা বলে পরিচয় নিশ্চিত করা হয়েছে..."
+                className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Reveal Temporary Password */}
+      {revealedRecoveryCreds && (
+        <Modal
+          isOpen={!!revealedRecoveryCreds}
+          onClose={() => setRevealedRecoveryCreds(null)}
+          title="এককালীন অস্থায়ী পাসওয়ার্ড প্রস্তুত"
+          footer={
+            <Button variant="primary" size="sm" onClick={() => setRevealedRecoveryCreds(null)}>
+              ঠিক আছে
+            </Button>
+          }
+        >
+          <div className="space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h4 className="font-bold text-mainText text-sm">
+              ব্যবহারকারীর ফোন: <span className="font-mono">{revealedRecoveryCreds.phone}</span>
+            </h4>
+            <div className="p-4 rounded-2xl bg-slate-900 text-white font-mono text-xl tracking-wider flex items-center justify-between">
+              <span>{revealedRecoveryCreds.temporaryPassword}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(revealedRecoveryCreds.temporaryPassword);
+                  setCopiedOtp(true);
+                  setTimeout(() => setCopiedOtp(false), 2000);
+                }}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400"
+              >
+                {copiedOtp ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-rose-600 font-semibold">
+              {revealedRecoveryCreds.warning}
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Reject Recovery */}
+      {rejectingRecovery && (
+        <Modal
+          isOpen={!!rejectingRecovery}
+          onClose={() => setRejectingRecovery(null)}
+          title="পাসওয়ার্ড রিকভারি আবেদন বাতিল"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setRejectingRecovery(null)}>
+                পিছনে যান
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingRecoveryReject}
+                onClick={handleRejectRecovery}
+                className="bg-rose-600 hover:bg-rose-700"
+              >
+                বাতিল নিশ্চিত করুন
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-mainText">বাতিলকরণের কারণ * (কমপক্ষে ৫ অক্ষর)</label>
+            <textarea
+              rows={3}
+              required
+              value={recoveryRejectReason}
+              onChange={e => setRecoveryRejectReason(e.target.value)}
+              placeholder="আবেদনকারীর পরিচয় যাচাই করা সম্ভব হয়নি..."
+              className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Review Institution Change */}
+      {reviewingChangeReq && (
+        <Modal
+          isOpen={!!reviewingChangeReq}
+          onClose={() => setReviewingChangeReq(null)}
+          title={`প্রতিষ্ঠান পরিবর্তন আবেদন ${changeDecision === 'approved' ? 'অনুমোদন' : 'বাতিল'}`}
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setReviewingChangeReq(null)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingChangeReview}
+                onClick={handleReviewChangeRequest}
+                className={changeDecision === 'approved' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-rose-600 hover:bg-rose-700'}
+              >
+                {changeDecision === 'approved' ? 'অনুমোদন করুন' : 'বাতিল করুন'}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3 text-xs">
+            <p className="text-subText">
+              আবেদনকারী: <strong>{reviewingChangeReq.userName}</strong> ({reviewingChangeReq.userPhone})
+            </p>
+            <p className="text-subText">
+              অনুরোধকৃত প্রতিষ্ঠান: <strong>{reviewingChangeReq.targetInstitutionName}</strong>
+            </p>
+            <label className="block text-xs font-bold text-mainText">প্রশাসনিক মন্তব্য / নোট</label>
+            <textarea
+              rows={3}
+              value={changeReviewNotes}
+              onChange={e => setChangeReviewNotes(e.target.value)}
+              placeholder="আবেদনটি পর্যবেক্ষণপূর্বক সিদ্ধান্ত গ্রহণ করা হলো..."
+              className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

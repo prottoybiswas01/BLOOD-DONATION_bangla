@@ -4,6 +4,7 @@ export type UserRole =
   | 'SUPER_ADMIN' 
   | 'ADMIN'
   | 'DIVISION_COORDINATOR' 
+  | 'INSTITUTION_HEAD'
   | 'INSTITUTION_MODERATOR' 
   | 'MEMBER'
   | 'DONOR' 
@@ -53,6 +54,7 @@ export interface DonorProfile {
   bio?: string;
   isPubliclyListed?: boolean;
   emergencyAvailable?: boolean;
+  phone?: string;
   createdAt: string;
 }
 
@@ -80,6 +82,7 @@ export interface BloodRequest {
   district: string;
   upazila: string;
   requiredDate: string;
+  requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
   contactNumber: string;
@@ -224,6 +227,68 @@ export interface PhoneChangeRequest {
   reviewedByName?: string;
   reviewedAt?: string;
   reviewNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasswordRecoveryRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  userRole: UserRole;
+  division: string;
+  district: string;
+  institutionId?: string;
+  institutionName?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'used' | 'expired';
+  reason?: string;
+  temporaryPassword?: string;
+  expiresAt?: string;
+  isUsed: boolean;
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedByRole?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasswordRecoveryAudit {
+  _id: string;
+  requestId: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  issuedBy: string;
+  issuedByName: string;
+  issuerRole: string;
+  action: 'REQUEST_SUBMITTED' | 'OTP_GENERATED' | 'LOGIN_USED' | 'REQUEST_REJECTED';
+  reason?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface InstitutionChangeRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  userRole: UserRole;
+  currentInstitutionId?: string;
+  currentInstitutionName?: string;
+  targetInstitutionId: string;
+  targetInstitutionName: string;
+  division: string;
+  district: string;
+  studentOrStaffId?: string;
+  department?: string;
+  reason?: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedByName?: string;
+  decisionReason?: string;
   createdAt: string;
   updatedAt: string;
 }

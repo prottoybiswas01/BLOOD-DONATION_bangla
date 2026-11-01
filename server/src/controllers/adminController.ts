@@ -416,3 +416,75 @@ export async function updateInstitutionStatus(req: AuthRequest, res: Response): 
     institution
   });
 }
+
+export async function searchScopedUser(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const searcher = dataStore.findUserById(req.user.userId);
+  if (!searcher) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  const { query } = req.query;
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    res.status(400).json({ success: false, message: 'অনুসন্ধানের জন্য ইউজার আইডি, মোবাইল নম্বর বা নাম প্রদান করুন।' });
+    return;
+  }
+
+  const result = dataStore.scopedUserSearch(query, searcher);
+  res.json(result);
+}
+
+export async function manualCreateInstitution(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const creator = dataStore.findUserById(req.user.userId);
+  if (!creator) {
+    res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
+    return;
+  }
+
+  const { name, nameBn, code, type, division, district, upazila, address, email, phone, description } = req.body;
+
+  if (!name || !nameBn || !code || !division || !district || !address) {
+    res.status(400).json({ success: false, message: 'প্রতিষ্ঠানের নাম, কোড, বিভাগ, জেলা এবং ঠিকানা আবশ্যক।' });
+    return;
+  }
+
+  const result = dataStore.manualCreateInstitution({
+    name,
+    nameBn,
+    code,
+    type,
+    division,
+    district,
+    upazila: upazila || '',
+    address,
+    email,
+    phone,
+    description
+  }, creator);
+
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: creator._id,
+    actorRole: creator.role,
+    action: 'INSTITUTION_MANUALLY_CREATED',
+    targetType: 'Institution',
+    targetId: result.institution?._id,
+    details: { code, division, district }
+  });
+
+  res.json(result);
+}

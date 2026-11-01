@@ -3,14 +3,18 @@ import assert from 'node:assert';
 import { dataStore } from '../services/dataStore.js';
 import { SmsService } from '../services/smsService.js';
 
-test('1. Guest donor search strictly omits private phone numbers', () => {
+test('1. Guest donor search strictly omits private phone numbers unless donor explicitly consents', () => {
   const result = dataStore.searchDonors({ division: 'dhaka' });
   assert.ok(result.donors.length > 0, 'Should find donors in Dhaka');
 
-  // Verify each donor returned in public search has NO phone or contactNumber property
+  // For donors who have not given consent, phone must be strictly undefined
   for (const donor of result.donors) {
-    assert.strictEqual((donor as any).phone, undefined, 'Public donor search must never contain phone');
-    assert.strictEqual((donor as any).contactNumber, undefined, 'Public donor search must never contain contactNumber');
+    if (!donor.consentToShareContact) {
+      assert.strictEqual((donor as any).phone, undefined, 'Private donor search without consent must never contain phone');
+    } else {
+      assert.ok((donor as any).phone, 'Consented donor should have phone accessible for emergency contact');
+    }
+    assert.strictEqual((donor as any).contactNumber, undefined, 'Raw contactNumber property must never be leaked');
     assert.ok(donor.displayName, 'Public donor must have a display name');
     assert.ok(donor.bloodGroup, 'Public donor must have blood group');
   }

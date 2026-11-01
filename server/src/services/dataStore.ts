@@ -80,6 +80,7 @@ export interface StoredBloodRequest {
   district: string;
   upazila: string;
   requiredDate: Date;
+  requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
   contactNumber: string;
@@ -261,6 +262,68 @@ export interface StoredPhoneChangeRequest {
   updatedAt: Date;
 }
 
+export interface StoredPasswordRecoveryRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  userRole: UserRole;
+  division: string;
+  district: string;
+  institutionId?: string;
+  institutionName?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'used' | 'expired';
+  reason?: string;
+  temporaryPasswordHash?: string;
+  expiresAt?: Date;
+  isUsed: boolean;
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedByRole?: string;
+  approvedAt?: Date;
+  rejectionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StoredPasswordRecoveryAudit {
+  _id: string;
+  requestId: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  issuedBy: string;
+  issuedByName: string;
+  issuerRole: string;
+  action: 'REQUEST_SUBMITTED' | 'OTP_GENERATED' | 'LOGIN_USED' | 'REQUEST_REJECTED';
+  reason?: string;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface StoredInstitutionChangeRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  phone: string;
+  userRole: UserRole;
+  currentInstitutionId?: string;
+  currentInstitutionName?: string;
+  targetInstitutionId: string;
+  targetInstitutionName: string;
+  division: string;
+  district: string;
+  studentOrStaffId?: string;
+  department?: string;
+  reason?: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedByName?: string;
+  decisionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // In-Memory Repository
 class DataStore {
   users: StoredUser[] = [];
@@ -276,6 +339,9 @@ class DataStore {
   otps: StoredOtp[] = [];
   notifications: StoredNotification[] = [];
   phoneChangeRequests: StoredPhoneChangeRequest[] = [];
+  passwordRecoveryRequests: StoredPasswordRecoveryRequest[] = [];
+  passwordRecoveryAudits: StoredPasswordRecoveryAudit[] = [];
+  institutionChangeRequests: StoredInstitutionChangeRequest[] = [];
 
   constructor() {
     this.seedInitialData();
@@ -356,6 +422,24 @@ class DataStore {
         gender: 'male',
         assignedInstitution: 'inst_du',
         assignedInstitutions: ['inst_du'],
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: 'usr_head',
+        name: 'অধ্যাপক ড. ফজলুল হক (ঢাবি প্রতিষ্ঠান প্রধান)',
+        phone: '01700000008',
+        email: 'head@du.ac.bd',
+        passwordHash: defaultPasswordHash,
+        role: 'INSTITUTION_HEAD',
+        accountStatus: 'active',
+        gender: 'male',
+        assignedInstitution: 'inst_du',
+        assignedInstitutions: ['inst_du'],
+        division: 'dhaka',
+        district: 'dhaka',
         isActive: true,
         isPhoneVerified: true,
         createdAt: now,
@@ -925,6 +1009,49 @@ class DataStore {
         updatedAt: now
       }
     ];
+
+    // 12. Initial Password Recovery Requests
+    this.passwordRecoveryRequests = [
+      {
+        _id: 'prr_1',
+        userId: 'usr_donor_2',
+        userName: 'তানভীর আহমেদ',
+        phone: '01722222222',
+        userRole: 'DONOR',
+        division: 'dhaka',
+        district: 'dhaka',
+        institutionId: 'inst_du',
+        institutionName: 'ঢাকা বিশ্ববিদ্যালয়',
+        status: 'pending',
+        reason: 'পাসওয়ার্ড মনে নেই, দয়া করে সাময়িক পাসওয়ার্ড প্রদান করে সাহায্য করুন।',
+        isUsed: false,
+        createdAt: new Date(Date.now() - 3600000 * 4),
+        updatedAt: now
+      }
+    ];
+
+    // 13. Initial Institution Change Requests
+    this.institutionChangeRequests = [
+      {
+        _id: 'icr_1',
+        userId: 'usr_donor_1',
+        userName: 'রফিকুল ইসলাম',
+        phone: '01711111111',
+        userRole: 'DONOR',
+        currentInstitutionId: undefined,
+        currentInstitutionName: undefined,
+        targetInstitutionId: 'inst_du',
+        targetInstitutionName: 'ঢাকা বিশ্ববিদ্যালয়',
+        division: 'dhaka',
+        district: 'dhaka',
+        studentOrStaffId: 'DU-CSE-2022-019',
+        department: 'কম্পিউটার সায়েন্স',
+        reason: 'ঢাকা বিশ্ববিদ্যালয়ে অধ্যয়নরত থাকায় ক্যাম্পাস রক্তদাতা পুলের সাথে যুক্ত হতে চাই।',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 3600000 * 5),
+        updatedAt: now
+      }
+    ];
   }
 
   // --- MongoDB Atlas Synchronization & Persistence ---
@@ -1395,6 +1522,9 @@ class DataStore {
 
     const safeDonors = paginated.map(p => {
       const institution = p.institutionId ? this.findInstitutionById(p.institutionId) : undefined;
+      const donorUser = this.findUserById(p.userId);
+      const isPublicContactAllowed = Boolean(p.consentToShareContact);
+
       return {
         _id: p._id,
         displayName: p.displayName,
@@ -1409,6 +1539,9 @@ class DataStore {
         institutionId: p.institutionId,
         institutionMembershipVerified: p.institutionMembershipVerified,
         emergencyAvailable: p.emergencyAvailable,
+        consentToShareContact: isPublicContactAllowed,
+        // Strictly return phone only if donor gave explicit public consent
+        phone: isPublicContactAllowed ? donorUser?.phone : undefined,
         bio: p.bio,
         createdAt: p.createdAt
       };
@@ -1441,6 +1574,7 @@ class DataStore {
       district: data.district || 'dhaka',
       upazila: data.upazila || '',
       requiredDate: data.requiredDate || new Date(),
+      requiredWithin: data.requiredWithin,
       urgencyLevel: data.urgencyLevel || 'emergency',
       reason: data.reason || '',
       contactNumber: data.contactNumber || '',
@@ -2305,6 +2439,573 @@ class DataStore {
       return true;
     }
     return false;
+  }
+
+  // --- PART 03: Password Recovery & One-Time Password System ---
+
+  createPasswordRecoveryRequest(phoneOrUserId: string, reason?: string) {
+    const cleanInput = phoneOrUserId.trim().replace(/^(\+880|880)/, '0');
+    const user = this.users.find(u => u._id === cleanInput || u.phone === cleanInput);
+
+    if (!user) {
+      return {
+        success: false,
+        message: 'প্রদত্ত মোবাইল নম্বর বা আইডি দিয়ে কোনো অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।'
+      };
+    }
+
+    if (user.accountStatus && user.accountStatus !== 'active') {
+      return {
+        success: false,
+        message: 'অ্যাকাউন্টটি বর্তমানে স্থগিত বা তদন্তাধীন রয়েছে। অনুগ্রহ করে সরাসরি সহায়তা ডেস্কে যোগাযোগ করুন।'
+      };
+    }
+
+    // Check for existing pending request
+    const existing = this.passwordRecoveryRequests.find(
+      r => r.userId === user._id && r.status === 'pending'
+    );
+    if (existing) {
+      return {
+        success: false,
+        message: 'আপনার একটি পাসওয়ার্ড পুনরুদ্ধারের আবেদন ইতোমধ্যেই প্রক্রিয়াধীন রয়েছে। অনুগ্রহ করে অপেক্ষা করুন।'
+      };
+    }
+
+    const institution = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : undefined;
+    const now = new Date();
+    const requestId = 'prr_' + Date.now() + Math.random().toString(36).substring(2, 6);
+
+    const newRequest: StoredPasswordRecoveryRequest = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      division: user.division || 'dhaka',
+      district: user.district || 'dhaka',
+      institutionId: user.assignedInstitution,
+      institutionName: institution?.nameBn || institution?.name,
+      status: 'pending',
+      reason: reason || 'পাসওয়ার্ড মনে নেই, লগইন সমস্যা',
+      isUsed: false,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.passwordRecoveryRequests.unshift(newRequest);
+
+    // Audit log
+    this.passwordRecoveryAudits.unshift({
+      _id: 'pra_' + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: newRequest._id,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      issuedBy: user._id,
+      issuedByName: user.name,
+      issuerRole: user.role,
+      action: 'REQUEST_SUBMITTED',
+      reason: reason || 'ব্যবহারকারী পাসওয়ার্ড রিকভারি আবেদন করেছেন',
+      createdAt: now
+    });
+
+    // In-App Notifications to Super Admin, Coordinator, and Institution Officials
+    const admins = this.users.filter(u => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN');
+    for (const admin of admins) {
+      this.createNotification({
+        userId: admin._id,
+        title: '🔑 নতুন পাসওয়ার্ড রিকভারি আবেদন',
+        message: `${user.name} (${user.phone}) একটি সাময়িক পাসওয়ার্ড রিকভারি আবেদন জমা দিয়েছেন।`,
+        type: 'system',
+        link: '/admin/dashboard'
+      });
+    }
+
+    // Notify Division Coordinator
+    const coordinators = this.users.filter(
+      u => u.role === 'DIVISION_COORDINATOR' && u.assignedDivision === user.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: '🔑 নতুন পাসওয়ার্ড রিকভারি আবেদন (বিভাগীয়)',
+        message: `${user.name} (${user.district}, ${user.division}) পাসওয়ার্ড রিকভারি আবেদন জমা দিয়েছেন।`,
+        type: 'system',
+        link: '/coordinator/dashboard'
+      });
+    }
+
+    // Notify Institution Moderator & Head if belongs to institution
+    if (user.assignedInstitution) {
+      const instOfficials = this.users.filter(
+        u => (u.role === 'INSTITUTION_MODERATOR' || u.role === 'INSTITUTION_HEAD') &&
+             u.assignedInstitution === user.assignedInstitution
+      );
+      for (const official of instOfficials) {
+        this.createNotification({
+          userId: official._id,
+          title: '🔑 ক্যাম্পাস সদস্য পাসওয়ার্ড রিকভারি',
+          message: `${user.name} আপনার প্রতিষ্ঠানের অধীনে পাসওয়ার্ড রিকভারি আবেদন জমা দিয়েছেন।`,
+          type: 'system',
+          link: '/moderator/dashboard'
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: 'আপনার পাসওয়ার্ড রিকভারির আবেদনটি সফলভাবে জমা হয়েছে। সংশ্লিষ্ট কর্তৃপক্ষ যাচাই করে সাময়িক পাসওয়ার্ড প্রদান করবেন।'
+    };
+  }
+
+  getPasswordRecoveryRequests(filter: { role: string; division?: string; institutionId?: string; status?: string }) {
+    let list = this.passwordRecoveryRequests;
+
+    if (filter.status) {
+      list = list.filter(r => r.status === filter.status);
+    }
+
+    // Scope check
+    if (filter.role === 'SUPER_ADMIN' || filter.role === 'ADMIN') {
+      // Sees nationwide
+    } else if (filter.role === 'DIVISION_COORDINATOR') {
+      list = list.filter(r => r.division === filter.division);
+    } else if (filter.role === 'INSTITUTION_HEAD' || filter.role === 'INSTITUTION_MODERATOR') {
+      list = list.filter(r => r.institutionId === filter.institutionId);
+    } else {
+      return [];
+    }
+
+    // Sanitize: NEVER return temporaryPasswordHash or password secrets
+    return list.map(r => ({
+      _id: r._id,
+      userId: r.userId,
+      userName: r.userName,
+      phone: r.phone,
+      userRole: r.userRole,
+      division: r.division,
+      district: r.district,
+      institutionId: r.institutionId,
+      institutionName: r.institutionName,
+      status: r.status,
+      reason: r.reason,
+      isUsed: r.isUsed,
+      expiresAt: r.expiresAt,
+      approvedBy: r.approvedBy,
+      approvedByName: r.approvedByName,
+      approvedByRole: r.approvedByRole,
+      approvedAt: r.approvedAt,
+      rejectionReason: r.rejectionReason,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }));
+  }
+
+  approvePasswordRecoveryRequest(requestId: string, approverUser: StoredUser) {
+    const req = this.passwordRecoveryRequests.find(r => r._id === requestId);
+    if (!req) {
+      return { success: false, message: 'আবেদনটি খুঁজে পাওয়া যায়নি।' };
+    }
+
+    if (req.status !== 'pending') {
+      return { success: false, message: 'আবেদনটি ইতোমধ্যেই পর্যালোচনা করা হয়েছে।' };
+    }
+
+    // Check approver authorization scope
+    if (approverUser.role === 'DIVISION_COORDINATOR' && approverUser.assignedDivision !== req.division) {
+      return { success: false, message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত বিভাগের রিকভারি অনুমোদন করতে পারেন।' };
+    }
+
+    if ((approverUser.role === 'INSTITUTION_MODERATOR' || approverUser.role === 'INSTITUTION_HEAD') && 
+        approverUser.assignedInstitution !== req.institutionId) {
+      return { success: false, message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত প্রতিষ্ঠানের রিকভারি অনুমোদন করতে পারেন।' };
+    }
+
+    const targetUser = this.findUserById(req.userId);
+    if (!targetUser) {
+      return { success: false, message: 'ব্যবহারকারীর মূল অ্যাকাউন্ট পাওয়া যায়নি।' };
+    }
+
+    // Cryptographically secure temporary password (e.g. BD739281)
+    const tempPass = 'BD' + Math.floor(100000 + Math.random() * 900000);
+    const hash = bcrypt.hashSync(tempPass, 10);
+    const now = new Date();
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1000); // 24 hours expiry
+
+    req.status = 'approved';
+    req.temporaryPasswordHash = hash;
+    req.expiresAt = expiresAt;
+    req.approvedBy = approverUser._id;
+    req.approvedByName = approverUser.name;
+    req.approvedByRole = approverUser.role;
+    req.approvedAt = now;
+    req.updatedAt = now;
+
+    // Update user password to this temporary password & require first login password change
+    targetUser.passwordHash = hash;
+    targetUser.requirePasswordChangeAtFirstLogin = true;
+    targetUser.updatedAt = now;
+
+    // Audit trail
+    this.passwordRecoveryAudits.unshift({
+      _id: 'pra_' + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: targetUser._id,
+      userName: targetUser.name,
+      phone: targetUser.phone,
+      issuedBy: approverUser._id,
+      issuedByName: approverUser.name,
+      issuerRole: approverUser.role,
+      action: 'OTP_GENERATED',
+      reason: 'অনুমোদিত সাময়িক পাসওয়ার্ড প্রদান করা হয়েছে',
+      notes: `ইস্যু করেছেন: ${approverUser.name} (${approverUser.role})`,
+      createdAt: now
+    });
+
+    // Notify user
+    this.createNotification({
+      userId: targetUser._id,
+      title: '✅ পাসওয়ার্ড রিকভারি সম্পন্ন হয়েছে',
+      message: 'আপনার পাসওয়ার্ড রিকভারি আবেদন অনুমোদিত হয়েছে। নির্ধারিত সাময়িক পাসওয়ার্ড দিয়ে লগইন করে অবিলম্বে নতুন পাসওয়ার্ড নির্ধারণ করুন।',
+      type: 'account_status'
+    });
+
+    return {
+      success: true,
+      temporaryPassword: tempPass,
+      warning: 'এই সাময়িক পাসওয়ার্ডটি ব্যবহারকারীকে নিরাপদ মাধ্যমে দিন। এটি ২৪ ঘণ্টার মধ্যে একবারই ব্যবহারযোগ্য।'
+    };
+  }
+
+  rejectPasswordRecoveryRequest(requestId: string, rejecterUser: StoredUser, reason: string) {
+    const req = this.passwordRecoveryRequests.find(r => r._id === requestId);
+    if (!req) return { success: false, message: 'আবেদনটি পাওয়া যায়নি।' };
+
+    const now = new Date();
+    req.status = 'rejected';
+    req.rejectionReason = reason;
+    req.updatedAt = now;
+
+    this.passwordRecoveryAudits.unshift({
+      _id: 'pra_' + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: req.userId,
+      userName: req.userName,
+      phone: req.phone,
+      issuedBy: rejecterUser._id,
+      issuedByName: rejecterUser.name,
+      issuerRole: rejecterUser.role,
+      action: 'REQUEST_REJECTED',
+      reason,
+      createdAt: now
+    });
+
+    return { success: true, message: 'পাসওয়ার্ড রিকভারি আবেদনটি বাতিল করা হয়েছে।' };
+  }
+
+  getPasswordRecoveryHistory(filter: { role: string; division?: string }) {
+    if (filter.role === 'SUPER_ADMIN' || filter.role === 'ADMIN') {
+      return this.passwordRecoveryAudits;
+    }
+    if (filter.role === 'DIVISION_COORDINATOR') {
+      // Find requests in this division
+      const validReqIds = new Set(
+        this.passwordRecoveryRequests.filter(r => r.division === filter.division).map(r => r._id)
+      );
+      return this.passwordRecoveryAudits.filter(a => validReqIds.has(a.requestId));
+    }
+    return [];
+  }
+
+  // --- PART 04: Scoped Member Profile Search ---
+
+  scopedUserSearch(query: string, searcherUser: StoredUser) {
+    const clean = query.trim().toLowerCase();
+    const cleanPhone = clean.replace(/^(\+880|880)/, '0');
+
+    const targetUser = this.users.find(u => 
+      u._id.toLowerCase() === clean || 
+      u.phone === cleanPhone || 
+      u.name.toLowerCase().includes(clean)
+    );
+
+    if (!targetUser) {
+      return {
+        success: false,
+        notFound: true,
+        message: 'কোনো ব্যবহারকারী খুঁজে পাওয়া যায়নি।'
+      };
+    }
+
+    // Role-based scope isolation
+    if (searcherUser.role === 'SUPER_ADMIN' || searcherUser.role === 'ADMIN') {
+      // Full nationwide access
+    } else if (searcherUser.role === 'DIVISION_COORDINATOR') {
+      if (targetUser.division !== searcherUser.assignedDivision) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: 'এই ব্যবহারকারী আপনার Assigned Division-এর অধীনে নেই। সংশ্লিষ্ট Division Coordinator অথবা Authorized Administrator-এর সঙ্গে যোগাযোগ করুন।'
+        };
+      }
+    } else if (searcherUser.role === 'INSTITUTION_HEAD' || searcherUser.role === 'INSTITUTION_MODERATOR') {
+      if (targetUser.assignedInstitution !== searcherUser.assignedInstitution) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: 'এই ব্যবহারকারী অন্য একটি প্রতিষ্ঠানের অধীনে রয়েছেন। বিস্তারিত তথ্যের জন্য সংশ্লিষ্ট প্রতিষ্ঠানের Moderator-এর সঙ্গে যোগাযোগ করুন।'
+        };
+      }
+    } else {
+      return { success: false, outOfScope: true, message: 'অনুসন্ধানের প্রয়োজনীয় অনুমতি নেই।' };
+    }
+
+    // Safe profile return
+    const inst = targetUser.assignedInstitution ? this.findInstitutionById(targetUser.assignedInstitution) : undefined;
+    const donor = this.donorProfiles.find(d => d.userId === targetUser._id);
+
+    return {
+      success: true,
+      user: {
+        _id: targetUser._id,
+        name: targetUser.name,
+        phone: targetUser.phone,
+        role: targetUser.role,
+        accountStatus: targetUser.accountStatus,
+        division: targetUser.division,
+        district: targetUser.district,
+        upazila: targetUser.upazila,
+        gender: targetUser.gender,
+        assignedInstitution: targetUser.assignedInstitution,
+        institutionName: inst?.nameBn || inst?.name,
+        bloodGroup: donor?.bloodGroup,
+        totalDonations: donor?.totalDonations || 0,
+        createdAt: targetUser.createdAt
+      }
+    };
+  }
+
+  // --- PART 05 & 06: Institution Change Request & Membership Management ---
+
+  createInstitutionChangeRequest(data: {
+    userId: string;
+    targetInstitutionId: string;
+    studentOrStaffId?: string;
+    department?: string;
+    reason?: string;
+  }) {
+    const user = this.findUserById(data.userId);
+    if (!user) return { success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' };
+
+    const targetInst = this.findInstitutionById(data.targetInstitutionId);
+    if (!targetInst) return { success: false, message: 'লক্ষ্য প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' };
+
+    const currentInst = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : undefined;
+    const now = new Date();
+    const requestId = 'icr_' + Date.now() + Math.random().toString(36).substring(2, 6);
+
+    const newReq: StoredInstitutionChangeRequest = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      currentInstitutionId: user.assignedInstitution,
+      currentInstitutionName: currentInst?.nameBn || currentInst?.name,
+      targetInstitutionId: targetInst._id,
+      targetInstitutionName: targetInst.nameBn || targetInst.name,
+      division: targetInst.division,
+      district: targetInst.district,
+      studentOrStaffId: data.studentOrStaffId,
+      department: data.department,
+      reason: data.reason,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.institutionChangeRequests.unshift(newReq);
+
+    // Notify Super Admin & Coordinator
+    const admins = this.users.filter(u => u.role === 'SUPER_ADMIN');
+    for (const a of admins) {
+      this.createNotification({
+        userId: a._id,
+        title: '🏫 প্রতিষ্ঠান পরিবর্তনের আবেদন',
+        message: `${user.name} প্রতিষ্ঠান হিসেবে "${targetInst.nameBn}" অন্তর্ভুক্তির আবেদন করেছেন।`,
+        type: 'institution_update',
+        link: '/admin/dashboard'
+      });
+    }
+
+    const coordinators = this.users.filter(
+      u => u.role === 'DIVISION_COORDINATOR' && u.assignedDivision === targetInst.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: '🏫 প্রতিষ্ঠান পরিবর্তনের আবেদন (বিভাগীয়)',
+        message: `${user.name} "${targetInst.nameBn}" প্রতিষ্ঠানে যুক্ত হতে আবেদন করেছেন।`,
+        type: 'institution_update',
+        link: '/coordinator/dashboard'
+      });
+    }
+
+    // Notify Target Institution Moderator & Head
+    const targetOfficials = this.users.filter(
+      u => (u.role === 'INSTITUTION_MODERATOR' || u.role === 'INSTITUTION_HEAD') &&
+           u.assignedInstitution === targetInst._id
+    );
+    for (const o of targetOfficials) {
+      this.createNotification({
+        userId: o._id,
+        title: '🏫 নতুন সদস্য অন্তর্ভুক্তি আবেদন',
+        message: `${user.name} আপনার ক্যাম্পাসের সদস্য হিসেবে যুক্ত হতে আবেদন করেছেন।`,
+        type: 'institution_update',
+        link: '/moderator/dashboard'
+      });
+    }
+
+    return {
+      success: true,
+      message: 'প্রতিষ্ঠান পরিবর্তনের আবেদন সফলভাবে জমা হয়েছে। সংশ্লিষ্ট কর্তৃপক্ষ অনুমোদন করলে আপনার প্রোফাইলে সংযুক্ত হবে।'
+    };
+  }
+
+  getInstitutionChangeRequests(filter: { role: string; division?: string; institutionId?: string; status?: string }) {
+    let list = this.institutionChangeRequests;
+
+    if (filter.status) {
+      list = list.filter(r => r.status === filter.status);
+    }
+
+    if (filter.role === 'SUPER_ADMIN' || filter.role === 'ADMIN') {
+      return list;
+    }
+    if (filter.role === 'DIVISION_COORDINATOR') {
+      return list.filter(r => r.division === filter.division);
+    }
+    if (filter.role === 'INSTITUTION_HEAD' || filter.role === 'INSTITUTION_MODERATOR') {
+      return list.filter(r => r.targetInstitutionId === filter.institutionId || r.currentInstitutionId === filter.institutionId);
+    }
+    return [];
+  }
+
+  reviewInstitutionChangeRequest(requestId: string, reviewerUser: StoredUser, status: 'approved' | 'rejected', decisionReason?: string) {
+    const req = this.institutionChangeRequests.find(r => r._id === requestId);
+    if (!req) return { success: false, message: 'আবেদনটি পাওয়া যায়নি।' };
+
+    // Final approval requires SUPER_ADMIN or DIVISION_COORDINATOR (for that division)
+    if (reviewerUser.role !== 'SUPER_ADMIN' && reviewerUser.role !== 'DIVISION_COORDINATOR') {
+      return { success: false, message: 'অনধিকার চর্চা: প্রতিষ্ঠান পরিবর্তনের চূড়ান্ত অনুমোদন কেবল বিভাগীয় সমন্বয়ক বা সুপার অ্যাডমিন দিতে পারেন।' };
+    }
+
+    if (reviewerUser.role === 'DIVISION_COORDINATOR' && reviewerUser.assignedDivision !== req.division) {
+      return { success: false, message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত বিভাগের আবেদন অনুমোদন করতে পারেন।' };
+    }
+
+    const now = new Date();
+    req.status = status;
+    req.reviewedBy = reviewerUser._id;
+    req.reviewedByName = reviewerUser.name;
+    req.decisionReason = decisionReason;
+    req.updatedAt = now;
+
+    if (status === 'approved') {
+      // Update target user's assignedInstitution
+      const targetUser = this.findUserById(req.userId);
+      if (targetUser) {
+        targetUser.assignedInstitution = req.targetInstitutionId;
+        targetUser.updatedAt = now;
+      }
+
+      // Update donor profile
+      const donor = this.donorProfiles.find(d => d.userId === req.userId);
+      if (donor) {
+        donor.institutionId = req.targetInstitutionId;
+        donor.institutionMembershipVerified = true;
+        donor.updatedAt = now;
+      }
+
+      this.createNotification({
+        userId: req.userId,
+        title: '🎉 প্রতিষ্ঠান অন্তর্ভুক্তি অনুমোদিত!',
+        message: `আপনার প্রতিষ্ঠান "${req.targetInstitutionName}" সফলভাবে প্রোফাইলে সংযুক্ত হয়েছে।`,
+        type: 'institution_update'
+      });
+    } else {
+      this.createNotification({
+        userId: req.userId,
+        title: '❌ প্রতিষ্ঠান পরিবর্তনের আবেদন নাকচ',
+        message: `আপনার আবেদনটি বিবেচনা করা সম্ভব হয়নি। কারণ: ${decisionReason || 'যাচাইয়ে ত্রুটি'}`,
+        type: 'institution_update'
+      });
+    }
+
+    return {
+      success: true,
+      message: status === 'approved' ? 'প্রতিষ্ঠান পরিবর্তনের আবেদন সফলভাবে অনুমোদিত হয়েছে।' : 'আবেদনটি বাতিল করা হয়েছে।'
+    };
+  }
+
+  // Manual Institution Creation by SUPER_ADMIN or DIVISION_COORDINATOR
+  manualCreateInstitution(data: {
+    name: string;
+    nameBn: string;
+    code: string;
+    type: string;
+    division: string;
+    district: string;
+    upazila: string;
+    address: string;
+    email?: string;
+    phone?: string;
+    description?: string;
+  }, creatorUser: StoredUser) {
+    if (creatorUser.role !== 'SUPER_ADMIN' && creatorUser.role !== 'DIVISION_COORDINATOR') {
+      return { success: false, message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন এবং বিভাগীয় সমন্বয়ক সরাসরি প্রতিষ্ঠান তৈরি করতে পারেন।' };
+    }
+
+    if (creatorUser.role === 'DIVISION_COORDINATOR' && creatorUser.assignedDivision !== data.division) {
+      return { success: false, message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত বিভাগে প্রতিষ্ঠান তৈরি করতে পারেন।' };
+    }
+
+    // Check duplicate code
+    const existing = this.institutions.find(i => i.code.toUpperCase() === data.code.toUpperCase() || i.name.toLowerCase() === data.name.toLowerCase());
+    if (existing) {
+      return { success: false, message: 'এই কোড বা নামের একটি শিক্ষা প্রতিষ্ঠান ইতোমধ্যেই বিদ্যমান রয়েছে।' };
+    }
+
+    const now = new Date();
+    const instId = 'inst_' + Date.now() + Math.random().toString(36).substring(2, 6);
+
+    const newInst: StoredInstitution = {
+      _id: instId,
+      name: data.name,
+      nameBn: data.nameBn,
+      code: data.code.toUpperCase(),
+      type: data.type || 'university',
+      division: data.division,
+      district: data.district,
+      upazila: data.upazila,
+      address: data.address,
+      email: data.email,
+      phone: data.phone,
+      description: data.description,
+      status: 'approved',
+      totalRegisteredDonors: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.institutions.unshift(newInst);
+
+    return {
+      success: true,
+      institution: newInst,
+      message: `শিক্ষা প্রতিষ্ঠান "${newInst.nameBn}" সফলভাবে তৈরি করা হয়েছে।`
+    };
   }
 }
 

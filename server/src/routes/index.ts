@@ -13,6 +13,7 @@ import memberRoutes from './memberRoutes.js';
 import moderatorRoutes from './moderatorRoutes.js';
 import contactRequestRoutes from './contactRequestRoutes.js';
 import phoneChangeRoutes from './phoneChangeRoutes.js';
+import institutionChangeRoutes from './institutionChangeRoutes.js';
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.use('/reports', reportRoutes);
 router.use('/locations', locationRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/institution-requests', institutionRequestRoutes);
+router.use('/institution-change', institutionChangeRoutes);
 router.use('/members', memberRoutes);
 router.use('/moderators', moderatorRoutes);
 router.use('/contact-requests', contactRequestRoutes);

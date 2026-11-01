@@ -15,13 +15,13 @@ const router = Router();
 router.post('/', requireAuth, validateBody(CreateContactRequestSchema), submitContactRequest);
 
 // List contact requests (Moderators, Coordinators, Admins)
-router.get('/', requireAuth, requireRoles('INSTITUTION_MODERATOR', 'DIVISION_COORDINATOR', 'ADMIN', 'SUPER_ADMIN'), getContactRequests);
+router.get('/', requireAuth, requireRoles('INSTITUTION_MODERATOR', 'INSTITUTION_HEAD', 'DIVISION_COORDINATOR', 'ADMIN', 'SUPER_ADMIN'), getContactRequests);
 
 // Moderator updates status / marks handled
 router.patch(
   '/:id/status', 
   requireAuth, 
-  requireRoles('INSTITUTION_MODERATOR', 'SUPER_ADMIN', 'DIVISION_COORDINATOR'), 
+  requireRoles('INSTITUTION_MODERATOR', 'INSTITUTION_HEAD', 'SUPER_ADMIN', 'DIVISION_COORDINATOR'), 
   validateBody(UpdateContactRequestSchema), 
   updateContactRequestStatus
 );

@@ -1,0 +1,442 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  User as UserIcon, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Droplet, 
+  Calendar, 
+  ShieldCheck, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock, 
+  Save, 
+  KeyRound, 
+  ArrowRight,
+  Send,
+  Building2
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
+import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
+import { LocationSelector } from '../components/LocationSelector';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { PhoneChangeRequest } from '../types';
+
+export const ProfileSettings: React.FC = () => {
+  const { user, donorProfile, refreshUser } = useAuth();
+
+  // Editable Profile fields
+  const [name, setName] = useState(user?.name || '');
+  const [gender, setGender] = useState(user?.gender || 'unspecified');
+  const [bloodGroup, setBloodGroup] = useState<BloodGroup>(donorProfile?.bloodGroup || 'O+');
+  const [division, setDivision] = useState(donorProfile?.division || 'dhaka');
+  const [district, setDistrict] = useState(donorProfile?.district || 'dhaka');
+  const [upazila, setUpazila] = useState(donorProfile?.upazila || '');
+  const [bio, setBio] = useState(donorProfile?.bio || '');
+  const [availabilityStatus, setAvailabilityStatus] = useState(donorProfile?.availabilityStatus || 'available');
+  const [consentToShareContact, setConsentToShareContact] = useState(donorProfile?.consentToShareContact ?? true);
+
+  // States
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Phone Change Modal & Status
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [changeReason, setChangeReason] = useState('');
+  const [submittingPhoneChange, setSubmittingPhoneChange] = useState(false);
+  const [phoneChangeMsg, setPhoneChangeMsg] = useState<string | null>(null);
+  const [pendingPhoneRequest, setPendingPhoneRequest] = useState<PhoneChangeRequest | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setGender(user.gender || 'unspecified');
+    }
+    if (donorProfile) {
+      setBloodGroup(donorProfile.bloodGroup);
+      setDivision(donorProfile.division);
+      setDistrict(donorProfile.district);
+      setUpazila(donorProfile.upazila || '');
+      setBio(donorProfile.bio || '');
+      setAvailabilityStatus(donorProfile.availabilityStatus);
+      setConsentToShareContact(donorProfile.consentToShareContact ?? true);
+    }
+
+    // Check if user has an active pending phone change request
+    async function loadPhoneRequest() {
+      try {
+        const res = await api.getMyPhoneChangeRequest();
+        if (res.success && res.pendingRequest) {
+          setPendingPhoneRequest(res.pendingRequest);
+        }
+      } catch {}
+    }
+    loadPhoneRequest();
+  }, [user, donorProfile]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    setProfileMsg(null);
+
+    try {
+      const res = await api.updateProfile({
+        name,
+        gender,
+        bloodGroup: user?.role === 'DONOR' ? bloodGroup : undefined,
+        division,
+        district,
+        upazila,
+        bio,
+        availabilityStatus: user?.role === 'DONOR' ? availabilityStatus : undefined,
+        consentToShareContact
+      });
+
+      if (res.success) {
+        setProfileMsg({ text: 'আপনার প্রোফাইল তথ্য সফলভাবে সংরক্ষণ করা হয়েছে।', type: 'success' });
+        await refreshUser();
+      } else {
+        setProfileMsg({ text: res.message || 'হালনাগাদ করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setProfileMsg({ text: err.message || 'সার্ভারে সংযোগ ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSubmitPhoneChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingPhoneChange(true);
+    setPhoneChangeMsg(null);
+
+    const cleanNew = newPhone.replace(/\D/g, '');
+    if (!cleanNew || cleanNew.length < 11) {
+      setPhoneChangeMsg('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 01XXXXXXXXX)');
+      setSubmittingPhoneChange(false);
+      return;
+    }
+
+    try {
+      const res = await api.submitPhoneChangeRequest({
+        newPhone: cleanNew,
+        reason: changeReason
+      });
+
+      if (res.success) {
+        setPendingPhoneRequest(res.request);
+        setShowPhoneModal(false);
+        setNewPhone('');
+        setChangeReason('');
+        setProfileMsg({
+          text: 'মোবাইল নম্বর পরিবর্তনের আবেদন সফলভাবে জমা হয়েছে। সংশ্লিষ্ট মডারেটর বা সমন্বয়ক কর্তৃক পর্যালোচনার পর নম্বর হালনাগাদ হবে।',
+          type: 'success'
+        });
+      } else {
+        setPhoneChangeMsg(res.message || 'আবেদন জমা দেওয়া যায়নি।');
+      }
+    } catch (err: any) {
+      setPhoneChangeMsg(err.message || 'আবেদন প্রক্রিয়াকরণে সমস্যা হয়েছে।');
+    } finally {
+      setSubmittingPhoneChange(false);
+    }
+  };
+
+  const getDashboardPath = () => {
+    switch (user?.role) {
+      case 'SUPER_ADMIN':
+      case 'ADMIN':
+        return '/admin/dashboard';
+      case 'DIVISION_COORDINATOR':
+        return '/coordinator/dashboard';
+      case 'INSTITUTION_MODERATOR':
+        return '/moderator/dashboard';
+      case 'REQUESTER':
+        return '/requester/dashboard';
+      default:
+        return '/donor/dashboard';
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto my-16 p-8 bg-surface rounded-3xl border border-appBorder text-center space-y-4">
+        <AlertCircle className="w-10 h-10 mx-auto text-primary" />
+        <h2 className="text-xl font-bold text-mainText">লগইন আবশ্যক</h2>
+        <Link to="/login">
+          <Button variant="primary" size="md">লগইন করুন</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Top Banner */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-rose-600 text-white flex items-center justify-center font-black text-2xl shadow-soft">
+            {user.name.slice(0, 1)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-xl sm:text-2xl font-black text-mainText">{user.name}</h1>
+              <Badge variant="primary" size="sm">{user.role}</Badge>
+            </div>
+            <p className="text-xs text-subText font-mono">আইডি: {user._id}</p>
+          </div>
+        </div>
+
+        <Link to={getDashboardPath()}>
+          <Button variant="outline" size="sm" icon={<ArrowRight className="w-4 h-4" />}>
+            ড্যাশবোর্ড প্যানেল
+          </Button>
+        </Link>
+      </div>
+
+      {profileMsg && (
+        <div className={`p-4 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 ${
+          profileMsg.type === 'success' 
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+            : 'bg-rose-50 text-rose-700 border border-rose-200'
+        }`}>
+          {profileMsg.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />}
+          <span>{profileMsg.text}</span>
+        </div>
+      )}
+
+      {/* Phone Number & Safety Section */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-appBorder pb-4">
+          <div>
+            <h2 className="text-base font-black text-mainText flex items-center gap-2">
+              <Phone className="w-5 h-5 text-primary" />
+              <span>নিবন্ধিত মোবাইল নম্বর</span>
+            </h2>
+            <p className="text-xs text-subText mt-0.5">নিরাপত্তা ও অপব্যবহার রোধে নম্বর পরিবর্তন প্রক্রিয়ায় প্রশাসনিক অনুমোদন প্রয়োজন হয়</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPhoneModal(true)}
+            className="text-xs font-bold"
+          >
+            নম্বর পরিবর্তন আবেদন
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div>
+            <span className="text-xs text-subText block mb-0.5">বর্তমান নম্বর:</span>
+            <span className="font-mono text-base font-black text-mainText">{user.phone}</span>
+          </div>
+          <Badge variant="success" size="sm" dot>সক্রিয় ও যাচাইকৃত</Badge>
+        </div>
+
+        {/* Pending Request Indicator */}
+        {pendingPhoneRequest && (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm space-y-1">
+            <div className="flex items-center gap-2 font-bold text-amber-800">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span>নম্বর পরিবর্তনের একটি আবেদন অপেক্ষমাণ রয়েছে</span>
+            </div>
+            <p className="text-xs text-amber-700">
+              অনুরোধকৃত নতুন নম্বর: <strong className="font-mono">{pendingPhoneRequest.newPhone}</strong> | কারণ: "{pendingPhoneRequest.reason}"
+            </p>
+            <p className="text-[11px] text-amber-600">
+              আপনার বিভাগীয় সমন্বয়ক বা প্রতিষ্ঠান মডারেটর এটি খতিয়ে দেখে অনুমোদন করবেন।
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Main Profile Details Form */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-6">
+        <div className="border-b border-appBorder pb-4">
+          <h2 className="text-base font-black text-mainText flex items-center gap-2">
+            <UserIcon className="w-5 h-5 text-primary" />
+            <span>ব্যক্তিগত ও স্বাস্থ্য তথ্য</span>
+          </h2>
+          <p className="text-xs text-subText mt-0.5">আপনার নাম, রক্তের গ্রুপ ও ভৌগোলিক তথ্য হালনাগাদ রাখুন</p>
+        </div>
+
+        <form onSubmit={handleUpdateProfile} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">সম্পূর্ণ নাম *</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">লিঙ্গ (Gender)</label>
+              <select
+                value={gender}
+                onChange={e => setGender(e.target.value as any)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
+              >
+                <option value="male">পুরুষ</option>
+                <option value="female">নারী</option>
+                <option value="other">অন্যান্য</option>
+                <option value="unspecified">অনির্দিষ্ট</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Blood Group & Availability (For Donors) */}
+          {user.role === 'DONOR' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1.5">রক্তের গ্রুপ</label>
+                <select
+                  value={bloodGroup}
+                  onChange={e => setBloodGroup(e.target.value as BloodGroup)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm font-black text-primary"
+                >
+                  {BLOOD_GROUPS.map(bg => (
+                    <option key={bg} value={bg}>{bg}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1.5">রক্তদানে বর্তমান উপলব্ধতা</label>
+                <select
+                  value={availabilityStatus}
+                  onChange={e => setAvailabilityStatus(e.target.value as any)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
+                >
+                  <option value="available">রক্তদানে প্রস্তুত (সক্রিয়)</option>
+                  <option value="recently_donated">সম্প্রতি রক্তদান করেছি (বিশ্রামে)</option>
+                  <option value="temporarily_unavailable">সাময়িক বিরতি (শারীরিক কারণ)</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Location Selector */}
+          <div className="space-y-2 pt-2">
+            <label className="block text-xs font-bold text-mainText">আপনার এলাকা / অবস্থান</label>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <LocationSelector
+                division={division}
+                district={district}
+                upazila={upazila}
+                onDivisionChange={setDivision}
+                onDistrictChange={setDistrict}
+                onUpazilaChange={setUpazila}
+              />
+            </div>
+          </div>
+
+          {/* Bio / Motivation */}
+          <div>
+            <label className="block text-xs font-bold text-mainText mb-1.5">সংক্ষিপ্ত পরিচয় বা বার্তা</label>
+            <textarea
+              rows={3}
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              placeholder="রক্তদান সংক্রান্ত আপনার অভিজ্ঞতা বা বার্তা..."
+              className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
+            />
+          </div>
+
+          <div className="pt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={savingProfile}
+              icon={<Save className="w-4 h-4" />}
+              className="shadow-soft"
+            >
+              তথ্য সংরক্ষণ করুন
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* Phone Change Modal */}
+      {showPhoneModal && (
+        <Modal
+          isOpen={showPhoneModal}
+          onClose={() => setShowPhoneModal(false)}
+          title="মোবাইল নম্বর পরিবর্তনের আবেদন"
+          description="রক্তদাতাদের সুরক্ষা ও সঠিক রেকর্ড নিশ্চিত করতে মোবাইল নম্বর সরাসরি পরিবর্তনযোগ্য নয়। আবেদনটি সমন্বয়ক কর্তৃক অনুমোদনের পর পরিবর্তন কার্যকর হবে।"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowPhoneModal(false)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={submittingPhoneChange}
+                onClick={handleSubmitPhoneChange as any}
+                icon={<Send className="w-4 h-4" />}
+              >
+                আবেদন জমা দিন
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleSubmitPhoneChange} className="space-y-4">
+            {phoneChangeMsg && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs border border-rose-200">
+                {phoneChangeMsg}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">বর্তমান মোবাইল নম্বর</label>
+              <input
+                type="text"
+                disabled
+                value={user.phone}
+                className="w-full px-3.5 py-2 bg-slate-100 border border-appBorder rounded-xl text-xs font-mono text-slate-500 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                অনুরোধকৃত নতুন মোবাইল নম্বর (১১ ডিজিট) *
+              </label>
+              <input
+                type="tel"
+                required
+                value={newPhone}
+                onChange={e => setNewPhone(e.target.value)}
+                placeholder="01XXXXXXXXX"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs font-mono text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                নম্বর পরিবর্তনের সুস্পষ্ট কারণ *
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={changeReason}
+                onChange={e => setChangeReason(e.target.value)}
+                placeholder="যেমন: পূর্বের সিমটি হারিয়ে গেছে / কর্মস্থলের নতুন নম্বর যুক্ত করতে চাই..."
+                className="w-full px-3.5 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+};

@@ -23,6 +23,7 @@ import { AboutUs } from './pages/AboutUs';
 import { ContactHelp } from './pages/ContactHelp';
 import { SafetyInfo } from './pages/SafetyInfo';
 import { PrivacyTerms } from './pages/PrivacyTerms';
+import { ProfileSettings } from './pages/ProfileSettings';
 
 const ProtectedRoute: React.FC<{ 
   children: React.ReactNode; 
@@ -73,6 +74,16 @@ export function App() {
               {/* Auth Routes */}
               <Route path="/register" element={<DonorRegister />} />
               <Route path="/login" element={<Login />} />
+
+              {/* Profile & Settings (All logged in users) */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfileSettings />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Protected Dashboards */}
               <Route

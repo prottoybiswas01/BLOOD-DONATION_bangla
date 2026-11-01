@@ -206,3 +206,24 @@ export interface NotificationItem {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface PhoneChangeRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  currentPhone: string;
+  newPhone: string;
+  reason: string;
+  division?: string;
+  district?: string;
+  institutionId?: string;
+  institutionName?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -195,6 +195,9 @@ export interface StoredReport {
   reportedBy: string;
   targetType: 'donor_profile' | 'blood_request' | 'institution' | 'user';
   targetId: string;
+  targetTitle?: string;
+  division?: string;
+  institutionId?: string;
   reason: string;
   description: string;
   status: 'pending' | 'under_review' | 'resolved' | 'dismissed';
@@ -231,10 +234,31 @@ export interface StoredNotification {
   userId: string;
   title: string;
   message: string;
-  type: 'request_match' | 'contact_revealed' | 'status_update' | 'institution_update' | 'system' | 'contact_request' | 'account_status';
+  type: 'request_match' | 'contact_revealed' | 'status_update' | 'institution_update' | 'system' | 'contact_request' | 'account_status' | 'phone_change';
   link?: string;
   isRead: boolean;
   createdAt: Date;
+}
+
+export interface StoredPhoneChangeRequest {
+  _id: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  currentPhone: string;
+  newPhone: string;
+  reason: string;
+  division?: string;
+  district?: string;
+  institutionId?: string;
+  institutionName?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedByName?: string;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // In-Memory Repository
@@ -251,6 +275,7 @@ class DataStore {
   contactAccessLogs: StoredContactAccessLog[] = [];
   otps: StoredOtp[] = [];
   notifications: StoredNotification[] = [];
+  phoneChangeRequests: StoredPhoneChangeRequest[] = [];
 
   constructor() {
     this.seedInitialData();
@@ -846,6 +871,9 @@ class DataStore {
         reportedBy: 'usr_donor_1',
         targetType: 'blood_request',
         targetId: 'req_3',
+        targetTitle: 'রোগী: সালমা বেগম (ঢাকা মেডিকেল)',
+        division: 'dhaka',
+        institutionId: 'inst_du',
         reason: 'false_information',
         description: 'যোগাযোগ নম্বরে ফোন দিলে তারা বলে রক্ত প্রয়োজন মিটে গেছে কিন্তু পোস্ট এখনো ওপেন দেখাচ্ছে।',
         status: 'pending',
@@ -875,6 +903,26 @@ class DataStore {
         link: '/coordinator/dashboard',
         isRead: false,
         createdAt: new Date(Date.now() - 86400000 * 2)
+      }
+    ];
+
+    // 11. Initial Phone Change Requests
+    this.phoneChangeRequests = [
+      {
+        _id: 'pcr_1',
+        userId: 'usr_donor_1',
+        userName: 'রফিকুল ইসলাম',
+        userRole: 'DONOR',
+        currentPhone: '01711111111',
+        newPhone: '01711999888',
+        reason: 'আমার পূর্বের সিমটি হারিয়ে যাওয়ায় জরুরি রক্তের কল পেতে এই নতুন সচল নম্বরটি সংযুক্ত করার অনুরোধ করছি।',
+        division: 'dhaka',
+        district: 'dhaka',
+        institutionId: 'inst_du',
+        institutionName: 'ঢাকা বিশ্ববিদ্যালয়',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 3600000 * 2),
+        updatedAt: now
       }
     ];
   }
@@ -1886,13 +1934,51 @@ class DataStore {
     return { success: true, message: 'সফলভাবে যাচাই সম্পন্ন হয়েছে।' };
   }
 
-  // --- Report Methods ---
+  // --- Report Methods with Scoping ---
   createReport(data: Partial<StoredReport>): StoredReport {
+    let division = data.division;
+    let institutionId = data.institutionId;
+    let targetTitle = data.targetTitle;
+
+    // Auto-detect division, institution and title from target if missing
+    if (data.targetType === 'blood_request') {
+      const req = this.bloodRequests.find(r => r._id === data.targetId);
+      if (req) {
+        division = division || req.division;
+        institutionId = institutionId || req.institutionId;
+        targetTitle = targetTitle || `রক্তের অনুরোধ (${req.patientName} - ${req.hospitalName})`;
+      }
+    } else if (data.targetType === 'donor_profile') {
+      const donor = this.donorProfiles.find(d => d._id === data.targetId);
+      if (donor) {
+        division = division || donor.division;
+        institutionId = institutionId || donor.institutionId;
+        targetTitle = targetTitle || `রক্তদাতা প্রোফাইল (${donor.displayName})`;
+      }
+    } else if (data.targetType === 'institution') {
+      const inst = this.institutions.find(i => i._id === data.targetId);
+      if (inst) {
+        division = division || inst.division;
+        institutionId = institutionId || inst._id;
+        targetTitle = targetTitle || `প্রতিষ্ঠান (${inst.nameBn})`;
+      }
+    } else if (data.targetType === 'user') {
+      const u = this.users.find(usr => usr._id === data.targetId);
+      if (u) {
+        division = division || u.division || u.assignedDivision;
+        institutionId = institutionId || u.assignedInstitution;
+        targetTitle = targetTitle || `ব্যবহারকারী (${u.name})`;
+      }
+    }
+
     const newReport: StoredReport = {
       _id: 'rep_' + Date.now() + Math.random().toString(36).substring(2, 7),
       reportedBy: data.reportedBy || '',
       targetType: data.targetType || 'blood_request',
       targetId: data.targetId || '',
+      targetTitle,
+      division,
+      institutionId,
       reason: data.reason || 'other',
       description: data.description || '',
       status: 'pending',
@@ -1903,7 +1989,7 @@ class DataStore {
     return newReport;
   }
 
-  getReports(filters: { status?: string; targetType?: string }) {
+  getReports(filters: { status?: string; targetType?: string; division?: string; institutionId?: string }) {
     let list = [...this.reports];
     if (filters.status) {
       list = list.filter(r => r.status === filters.status);
@@ -1911,7 +1997,285 @@ class DataStore {
     if (filters.targetType) {
       list = list.filter(r => r.targetType === filters.targetType);
     }
+    if (filters.division) {
+      list = list.filter(r => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter(r => r.institutionId === filters.institutionId);
+    }
     return list;
+  }
+
+  // --- Phone Change Request Methods ---
+  createPhoneChangeRequest(params: {
+    userId: string;
+    newPhone: string;
+    reason: string;
+  }): { success: boolean; message: string; request?: StoredPhoneChangeRequest } {
+    const user = this.findUserById(params.userId);
+    if (!user) {
+      return { success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' };
+    }
+
+    // Check if user already has a pending request
+    const existingPending = this.phoneChangeRequests.find(
+      r => r.userId === params.userId && r.status === 'pending'
+    );
+    if (existingPending) {
+      return {
+        success: false,
+        message: 'আপনার একটি নম্বর পরিবর্তনের অনুরোধ ইতিমধ্যে পর্যালোচনার জন্য অপেক্ষমাণ রয়েছে।'
+      };
+    }
+
+    // Check if new phone is already used by someone else
+    const phoneOwner = this.findUserByPhone(params.newPhone);
+    if (phoneOwner && phoneOwner._id !== params.userId) {
+      return {
+        success: false,
+        message: 'এই মোবাইল নম্বরটি ইতিমধ্যে অন্য একটি অ্যাকাউন্টে ব্যবহৃত হচ্ছে।'
+      };
+    }
+
+    // Get institution name if affiliated
+    let institutionName: string | undefined = undefined;
+    if (user.assignedInstitution) {
+      const inst = this.findInstitutionById(user.assignedInstitution);
+      institutionName = inst?.nameBn;
+    }
+
+    const newReq: StoredPhoneChangeRequest = {
+      _id: 'pcr_' + Date.now() + Math.random().toString(36).substring(2, 7),
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      currentPhone: user.phone,
+      newPhone: params.newPhone,
+      reason: params.reason,
+      division: user.division || user.assignedDivision,
+      district: user.district,
+      institutionId: user.assignedInstitution,
+      institutionName,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.phoneChangeRequests.unshift(newReq);
+
+    // Notify coordinator of that division
+    const coordinators = this.users.filter(
+      u => u.role === 'DIVISION_COORDINATOR' && u.assignedDivision?.toLowerCase() === (user.division || '').toLowerCase()
+    );
+    coordinators.forEach(c => {
+      this.createNotification({
+        userId: c._id,
+        title: 'মোবাইল নম্বর পরিবর্তনের নতুন আবেদন',
+        message: `${user.name} তার মোবাইল নম্বর পরিবর্তনের জন্য আবেদন করেছেন।`,
+        type: 'phone_change',
+        link: '/coordinator/dashboard'
+      });
+    });
+
+    return {
+      success: true,
+      message: 'মোবাইল নম্বর পরিবর্তনের আবেদন সফলভাবে জমা হয়েছে। মডারেটর বা সমন্বয়ক কর্তৃক পর্যালোচনার পর নম্বর হালনাগাদ হবে।',
+      request: newReq
+    };
+  }
+
+  getPhoneChangeRequests(filters: {
+    division?: string;
+    institutionId?: string;
+    status?: string;
+    userId?: string;
+  }) {
+    let list = [...this.phoneChangeRequests];
+    if (filters.userId) {
+      list = list.filter(r => r.userId === filters.userId);
+    }
+    if (filters.status) {
+      list = list.filter(r => r.status === filters.status);
+    }
+    if (filters.division) {
+      list = list.filter(r => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter(r => r.institutionId === filters.institutionId);
+    }
+    return list;
+  }
+
+  getPendingPhoneChangeRequestForUser(userId: string) {
+    return this.phoneChangeRequests.find(r => r.userId === userId && r.status === 'pending') || null;
+  }
+
+  updatePhoneChangeRequest(
+    requestId: string,
+    status: 'approved' | 'rejected',
+    reviewer: { userId: string; name: string; role: string },
+    reviewNotes?: string
+  ): { success: boolean; message: string; request?: StoredPhoneChangeRequest } {
+    const req = this.phoneChangeRequests.find(r => r._id === requestId);
+    if (!req) {
+      return { success: false, message: 'অনুরোধটি খুঁজে পাওয়া যায়নি।' };
+    }
+
+    if (req.status !== 'pending') {
+      return { success: false, message: 'এই আবেদনটি ইতিমধ্যে মীমাংসিত হয়েছে।' };
+    }
+
+    req.status = status;
+    req.reviewedBy = reviewer.userId;
+    req.reviewedByName = reviewer.name;
+    req.reviewedAt = new Date();
+    req.reviewNotes = reviewNotes || (status === 'approved' ? 'অনুমোদিত' : 'বাতিলকৃত');
+    req.updatedAt = new Date();
+
+    const targetUser = this.findUserById(req.userId);
+    if (status === 'approved' && targetUser) {
+      targetUser.phone = req.newPhone;
+      targetUser.updatedAt = new Date();
+
+      // Also update any related donor profile
+      const donor = this.donorProfiles.find(d => d.userId === targetUser._id);
+      if (donor) {
+        donor.updatedAt = new Date();
+      }
+
+      this.createNotification({
+        userId: targetUser._id,
+        title: 'মোবাইল নম্বর পরিবর্তনের আবেদন অনুমোদিত হয়েছে',
+        message: `আপনার অনুরোধকৃত নতুন মোবাইল নম্বর (${req.newPhone}) সফলভাবে প্রোফাইলে যুক্ত করা হয়েছে। এখন থেকে এই নম্বর দিয়ে লগইন করুন।`,
+        type: 'phone_change',
+        link: '/profile'
+      });
+    } else if (status === 'rejected' && targetUser) {
+      this.createNotification({
+        userId: targetUser._id,
+        title: 'মোবাইল নম্বর পরিবর্তনের আবেদন বাতিল করা হয়েছে',
+        message: `আপনার নম্বর পরিবর্তনের আবেদনটি বাতিল করা হয়েছে। কারণ: ${reviewNotes || 'যাচাইকরণ সন্তোষজনক নয়'}`,
+        type: 'phone_change',
+        link: '/profile'
+      });
+    }
+
+    return {
+      success: true,
+      message: status === 'approved' ? 'আবেদনটি অনুমোদিত হয়েছে এবং নম্বর হালনাগাদ করা হয়েছে।' : 'আবেদনটি বাতিল করা হয়েছে।',
+      request: req
+    };
+  }
+
+  // --- Coordinator Moderator Appointment ---
+  appointModeratorByCoordinator(params: {
+    coordinatorUser: any;
+    institutionId: string;
+    name: string;
+    phone: string;
+    email?: string;
+    gender?: string;
+  }): { success: boolean; message: string; moderator?: StoredUser; temporaryPassword?: string } {
+    const institution = this.findInstitutionById(params.institutionId);
+    if (!institution) {
+      return { success: false, message: 'নির্বাচিত প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' };
+    }
+
+    // Verify division scope for DIVISION_COORDINATOR
+    if (params.coordinatorUser.role === 'DIVISION_COORDINATOR') {
+      if (institution.division.toLowerCase() !== params.coordinatorUser.assignedDivision?.toLowerCase()) {
+        return {
+          success: false,
+          message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত বিভাগের প্রতিষ্ঠানের জন্য মডারেটর নিয়োগ করতে পারবেন।'
+        };
+      }
+    }
+
+    // Check if user already exists with phone
+    const existingUser = this.findUserByPhone(params.phone);
+    if (existingUser) {
+      // Upgrade existing user to INSTITUTION_MODERATOR
+      existingUser.role = 'INSTITUTION_MODERATOR';
+      existingUser.assignedInstitution = params.institutionId;
+      existingUser.assignedInstitutions = [params.institutionId];
+      existingUser.updatedAt = new Date();
+
+      this.createNotification({
+        userId: existingUser._id,
+        title: 'আপনাকে প্রতিষ্ঠান মডারেটর হিসেবে দায়িত্ব দেওয়া হয়েছে',
+        message: `${institution.nameBn} প্রতিষ্ঠানের মডারেটর হিসেবে সমন্বয়ক কর্তৃক আপনাকে নিযুক্ত করা হয়েছে।`,
+        type: 'account_status',
+        link: '/moderator/dashboard'
+      });
+
+      return {
+        success: true,
+        message: `বিদ্যমান অ্যাকাউন্ট (${existingUser.name})-কে ${institution.nameBn}-এর মডারেটর হিসেবে নিযুক্ত করা হয়েছে।`,
+        moderator: existingUser
+      };
+    }
+
+    // Create new moderator user with temporary password
+    const temporaryPassword = 'Mod@' + Math.floor(100000 + Math.random() * 900000);
+    const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
+
+    const newMod = this.createUser({
+      name: params.name,
+      phone: params.phone,
+      email: params.email,
+      passwordHash,
+      role: 'INSTITUTION_MODERATOR',
+      accountStatus: 'active',
+      gender: params.gender || 'unspecified',
+      division: institution.division,
+      district: institution.district,
+      upazila: institution.upazila,
+      assignedInstitution: params.institutionId,
+      assignedInstitutions: [params.institutionId],
+      requirePasswordChangeAtFirstLogin: true,
+      isActive: true,
+      isPhoneVerified: true
+    });
+
+    return {
+      success: true,
+      message: `${institution.nameBn}-এর জন্য নতুন মডারেটর সফলভাবে নিয়োগ করা হয়েছে।`,
+      moderator: newMod,
+      temporaryPassword
+    };
+  }
+
+  // --- Institution Drill-Down Members ---
+  getInstitutionMembers(institutionId: string) {
+    const institution = this.findInstitutionById(institutionId);
+    if (!institution) return [];
+
+    // Find donor profiles linked to this institution
+    const donorList = this.donorProfiles.filter(d => d.institutionId === institutionId);
+    
+    // Also find users whose assignedInstitution === institutionId
+    const userMap = new Map(this.users.map(u => [u._id, u]));
+
+    return donorList.map(d => {
+      const u = userMap.get(d.userId);
+      return {
+        _id: d._id,
+        userId: d.userId,
+        name: d.displayName,
+        phone: u?.phone || '',
+        bloodGroup: d.bloodGroup,
+        gender: d.gender,
+        division: d.division,
+        district: d.district,
+        upazila: d.upazila,
+        availabilityStatus: d.availabilityStatus,
+        lastDonationDate: d.lastDonationDate,
+        totalDonations: d.totalDonations,
+        isPubliclyListed: d.isPubliclyListed,
+        accountStatus: u?.accountStatus || 'active',
+        createdAt: d.createdAt
+      };
+    });
   }
 
   // --- Notifications ---

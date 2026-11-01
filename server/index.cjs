@@ -18272,17 +18272,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router15(req, res, next) {
-        router15.handle(req, res, next);
+      function router16(req, res, next) {
+        router16.handle(req, res, next);
       }
-      setPrototypeOf(router15, proto);
-      router15.params = {};
-      router15._params = [];
-      router15.caseSensitive = opts.caseSensitive;
-      router15.mergeParams = opts.mergeParams;
-      router15.strict = opts.strict;
-      router15.stack = [];
-      return router15;
+      setPrototypeOf(router16, proto);
+      router16.params = {};
+      router16._params = [];
+      router16.caseSensitive = opts.caseSensitive;
+      router16.mergeParams = opts.mergeParams;
+      router16.strict = opts.strict;
+      router16.stack = [];
+      return router16;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -20891,7 +20891,7 @@ var require_application = __commonJS({
   "node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router15 = require_router();
+    var Router16 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -20956,7 +20956,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router15({
+        this._router = new Router16({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -20965,17 +20965,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router15 = this._router;
+      var router16 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router15) {
+      if (!router16) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router15.handle(req, res, done);
+      router16.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -20995,15 +20995,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router15 = this._router;
+      var router16 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router15.use(path, fn2);
+          return router16.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router15.use(path, function mounted_app(req, res, next) {
+        router16.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -22820,7 +22820,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router15 = require_router();
+    var Router16 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -22843,7 +22843,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router15;
+    exports2.Router = Router16;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -93562,7 +93562,7 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/app.ts
-var import_express15 = __toESM(require_express2());
+var import_express16 = __toESM(require_express2());
 var import_cors = __toESM(require_lib3());
 
 // node_modules/helmet/index.mjs
@@ -94133,7 +94133,7 @@ var helmet = Object.assign(
 );
 
 // src/routes/index.ts
-var import_express14 = __toESM(require_express2());
+var import_express15 = __toESM(require_express2());
 
 // src/routes/authRoutes.ts
 var import_express = __toESM(require_express2());
@@ -101146,6 +101146,7 @@ var DataStore = class {
   contactAccessLogs = [];
   otps = [];
   notifications = [];
+  phoneChangeRequests = [];
   constructor() {
     this.seedInitialData();
   }
@@ -101722,6 +101723,9 @@ var DataStore = class {
         reportedBy: "usr_donor_1",
         targetType: "blood_request",
         targetId: "req_3",
+        targetTitle: "\u09B0\u09CB\u0997\u09C0: \u09B8\u09BE\u09B2\u09AE\u09BE \u09AC\u09C7\u0997\u09AE (\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2)",
+        division: "dhaka",
+        institutionId: "inst_du",
         reason: "false_information",
         description: "\u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0\u09C7 \u09AB\u09CB\u09A8 \u09A6\u09BF\u09B2\u09C7 \u09A4\u09BE\u09B0\u09BE \u09AC\u09B2\u09C7 \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8 \u09AE\u09BF\u099F\u09C7 \u0997\u09C7\u099B\u09C7 \u0995\u09BF\u09A8\u09CD\u09A4\u09C1 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u0996\u09A8\u09CB \u0993\u09AA\u09C7\u09A8 \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964",
         status: "pending",
@@ -101749,6 +101753,24 @@ var DataStore = class {
         link: "/coordinator/dashboard",
         isRead: false,
         createdAt: new Date(Date.now() - 864e5 * 2)
+      }
+    ];
+    this.phoneChangeRequests = [
+      {
+        _id: "pcr_1",
+        userId: "usr_donor_1",
+        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        userRole: "DONOR",
+        currentPhone: "01711111111",
+        newPhone: "01711999888",
+        reason: "\u0986\u09AE\u09BE\u09B0 \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7\u09B0 \u09B8\u09BF\u09AE\u099F\u09BF \u09B9\u09BE\u09B0\u09BF\u09AF\u09BC\u09C7 \u09AF\u09BE\u0993\u09AF\u09BC\u09BE\u09AF\u09BC \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09B2 \u09AA\u09C7\u09A4\u09C7 \u098F\u0987 \u09A8\u09A4\u09C1\u09A8 \u09B8\u099A\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u099B\u09BF\u0964",
+        division: "dhaka",
+        district: "dhaka",
+        institutionId: "inst_du",
+        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        status: "pending",
+        createdAt: new Date(Date.now() - 36e5 * 2),
+        updatedAt: now
       }
     ];
   }
@@ -102572,13 +102594,48 @@ var DataStore = class {
     record.isUsed = true;
     return { success: true, message: "\u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AF\u09BE\u099A\u09BE\u0987 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
   }
-  // --- Report Methods ---
+  // --- Report Methods with Scoping ---
   createReport(data) {
+    let division = data.division;
+    let institutionId = data.institutionId;
+    let targetTitle = data.targetTitle;
+    if (data.targetType === "blood_request") {
+      const req = this.bloodRequests.find((r) => r._id === data.targetId);
+      if (req) {
+        division = division || req.division;
+        institutionId = institutionId || req.institutionId;
+        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 (${req.patientName} - ${req.hospitalName})`;
+      }
+    } else if (data.targetType === "donor_profile") {
+      const donor = this.donorProfiles.find((d) => d._id === data.targetId);
+      if (donor) {
+        division = division || donor.division;
+        institutionId = institutionId || donor.institutionId;
+        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 (${donor.displayName})`;
+      }
+    } else if (data.targetType === "institution") {
+      const inst = this.institutions.find((i) => i._id === data.targetId);
+      if (inst) {
+        division = division || inst.division;
+        institutionId = institutionId || inst._id;
+        targetTitle = targetTitle || `\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 (${inst.nameBn})`;
+      }
+    } else if (data.targetType === "user") {
+      const u = this.users.find((usr) => usr._id === data.targetId);
+      if (u) {
+        division = division || u.division || u.assignedDivision;
+        institutionId = institutionId || u.assignedInstitution;
+        targetTitle = targetTitle || `\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 (${u.name})`;
+      }
+    }
     const newReport = {
       _id: "rep_" + Date.now() + Math.random().toString(36).substring(2, 7),
       reportedBy: data.reportedBy || "",
       targetType: data.targetType || "blood_request",
       targetId: data.targetId || "",
+      targetTitle,
+      division,
+      institutionId,
       reason: data.reason || "other",
       description: data.description || "",
       status: "pending",
@@ -102596,7 +102653,224 @@ var DataStore = class {
     if (filters.targetType) {
       list = list.filter((r) => r.targetType === filters.targetType);
     }
+    if (filters.division) {
+      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter((r) => r.institutionId === filters.institutionId);
+    }
     return list;
+  }
+  // --- Phone Change Request Methods ---
+  createPhoneChangeRequest(params) {
+    const user = this.findUserById(params.userId);
+    if (!user) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const existingPending = this.phoneChangeRequests.find(
+      (r) => r.userId === params.userId && r.status === "pending"
+    );
+    if (existingPending) {
+      return {
+        success: false,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09AE\u09BE\u09A3 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+      };
+    }
+    const phoneOwner = this.findUserByPhone(params.newPhone);
+    if (phoneOwner && phoneOwner._id !== params.userId) {
+      return {
+        success: false,
+        message: "\u098F\u0987 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09C3\u09A4 \u09B9\u099A\u09CD\u099B\u09C7\u0964"
+      };
+    }
+    let institutionName = void 0;
+    if (user.assignedInstitution) {
+      const inst = this.findInstitutionById(user.assignedInstitution);
+      institutionName = inst?.nameBn;
+    }
+    const newReq = {
+      _id: "pcr_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      currentPhone: user.phone,
+      newPhone: params.newPhone,
+      reason: params.reason,
+      division: user.division || user.assignedDivision,
+      district: user.district,
+      institutionId: user.assignedInstitution,
+      institutionName,
+      status: "pending",
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.phoneChangeRequests.unshift(newReq);
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === (user.division || "").toLowerCase()
+    );
+    coordinators.forEach((c) => {
+      this.createNotification({
+        userId: c._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u09A8\u09A4\u09C1\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u09A4\u09BE\u09B0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "phone_change",
+        link: "/coordinator/dashboard"
+      });
+    });
+    return {
+      success: true,
+      message: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09AC\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u09AA\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u09B9\u09AC\u09C7\u0964",
+      request: newReq
+    };
+  }
+  getPhoneChangeRequests(filters) {
+    let list = [...this.phoneChangeRequests];
+    if (filters.userId) {
+      list = list.filter((r) => r.userId === filters.userId);
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.division) {
+      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter((r) => r.institutionId === filters.institutionId);
+    }
+    return list;
+  }
+  getPendingPhoneChangeRequestForUser(userId) {
+    return this.phoneChangeRequests.find((r) => r.userId === userId && r.status === "pending") || null;
+  }
+  updatePhoneChangeRequest(requestId, status, reviewer, reviewNotes) {
+    const req = this.phoneChangeRequests.find((r) => r._id === requestId);
+    if (!req) {
+      return { success: false, message: "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (req.status !== "pending") {
+      return { success: false, message: "\u098F\u0987 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AE\u09C0\u09AE\u09BE\u0982\u09B8\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    req.status = status;
+    req.reviewedBy = reviewer.userId;
+    req.reviewedByName = reviewer.name;
+    req.reviewedAt = /* @__PURE__ */ new Date();
+    req.reviewNotes = reviewNotes || (status === "approved" ? "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4" : "\u09AC\u09BE\u09A4\u09BF\u09B2\u0995\u09C3\u09A4");
+    req.updatedAt = /* @__PURE__ */ new Date();
+    const targetUser = this.findUserById(req.userId);
+    if (status === "approved" && targetUser) {
+      targetUser.phone = req.newPhone;
+      targetUser.updatedAt = /* @__PURE__ */ new Date();
+      const donor = this.donorProfiles.find((d) => d.userId === targetUser._id);
+      if (donor) {
+        donor.updatedAt = /* @__PURE__ */ new Date();
+      }
+      this.createNotification({
+        userId: targetUser._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u0995\u09C3\u09A4 \u09A8\u09A4\u09C1\u09A8 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 (${req.newPhone}) \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u098F\u0996\u09A8 \u09A5\u09C7\u0995\u09C7 \u098F\u0987 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C1\u09A8\u0964`,
+        type: "phone_change",
+        link: "/profile"
+      });
+    } else if (status === "rejected" && targetUser) {
+      this.createNotification({
+        userId: targetUser._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0995\u09BE\u09B0\u09A3: ${reviewNotes || "\u09AF\u09BE\u099A\u09BE\u0987\u0995\u09B0\u09A3 \u09B8\u09A8\u09CD\u09A4\u09CB\u09B7\u099C\u09A8\u0995 \u09A8\u09AF\u09BC"}`,
+        type: "phone_change",
+        link: "/profile"
+      });
+    }
+    return {
+      success: true,
+      message: status === "approved" ? "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7 \u098F\u09AC\u0982 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+      request: req
+    };
+  }
+  // --- Coordinator Moderator Appointment ---
+  appointModeratorByCoordinator(params) {
+    const institution = this.findInstitutionById(params.institutionId);
+    if (!institution) {
+      return { success: false, message: "\u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (params.coordinatorUser.role === "DIVISION_COORDINATOR") {
+      if (institution.division.toLowerCase() !== params.coordinatorUser.assignedDivision?.toLowerCase()) {
+        return {
+          success: false,
+          message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
+        };
+      }
+    }
+    const existingUser = this.findUserByPhone(params.phone);
+    if (existingUser) {
+      existingUser.role = "INSTITUTION_MODERATOR";
+      existingUser.assignedInstitution = params.institutionId;
+      existingUser.assignedInstitutions = [params.institutionId];
+      existingUser.updatedAt = /* @__PURE__ */ new Date();
+      this.createNotification({
+        userId: existingUser._id,
+        title: "\u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC \u09A6\u09C7\u0993\u09AF\u09BC\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `${institution.nameBn} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        type: "account_status",
+        link: "/moderator/dashboard"
+      });
+      return {
+        success: true,
+        message: `\u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F (${existingUser.name})-\u0995\u09C7 ${institution.nameBn}-\u098F\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        moderator: existingUser
+      };
+    }
+    const temporaryPassword = "Mod@" + Math.floor(1e5 + Math.random() * 9e5);
+    const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
+    const newMod = this.createUser({
+      name: params.name,
+      phone: params.phone,
+      email: params.email,
+      passwordHash,
+      role: "INSTITUTION_MODERATOR",
+      accountStatus: "active",
+      gender: params.gender || "unspecified",
+      division: institution.division,
+      district: institution.district,
+      upazila: institution.upazila,
+      assignedInstitution: params.institutionId,
+      assignedInstitutions: [params.institutionId],
+      requirePasswordChangeAtFirstLogin: true,
+      isActive: true,
+      isPhoneVerified: true
+    });
+    return {
+      success: true,
+      message: `${institution.nameBn}-\u098F\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09A4\u09C1\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+      moderator: newMod,
+      temporaryPassword
+    };
+  }
+  // --- Institution Drill-Down Members ---
+  getInstitutionMembers(institutionId) {
+    const institution = this.findInstitutionById(institutionId);
+    if (!institution) return [];
+    const donorList = this.donorProfiles.filter((d) => d.institutionId === institutionId);
+    const userMap = new Map(this.users.map((u) => [u._id, u]));
+    return donorList.map((d) => {
+      const u = userMap.get(d.userId);
+      return {
+        _id: d._id,
+        userId: d.userId,
+        name: d.displayName,
+        phone: u?.phone || "",
+        bloodGroup: d.bloodGroup,
+        gender: d.gender,
+        division: d.division,
+        district: d.district,
+        upazila: d.upazila,
+        availabilityStatus: d.availabilityStatus,
+        lastDonationDate: d.lastDonationDate,
+        totalDonations: d.totalDonations,
+        isPubliclyListed: d.isPubliclyListed,
+        accountStatus: u?.accountStatus || "active",
+        createdAt: d.createdAt
+      };
+    });
   }
   // --- Notifications ---
   createNotification(data) {
@@ -104511,12 +104785,47 @@ async function getModeratorDashboard(req, res) {
     requests: affiliatedRequests
   });
 }
+async function getInstitutionMembers(req, res) {
+  const { id } = req.params;
+  const institution = dataStore.findInstitutionById(id);
+  if (!institution) {
+    res.status(404).json({ success: false, message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const members = dataStore.getInstitutionMembers(id);
+  const moderators = dataStore.users.filter(
+    (u) => u.role === "INSTITUTION_MODERATOR" && u.assignedInstitution === id
+  ).map((m) => ({
+    _id: m._id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    accountStatus: m.accountStatus,
+    createdAt: m.createdAt
+  }));
+  res.json({
+    success: true,
+    institution: {
+      _id: institution._id,
+      name: institution.name,
+      nameBn: institution.nameBn,
+      code: institution.code,
+      division: institution.division,
+      district: institution.district,
+      totalRegisteredDonors: institution.totalRegisteredDonors
+    },
+    moderators,
+    members,
+    totalMembers: members.length
+  });
+}
 
 // src/routes/institutionRoutes.ts
 var router4 = (0, import_express4.Router)();
 router4.get("/", getInstitutions);
 router4.get("/moderator/dashboard", requireAuth, requireRoles("INSTITUTION_MODERATOR", "SUPER_ADMIN"), getModeratorDashboard);
 router4.get("/:id", getInstitutionById);
+router4.get("/:id/members", getInstitutionMembers);
 router4.post("/", optionalAuth, validateBody(CreateInstitutionSchema), createInstitution);
 var institutionRoutes_default = router4;
 
@@ -104524,6 +104833,21 @@ var institutionRoutes_default = router4;
 var import_express5 = __toESM(require_express2());
 
 // src/controllers/coordinatorController.ts
+var BD_PHONE_REGEX3 = /^(\+?88)?01[3-9]\d{8}$/;
+function normalizePhone2(raw) {
+  const cleaned = raw.replace(/\D/g, "");
+  if (cleaned.startsWith("8801")) {
+    return cleaned.substring(2);
+  }
+  return cleaned;
+}
+var AppointModeratorSchema = external_exports.object({
+  institutionId: external_exports.string().min(1, "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
+  name: external_exports.string().min(2, "\u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0\u09C7\u09B0 \u09A8\u09BE\u09AE \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  phone: external_exports.string().regex(BD_PHONE_REGEX3, "\u09B8\u09A0\u09BF\u0995 \u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6\u09C0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
+  email: external_exports.string().email("\u09B8\u09A0\u09BF\u0995 \u0987\u09AE\u09C7\u0987\u09B2 \u09A0\u09BF\u0995\u09BE\u09A8\u09BE \u09A6\u09BF\u09A8").optional().or(external_exports.literal("")),
+  gender: external_exports.enum(["male", "female", "unspecified", "other"]).default("unspecified")
+});
 async function getCoordinatorDashboard(req, res) {
   if (!req.user) {
     res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
@@ -104547,10 +104871,30 @@ async function getCoordinatorDashboard(req, res) {
   const divisionInstitutions = dataStore.institutions.filter(
     (i) => i.division.toLowerCase() === division.toLowerCase()
   );
-  const divisionRequestIds = new Set(divisionRequests.map((r) => r._id));
-  const divisionReports = dataStore.reports.filter(
-    (rep) => rep.targetType === "blood_request" && divisionRequestIds.has(rep.targetId)
-  );
+  const divisionInstitutionIds = new Set(divisionInstitutions.map((i) => i._id));
+  const divisionModerators = dataStore.users.filter((u) => {
+    if (u.role !== "INSTITUTION_MODERATOR") return false;
+    if (u.assignedInstitution && divisionInstitutionIds.has(u.assignedInstitution)) return true;
+    if (u.division && u.division.toLowerCase() === division.toLowerCase()) return true;
+    return false;
+  }).map((m) => {
+    const inst = dataStore.findInstitutionById(m.assignedInstitution || "");
+    return {
+      _id: m._id,
+      name: m.name,
+      phone: m.phone,
+      email: m.email,
+      role: m.role,
+      accountStatus: m.accountStatus,
+      blockReason: m.blockReason,
+      assignedInstitution: m.assignedInstitution,
+      institutionName: inst?.nameBn || inst?.name || "\u0985\u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4",
+      institutionCode: inst?.code || "",
+      createdAt: m.createdAt
+    };
+  });
+  const divisionReports = dataStore.getReports({ division });
+  const divisionPhoneRequests = dataStore.getPhoneChangeRequests({ division });
   res.json({
     success: true,
     division: {
@@ -104564,11 +104908,96 @@ async function getCoordinatorDashboard(req, res) {
       totalRequests: divisionRequests.length,
       activeRequests: divisionRequests.filter((r) => r.status === "open" || r.status === "partially_fulfilled").length,
       totalInstitutions: divisionInstitutions.length,
-      pendingReports: divisionReports.filter((r) => r.status === "pending").length
+      totalModerators: divisionModerators.length,
+      pendingReports: divisionReports.filter((r) => r.status === "pending").length,
+      pendingPhoneRequests: divisionPhoneRequests.filter((r) => r.status === "pending").length
     },
     requests: divisionRequests,
     institutions: divisionInstitutions,
-    reports: divisionReports
+    moderators: divisionModerators,
+    reports: divisionReports,
+    phoneChangeRequests: divisionPhoneRequests
+  });
+}
+async function appointModerator(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { institutionId, name, phone: rawPhone, email, gender } = req.body;
+  const phone = normalizePhone2(rawPhone);
+  const result = dataStore.appointModeratorByCoordinator({
+    coordinatorUser: req.user,
+    institutionId,
+    name,
+    phone,
+    email: email || void 0,
+    gender
+  });
+  if (!result.success) {
+    res.status(400).json({ success: false, message: result.message });
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "COORDINATOR_APPOINT_MODERATOR",
+    targetType: "User",
+    targetId: result.moderator?._id || institutionId,
+    details: { institutionId, phone, name }
+  });
+  res.status(201).json({
+    success: true,
+    message: result.message,
+    moderator: result.moderator,
+    temporaryPassword: result.temporaryPassword
+  });
+}
+async function getInstitutionMembers2(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const institution = dataStore.findInstitutionById(id);
+  if (!institution) {
+    res.status(404).json({ success: false, message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (req.user.role === "DIVISION_COORDINATOR") {
+    if (institution.division.toLowerCase() !== req.user.assignedDivision?.toLowerCase()) {
+      res.status(403).json({
+        success: false,
+        message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09A6\u09C7\u0996\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
+      });
+      return;
+    }
+  }
+  const members = dataStore.getInstitutionMembers(id);
+  const moderators = dataStore.users.filter(
+    (u) => u.role === "INSTITUTION_MODERATOR" && u.assignedInstitution === id
+  ).map((m) => ({
+    _id: m._id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    accountStatus: m.accountStatus,
+    createdAt: m.createdAt
+  }));
+  res.json({
+    success: true,
+    institution: {
+      _id: institution._id,
+      name: institution.name,
+      nameBn: institution.nameBn,
+      code: institution.code,
+      division: institution.division,
+      district: institution.district,
+      totalRegisteredDonors: institution.totalRegisteredDonors
+    },
+    moderators,
+    members,
+    totalMembers: members.length
   });
 }
 
@@ -104968,6 +105397,8 @@ router5.use(requireAuth, requireRoles("DIVISION_COORDINATOR", "SUPER_ADMIN"));
 router5.get("/dashboard", getCoordinatorDashboard);
 router5.get("/moderators-summary", getDivisionModeratorsSummary);
 router5.get("/activities", getModeratorActivities);
+router5.post("/moderators", validateBody(AppointModeratorSchema), appointModerator);
+router5.get("/institutions/:id/members", getInstitutionMembers2);
 router5.post("/users/:id/block", validateBody(BlockUserSchema), blockUserAccount);
 router5.post("/users/:id/unblock", validateBody(UnblockUserSchema), unblockUserAccount);
 var coordinatorRoutes_default = router5;
@@ -105037,10 +105468,19 @@ async function createReport(req, res) {
   });
 }
 async function getReports(req, res) {
-  const { status, targetType } = req.query;
+  const { status, targetType, division } = req.query;
+  let scopedDivision = division;
+  let scopedInstitutionId = void 0;
+  if (req.user?.role === "INSTITUTION_MODERATOR") {
+    scopedInstitutionId = req.user.assignedInstitution;
+  } else if (req.user?.role === "DIVISION_COORDINATOR") {
+    scopedDivision = req.user.assignedDivision;
+  }
   const reports = dataStore.getReports({
     status,
-    targetType
+    targetType,
+    division: scopedDivision,
+    institutionId: scopedInstitutionId
   });
   const enriched = reports.map((r) => {
     const reporter = dataStore.findUserById(r.reportedBy);
@@ -105293,8 +105733,8 @@ var institutionRequestRoutes_default = router10;
 var import_express11 = __toESM(require_express2());
 
 // src/controllers/memberController.ts
-var BD_PHONE_REGEX3 = /^(\+?88)?01[3-9]\d{8}$/;
-function normalizePhone2(raw) {
+var BD_PHONE_REGEX4 = /^(\+?88)?01[3-9]\d{8}$/;
+function normalizePhone3(raw) {
   const cleaned = raw.replace(/\D/g, "");
   if (cleaned.startsWith("8801")) {
     return cleaned.substring(2);
@@ -105303,7 +105743,7 @@ function normalizePhone2(raw) {
 }
 var CreateMemberByModeratorSchema = external_exports.object({
   name: external_exports.string().min(2, "\u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u09A8\u09BE\u09AE \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09E8 \u0985\u0995\u09CD\u09B7\u09B0\u09C7\u09B0 \u09B9\u09A4\u09C7 \u09B9\u09AC\u09C7"),
-  phone: external_exports.string().regex(BD_PHONE_REGEX3, "\u09B8\u09A0\u09BF\u0995 \u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6\u09C0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
+  phone: external_exports.string().regex(BD_PHONE_REGEX4, "\u09B8\u09A0\u09BF\u0995 \u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6\u09C0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
   gender: external_exports.enum(["male", "female", "unspecified", "other"]).default("unspecified"),
   bloodGroup: external_exports.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
   division: external_exports.string().min(1, "\u09AC\u09BF\u09AD\u09BE\u0997 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
@@ -105331,7 +105771,7 @@ async function createMemberByModerator(req, res) {
     return;
   }
   const data = req.body;
-  const phone = normalizePhone2(data.phone);
+  const phone = normalizePhone3(data.phone);
   if (req.user.role === "INSTITUTION_MODERATOR") {
     const isAssigned = req.user.assignedInstitution === data.institutionId || req.user.assignedInstitutions && req.user.assignedInstitutions.includes(data.institutionId);
     if (!isAssigned) {
@@ -105561,22 +106001,194 @@ router13.patch(
 );
 var contactRequestRoutes_default = router13;
 
-// src/routes/index.ts
+// src/routes/phoneChangeRoutes.ts
+var import_express14 = __toESM(require_express2());
+
+// src/controllers/phoneChangeController.ts
+var BD_PHONE_REGEX5 = /^(\+?88)?01[3-9]\d{8}$/;
+function normalizePhone4(raw) {
+  const cleaned = raw.replace(/\D/g, "");
+  if (cleaned.startsWith("8801")) {
+    return cleaned.substring(2);
+  }
+  return cleaned;
+}
+var SubmitPhoneChangeSchema = external_exports.object({
+  newPhone: external_exports.string().regex(BD_PHONE_REGEX5, "\u09B8\u09A0\u09BF\u0995 \u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6\u09C0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C1\u09A8 (\u09AF\u09C7\u09AE\u09A8: 017XXXXXXXX)"),
+  reason: external_exports.string().min(5, "\u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u09B8\u09C1\u09B8\u09CD\u09AA\u09B7\u09CD\u099F \u0995\u09BE\u09B0\u09A3 \u0989\u09B2\u09CD\u09B2\u09C7\u0996 \u0995\u09B0\u09C1\u09A8 (\u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EB \u0985\u0995\u09CD\u09B7\u09B0)")
+});
+var ReviewPhoneChangeSchema = external_exports.object({
+  status: external_exports.enum(["approved", "rejected"]),
+  reviewNotes: external_exports.string().optional()
+});
+async function submitPhoneChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { newPhone: rawNewPhone, reason } = req.body;
+  const newPhone = normalizePhone4(rawNewPhone);
+  if (newPhone === req.user.phone) {
+    res.status(400).json({
+      success: false,
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8 \u09A8\u09AE\u09CD\u09AC\u09B0 \u098F\u09AC\u0982 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u0995\u09C3\u09A4 \u09A8\u09A4\u09C1\u09A8 \u09A8\u09AE\u09CD\u09AC\u09B0 \u098F\u0995\u0987 \u09B9\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7 \u09A8\u09BE\u0964"
+    });
+    return;
+  }
+  const result = dataStore.createPhoneChangeRequest({
+    userId: req.user.userId,
+    newPhone,
+    reason
+  });
+  if (!result.success) {
+    res.status(400).json({ success: false, message: result.message });
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "REQUEST_PHONE_CHANGE",
+    targetType: "User",
+    targetId: req.user.userId,
+    details: { newPhone, reason }
+  });
+  res.status(201).json({
+    success: true,
+    message: result.message,
+    request: result.request
+  });
+}
+async function getMyPhoneChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const pending = dataStore.getPendingPhoneChangeRequestForUser(req.user.userId);
+  const allUserRequests = dataStore.getPhoneChangeRequests({ userId: req.user.userId });
+  res.json({
+    success: true,
+    pendingRequest: pending,
+    requests: allUserRequests
+  });
+}
+async function getPhoneChangeRequests(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { status, division, institutionId } = req.query;
+  let scopedDivision = division;
+  let scopedInstitutionId = institutionId;
+  if (req.user.role === "INSTITUTION_MODERATOR") {
+    scopedInstitutionId = req.user.assignedInstitution;
+  } else if (req.user.role === "DIVISION_COORDINATOR") {
+    scopedDivision = req.user.assignedDivision;
+  }
+  const requests = dataStore.getPhoneChangeRequests({
+    status,
+    division: scopedDivision,
+    institutionId: scopedInstitutionId
+  });
+  res.json({
+    success: true,
+    requests
+  });
+}
+async function reviewPhoneChangeRequest(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const { status, reviewNotes } = req.body;
+  const targetReq = dataStore.phoneChangeRequests.find((r) => r._id === id);
+  if (!targetReq) {
+    res.status(404).json({ success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (req.user.role === "INSTITUTION_MODERATOR") {
+    if (targetReq.institutionId !== req.user.assignedInstitution) {
+      res.status(403).json({
+        success: false,
+        message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
+      });
+      return;
+    }
+  } else if (req.user.role === "DIVISION_COORDINATOR") {
+    if (targetReq.division?.toLowerCase() !== req.user.assignedDivision?.toLowerCase()) {
+      res.status(403).json({
+        success: false,
+        message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
+      });
+      return;
+    }
+  }
+  const result = dataStore.updatePhoneChangeRequest(
+    id,
+    status,
+    {
+      userId: req.user.userId,
+      name: req.user.name,
+      role: req.user.role
+    },
+    reviewNotes
+  );
+  if (!result.success) {
+    res.status(400).json({ success: false, message: result.message });
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: status === "approved" ? "APPROVE_PHONE_CHANGE" : "REJECT_PHONE_CHANGE",
+    targetType: "PhoneChangeRequest",
+    targetId: id,
+    details: { targetUserId: targetReq.userId, newPhone: targetReq.newPhone, status, reviewNotes }
+  });
+  res.json({
+    success: true,
+    message: result.message,
+    request: result.request
+  });
+}
+
+// src/routes/phoneChangeRoutes.ts
 var router14 = (0, import_express14.Router)();
-router14.use("/auth", authRoutes_default);
-router14.use("/donors", donorRoutes_default);
-router14.use("/requests", requestRoutes_default);
-router14.use("/institutions", institutionRoutes_default);
-router14.use("/coordinators", coordinatorRoutes_default);
-router14.use("/admin", adminRoutes_default);
-router14.use("/reports", reportRoutes_default);
-router14.use("/locations", locationRoutes_default);
-router14.use("/notifications", notificationRoutes_default);
-router14.use("/institution-requests", institutionRequestRoutes_default);
-router14.use("/members", memberRoutes_default);
-router14.use("/moderators", moderatorRoutes_default);
-router14.use("/contact-requests", contactRequestRoutes_default);
-router14.get("/health", (req, res) => {
+router14.post("/request", requireAuth, validateBody(SubmitPhoneChangeSchema), submitPhoneChangeRequest);
+router14.get("/my-request", requireAuth, getMyPhoneChangeRequest);
+router14.get(
+  "/requests",
+  requireAuth,
+  requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
+  getPhoneChangeRequests
+);
+router14.patch(
+  "/requests/:id",
+  requireAuth,
+  requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"),
+  validateBody(ReviewPhoneChangeSchema),
+  reviewPhoneChangeRequest
+);
+var phoneChangeRoutes_default = router14;
+
+// src/routes/index.ts
+var router15 = (0, import_express15.Router)();
+router15.use("/auth", authRoutes_default);
+router15.use("/donors", donorRoutes_default);
+router15.use("/requests", requestRoutes_default);
+router15.use("/institutions", institutionRoutes_default);
+router15.use("/coordinators", coordinatorRoutes_default);
+router15.use("/coordinator", coordinatorRoutes_default);
+router15.use("/admin", adminRoutes_default);
+router15.use("/reports", reportRoutes_default);
+router15.use("/locations", locationRoutes_default);
+router15.use("/notifications", notificationRoutes_default);
+router15.use("/institution-requests", institutionRequestRoutes_default);
+router15.use("/members", memberRoutes_default);
+router15.use("/moderators", moderatorRoutes_default);
+router15.use("/contact-requests", contactRequestRoutes_default);
+router15.use("/phone-change", phoneChangeRoutes_default);
+router15.get("/health", (req, res) => {
   res.json({
     status: "ok",
     platform: "Bangladesh Blood Donation Platform API",
@@ -105584,7 +106196,7 @@ router14.get("/health", (req, res) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
-var routes_default = router14;
+var routes_default = router15;
 
 // src/middleware/errorHandler.ts
 function errorHandler(err, req, res, next) {
@@ -105599,7 +106211,7 @@ function errorHandler(err, req, res, next) {
 }
 
 // src/app.ts
-var app = (0, import_express15.default)();
+var app = (0, import_express16.default)();
 app.set("trust proxy", 1);
 var isDbInitialized = false;
 var isInitializing = false;
@@ -105637,8 +106249,8 @@ app.use((0, import_cors.default)({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.use(import_express15.default.json({ limit: "1mb" }));
-app.use(import_express15.default.urlencoded({ extended: true, limit: "1mb" }));
+app.use(import_express16.default.json({ limit: "1mb" }));
+app.use(import_express16.default.urlencoded({ extended: true, limit: "1mb" }));
 app.use("/api", generalRateLimiter);
 app.get(["/", "/api", "/api/v1"], (req, res) => {
   res.json({

@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { getCoordinatorDashboard } from '../controllers/coordinatorController.js';
+import { 
+  getCoordinatorDashboard,
+  appointModerator,
+  getInstitutionMembers,
+  AppointModeratorSchema
+} from '../controllers/coordinatorController.js';
 import { 
   getModeratorActivities, 
   getDivisionModeratorsSummary 
@@ -20,6 +25,14 @@ router.use(requireAuth, requireRoles('DIVISION_COORDINATOR', 'SUPER_ADMIN'));
 router.get('/dashboard', getCoordinatorDashboard);
 router.get('/moderators-summary', getDivisionModeratorsSummary);
 router.get('/activities', getModeratorActivities);
+
+// Coordinator appoints a moderator for an institution in their division
+router.post('/moderators', validateBody(AppointModeratorSchema), appointModerator);
+
+// Coordinator drill-down to view all members of an institution
+router.get('/institutions/:id/members', getInstitutionMembers);
+
+// Coordinator blocks or unblocks a moderator or user in their division
 router.post('/users/:id/block', validateBody(BlockUserSchema), blockUserAccount);
 router.post('/users/:id/unblock', validateBody(UnblockUserSchema), unblockUserAccount);
 

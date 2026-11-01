@@ -12,6 +12,7 @@ import institutionRequestRoutes from './institutionRequestRoutes.js';
 import memberRoutes from './memberRoutes.js';
 import moderatorRoutes from './moderatorRoutes.js';
 import contactRequestRoutes from './contactRequestRoutes.js';
+import phoneChangeRoutes from './phoneChangeRoutes.js';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use('/donors', donorRoutes);
 router.use('/requests', requestRoutes);
 router.use('/institutions', institutionRoutes);
 router.use('/coordinators', coordinatorRoutes);
+router.use('/coordinator', coordinatorRoutes);
 router.use('/admin', adminRoutes);
 router.use('/reports', reportRoutes);
 router.use('/locations', locationRoutes);
@@ -28,6 +30,7 @@ router.use('/institution-requests', institutionRequestRoutes);
 router.use('/members', memberRoutes);
 router.use('/moderators', moderatorRoutes);
 router.use('/contact-requests', contactRequestRoutes);
+router.use('/phone-change', phoneChangeRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

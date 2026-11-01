@@ -28,7 +28,11 @@ import {
   Menu,
   X,
   Sliders,
-  Settings
+  Settings,
+  Phone,
+  XCircle,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -49,6 +53,7 @@ export const AdminDashboard: React.FC = () => {
     | 'overview' 
     | 'users' 
     | 'donors'
+    | 'phone_requests'
     | 'blocked_users' 
     | 'institutions'
     | 'institution_requests' 
@@ -71,6 +76,7 @@ export const AdminDashboard: React.FC = () => {
   const [contactLogs, setContactLogs] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [bloodRequests, setBloodRequests] = useState<any[]>([]);
+  const [phoneRequests, setPhoneRequests] = useState<any[]>([]);
 
   // Filtering & Pagination
   const [userSearch, setUserSearch] = useState('');
@@ -96,6 +102,17 @@ export const AdminDashboard: React.FC = () => {
   const [editDivision, setEditDivision] = useState('dhaka');
   const [editDistrict, setEditDistrict] = useState('dhaka');
 
+  // Phone Change Review Modal
+  const [reviewingPhoneReq, setReviewingPhoneReq] = useState<any | null>(null);
+  const [phoneReviewStatus, setPhoneReviewStatus] = useState<'approved' | 'rejected'>('approved');
+  const [phoneReviewNotes, setPhoneReviewNotes] = useState('');
+  const [submittingPhoneReview, setSubmittingPhoneReview] = useState(false);
+
+  // Institution Drill Down Modal
+  const [drillDownInst, setDrillDownInst] = useState<any | null>(null);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
+  const [drillDownData, setDrillDownData] = useState<{ members: any[]; donors: any[]; counts: { members: number; donors: number } } | null>(null);
+
   // Detail Modal
   const [viewingUser, setViewingUser] = useState<any | null>(null);
 
@@ -111,7 +128,8 @@ export const AdminDashboard: React.FC = () => {
         histRes, 
         instReqRes,
         instRes,
-        reqsRes
+        reqsRes,
+        phoneReqsRes
       ] = await Promise.all([
         api.getAdminOverview(),
         api.getAdminUsers({ search: userSearch }),
@@ -121,7 +139,8 @@ export const AdminDashboard: React.FC = () => {
         api.getAccountStatusHistories(),
         api.getInstitutionRequests(),
         api.getInstitutions(),
-        api.searchRequests({ limit: 10 })
+        api.searchRequests({ limit: 10 }),
+        api.getPhoneChangeRequests()
       ]);
 
       if (overviewRes.success) setStats(overviewRes.stats);
@@ -133,6 +152,7 @@ export const AdminDashboard: React.FC = () => {
       if (instReqRes.success) setInstitutionRequests(instReqRes.requests || []);
       if (instRes.success) setInstitutions(instRes.institutions || []);
       if (reqsRes.success) setBloodRequests(reqsRes.requests || []);
+      if (phoneReqsRes.success) setPhoneRequests(phoneReqsRes.requests || []);
     } catch (err: any) {
       console.error('Admin data load failed:', err);
     } finally {
@@ -242,6 +262,52 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleReviewPhoneRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewingPhoneReq) return;
+    setSubmittingPhoneReview(true);
+    try {
+      const res = await api.reviewPhoneChangeRequest(reviewingPhoneReq._id, {
+        status: phoneReviewStatus,
+        reviewNotes: phoneReviewNotes
+      });
+      if (res.success) {
+        setMsg({ text: res.message || 'নম্বর পরিবর্তনের আবেদন পর্যালোচনা সম্পন্ন হয়েছে।', type: 'success' });
+        setReviewingPhoneReq(null);
+        setPhoneReviewNotes('');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingPhoneReview(false);
+    }
+  };
+
+  const handleOpenDrillDown = async (inst: any) => {
+    setDrillDownInst(inst);
+    setDrillDownLoading(true);
+    setDrillDownData(null);
+    try {
+      const res = await api.getInstitutionMembers(inst._id);
+      if (res.success) {
+        setDrillDownData({
+          members: res.members || [],
+          donors: res.donors || [],
+          counts: res.counts || { members: 0, donors: 0 }
+        });
+      } else {
+        setMsg({ text: res.message || 'সদস্য তালিকা লোড করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'ডাটা লোড ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setDrillDownLoading(false);
+    }
+  };
+
   // Nav Groups
   interface NavItem {
     key: TabKey;
@@ -266,6 +332,12 @@ export const AdminDashboard: React.FC = () => {
       items: [
         { key: 'users', label: 'ব্যবহারকারী ও সদস্য', icon: <Users className="w-4 h-4" />, count: users.length },
         { key: 'donors', label: 'রক্তদাতা প্রোফাইল', icon: <Heart className="w-4 h-4" />, count: stats?.donorsCount || 0 },
+        { 
+          key: 'phone_requests', 
+          label: 'নম্বর পরিবর্তন আবেদন', 
+          icon: <Phone className="w-4 h-4" />, 
+          count: phoneRequests.filter(r => r.status === 'pending').length 
+        },
         { key: 'blocked_users', label: 'স্থগিত ও ব্লককৃত', icon: <UserX className="w-4 h-4" />, count: blockedUsers.length },
       ]
     },
@@ -863,6 +935,90 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
 
+            {/* TAB: PHONE CHANGE REQUESTS */}
+            {activeTab === 'phone_requests' && (
+              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                      <Phone className="w-5 h-5 text-primary" />
+                      <span>মোবাইল নম্বর পরিবর্তনের আবেদনসমূহ</span>
+                    </h3>
+                    <p className="text-xs text-subText mt-0.5">রক্তদাতা ও রক্তপ্রার্থীদের নম্বর পরিবর্তনের সুনির্দিষ্ট কারণসহ আবেদন যাচাই ও অনুমোদন</p>
+                  </div>
+                  <Badge variant="teal">{phoneRequests.length} টি আবেদন</Badge>
+                </div>
+
+                {phoneRequests.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">
+                    বর্তমানে কোনো নম্বর পরিবর্তনের আবেদন নেই।
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">আবেদনকারী</th>
+                          <th className="py-3 px-4">পদবি / রোল</th>
+                          <th className="py-3 px-4">বর্তমান নম্বর</th>
+                          <th className="py-3 px-4">অনুরোধকৃত নতুন নম্বর</th>
+                          <th className="py-3 px-4">পরিবর্তনের কারণ</th>
+                          <th className="py-3 px-4">অঞ্চল</th>
+                          <th className="py-3 px-4">আবেদনের তারিখ</th>
+                          <th className="py-3 px-4">অবস্থা</th>
+                          <th className="py-3 px-4 text-right">কার্যক্রম</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {phoneRequests.map(r => (
+                          <tr key={r._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4 font-bold text-mainText">{r.userName || 'অজানা'}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant={r.userRole === 'DONOR' ? 'primary' : 'neutral'} size="sm">
+                                {r.userRole === 'DONOR' ? 'রক্তদাতা' : r.userRole === 'REQUESTER' ? 'রক্তপ্রার্থী' : r.userRole}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-slate-600 line-through">{r.currentPhone}</td>
+                            <td className="py-3 px-4 font-mono font-bold text-emerald-700">{r.newPhone}</td>
+                            <td className="py-3 px-4 text-slate-700 max-w-xs">{r.reason}</td>
+                            <td className="py-3 px-4 text-slate-500 capitalize">{r.district || ''}, {r.division || ''}</td>
+                            <td className="py-3 px-4 text-subText">
+                              {r.createdAt ? new Date(r.createdAt).toLocaleDateString('bn-BD') : ''}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge 
+                                variant={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning'} 
+                                size="sm"
+                              >
+                                {r.status === 'approved' ? 'অনুমোদিত' : r.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {r.status === 'pending' ? (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setReviewingPhoneReq(r);
+                                    setPhoneReviewStatus('approved');
+                                    setPhoneReviewNotes('');
+                                  }}
+                                >
+                                  পর্যালোচনা
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">পর্যালোচিত</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* TAB 4: BLOCKED USERS */}
             {activeTab === 'blocked_users' && (
               <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
@@ -957,6 +1113,17 @@ export const AdminDashboard: React.FC = () => {
                       <div className="text-xs text-subText pt-1 border-t border-slate-200 flex items-center justify-between">
                         <span>📍 {inst.district}, {inst.division}</span>
                         <span className="font-semibold text-teal-700">যাচাইকৃত</span>
+                      </div>
+                      <div className="pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs text-teal-700 border-teal-200 hover:bg-teal-50"
+                          onClick={() => handleOpenDrillDown(inst)}
+                          icon={<Users className="w-3.5 h-3.5" />}
+                        >
+                          সদস্য ও রক্তদাতা ডাটা ({inst.code})
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1400,6 +1567,203 @@ export const AdminDashboard: React.FC = () => {
               <span className="text-[10px] uppercase font-bold block">নিবন্ধনের তারিখ</span>
               <p>{new Date(viewingUser.createdAt || Date.now()).toLocaleString('bn-BD')}</p>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Phone Change Review Modal */}
+      {reviewingPhoneReq && (
+        <Modal
+          isOpen={Boolean(reviewingPhoneReq)}
+          onClose={() => setReviewingPhoneReq(null)}
+          title="নম্বর পরিবর্তনের আবেদন পর্যালোচনা"
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReviewingPhoneReq(null)}>বাতিল</Button>
+              <Button
+                variant={phoneReviewStatus === 'approved' ? 'primary' : 'danger'}
+                size="sm"
+                onClick={handleReviewPhoneRequest}
+                isLoading={submittingPhoneReview}
+              >
+                {phoneReviewStatus === 'approved' ? 'অনুমোদন নিশ্চিত করুন' : 'প্রত্যাখ্যান করুন'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-appBorder space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-mainText">{reviewingPhoneReq.userName}</span>
+                <Badge variant={reviewingPhoneReq.userRole === 'DONOR' ? 'primary' : 'neutral'} size="sm">
+                  {reviewingPhoneReq.userRole === 'DONOR' ? 'রক্তদাতা' : reviewingPhoneReq.userRole === 'REQUESTER' ? 'রক্তপ্রার্থী' : reviewingPhoneReq.userRole}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-subText block">বর্তমান নম্বর:</span>
+                  <span className="font-mono line-through text-slate-500">{reviewingPhoneReq.currentPhone}</span>
+                </div>
+                <div>
+                  <span className="text-subText block">অনুরোধকৃত নতুন নম্বর:</span>
+                  <span className="font-mono font-bold text-emerald-700">{reviewingPhoneReq.newPhone}</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-200">
+                <span className="text-subText block text-[10px] uppercase font-bold">নম্বর পরিবর্তনের কারণ:</span>
+                <p className="font-medium text-slate-800 mt-0.5">{reviewingPhoneReq.reason}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">পর্যালোচনা সিদ্ধান্ত</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPhoneReviewStatus('approved')}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    phoneReviewStatus === 'approved'
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>অনুমোদন করুন</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhoneReviewStatus('rejected')}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    phoneReviewStatus === 'rejected'
+                      ? 'bg-rose-50 border-rose-500 text-rose-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4 text-rose-600" />
+                  <span>প্রত্যাখ্যান করুন</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                অ্যাডমিন মন্তব্য / নির্দেশিকা (ঐচ্ছিক)
+              </label>
+              <textarea
+                rows={2}
+                value={phoneReviewNotes}
+                onChange={e => setPhoneReviewNotes(e.target.value)}
+                placeholder="যেমন: তথ্য যাচাই করে অনুমোদন দেওয়া হলো..."
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Institution Drill-Down Modal */}
+      {drillDownInst && (
+        <Modal
+          isOpen={Boolean(drillDownInst)}
+          onClose={() => setDrillDownInst(null)}
+          title={`🎓 ${drillDownInst.nameBn || drillDownInst.name} - সদস্য ও রক্তদাতা ডাটা`}
+          footer={<Button variant="outline" size="sm" onClick={() => setDrillDownInst(null)}>বন্ধ করুন</Button>}
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-teal-900 text-sm">{drillDownInst.nameBn}</span>
+                <Badge variant="teal" size="sm">{drillDownInst.code}</Badge>
+              </div>
+              <p className="text-[11px] text-teal-800">
+                📍 {drillDownInst.district}, {drillDownInst.division}
+              </p>
+              <div className="flex items-center gap-4 pt-1 font-bold text-xs text-teal-900">
+                <span>মোট নিবন্ধিত সদস্য: {drillDownData?.counts.members ?? '...'} জন</span>
+                <span>•</span>
+                <span>রক্তদাতা প্রোফাইল: {drillDownData?.counts.donors ?? '...'} জন</span>
+              </div>
+            </div>
+
+            {drillDownLoading ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-2 text-subText">
+                <Loader2 className="w-6 h-6 animate-spin text-teal-700" />
+                <span>প্রতিষ্ঠান সদস্য তথ্য লোড হচ্ছে...</span>
+              </div>
+            ) : (!drillDownData?.members || drillDownData.members.length === 0) ? (
+              <div className="text-center py-8 text-slate-400">
+                এই শিক্ষা প্রতিষ্ঠানের অধীনে কোনো সদস্য বা রক্তদাতা পাওয়া যায়নি।
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
+                <div className="border border-appBorder rounded-xl overflow-hidden">
+                  <div className="bg-slate-100 px-3 py-2 font-bold text-mainText border-b border-appBorder">
+                    সকল নিবন্ধিত সদস্য ও মডারেটর ({drillDownData.members.length} জন)
+                  </div>
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold">
+                      <tr>
+                        <th className="py-2 px-3">নাম</th>
+                        <th className="py-2 px-3">মোবাইল</th>
+                        <th className="py-2 px-3">পদবি</th>
+                        <th className="py-2 px-3">যোগদান</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {drillDownData.members.map((m: any) => (
+                        <tr key={m._id} className="hover:bg-slate-50/70">
+                          <td className="py-2 px-3 font-semibold text-mainText">{m.name}</td>
+                          <td className="py-2 px-3 font-mono">{m.phone}</td>
+                          <td className="py-2 px-3">
+                            <Badge 
+                              variant={m.role === 'INSTITUTION_MODERATOR' ? 'teal' : m.role === 'DONOR' ? 'primary' : 'neutral'} 
+                              size="sm"
+                            >
+                              {m.role === 'INSTITUTION_MODERATOR' ? 'ইনস্টিটিউট মডারেটর' : m.role === 'DONOR' ? 'রক্তদাতা' : m.role}
+                            </Badge>
+                          </td>
+                          <td className="py-2 px-3 text-subText">
+                            {m.createdAt ? new Date(m.createdAt).toLocaleDateString('bn-BD') : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {drillDownData.donors && drillDownData.donors.length > 0 && (
+                  <div className="border border-appBorder rounded-xl overflow-hidden">
+                    <div className="bg-slate-100 px-3 py-2 font-bold text-mainText border-b border-appBorder">
+                      রক্তদাতা প্রোফাইলসমূহ ({drillDownData.donors.length} জন)
+                    </div>
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold">
+                        <tr>
+                          <th className="py-2 px-3">রক্তের গ্রুপ</th>
+                          <th className="py-2 px-3">দাতা আইডি</th>
+                          <th className="py-2 px-3">প্রস্তুতি</th>
+                          <th className="py-2 px-3">মোট দান</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {drillDownData.donors.map((d: any) => (
+                          <tr key={d._id} className="hover:bg-slate-50/70">
+                            <td className="py-2 px-3 font-bold text-primary">{d.bloodGroup}</td>
+                            <td className="py-2 px-3 font-mono text-slate-600">{d.userId ? (d.userId.name || d.userId) : d._id}</td>
+                            <td className="py-2 px-3">
+                              <Badge variant={d.isAvailable ? 'success' : 'neutral'} size="sm">
+                                {d.isAvailable ? 'প্রস্তুত' : 'বিরতি'}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3 font-bold">{d.totalDonations || 0} বার</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Modal>
       )}

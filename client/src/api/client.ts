@@ -294,4 +294,56 @@ export const api = {
     fetchWithAuth(`/notifications/${id}/read`, {
       method: 'PATCH',
     }),
+
+  // Phone Change Requests
+  submitPhoneChangeRequest: (payload: { newPhone: string; reason: string }) =>
+    fetchWithAuth('/phone-change/request', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getMyPhoneChangeRequest: () => fetchWithAuth('/phone-change/my-request'),
+
+  getPhoneChangeRequests: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/phone-change/requests?${query.toString()}`);
+  },
+
+  reviewPhoneChangeRequest: (id: string, payload: { status: 'approved' | 'rejected'; reviewNotes?: string }) =>
+    fetchWithAuth(`/phone-change/requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // Coordinator Specific
+  coordinatorAppointModerator: (payload: { institutionId: string; name: string; phone: string; email?: string; gender?: string }) =>
+    fetchWithAuth('/coordinators/moderators', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  coordinatorBlockUser: (id: string, reason: string, status = 'temporarily_blocked') =>
+    fetchWithAuth(`/coordinators/users/${id}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, status }),
+    }),
+
+  coordinatorUnblockUser: (id: string, reason: string) =>
+    fetchWithAuth(`/coordinators/users/${id}/unblock`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  getInstitutionMembers: (institutionId: string) =>
+    fetchWithAuth(`/institutions/${institutionId}/members`),
+
+  // Member profile update
+  updateProfile: (payload: Record<string, any>) =>
+    fetchWithAuth('/members/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 };

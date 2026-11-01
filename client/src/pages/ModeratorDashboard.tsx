@@ -16,7 +16,8 @@ import {
   Activity,
   Lock,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  XCircle
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -33,9 +34,16 @@ export const ModeratorDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [activities, setActivities] = useState<ModeratorActivity[]>([]);
-  const [activeTab, setActiveTab] = useState<'roster' | 'contact_requests' | 'activities'>('roster');
+  const [phoneChangeRequests, setPhoneChangeRequests] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'roster' | 'contact_requests' | 'activities' | 'phone_requests'>('roster');
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Phone Change Review Modal
+  const [reviewingPhoneReq, setReviewingPhoneReq] = useState<any | null>(null);
+  const [phoneReviewStatus, setPhoneReviewStatus] = useState<'approved' | 'rejected'>('approved');
+  const [phoneReviewNotes, setPhoneReviewNotes] = useState('');
+  const [submittingPhoneReview, setSubmittingPhoneReview] = useState(false);
 
   // Manual Member Creation Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -68,15 +76,17 @@ export const ModeratorDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [dashRes, contactRes, actRes] = await Promise.all([
+      const [dashRes, contactRes, actRes, phoneRes] = await Promise.all([
         api.getModeratorDashboard(),
         api.getContactRequests(),
-        api.getModeratorActivities()
+        api.getModeratorActivities(),
+        api.getPhoneChangeRequests()
       ]);
 
       if (dashRes.success) setData(dashRes);
       if (contactRes.success) setContactRequests(contactRes.requests || []);
       if (actRes.success) setActivities(actRes.activities || []);
+      if (phoneRes.success) setPhoneChangeRequests(phoneRes.requests || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'ড্যাশবোর্ড তথ্য লোড করতে সমস্যা হয়েছে।');
     } finally {
@@ -87,6 +97,29 @@ export const ModeratorDashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const handleReviewPhoneRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewingPhoneReq) return;
+    setSubmittingPhoneReview(true);
+    try {
+      const res = await api.reviewPhoneChangeRequest(reviewingPhoneReq._id, {
+        status: phoneReviewStatus,
+        reviewNotes: phoneReviewNotes
+      });
+      if (res.success) {
+        setReviewingPhoneReq(null);
+        setPhoneReviewNotes('');
+        loadDashboardData();
+      } else {
+        alert(res.message || 'পর্যালোচনা ব্যর্থ হয়েছে।');
+      }
+    } catch (err: any) {
+      alert(err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।');
+    } finally {
+      setSubmittingPhoneReview(false);
+    }
+  };
 
   const handleCreateMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,6 +357,15 @@ export const ModeratorDashboard: React.FC = () => {
             <Activity className="w-4 h-4" />
             <span>মডারেশন ইতিহাস ({activities.length})</span>
           </button>
+          <button
+            onClick={() => setActiveTab('phone_requests')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'phone_requests' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <Phone className="w-4 h-4" />
+            <span>নম্বর পরিবর্তনের আবেদন ({phoneChangeRequests.filter(r => r.status === 'pending').length})</span>
+          </button>
         </div>
 
         {/* TAB 1: MEMBER ROSTER */}
@@ -492,6 +534,87 @@ export const ModeratorDashboard: React.FC = () => {
                         <td className="py-3 px-4 font-bold text-teal-800">{act.action}</td>
                         <td className="py-3 px-4 text-slate-700 max-w-sm">{act.reason || 'নিয়মিত মডারেশন'}</td>
                         <td className="py-3 px-4 text-subText">{new Date(act.createdAt).toLocaleString('bn-BD')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: PHONE CHANGE REQUESTS */}
+        {activeTab === 'phone_requests' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-teal-700" />
+                  <span>ক্যাম্পাস সদস্যদের নম্বর পরিবর্তনের আবেদন</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">আপনার শিক্ষা প্রতিষ্ঠানের অন্তর্ভুক্ত রক্তদাতা ও শিক্ষার্থীদের ফোন নম্বর পরিবর্তন যাচাই</p>
+              </div>
+              <Badge variant="teal">মোট: {phoneChangeRequests.length} টি</Badge>
+            </div>
+
+            {phoneChangeRequests.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                কোনো নম্বর পরিবর্তনের আবেদন অপেক্ষমাণ নেই।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">সদস্যের নাম</th>
+                      <th className="py-3 px-4">পদবি</th>
+                      <th className="py-3 px-4">বর্তমান নম্বর</th>
+                      <th className="py-3 px-4">অনুরোধকৃত নতুন নম্বর</th>
+                      <th className="py-3 px-4">পরিবর্তনের কারণ</th>
+                      <th className="py-3 px-4">আবেদনের তারিখ</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {phoneChangeRequests.map(r => (
+                      <tr key={r._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-mainText">{r.userName}</td>
+                        <td className="py-3 px-4">
+                          <Badge variant="neutral" size="sm">{r.userRole}</Badge>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-500 line-through">{r.currentPhone}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-teal-800">{r.newPhone}</td>
+                        <td className="py-3 px-4 text-slate-700 max-w-xs">{r.reason}</td>
+                        <td className="py-3 px-4 text-subText">
+                          {r.createdAt ? new Date(r.createdAt).toLocaleDateString('bn-BD') : '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge 
+                            variant={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning'} 
+                            size="sm"
+                          >
+                            {r.status === 'approved' ? 'অনুমোদিত' : r.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {r.status === 'pending' ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="bg-teal-700 hover:bg-teal-800"
+                              onClick={() => {
+                                setReviewingPhoneReq(r);
+                                setPhoneReviewStatus('approved');
+                                setPhoneReviewNotes('');
+                              }}
+                            >
+                              পর্যালোচনা
+                            </Button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">পর্যালোচিত</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -681,6 +804,95 @@ export const ModeratorDashboard: React.FC = () => {
               />
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Phone Change Review Modal */}
+      {reviewingPhoneReq && (
+        <Modal
+          isOpen={Boolean(reviewingPhoneReq)}
+          onClose={() => setReviewingPhoneReq(null)}
+          title="নম্বর পরিবর্তনের আবেদন পর্যালোচনা"
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReviewingPhoneReq(null)}>বাতিল</Button>
+              <Button
+                variant={phoneReviewStatus === 'approved' ? 'primary' : 'danger'}
+                size="sm"
+                onClick={handleReviewPhoneRequest}
+                isLoading={submittingPhoneReview}
+                className={phoneReviewStatus === 'approved' ? 'bg-teal-700 hover:bg-teal-800' : ''}
+              >
+                {phoneReviewStatus === 'approved' ? 'অনুমোদন নিশ্চিত করুন' : 'প্রত্যাখ্যান করুন'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-appBorder space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-mainText">{reviewingPhoneReq.userName}</span>
+                <Badge variant="neutral" size="sm">{reviewingPhoneReq.userRole}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-subText block">বর্তমান নম্বর:</span>
+                  <span className="font-mono line-through text-slate-500">{reviewingPhoneReq.currentPhone}</span>
+                </div>
+                <div>
+                  <span className="text-subText block">অনুরোধকৃত নতুন নম্বর:</span>
+                  <span className="font-mono font-bold text-emerald-700">{reviewingPhoneReq.newPhone}</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-200">
+                <span className="text-subText block text-[10px] uppercase font-bold">নম্বর পরিবর্তনের কারণ:</span>
+                <p className="font-medium text-slate-800 mt-0.5">{reviewingPhoneReq.reason}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">পর্যালোচনা সিদ্ধান্ত</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPhoneReviewStatus('approved')}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    phoneReviewStatus === 'approved'
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>অনুমোদন করুন</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhoneReviewStatus('rejected')}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    phoneReviewStatus === 'rejected'
+                      ? 'bg-rose-50 border-rose-500 text-rose-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4 text-rose-600" />
+                  <span>প্রত্যাখ্যান করুন</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1">
+                মডারেটরের মন্তব্য (ঐচ্ছিক)
+              </label>
+              <textarea
+                rows={2}
+                value={phoneReviewNotes}
+                onChange={e => setPhoneReviewNotes(e.target.value)}
+                placeholder="যেমন: শিক্ষার্থীর পরিচয় যাচাই করে নতুন নম্বরটি অনুমোদন দেওয়া হলো..."
+                className="w-full px-3 py-2 border border-appBorder rounded-xl text-xs focus:border-primary"
+              />
+            </div>
+          </div>
         </Modal>
       )}
 

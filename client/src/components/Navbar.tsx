@@ -199,7 +199,7 @@ export const Navbar: React.FC = () => {
                       </Link>
 
                       <Link
-                        to="/donor/dashboard"
+                        to="/profile"
                         onClick={() => setUserDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-mainText hover:bg-slate-100 rounded-xl transition-colors"
                       >
@@ -345,6 +345,15 @@ export const Navbar: React.FC = () => {
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>ড্যাশবোর্ড প্রবেশ করুন</span>
+                </Link>
+
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-mainText text-sm font-bold rounded-xl"
+                >
+                  <UserIcon className="w-4 h-4 text-slate-600" />
+                  <span>আমার প্রোফাইল ও সেটিংস</span>
                 </Link>
 
                 <button

@@ -170,3 +170,44 @@ export async function getModeratorDashboard(req: AuthRequest, res: Response): Pr
   });
 }
 
+/**
+ * Public/Authorized drill-down: view members and donors under this institution
+ */
+export async function getInstitutionMembers(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const institution = dataStore.findInstitutionById(id);
+  if (!institution) {
+    res.status(404).json({ success: false, message: 'প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  const members = dataStore.getInstitutionMembers(id);
+  const moderators = dataStore.users.filter(
+    u => u.role === 'INSTITUTION_MODERATOR' && u.assignedInstitution === id
+  ).map(m => ({
+    _id: m._id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    accountStatus: m.accountStatus,
+    createdAt: m.createdAt
+  }));
+
+  res.json({
+    success: true,
+    institution: {
+      _id: institution._id,
+      name: institution.name,
+      nameBn: institution.nameBn,
+      code: institution.code,
+      division: institution.division,
+      district: institution.district,
+      totalRegisteredDonors: institution.totalRegisteredDonors
+    },
+    moderators,
+    members,
+    totalMembers: members.length
+  });
+}
+
+

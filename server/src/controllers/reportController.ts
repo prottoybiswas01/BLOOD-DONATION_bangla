@@ -53,10 +53,22 @@ export async function createReport(req: AuthRequest, res: Response): Promise<voi
 }
 
 export async function getReports(req: AuthRequest, res: Response): Promise<void> {
-  const { status, targetType } = req.query;
+  const { status, targetType, division } = req.query;
+
+  let scopedDivision: string | undefined = division as string;
+  let scopedInstitutionId: string | undefined = undefined;
+
+  if (req.user?.role === 'INSTITUTION_MODERATOR') {
+    scopedInstitutionId = req.user.assignedInstitution;
+  } else if (req.user?.role === 'DIVISION_COORDINATOR') {
+    scopedDivision = req.user.assignedDivision;
+  }
+
   const reports = dataStore.getReports({
     status: status as string,
-    targetType: targetType as string
+    targetType: targetType as string,
+    division: scopedDivision,
+    institutionId: scopedInstitutionId
   });
 
   const enriched = reports.map(r => {

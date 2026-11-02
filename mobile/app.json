@@ -12,6 +12,15 @@
       "resizeMode": "contain",
       "backgroundColor": "#C62828"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/blood-donation-bangla",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "org.bloodbd.app"
@@ -39,4 +48,3 @@
     }
   }
 }
-

@@ -12,8 +12,17 @@ export type RequestStatus =
 
 export type UrgencyLevel = 'emergency' | 'urgent' | 'standard';
 
+export interface IBloodRequestStatusHistory {
+  status: RequestStatus;
+  unitsFulfilled?: number;
+  changedBy: string;
+  changedAt: Date;
+  notes?: string;
+}
+
 export interface IBloodRequest extends Document {
   _id: any;
+  publicId: string;
   requesterId: any;
   patientName: string;
   bloodGroup: BloodGroup;
@@ -28,9 +37,13 @@ export interface IBloodRequest extends Document {
   requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
+  contactPersonName?: string;
   contactNumber: string;
   alternativeContactNumber?: string;
+  additionalNotes?: string;
+  consentForPublicShare?: boolean;
   status: RequestStatus;
+  statusHistory?: IBloodRequestStatusHistory[];
   moderationNotes?: string;
   institutionId?: any;
   expiresAt: Date;
@@ -41,6 +54,13 @@ export interface IBloodRequest extends Document {
 const BloodRequestSchema = new Schema<IBloodRequest>(
   {
     _id: { type: String },
+    publicId: { 
+      type: String, 
+      unique: true, 
+      sparse: true, 
+      index: true,
+      trim: true 
+    },
     requesterId: { 
       type: Schema.Types.Mixed, 
       required: true,
@@ -69,8 +89,11 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
       index: true 
     },
     reason: { type: String, required: true, trim: true },
+    contactPersonName: { type: String, trim: true },
     contactNumber: { type: String, required: true, trim: true },
     alternativeContactNumber: { type: String, trim: true },
+    additionalNotes: { type: String, trim: true },
+    consentForPublicShare: { type: Boolean, default: true },
     status: { 
       type: String, 
       enum: [
@@ -85,6 +108,15 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
       default: 'open',
       index: true 
     },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        unitsFulfilled: { type: Number },
+        changedBy: { type: String, required: true },
+        changedAt: { type: Date, default: Date.now },
+        notes: { type: String }
+      }
+    ],
     moderationNotes: { type: String, trim: true },
     institutionId: { type: Schema.Types.Mixed, index: true },
     expiresAt: { type: Date, required: true, index: true }
@@ -98,4 +130,3 @@ BloodRequestSchema.index({ status: 1, requiredDate: -1 });
 BloodRequestSchema.index({ division: 1, status: 1 });
 
 export const BloodRequestModel = mongoose.model<IBloodRequest>('BloodRequest', BloodRequestSchema);
-

@@ -6,24 +6,30 @@ import { Badge } from './Badge';
 
 export interface BloodRequestItem {
   _id: string;
+  publicId?: string;
   patientName: string;
   bloodGroup: string;
   unitsRequired: number;
+  unitsFulfilled?: number;
   hospitalName: string;
   hospitalAddress?: string;
   district: string;
   division: string;
   urgencyLevel: 'emergency' | 'critical' | 'urgent' | 'standard' | 'normal';
+  contactPersonName?: string;
   contactNumber: string;
   requiredDate?: string;
+  requiredWithin?: string;
   reason?: string;
+  status?: string;
 }
 
 interface BloodRequestCardProps {
   request: BloodRequestItem;
+  onPressCard?: (request: BloodRequestItem) => void;
 }
 
-export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request }) => {
+export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request, onPressCard }) => {
   const handleOpenMap = () => {
     const query = encodeURIComponent(request.hospitalName + ', ' + request.district);
     Linking.openURL('https://www.google.com/maps/search/?api=1&query=' + query).catch(() => {
@@ -97,20 +103,31 @@ export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request }) =
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleCall}
-          style={[styles.callButton, { flex: 1, marginRight: 8 }]}
+          style={[styles.callButton, { flex: 1, marginRight: 6 }]}
         >
-          <Ionicons name="call" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-          <Text style={styles.callButtonText}>
-            কল করুন ({request.contactNumber})
+          <Ionicons name="call" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+          <Text style={styles.callButtonText} numberOfLines={1}>
+            কল ({request.contactNumber})
           </Text>
         </TouchableOpacity>
+
+        {onPressCard && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => onPressCard(request)}
+            style={styles.qrButton}
+          >
+            <Ionicons name="qr-code-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
+            <Text style={styles.qrButtonText}>কার্ড</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleOpenMap}
           style={styles.mapButton}
         >
-          <Ionicons name="map-outline" size={15} color={Colors.tealAccent} style={{ marginRight: 4 }} />
-          <Text style={styles.mapButtonText}>ম্যাপে দেখুন</Text>
+          <Ionicons name="map-outline" size={14} color={Colors.tealAccent} />
         </TouchableOpacity>
       </View>
     </View>
@@ -228,6 +245,23 @@ const styles = StyleSheet.create({
   },
   mapButtonText: {
     color: Colors.tealAccent,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  qrButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+    marginRight: 6,
+  },
+  qrButtonText: {
+    color: Colors.primary,
     fontSize: 12,
     fontWeight: '700',
   },

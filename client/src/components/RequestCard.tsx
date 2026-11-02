@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   AlertCircle, 
   MapPin, 
@@ -7,10 +8,12 @@ import {
   Building2, 
   Flag,
   Share2,
-  Clock
+  Clock,
+  QrCode
 } from 'lucide-react';
 import { BloodRequest } from '../types';
 import { Badge } from './ui/Badge';
+import { DigitalBloodRequestCard } from './DigitalBloodRequestCard';
 
 interface RequestCardProps {
   request: BloodRequest;
@@ -18,8 +21,11 @@ interface RequestCardProps {
 }
 
 export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) => {
+  const [showCardModal, setShowCardModal] = useState(false);
   const isEmergency = request.urgencyLevel === 'emergency';
   const isUrgent = request.urgencyLevel === 'urgent';
+  const publicId = request.publicId || request._id;
+  const unitsRemaining = Math.max(0, request.unitsRequired - (request.unitsFulfilled || 0));
 
   const getUrgencyBadge = () => {
     if (isEmergency) {
@@ -164,6 +170,16 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) =
           <span>কল করুন ({request.contactNumber})</span>
         </a>
 
+        <Link
+          to={`/blood-request/${publicId}`}
+          title="ডিজিটাল কার্ড ও কিউআর কোড দেখুন"
+          aria-label="ডিজিটাল কার্ড"
+          className="p-2.5 border border-red-200 bg-red-50 text-primary hover:bg-primary hover:text-white rounded-xl active:scale-95 transition-all flex items-center gap-1 text-xs font-semibold"
+        >
+          <QrCode className="w-4 h-4" />
+          <span className="hidden sm:inline">কার্ড ও কিউআর</span>
+        </Link>
+
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.hospitalName + ', ' + request.district)}`}
           target="_blank"
@@ -173,7 +189,6 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) =
           className="p-2.5 border border-appBorder rounded-xl text-teal-600 hover:text-white hover:bg-teal-600 hover:border-teal-600 active:scale-95 transition-all flex items-center gap-1.5 text-xs font-semibold"
         >
           <MapPin className="w-4 h-4" />
-          <span className="hidden sm:inline">ম্যাপে দেখুন</span>
         </a>
 
         <button

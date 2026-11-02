@@ -71,8 +71,17 @@ export interface StoredDonorProfile {
   updatedAt: Date;
 }
 
+export interface StoredBloodRequestStatusHistory {
+  status: RequestStatus;
+  unitsFulfilled?: number;
+  changedBy: string;
+  changedAt: Date;
+  notes?: string;
+}
+
 export interface StoredBloodRequest {
   _id: string;
+  publicId?: string;
   requesterId: string;
   patientName: string;
   bloodGroup: BloodGroup;
@@ -87,9 +96,13 @@ export interface StoredBloodRequest {
   requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
+  contactPersonName?: string;
   contactNumber: string;
   alternativeContactNumber?: string;
+  additionalNotes?: string;
+  consentForPublicShare?: boolean;
   status: RequestStatus;
+  statusHistory?: StoredBloodRequestStatusHistory[];
   moderationNotes?: string;
   institutionId?: string;
   expiresAt: Date;
@@ -763,6 +776,7 @@ class DataStore {
     this.bloodRequests = [
       {
         _id: 'req_1',
+        publicId: 'BR-2026-DH01',
         requesterId: 'usr_requester_1',
         patientName: 'ফরিদা বেগম (৬৫)',
         bloodGroup: 'O+',
@@ -785,6 +799,7 @@ class DataStore {
       },
       {
         _id: 'req_2',
+        publicId: 'BR-2026-DH02',
         requesterId: 'usr_requester_1',
         patientName: 'আরিফুল হক (২৮)',
         bloodGroup: 'A+',
@@ -806,6 +821,7 @@ class DataStore {
       },
       {
         _id: 'req_3',
+        publicId: 'BR-2026-CT01',
         requesterId: 'usr_donor_1',
         patientName: 'শামসুল আলম (৫০)',
         bloodGroup: 'B+',
@@ -1594,14 +1610,24 @@ class DataStore {
   }
 
   // --- Blood Request Methods ---
-  findBloodRequestById(id: string): StoredBloodRequest | undefined {
-    return this.bloodRequests.find(r => String(r._id) === String(id));
+  findBloodRequestById(idOrPublicId: string): StoredBloodRequest | undefined {
+    if (!idOrPublicId) return undefined;
+    const target = String(idOrPublicId).toLowerCase().trim();
+    return this.bloodRequests.find(r => 
+      String(r._id).toLowerCase() === target || 
+      (r.publicId && String(r.publicId).toLowerCase() === target)
+    );
   }
 
   createBloodRequest(data: Partial<StoredBloodRequest>): StoredBloodRequest {
     this.assertWritable();
+    const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const timePart = Date.now().toString(36).toUpperCase().slice(-4);
+    const generatedPublicId = 'BR-' + timePart + '-' + randPart;
+
     const newReq: StoredBloodRequest = {
-      _id: 'req_' + Date.now() + Math.random().toString(36).substring(2, 7),
+      _id: data._id || ('req_' + Date.now() + Math.random().toString(36).substring(2, 7)),
+      publicId: data.publicId || generatedPublicId,
       requesterId: data.requesterId || '',
       patientName: data.patientName || '',
       bloodGroup: data.bloodGroup || 'A+',
@@ -1616,9 +1642,21 @@ class DataStore {
       requiredWithin: data.requiredWithin,
       urgencyLevel: data.urgencyLevel || 'emergency',
       reason: data.reason || '',
+      contactPersonName: data.contactPersonName,
       contactNumber: data.contactNumber || '',
       alternativeContactNumber: data.alternativeContactNumber,
+      additionalNotes: data.additionalNotes,
+      consentForPublicShare: data.consentForPublicShare ?? true,
       status: data.status || 'open',
+      statusHistory: [
+        {
+          status: data.status || 'open',
+          unitsFulfilled: data.unitsFulfilled || 0,
+          changedBy: data.requesterId || 'system',
+          changedAt: new Date(),
+          notes: 'রক্তের আবেদন তৈরি করা হয়েছে।'
+        }
+      ],
       moderationNotes: data.moderationNotes,
       institutionId: data.institutionId,
       expiresAt: data.expiresAt || new Date(Date.now() + 86400000 * 3),

@@ -9,6 +9,7 @@ import { FirstLoginPasswordModal } from './components/FirstLoginPasswordModal';
 import { Home } from './pages/Home';
 import { DonorSearch } from './pages/DonorSearch';
 import { BloodRequests } from './pages/BloodRequests';
+import { BloodRequestLanding } from './pages/BloodRequestLanding';
 import { CreateBloodRequest } from './pages/CreateBloodRequest';
 import { DonorRegister } from './pages/DonorRegister';
 import { Login } from './pages/Login';
@@ -64,6 +65,8 @@ export function App() {
               <Route path="/" element={<Home />} />
               <Route path="/donors" element={<DonorSearch />} />
               <Route path="/requests" element={<BloodRequests />} />
+              <Route path="/blood-request/:publicId" element={<BloodRequestLanding />} />
+              <Route path="/requests/:id" element={<BloodRequestLanding />} />
               <Route 
                 path="/create-request" 
                 element={

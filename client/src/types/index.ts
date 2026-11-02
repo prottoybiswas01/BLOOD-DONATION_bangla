@@ -70,12 +70,14 @@ export type RequestStatus =
 
 export interface BloodRequest {
   _id: string;
+  publicId?: string;
   requesterId: string;
   requesterName?: string;
   patientName: string;
   bloodGroup: BloodGroup;
   unitsRequired: number;
   unitsFulfilled: number;
+  unitsRemaining?: number;
   hospitalName: string;
   hospitalAddress: string;
   division: string;
@@ -85,14 +87,26 @@ export interface BloodRequest {
   requiredWithin?: string;
   urgencyLevel: UrgencyLevel;
   reason: string;
+  contactPersonName?: string;
   contactNumber: string;
   alternativeContactNumber?: string;
+  additionalNotes?: string;
+  consentForPublicShare?: boolean;
   status: RequestStatus;
   moderationNotes?: string;
   institutionId?: string;
   institutionName?: string;
   expiresAt: string;
   createdAt: string;
+  canonicalUrl?: string;
+  completionMessage?: string;
+  statusHistory?: Array<{
+    status: RequestStatus;
+    changedAt: string;
+    changedBy?: string;
+    reason?: string;
+    unitsFulfilledSnapshot?: number;
+  }>;
 }
 
 export interface Institution {

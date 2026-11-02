@@ -127,6 +127,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  updateRequestProgress: (id: string, payload: { unitsReceivedDelta: number; notes?: string }) =>
+    fetchWithAuth(`/requests/${id}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   getMyRequests: () => fetchWithAuth('/requests/my-requests'),
 
   // Institutions

@@ -6,13 +6,16 @@ import {
   TouchableOpacity, 
   RefreshControl,
   FlatList,
-  Platform
+  Platform,
+  Modal,
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { MobileApi } from '../api/client';
 import { BloodRequestCard, BloodRequestItem } from '../components/BloodRequestCard';
 import { StateView } from '../components/StateView';
+import { NativeDigitalCard } from '../components/NativeDigitalCard';
 
 interface BloodRequestsScreenProps {
   onNavigateCreate: () => void;
@@ -24,6 +27,7 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
   const [refreshing, setRefreshing] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [filterUrgency, setFilterUrgency] = useState<string>('all');
+  const [selectedRequest, setSelectedRequest] = useState<BloodRequestItem | null>(null);
 
   const loadRequests = async (skipCache: boolean = false) => {
     setLoading(true);
@@ -123,7 +127,12 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
           <FlatList
             data={filtered}
             keyExtractor={(item) => item._id}
-            renderItem={({ item }) => <BloodRequestCard request={item} />}
+            renderItem={({ item }) => (
+              <BloodRequestCard 
+                request={item} 
+                onPressCard={(req) => setSelectedRequest(req)} 
+              />
+            )}
             contentContainerStyle={styles.flatListContent}
             refreshControl={
               <RefreshControl 
@@ -140,6 +149,27 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
           />
         )}
       </View>
+
+      {/* Digital Card Preview Modal */}
+      <Modal
+        visible={!!selectedRequest}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedRequest(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {selectedRequest && (
+                <NativeDigitalCard
+                  request={selectedRequest}
+                  onClose={() => setSelectedRequest(null)}
+                />
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Native Floating Action Button */}
       <TouchableOpacity
@@ -218,5 +248,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    maxHeight: '90%',
   },
 });

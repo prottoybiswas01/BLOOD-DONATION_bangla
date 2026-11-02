@@ -115,19 +115,13 @@ if (!fs.existsSync(appKeystorePath)) {
   process.exit(1);
 }
 
-// 4. Configure signingConfigs and buildTypes in app/build.gradle
+// 4. Configure signingConfigs and buildTypes in app/build.gradle idempotently
 if (fs.existsSync(buildGradlePath)) {
   let buildGradle = fs.readFileSync(buildGradlePath, 'utf8');
 
-  const oldSigningBlock = /signingConfigs\s*\{\s*debug\s*\{[\s\S]*?\}\s*(\s*release\s*\{[\s\S]*?\}\s*)?\}/;
-  const newSigningBlock = `signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
-        }
-        release {
+  // Only update if not already configured with signingConfigs.release
+  if (!buildGradle.includes("signingConfigs.release") || !buildGradle.includes("release.keystore")) {
+    const releaseSigning = `        release {
             if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
                 storeFile file(MYAPP_RELEASE_STORE_FILE)
                 storePassword MYAPP_RELEASE_STORE_PASSWORD
@@ -139,31 +133,65 @@ if (fs.existsSync(buildGradlePath)) {
                 keyAlias '${keyAlias}'
                 keyPassword '${keyPassword}'
             }
-        }
-    }`;
+        }`;
 
-  if (oldSigningBlock.test(buildGradle)) {
-    buildGradle = buildGradle.replace(oldSigningBlock, newSigningBlock);
+    // 1. Insert release block into signingConfigs if not present
+    if (!buildGradle.includes("storeFile file('release.keystore')")) {
+      buildGradle = buildGradle.replace(
+        /(signingConfigs\s*\{[\s\S]*?debug\s*\{[\s\S]*?\}\s*)/,
+        `$1\n${releaseSigning}\n    `
+      );
+    }
+
+    // 2. In buildTypes release, ensure signingConfig is signingConfigs.release
+    buildGradle = buildGradle.replace(
+      /(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?signingConfig\s+)signingConfigs\.debug/,
+      `$1signingConfigs.release`
+    );
+
+    fs.writeFileSync(buildGradlePath, buildGradle, 'utf8');
+    console.log('[Release Config] Configured signingConfigs.release in app/build.gradle');
+  } else {
+    console.log('[Release Config] app/build.gradle signingConfigs and buildTypes already configured.');
+  }
+}
+
+// 5. Verify and enforce Expo EAS OTA Updates configuration in AndroidManifest.xml
+const manifestPath = path.join(appDir, 'src', 'main', 'AndroidManifest.xml');
+if (fs.existsSync(manifestPath)) {
+  let manifest = fs.readFileSync(manifestPath, 'utf8');
+
+  // Ensure updates are enabled
+  if (manifest.includes('expo.modules.updates.ENABLED')) {
+    manifest = manifest.replace(
+      /<meta-data android:name="expo.modules.updates.ENABLED" android:value=".*?"\/>/,
+      '<meta-data android:name="expo.modules.updates.ENABLED" android:value="true"/>'
+    );
+  } else {
+    manifest = manifest.replace(
+      '</application>',
+      '  <meta-data android:name="expo.modules.updates.ENABLED" android:value="true"/>\n  </application>'
+    );
   }
 
-  // Ensure release buildType strictly uses signingConfigs.release
-  buildGradle = buildGradle.replace(
-    /buildTypes\s*\{\s*debug\s*\{[\s\S]*?\}\s*release\s*\{[\s\S]*?\}/,
-    `buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
-        release {
-            signingConfig signingConfigs.release
-            shrinkResources false
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-        }
-    }`
-  );
+  // Ensure 0ms wait on launch (immediate launch from cache, download in background for next launch)
+  if (manifest.includes('expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS')) {
+    manifest = manifest.replace(
+      /<meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value=".*?"\/>/,
+      '<meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>'
+    );
+  }
 
-  fs.writeFileSync(buildGradlePath, buildGradle, 'utf8');
-  console.log('[Release Config] Verified signingConfigs.release in app/build.gradle');
+  // Ensure production channel
+  if (!manifest.includes('expo.modules.updates.EXPO_RELEASE_CHANNEL')) {
+    manifest = manifest.replace(
+      '</application>',
+      '  <meta-data android:name="expo.modules.updates.EXPO_RELEASE_CHANNEL" android:value="production"/>\n  </application>'
+    );
+  }
+
+  fs.writeFileSync(manifestPath, manifest, 'utf8');
+  console.log('[Release Config] Verified Expo EAS OTA Updates enabled (waitMs=0, channel=production) in AndroidManifest.xml');
 }
 
 console.log('[Release Config] Production Release configuration completed successfully.');

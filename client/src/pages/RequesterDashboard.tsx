@@ -11,7 +11,10 @@ import {
   Calendar,
   HeartHandshake,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  QrCode,
+  Check,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -25,6 +28,7 @@ export const RequesterDashboard: React.FC = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const fetchMyRequests = async () => {
@@ -45,19 +49,49 @@ export const RequesterDashboard: React.FC = () => {
     fetchMyRequests();
   }, []);
 
+  const handleAddReceivedBag = async (id: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await api.updateRequestProgress(id, { unitsReceivedDelta: 1 });
+      if (res.success) {
+        setMsg({ text: '১ ব্যাগ রক্ত প্রাপ্তি সফলভাবে যুক্ত হয়েছে।', type: 'success' });
+        fetchMyRequests();
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'প্রাপ্তি যোগ করা ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const handleUpdateStatus = async (id: string, status: string) => {
+    const confirm = window.confirm(
+      status === 'fulfilled' 
+        ? 'আপনি কি নিশ্চিত যে সম্পূর্ণ রক্ত সংগ্রহ সম্পন্ন হয়েছে?' 
+        : 'আপনি কি নিশ্চিত যে আবেদনটি বাতিল করতে চান?'
+    );
+    if (!confirm) return;
+
+    setUpdatingId(id);
     try {
       const res = await api.updateRequestStatus(id, { status });
       if (res.success) {
-        setMsg({ text: 'অনুরোধের অবস্থা সফলভাবে হালনাগাদ করা হয়েছে।', type: 'success' });
+        setMsg({ 
+          text: status === 'fulfilled' 
+            ? 'আবেদন সফলভাবে সম্পন্ন চিহ্নিত করা হয়েছে!' 
+            : 'আবেদনটি বাতিল করা হয়েছে।', 
+          type: 'success' 
+        });
         fetchMyRequests();
       }
     } catch (err: any) {
       setMsg({ text: err.message || 'হালনাগাদ ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const openCount = requests.filter(r => r.status === 'open').length;
+  const openCount = requests.filter(r => r.status === 'open' || r.status === 'partially_fulfilled').length;
   const fulfilledCount = requests.filter(r => r.status === 'fulfilled').length;
 
   return (
@@ -71,7 +105,7 @@ export const RequesterDashboard: React.FC = () => {
               <h1 className="text-2xl font-black text-mainText tracking-tight">আমার রক্তের অনুরোধসমূহ</h1>
               <Badge variant="primary" size="sm">রক্তপ্রার্থী প্যানেল</Badge>
             </div>
-            <p className="text-xs text-subText mt-0.5">আপনার পোস্টকৃত রক্তের আবেদন ও ডোনার সংগ্রহের অগ্রগতি পরিচালনা করুন</p>
+            <p className="text-xs text-subText mt-0.5">আপনার পোস্টকৃত রক্তের আবেদন, ডিজিটাল কার্ড ও ডোনার সংগ্রহের অগ্রগতি পরিচালনা করুন</p>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -162,75 +196,125 @@ export const RequesterDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {requests.map(req => (
-              <div key={req._id} className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-4 hover:border-red-200 transition-all">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-primary text-white font-black text-xl flex items-center justify-center shadow-soft">
-                      {req.bloodGroup}
+            {requests.map(req => {
+              const publicId = req.publicId || req._id;
+              const unitsFulfilled = req.unitsFulfilled || 0;
+              const unitsRemaining = Math.max(0, req.unitsRequired - unitsFulfilled);
+              const isFulfilled = req.status === 'fulfilled';
+              const isCancelled = req.status === 'cancelled';
+              const isUpdating = updatingId === req._id;
+
+              return (
+                <div key={req._id} className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 space-y-4 hover:border-red-200 transition-all">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-primary text-white font-black text-xl flex items-center justify-center shadow-soft">
+                        {req.bloodGroup}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-mainText text-base">{req.patientName}</h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs font-semibold text-primary">
+                            মোট: {req.unitsRequired} ব্যাগ
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-500 font-mono">
+                            ID: {publicId}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-mainText text-base">{req.patientName}</h3>
-                      <p className="text-xs text-subText font-medium">{req.unitsRequired} ব্যাগ রক্ত প্রয়োজন</p>
+                    <Badge 
+                      variant={isFulfilled ? 'info' : isCancelled ? 'neutral' : req.status === 'partially_fulfilled' ? 'warning' : 'success'} 
+                      size="sm" 
+                      dot
+                    >
+                      {isFulfilled ? 'সম্পন্ন' : isCancelled ? 'বাতিল' : req.status === 'partially_fulfilled' ? 'আংশিক সম্পন্ন' : 'সক্রিয় (খোলা)'}
+                    </Badge>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div className="flex justify-between text-xs text-slate-600">
+                      <span>সংগ্রহ: <strong className="text-emerald-700">{unitsFulfilled} ব্যাগ</strong></span>
+                      <span>বাকি: <strong className="text-primary">{unitsRemaining} ব্যাগ</strong></span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isFulfilled ? 'bg-emerald-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.round((unitsFulfilled / req.unitsRequired) * 100))}%` }}
+                      />
                     </div>
                   </div>
-                  <Badge 
-                    variant={req.status === 'open' ? 'success' : req.status === 'fulfilled' ? 'info' : 'neutral'} 
-                    size="sm" 
-                    dot
-                  >
-                    {req.status === 'open' ? 'সক্রিয় (খোলা)' : req.status === 'fulfilled' ? 'সম্পন্ন' : req.status}
-                  </Badge>
-                </div>
 
-                <div className="text-xs text-subText space-y-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="font-semibold text-mainText">{req.hospitalName}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    <span>{req.hospitalAddress}, {req.district}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>প্রয়োজনীয় তারিখ: {new Date(req.requiredDate).toLocaleDateString('bn-BD')}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-appBorder text-xs">
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    পোস্ট: {new Date(req.createdAt).toLocaleDateString('bn-BD')}
-                  </span>
-
-                  {req.status === 'open' && (
+                  <div className="text-xs text-subText space-y-1.5 bg-slate-50/80 p-3 rounded-xl border border-slate-100">
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(req._id, 'fulfilled')}
-                      >
-                        ✓ রক্ত পাওয়া গেছে
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(req._id, 'cancelled')}
-                      >
-                        বাতিল
-                      </Button>
+                      <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-mainText">{req.hospitalName}</span>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      <span>{req.hospitalAddress}, {req.district}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span>প্রয়োজনীয় তারিখ: {new Date(req.requiredDate).toLocaleDateString('bn-BD')}</span>
+                    </div>
+                  </div>
 
-                  {req.status === 'fulfilled' && (
-                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>রক্ত সংগ্রহ সফল হয়েছে</span>
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-appBorder text-xs">
+                    <Link
+                      to={`/blood-request/${publicId}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-primary hover:bg-primary hover:text-white rounded-lg font-semibold transition-all border border-red-200 text-xs"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      কার্ড ও কিউআর
+                    </Link>
+
+                    {!isFulfilled && !isCancelled && (
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isUpdating}
+                          onClick={() => handleAddReceivedBag(req._id)}
+                          className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          +১ ব্যাগ প্রাপ্তি
+                        </Button>
+                        <Button
+                          variant="success"
+                          size="sm"
+                          disabled={isUpdating}
+                          onClick={() => handleUpdateStatus(req._id, 'fulfilled')}
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          সম্পন্ন
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isUpdating}
+                          onClick={() => handleUpdateStatus(req._id, 'cancelled')}
+                        >
+                          বাতিল
+                        </Button>
+                      </div>
+                    )}
+
+                    {isFulfilled && (
+                      <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>রক্ত সংগ্রহ সফল হয়েছে</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

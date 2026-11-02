@@ -5,6 +5,7 @@ import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { updateManager } from './src/services/updateService';
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -23,6 +24,9 @@ export default function App() {
     }
 
     prepareFonts();
+
+    // Trigger background OTA update check
+    updateManager.checkAndDownloadUpdateInBackground();
   }, []);
 
   return (

@@ -15,9 +15,8 @@ const router = Router();
 
 router.get(['/', '/search'], searchRequests);
 router.get(['/my-requests', '/dashboard'], requireAuth, getMyRequests);
-router.get('/:id', getRequestById);
+router.get(['/public/:id', '/:id'], getRequestById);
 router.post('/', requireAuth, validateBody(CreateBloodRequestSchema), createRequest);
-router.patch('/:id/status', requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
+router.patch(['/:id/status', '/:id/progress', '/:id'], requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
 
 export default router;
-

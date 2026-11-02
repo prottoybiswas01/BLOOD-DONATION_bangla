@@ -13,6 +13,7 @@ import { Colors } from '../theme/colors';
 import { MobileApi } from '../api/client';
 import { Button } from '../components/Button';
 import { LocationPickerModal } from '../components/LocationPickerModal';
+import { NativeDigitalCard, NativeBloodRequestData } from '../components/NativeDigitalCard';
 import { useAuth } from '../context/AuthContext';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -35,10 +36,15 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
   const [district, setDistrict] = useState(user?.district || 'dhaka');
   const [districtNameBn, setDistrictNameBn] = useState('ঢাকা');
   const [urgencyLevel, setUrgencyLevel] = useState<'normal' | 'urgent' | 'critical'>('urgent');
+  const [contactPersonName, setContactPersonName] = useState(user?.name || '');
   const [contactNumber, setContactNumber] = useState(user?.phone || '');
   const [reason, setReason] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [consentForPublicShare, setConsentForPublicShare] = useState(true);
+
   const [pickerVisible, setPickerVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [createdRequest, setCreatedRequest] = useState<NativeBloodRequestData | null>(null);
 
   if (!user) {
     return (
@@ -73,6 +79,10 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
       Alert.alert('ভুল তথ্য', 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
       return;
     }
+    if (!consentForPublicShare) {
+      Alert.alert('সম্মতি প্রয়োজন', 'জরুরি রক্তদাতা অনুসন্ধানে যোগাযোগের সম্মতি দিন।');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -84,16 +94,29 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
         division,
         district,
         urgencyLevel,
+        contactPersonName: contactPersonName.trim() || user.name,
         contactNumber: cleanPhone,
-        reason: reason.trim() || undefined
+        reason: reason.trim() || undefined,
+        additionalNotes: additionalNotes.trim() || undefined,
+        consentForPublicShare
       });
 
-      if (res.success) {
-        Alert.alert(
-          'সফল', 
-          'রক্তের আবেদনটি সফলভাবে প্রকাশিত হয়েছে। রক্তদাতারা সরাসরি আপনার সাথে যোগাযোগ করতে পারবেন।',
-          [{ text: 'ঠিক আছে', onPress: onSuccess }]
-        );
+      if (res.success && res.data) {
+        setCreatedRequest(res.data);
+      } else if (res.success) {
+        // Fallback if data is not directly nested
+        setCreatedRequest({
+          patientName: patientName.trim(),
+          bloodGroup,
+          unitsRequired: parseInt(unitsRequired, 10) || 1,
+          hospitalName: hospitalName.trim(),
+          district,
+          contactNumber: cleanPhone,
+          contactPersonName: contactPersonName.trim() || user.name,
+          urgencyLevel,
+          reason: reason.trim(),
+          publicId: res.publicId || 'BR-' + Date.now().toString().slice(-6)
+        });
       } else {
         Alert.alert('ব্যর্থ', res.message || 'আবেদন সংরক্ষণ করা সম্ভব হয়নি।');
       }
@@ -103,6 +126,42 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
       setSubmitting(false);
     }
   };
+
+  // If a request was just created, show its digital card!
+  if (createdRequest) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        <View style={styles.successBanner}>
+          <Ionicons name="checkmark-circle" size={40} color="#059669" />
+          <Text style={styles.successBannerTitle}>আবেদন সফলভাবে প্রকাশিত হয়েছে!</Text>
+          <Text style={styles.successBannerSub}>
+            নিচে আপনার ডিজিটাল কার্ড ও কিউআর কোড তৈরি হয়েছে। এটি সরাসরি সামাজিক মাধ্যমে শেয়ার করতে পারবেন।
+          </Text>
+        </View>
+
+        <NativeDigitalCard request={createdRequest} />
+
+        <View style={{ marginTop: 14, gap: 10 }}>
+          <Button
+            title="সকল রক্তের আবেদন দেখুন"
+            onPress={onSuccess}
+            style={{ width: '100%' }}
+          />
+          <TouchableOpacity 
+            onPress={() => {
+              setCreatedRequest(null);
+              setPatientName('');
+              setHospitalName('');
+              setReason('');
+            }}
+            style={styles.anotherBtn}
+          >
+            <Text style={styles.anotherBtnText}>আরেকটি নতুন আবেদন করুন</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -219,8 +278,17 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
           <Ionicons name="chevron-forward" size={16} color={Colors.subText} />
         </TouchableOpacity>
 
+        {/* Contact Person Name */}
+        <Text style={styles.label}>যোগাযোগের ব্যক্তির নাম</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="যেমন: রোগীর ভাই / আত্মীয়"
+          value={contactPersonName}
+          onChangeText={setContactPersonName}
+        />
+
         {/* Contact Phone */}
-        <Text style={styles.label}>যোগাযোগের নম্বর <Text style={{ color: Colors.primary }}>*</Text></Text>
+        <Text style={styles.label}>যোগাযোগের মোবাইল নম্বর <Text style={{ color: Colors.primary }}>*</Text></Text>
         <TextInput
           style={styles.input}
           placeholder="01XXXXXXXXX"
@@ -230,20 +298,47 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
         />
 
         {/* Reason / Note */}
-        <Text style={styles.label}>রোগীর সমস্যা বা নোট (ঐচ্ছিক)</Text>
+        <Text style={styles.label}>রোগীর সমস্যা বা কারণ</Text>
         <TextInput
-          style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
+          style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
           placeholder="যেমন: সিজারিয়ান ডেলিভারি / ডেঙ্গু প্লাটিলেট প্রয়োজন..."
           multiline
-          numberOfLines={3}
+          numberOfLines={2}
           value={reason}
           onChangeText={setReason}
         />
 
+        {/* Additional Notes */}
+        <Text style={styles.label}>অতিরিক্ত নির্দেশনা (ঐচ্ছিক)</Text>
+        <TextInput
+          style={[styles.input, { height: 50, textAlignVertical: 'top' }]}
+          placeholder="যেমন: যাতায়াত সহায়তা দেওয়া হবে..."
+          multiline
+          numberOfLines={2}
+          value={additionalNotes}
+          onChangeText={setAdditionalNotes}
+        />
+
+        {/* Consent Checkbox */}
+        <TouchableOpacity 
+          style={styles.consentRow} 
+          onPress={() => setConsentForPublicShare(!consentForPublicShare)}
+        >
+          <Ionicons 
+            name={consentForPublicShare ? "checkbox" : "square-outline"} 
+            size={22} 
+            color={consentForPublicShare ? Colors.primary : Colors.subText} 
+          />
+          <Text style={styles.consentText}>
+            আমি নিশ্চিত করছি যে তথ্যাদি সঠিক এবং রক্তের প্রয়োজনে যোগাযোগের অনুমতি দিচ্ছি।
+          </Text>
+        </TouchableOpacity>
+
         <Button
-          title="আবেদন প্রকাশ করুন"
+          title={submitting ? "প্রকাশ হচ্ছে..." : "আবেদন প্রকাশ করুন ও কার্ড তৈরি করুন"}
           onPress={handleSubmit}
           loading={submitting}
+          disabled={submitting}
           style={{ marginTop: 18 }}
         />
       </View>
@@ -322,7 +417,7 @@ const styles = StyleSheet.create({
   },
   bgChipText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.mainText,
   },
   bgChipTextActive: {
@@ -337,17 +432,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.appBorder,
+    alignItems: 'center',
   },
   unitChipActive: {
-    backgroundColor: Colors.primaryLight,
-    borderColor: '#FECDD3',
+    backgroundColor: '#FEF2F2',
+    borderColor: Colors.primary,
   },
   unitText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: Colors.mainText,
   },
   unitTextActive: {
@@ -361,32 +456,32 @@ const styles = StyleSheet.create({
   urgencyChip: {
     flex: 1,
     paddingVertical: 8,
+    paddingHorizontal: 6,
     borderRadius: 10,
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.appBorder,
+    alignItems: 'center',
   },
   urgencyChipActive: {
     backgroundColor: '#FEF2F2',
     borderColor: Colors.primary,
   },
   urgencyLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: Colors.mainText,
   },
   urgencyLabelActive: {
     color: Colors.primary,
-    fontWeight: '800',
   },
   urgencySub: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: Colors.subText,
     marginTop: 2,
   },
   urgencySubActive: {
-    color: Colors.primaryDark,
+    color: Colors.primary,
   },
   locSelector: {
     flexDirection: 'row',
@@ -401,8 +496,23 @@ const styles = StyleSheet.create({
   },
   locSelectorText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: Colors.mainText,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 12,
+  },
+  consentText: {
+    flex: 1,
+    fontSize: 11,
+    color: Colors.subText,
+    lineHeight: 16,
   },
   authPromptContainer: {
     flex: 1,
@@ -412,8 +522,8 @@ const styles = StyleSheet.create({
   },
   authPromptCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 22,
-    padding: 26,
+    borderRadius: 24,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.appBorder,
@@ -422,14 +532,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     color: Colors.mainText,
-    marginTop: 12,
+    marginTop: 14,
+    marginBottom: 6,
   },
   authPromptSub: {
     fontSize: 12.5,
     color: Colors.subText,
     textAlign: 'center',
     lineHeight: 18,
-    marginTop: 8,
+  },
+  successBanner: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  successBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#065F46',
+    marginTop: 6,
+  },
+  successBannerSub: {
+    fontSize: 12,
+    color: '#047857',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  anotherBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  anotherBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
   },
 });
-

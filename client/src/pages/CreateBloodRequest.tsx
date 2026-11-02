@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PlusCircle, AlertCircle, Phone, Calendar, CheckCircle2, Lock, HeartPulse, User } from 'lucide-react';
+import { 
+  PlusCircle, 
+  AlertCircle, 
+  Phone, 
+  Calendar, 
+  CheckCircle2, 
+  Lock, 
+  HeartPulse, 
+  User, 
+  Share2, 
+  FileText, 
+  ExternalLink 
+} from 'lucide-react';
 import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { DigitalBloodRequestCard } from '../components/DigitalBloodRequestCard';
+import { BloodRequest } from '../types';
 
 export const CreateBloodRequest: React.FC = () => {
   const { user } = useAuth();
@@ -26,16 +40,22 @@ export const CreateBloodRequest: React.FC = () => {
   const [requiredWithin, setRequiredWithin] = useState('জরুরি, এখনই প্রয়োজন।');
   const [urgencyLevel, setUrgencyLevel] = useState<'emergency' | 'urgent' | 'standard'>('emergency');
   const [reason, setReason] = useState('');
+  const [contactPersonName, setContactPersonName] = useState(user?.name || '');
   const [contactNumber, setContactNumber] = useState(user?.phone || '');
   const [alternativeContactNumber, setAlternativeContactNumber] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [consentForPublicShare, setConsentForPublicShare] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [createdRequest, setCreatedRequest] = useState<BloodRequest | null>(null);
 
   useEffect(() => {
     if (user?.phone && !contactNumber) {
       setContactNumber(user.phone);
+    }
+    if (user?.name && !contactPersonName) {
+      setContactPersonName(user.name);
     }
   }, [user]);
 
@@ -85,31 +105,36 @@ export const CreateBloodRequest: React.FC = () => {
       return;
     }
 
+    if (!consentForPublicShare) {
+      setErrorMsg('জরুরি রক্তদাতা অনুসন্ধানে তথ্যের সত্যতা ও যোগাযোগের সম্মতি দিন।');
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     try {
       const res = await api.createRequest({
-        patientName,
+        patientName: patientName.trim(),
         bloodGroup,
         unitsRequired: Number(unitsRequired),
-        hospitalName,
-        hospitalAddress,
+        hospitalName: hospitalName.trim(),
+        hospitalAddress: hospitalAddress.trim(),
         division,
         district,
         upazila,
         requiredDate,
         requiredWithin,
         urgencyLevel,
-        reason,
-        contactNumber,
-        alternativeContactNumber: alternativeContactNumber || undefined
+        reason: reason.trim(),
+        contactPersonName: contactPersonName.trim() || user.name,
+        contactNumber: contactNumber.trim(),
+        alternativeContactNumber: alternativeContactNumber.trim() || undefined,
+        additionalNotes: additionalNotes.trim() || undefined,
+        consentForPublicShare
       });
 
-      if (res.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/requests');
-        }, 2000);
+      if (res.success && res.data) {
+        setCreatedRequest(res.data);
       } else {
         setErrorMsg(res.message || 'অনুরোধ পোস্ট করা যায়নি।');
       }
@@ -119,34 +144,6 @@ export const CreateBloodRequest: React.FC = () => {
       setLoading(false);
     }
   };
-
-  if (!user) {
-    return (
-      <div className="max-w-md mx-auto my-16 p-8 sm:p-10 bg-surface rounded-3xl border border-appBorder shadow-elevated text-center space-y-5">
-        <div className="w-16 h-16 bg-rose-100 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-soft">
-          <Lock className="w-8 h-8" />
-        </div>
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-mainText">লগইন আবশ্যক</h2>
-          <p className="text-xs sm:text-sm text-subText mt-2 leading-relaxed">
-            ভুয়া অনুরোধ ও অপব্যবহার রোধে রক্তপ্রত্যাশীদের মোবাইল ভেরিফিকেশন ও একাউন্ট থাকা বাধ্যতামূলক।
-          </p>
-        </div>
-        <div className="space-y-3 pt-2">
-          <Link to="/login" className="block">
-            <Button variant="primary" size="lg" className="w-full">
-              লগইন করুন
-            </Button>
-          </Link>
-          <Link to="/register" className="block">
-            <Button variant="outline" size="lg" className="w-full">
-              নতুন অ্যাকাউন্ট তৈরি করুন
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -159,21 +156,42 @@ export const CreateBloodRequest: React.FC = () => {
             <div>
               <h1 className="text-2xl font-black text-mainText">জরুরি রক্তের আবেদন ফরম</h1>
               <p className="text-xs text-subText mt-0.5">
-                সঠিক তথ্য দিয়ে পোস্ট করুন যাতে আশেপাশের রক্তদাতারা দ্রুত সাড়া দিতে পারেন
+                সঠিক তথ্য দিয়ে পোস্ট করুন যাতে ডিজিটাল কার্ড ও কিউআর কোডসহ দ্রুত রক্তদাতা পাওয়া যায়
               </p>
             </div>
           </div>
         </div>
 
-        {success ? (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-10 rounded-3xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8" />
+        {createdRequest ? (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-2xl text-center space-y-2">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-black text-emerald-950">রক্তের আবেদন সফলভাবে প্রকাশিত হয়েছে!</h3>
+              <p className="text-sm text-emerald-700 max-w-lg mx-auto">
+                আপনার আবেদনের জন্য একটি স্বয়ংক্রিয় ডিজিটাল কার্ড ও কিউআর কোড তৈরি হয়েছে। ফেসবুক, হোয়াটসঅ্যাপ বা সরাসরি প্রিন্ট করে শেয়ার করুন।
+              </p>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <Link to={`/blood-request/${createdRequest.publicId || createdRequest._id}`}>
+                  <Button variant="primary" size="md">
+                    <ExternalLink className="w-4 h-4 mr-1.5" />
+                    লাইভ কিউআর ল্যান্ডিং পেজে যান
+                  </Button>
+                </Link>
+                <Link to="/requests">
+                  <Button variant="outline" size="md">
+                    সকল আবেদন তালিকা
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h3 className="text-2xl font-black text-emerald-950">রক্তের আবেদন সফলভাবে প্রকাশিত হয়েছে!</h3>
-            <p className="text-xs sm:text-sm text-emerald-700 max-w-md mx-auto">
-              নিকটবর্তী সংশ্লিষ্ট গ্রুপের রক্তদাতাদের জানানো হচ্ছে। আপনাকে সরাসরি ফিডে নিয়ে যাওয়া হচ্ছে...
-            </p>
+
+            {/* Embedded Digital Blood Request Card */}
+            <div className="pt-4 border-t border-slate-200">
+              <h4 className="text-center font-bold text-mainText text-lg mb-4">আপনার ডিজিটাল ব্লাড রিকোয়েস্ট কার্ড</h4>
+              <DigitalBloodRequestCard request={createdRequest} />
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-7">
@@ -338,10 +356,25 @@ export const CreateBloodRequest: React.FC = () => {
               </div>
             </div>
 
-            {/* Contact Numbers */}
+            {/* Contact Numbers & Authorized Person */}
             <div className="space-y-4 pt-2">
               <h3 className="text-xs font-bold text-subText uppercase tracking-wider">৩. যোগাযোগ ও চিকিৎসা কারণ</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-mainText mb-1.5">
+                    যোগাযোগের ব্যক্তির নাম <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={contactPersonName}
+                    onChange={e => setContactPersonName(e.target.value)}
+                    placeholder="যেমন: রোগীর ভাই / আত্মীয়"
+                    className="w-full px-4 py-2.5 bg-surface border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-mainText mb-1.5">
                     যোগাযোগের মোবাইল নম্বর <span className="text-primary">*</span>
@@ -376,13 +409,42 @@ export const CreateBloodRequest: React.FC = () => {
                   রক্তের প্রয়োজনীয়তার কারণ <span className="text-primary">*</span>
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   required
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="যেমন: রোগীর সিজারিয়ান অপারেশন / থ্যালাসেমিয়া নিয়মিত ট্রান্সফিউশন / সড়ক দুর্ঘটনা ইত্যাদি..."
                   className="w-full px-4 py-2.5 bg-surface border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
+              </div>
+
+              {/* Additional Notes */}
+              <div>
+                <label className="block text-xs font-bold text-mainText mb-1.5">
+                  রক্তদাতাদের জন্য বিশেষ নির্দেশনা (ঐচ্ছিক)
+                </label>
+                <textarea
+                  rows={2}
+                  value={additionalNotes}
+                  onChange={e => setAdditionalNotes(e.target.value)}
+                  placeholder="যেমন: রক্তদাতাকে যাতায়াত সহায়তা দেওয়া হবে / রক্তের ক্রস-ম্যাচিং খরচ পরিবার বহন করবে..."
+                  className="w-full px-4 py-2.5 bg-surface border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+
+              {/* Public Sharing Consent */}
+              <div className="pt-2">
+                <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={consentForPublicShare}
+                    onChange={e => setConsentForPublicShare(e.target.checked)}
+                    className="mt-0.5 rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                  />
+                  <span className="text-xs text-slate-700 leading-relaxed">
+                    আমি নিশ্চিত করছি যে উপরের তথ্যসমূহ সঠিক এবং রক্তের জরুরি প্রয়োজনে রক্তদাতাদের সাথে যোগাযোগ ও সামাজিক মাধ্যমে ডিজিটাল কার্ড শেয়ার করার পূর্ণ সম্মতি দিচ্ছি।
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -393,10 +455,11 @@ export const CreateBloodRequest: React.FC = () => {
                 variant="primary"
                 size="lg"
                 isLoading={loading}
+                disabled={loading}
                 icon={<PlusCircle className="w-5 h-5" />}
                 className="w-full shadow-soft"
               >
-                রক্তের আবেদন প্রকাশ করুন
+                {loading ? 'আবেদন প্রকাশ হচ্ছে...' : 'রক্তের আবেদন প্রকাশ করুন ও ডিজিটাল কার্ড তৈরি করুন'}
               </Button>
             </div>
           </form>

@@ -19,15 +19,19 @@ export const CreateBloodRequestSchema = z.object({
   requiredWithin: z.string().optional(),
   urgencyLevel: z.enum(['emergency', 'urgent', 'standard']).default('emergency'),
   reason: z.string().min(5, 'রক্তের কারণ সংক্ষেপে লিখুন'),
+  contactPersonName: z.string().optional(),
   contactNumber: z.string().regex(BD_PHONE_REGEX, 'সঠিক যোগাযোগ নম্বর দিন'),
   alternativeContactNumber: z.string().optional().or(z.literal('')),
+  additionalNotes: z.string().optional(),
+  consentForPublicShare: z.boolean().default(true).optional(),
   institutionId: z.string().optional()
 });
 
 export const UpdateRequestStatusSchema = z.object({
-  status: z.enum(['open', 'partially_fulfilled', 'fulfilled', 'cancelled']),
+  status: z.enum(['open', 'partially_fulfilled', 'fulfilled', 'cancelled']).optional(),
   unitsFulfilled: z.number().int().min(0).optional(),
-  moderationNotes: z.string().optional()
+  moderationNotes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export async function searchRequests(req: Request, res: Response): Promise<void> {
@@ -44,9 +48,21 @@ export async function searchRequests(req: Request, res: Response): Promise<void>
     limit: limit ? parseInt(limit as string, 10) : 10
   });
 
+  const enhancedRequests = result.requests.map(r => {
+    const remaining = Math.max(0, r.unitsRequired - (r.unitsFulfilled || 0));
+    const publicId = r.publicId || r._id;
+    return {
+      ...r,
+      publicId,
+      unitsRemaining: remaining,
+      canonicalUrl: `https://blood-donationbangla.vercel.app/blood-request/${publicId}`
+    };
+  });
+
   res.json({
     success: true,
-    ...result
+    ...result,
+    requests: enhancedRequests
   });
 }
 
@@ -70,10 +86,32 @@ export async function getRequestById(req: Request, res: Response): Promise<void>
   const requester = dataStore.findUserById(request.requesterId);
   const institution = request.institutionId ? dataStore.findInstitutionById(request.institutionId) : undefined;
 
+  const unitsRemaining = Math.max(0, request.unitsRequired - (request.unitsFulfilled || 0));
+  const publicId = request.publicId || request._id;
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
+
+  let statusMessage = '';
+  if (request.status === 'fulfilled') {
+    statusMessage = 'এই রোগীর প্রয়োজনীয় রক্ত সংগ্রহ সম্পন্ন হয়েছে। সকল রক্তদাতা ও সহযোগীদের আন্তরিক ধন্যবাদ।';
+  } else if (request.status === 'cancelled') {
+    statusMessage = 'এই রক্তের আবেদনটি প্রত্যাহার বা বাতিল করা হয়েছে।';
+  } else if (request.status === 'expired') {
+    statusMessage = 'এই রক্তের আবেদনের নির্ধারিত সময়সীমা অতিক্রান্ত হয়েছে।';
+  } else if (request.status === 'partially_fulfilled') {
+    statusMessage = `জরুরি আবেদন: ${request.unitsFulfilled} ব্যাগ রক্ত সংগৃহীত হয়েছে, এখনও ${unitsRemaining} ব্যাগ রক্ত অতি প্রয়োজন।`;
+  } else {
+    statusMessage = `জরুরি রক্তের প্রয়োজন: অবিলম্বে ${request.unitsRequired} ব্যাগ ${request.bloodGroup} রক্ত প্রয়োজন।`;
+  }
+
   res.json({
     success: true,
     bloodRequest: {
       ...request,
+      publicId,
+      canonicalUrl,
+      unitsRemaining,
+      statusMessage,
+      isFulfilled: request.status === 'fulfilled',
       requesterName: requester?.name || 'ব্যবহারকারী',
       institutionName: institution?.nameBn || institution?.name
     }
@@ -90,26 +128,53 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
   }
 
   const data = req.body;
+
+  // Accidental duplicate submission protection (within 2 minutes)
+  const recentDuplicate = dataStore.bloodRequests.find(r => 
+    r.requesterId === req.user?.userId &&
+    r.patientName.toLowerCase().trim() === data.patientName.toLowerCase().trim() &&
+    r.hospitalName.toLowerCase().trim() === data.hospitalName.toLowerCase().trim() &&
+    (r.status === 'open' || r.status === 'partially_fulfilled') &&
+    (Date.now() - new Date(r.createdAt).getTime() < 120000)
+  );
+
+  if (recentDuplicate) {
+    res.status(409).json({
+      success: false,
+      message: 'এই রোগীর জন্য মাত্র কিছুক্ষণ আগেই একটি সক্রিয় আবেদন পোস্ট করা হয়েছে। অতিরিক্ত ডুপ্লিকেট আবেদন তৈরি করা থেকে বিরত থাকুন।',
+      existingRequestId: recentDuplicate.publicId || recentDuplicate._id
+    });
+    return;
+  }
+
   const reqDate = new Date(data.requiredDate);
-  const expiresAt = new Date(reqDate.getTime() + 86400000 * 2); // expires 2 days after required date
+  const expiresAt = new Date(reqDate.getTime() + 86400000 * 3); // expires 3 days after required date
+
+  const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const timePart = Date.now().toString(36).toUpperCase().slice(-4);
+  const publicId = `BR-${timePart}-${randPart}`;
 
   const newRequest = dataStore.createBloodRequest({
+    publicId,
     requesterId: req.user.userId,
-    patientName: data.patientName,
+    patientName: data.patientName.trim(),
     bloodGroup: data.bloodGroup,
     unitsRequired: data.unitsRequired,
     unitsFulfilled: 0,
-    hospitalName: data.hospitalName,
-    hospitalAddress: data.hospitalAddress,
+    hospitalName: data.hospitalName.trim(),
+    hospitalAddress: data.hospitalAddress.trim(),
     division: data.division,
     district: data.district,
     upazila: data.upazila,
     requiredDate: reqDate,
     requiredWithin: data.requiredWithin || undefined,
     urgencyLevel: data.urgencyLevel,
-    reason: data.reason,
-    contactNumber: data.contactNumber,
-    alternativeContactNumber: data.alternativeContactNumber || undefined,
+    reason: data.reason.trim(),
+    contactPersonName: data.contactPersonName ? data.contactPersonName.trim() : undefined,
+    contactNumber: data.contactNumber.trim(),
+    alternativeContactNumber: data.alternativeContactNumber ? data.alternativeContactNumber.trim() : undefined,
+    additionalNotes: data.additionalNotes ? data.additionalNotes.trim() : undefined,
+    consentForPublicShare: data.consentForPublicShare ?? true,
     institutionId: data.institutionId || undefined,
     status: 'open',
     expiresAt
@@ -122,13 +187,24 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
     targetType: 'BloodRequest',
     targetId: newRequest._id,
     divisionScope: newRequest.division,
-    details: { bloodGroup: newRequest.bloodGroup, hospital: newRequest.hospitalName }
+    details: { 
+      publicId: newRequest.publicId,
+      bloodGroup: newRequest.bloodGroup, 
+      hospital: newRequest.hospitalName,
+      unitsRequired: newRequest.unitsRequired 
+    }
   });
+
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${newRequest.publicId}`;
 
   res.status(201).json({
     success: true,
-    message: 'রক্তের অনুরোধ সফলভাবে পোস্ট করা হয়েছে।',
-    bloodRequest: newRequest
+    message: 'রক্তের অনুরোধ এবং ডিজিটাল কার্ড সফলভাবে তৈরি হয়েছে।',
+    bloodRequest: {
+      ...newRequest,
+      unitsRemaining: newRequest.unitsRequired,
+      canonicalUrl
+    }
   });
 }
 
@@ -139,7 +215,7 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
   }
 
   const { id } = req.params;
-  const { status, unitsFulfilled, moderationNotes } = req.body;
+  const { status, unitsFulfilled, moderationNotes, notes } = req.body;
 
   const request = dataStore.findBloodRequestById(id);
   if (!request) {
@@ -161,30 +237,75 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
     return;
   }
 
-  const updatePayload: any = { status };
+  const updatePayload: any = {};
+
+  // Handle Received / Fulfilled Units Progress
   if (unitsFulfilled !== undefined) {
-    updatePayload.unitsFulfilled = unitsFulfilled;
+    const safeUnits = Math.max(0, Math.min(unitsFulfilled, request.unitsRequired));
+    updatePayload.unitsFulfilled = safeUnits;
+
+    // Automatic status adjustment based on units
+    if (safeUnits >= request.unitsRequired) {
+      updatePayload.status = status || 'fulfilled';
+    } else if (safeUnits > 0) {
+      updatePayload.status = status === 'cancelled' ? 'cancelled' : 'partially_fulfilled';
+    } else {
+      updatePayload.status = status || request.status;
+    }
+  } else if (status) {
+    updatePayload.status = status;
+    if (status === 'fulfilled') {
+      updatePayload.unitsFulfilled = request.unitsRequired;
+    }
   }
+
   if (moderationNotes) {
     updatePayload.moderationNotes = moderationNotes;
   }
 
-  const updated = dataStore.updateBloodRequest(id, updatePayload);
+  // Append to status history
+  const historyEntry = {
+    status: updatePayload.status || request.status,
+    unitsFulfilled: updatePayload.unitsFulfilled !== undefined ? updatePayload.unitsFulfilled : request.unitsFulfilled,
+    changedBy: req.user.userId,
+    changedAt: new Date(),
+    notes: notes || moderationNotes || `স্ট্যাটাস আপডেট: ${updatePayload.status || request.status}`
+  };
+
+  const currentHistory = request.statusHistory || [];
+  updatePayload.statusHistory = [...currentHistory, historyEntry];
+
+  const updated = dataStore.updateBloodRequest(request._id, updatePayload);
 
   await logAuditEvent({
     actorId: req.user.userId,
     actorRole: req.user.role,
     action: 'UPDATE_BLOOD_REQUEST_STATUS',
     targetType: 'BloodRequest',
-    targetId: id,
+    targetId: request._id,
     divisionScope: request.division,
-    details: { oldStatus: request.status, newStatus: status }
+    details: { 
+      oldStatus: request.status, 
+      newStatus: updatePayload.status, 
+      unitsFulfilled: updatePayload.unitsFulfilled 
+    }
   });
+
+  const unitsRemaining = Math.max(0, (updated?.unitsRequired || request.unitsRequired) - (updated?.unitsFulfilled || 0));
+  const publicId = updated?.publicId || request.publicId || request._id;
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
 
   res.json({
     success: true,
-    message: 'অনুরোধের অবস্থা পরিবর্তন করা হয়েছে।',
-    bloodRequest: updated
+    message: updated?.status === 'fulfilled' 
+      ? 'রক্তের অনুরোধ সফলভাবে সম্পন্ন (Fulfilled) হিসেবে চিহ্নিত করা হয়েছে।' 
+      : 'অনুরোধের অগ্রগতি সফলভাবে সংরক্ষিত হয়েছে।',
+    bloodRequest: {
+      ...updated,
+      publicId,
+      canonicalUrl,
+      unitsRemaining
+    }
   });
 }
 
@@ -194,10 +315,20 @@ export async function getMyRequests(req: AuthRequest, res: Response): Promise<vo
     return;
   }
 
-  const requests = dataStore.bloodRequests.filter(r => r.requesterId === req.user?.userId);
+  const requests = dataStore.bloodRequests
+    .filter(r => r.requesterId === req.user?.userId)
+    .map(r => {
+      const publicId = r.publicId || r._id;
+      return {
+        ...r,
+        publicId,
+        unitsRemaining: Math.max(0, r.unitsRequired - (r.unitsFulfilled || 0)),
+        canonicalUrl: `https://blood-donationbangla.vercel.app/blood-request/${publicId}`
+      };
+    });
+
   res.json({
     success: true,
     requests
   });
 }
-

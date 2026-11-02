@@ -96672,6 +96672,13 @@ var import_mongoose3 = __toESM(require_mongoose2());
 var BloodRequestSchema = new import_mongoose3.Schema(
   {
     _id: { type: String },
+    publicId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      trim: true
+    },
     requesterId: {
       type: import_mongoose3.Schema.Types.Mixed,
       required: true,
@@ -96700,8 +96707,11 @@ var BloodRequestSchema = new import_mongoose3.Schema(
       index: true
     },
     reason: { type: String, required: true, trim: true },
+    contactPersonName: { type: String, trim: true },
     contactNumber: { type: String, required: true, trim: true },
     alternativeContactNumber: { type: String, trim: true },
+    additionalNotes: { type: String, trim: true },
+    consentForPublicShare: { type: Boolean, default: true },
     status: {
       type: String,
       enum: [
@@ -96716,6 +96726,15 @@ var BloodRequestSchema = new import_mongoose3.Schema(
       default: "open",
       index: true
     },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        unitsFulfilled: { type: Number },
+        changedBy: { type: String, required: true },
+        changedAt: { type: Date, default: Date.now },
+        notes: { type: String }
+      }
+    ],
     moderationNotes: { type: String, trim: true },
     institutionId: { type: import_mongoose3.Schema.Types.Mixed, index: true },
     expiresAt: { type: Date, required: true, index: true }
@@ -97637,6 +97656,7 @@ var DataStore = class {
     this.bloodRequests = [
       {
         _id: "req_1",
+        publicId: "BR-2026-DH01",
         requesterId: "usr_requester_1",
         patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE (\u09EC\u09EB)",
         bloodGroup: "O+",
@@ -97659,6 +97679,7 @@ var DataStore = class {
       },
       {
         _id: "req_2",
+        publicId: "BR-2026-DH02",
         requesterId: "usr_requester_1",
         patientName: "\u0986\u09B0\u09BF\u09AB\u09C1\u09B2 \u09B9\u0995 (\u09E8\u09EE)",
         bloodGroup: "A+",
@@ -97680,6 +97701,7 @@ var DataStore = class {
       },
       {
         _id: "req_3",
+        publicId: "BR-2026-CT01",
         requesterId: "usr_donor_1",
         patientName: "\u09B6\u09BE\u09AE\u09B8\u09C1\u09B2 \u0986\u09B2\u09AE (\u09EB\u09E6)",
         bloodGroup: "B+",
@@ -98366,13 +98388,21 @@ var DataStore = class {
     };
   }
   // --- Blood Request Methods ---
-  findBloodRequestById(id) {
-    return this.bloodRequests.find((r) => String(r._id) === String(id));
+  findBloodRequestById(idOrPublicId) {
+    if (!idOrPublicId) return void 0;
+    const target = String(idOrPublicId).toLowerCase().trim();
+    return this.bloodRequests.find(
+      (r) => String(r._id).toLowerCase() === target || r.publicId && String(r.publicId).toLowerCase() === target
+    );
   }
   createBloodRequest(data) {
     this.assertWritable();
+    const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const timePart = Date.now().toString(36).toUpperCase().slice(-4);
+    const generatedPublicId = "BR-" + timePart + "-" + randPart;
     const newReq = {
-      _id: "req_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      _id: data._id || "req_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      publicId: data.publicId || generatedPublicId,
       requesterId: data.requesterId || "",
       patientName: data.patientName || "",
       bloodGroup: data.bloodGroup || "A+",
@@ -98387,9 +98417,21 @@ var DataStore = class {
       requiredWithin: data.requiredWithin,
       urgencyLevel: data.urgencyLevel || "emergency",
       reason: data.reason || "",
+      contactPersonName: data.contactPersonName,
       contactNumber: data.contactNumber || "",
       alternativeContactNumber: data.alternativeContactNumber,
+      additionalNotes: data.additionalNotes,
+      consentForPublicShare: data.consentForPublicShare ?? true,
       status: data.status || "open",
+      statusHistory: [
+        {
+          status: data.status || "open",
+          unitsFulfilled: data.unitsFulfilled || 0,
+          changedBy: data.requesterId || "system",
+          changedAt: /* @__PURE__ */ new Date(),
+          notes: "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+        }
+      ],
       moderationNotes: data.moderationNotes,
       institutionId: data.institutionId,
       expiresAt: data.expiresAt || new Date(Date.now() + 864e5 * 3),
@@ -105336,14 +105378,18 @@ var CreateBloodRequestSchema = external_exports.object({
   requiredWithin: external_exports.string().optional(),
   urgencyLevel: external_exports.enum(["emergency", "urgent", "standard"]).default("emergency"),
   reason: external_exports.string().min(5, "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u09B8\u0982\u0995\u09CD\u09B7\u09C7\u09AA\u09C7 \u09B2\u09BF\u0996\u09C1\u09A8"),
+  contactPersonName: external_exports.string().optional(),
   contactNumber: external_exports.string().regex(BD_PHONE_REGEX2, "\u09B8\u09A0\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
   alternativeContactNumber: external_exports.string().optional().or(external_exports.literal("")),
+  additionalNotes: external_exports.string().optional(),
+  consentForPublicShare: external_exports.boolean().default(true).optional(),
   institutionId: external_exports.string().optional()
 });
 var UpdateRequestStatusSchema = external_exports.object({
-  status: external_exports.enum(["open", "partially_fulfilled", "fulfilled", "cancelled"]),
+  status: external_exports.enum(["open", "partially_fulfilled", "fulfilled", "cancelled"]).optional(),
   unitsFulfilled: external_exports.number().int().min(0).optional(),
-  moderationNotes: external_exports.string().optional()
+  moderationNotes: external_exports.string().optional(),
+  notes: external_exports.string().optional()
 });
 async function searchRequests(req, res) {
   const { bloodGroup, division, district, upazila, status, urgencyLevel, page, limit } = req.query;
@@ -105357,9 +105403,20 @@ async function searchRequests(req, res) {
     page: page ? parseInt(page, 10) : 1,
     limit: limit ? parseInt(limit, 10) : 10
   });
+  const enhancedRequests = result.requests.map((r) => {
+    const remaining = Math.max(0, r.unitsRequired - (r.unitsFulfilled || 0));
+    const publicId = r.publicId || r._id;
+    return {
+      ...r,
+      publicId,
+      unitsRemaining: remaining,
+      canonicalUrl: `https://blood-donationbangla.vercel.app/blood-request/${publicId}`
+    };
+  });
   res.json({
     success: true,
-    ...result
+    ...result,
+    requests: enhancedRequests
   });
 }
 async function getRequestById(req, res) {
@@ -105377,10 +105434,30 @@ async function getRequestById(req, res) {
   }
   const requester = dataStore.findUserById(request.requesterId);
   const institution = request.institutionId ? dataStore.findInstitutionById(request.institutionId) : void 0;
+  const unitsRemaining = Math.max(0, request.unitsRequired - (request.unitsFulfilled || 0));
+  const publicId = request.publicId || request._id;
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
+  let statusMessage = "";
+  if (request.status === "fulfilled") {
+    statusMessage = "\u098F\u0987 \u09B0\u09CB\u0997\u09C0\u09B0 \u09AA\u09CD\u09B0\u09DF\u09CB\u099C\u09A8\u09C0\u09DF \u09B0\u0995\u09CD\u09A4 \u09B8\u0982\u0997\u09CD\u09B0\u09B9 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09DF\u09C7\u099B\u09C7\u0964 \u09B8\u0995\u09B2 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u0993 \u09B8\u09B9\u09AF\u09CB\u0997\u09C0\u09A6\u09C7\u09B0 \u0986\u09A8\u09CD\u09A4\u09B0\u09BF\u0995 \u09A7\u09A8\u09CD\u09AF\u09AC\u09BE\u09A6\u0964";
+  } else if (request.status === "cancelled") {
+    statusMessage = "\u098F\u0987 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09BE\u09B9\u09BE\u09B0 \u09AC\u09BE \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964";
+  } else if (request.status === "expired") {
+    statusMessage = "\u098F\u0987 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u09C7\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09B8\u09AE\u09AF\u09BC\u09B8\u09C0\u09AE\u09BE \u0985\u09A4\u09BF\u0995\u09CD\u09B0\u09BE\u09A8\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964";
+  } else if (request.status === "partially_fulfilled") {
+    statusMessage = `\u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8: ${request.unitsFulfilled} \u09AC\u09CD\u09AF\u09BE\u0997 \u09B0\u0995\u09CD\u09A4 \u09B8\u0982\u0997\u09C3\u09B9\u09C0\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7, \u098F\u0996\u09A8\u0993 ${unitsRemaining} \u09AC\u09CD\u09AF\u09BE\u0997 \u09B0\u0995\u09CD\u09A4 \u0985\u09A4\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964`;
+  } else {
+    statusMessage = `\u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8: \u0985\u09AC\u09BF\u09B2\u09AE\u09CD\u09AC\u09C7 ${request.unitsRequired} \u09AC\u09CD\u09AF\u09BE\u0997 ${request.bloodGroup} \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964`;
+  }
   res.json({
     success: true,
     bloodRequest: {
       ...request,
+      publicId,
+      canonicalUrl,
+      unitsRemaining,
+      statusMessage,
+      isFulfilled: request.status === "fulfilled",
       requesterName: requester?.name || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0",
       institutionName: institution?.nameBn || institution?.name
     }
@@ -105395,25 +105472,43 @@ async function createRequest(req, res) {
     return;
   }
   const data = req.body;
+  const recentDuplicate = dataStore.bloodRequests.find(
+    (r) => r.requesterId === req.user?.userId && r.patientName.toLowerCase().trim() === data.patientName.toLowerCase().trim() && r.hospitalName.toLowerCase().trim() === data.hospitalName.toLowerCase().trim() && (r.status === "open" || r.status === "partially_fulfilled") && Date.now() - new Date(r.createdAt).getTime() < 12e4
+  );
+  if (recentDuplicate) {
+    res.status(409).json({
+      success: false,
+      message: "\u098F\u0987 \u09B0\u09CB\u0997\u09C0\u09B0 \u099C\u09A8\u09CD\u09AF \u09AE\u09BE\u09A4\u09CD\u09B0 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u0986\u0997\u09C7\u0987 \u098F\u0995\u099F\u09BF \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09CB\u09B8\u09CD\u099F \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A4\u09BF\u09B0\u09BF\u0995\u09CD\u09A4 \u09A1\u09C1\u09AA\u09CD\u09B2\u09BF\u0995\u09C7\u099F \u0986\u09AC\u09C7\u09A6\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09BE \u09A5\u09C7\u0995\u09C7 \u09AC\u09BF\u09B0\u09A4 \u09A5\u09BE\u0995\u09C1\u09A8\u0964",
+      existingRequestId: recentDuplicate.publicId || recentDuplicate._id
+    });
+    return;
+  }
   const reqDate = new Date(data.requiredDate);
-  const expiresAt = new Date(reqDate.getTime() + 864e5 * 2);
+  const expiresAt = new Date(reqDate.getTime() + 864e5 * 3);
+  const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const timePart = Date.now().toString(36).toUpperCase().slice(-4);
+  const publicId = `BR-${timePart}-${randPart}`;
   const newRequest = dataStore.createBloodRequest({
+    publicId,
     requesterId: req.user.userId,
-    patientName: data.patientName,
+    patientName: data.patientName.trim(),
     bloodGroup: data.bloodGroup,
     unitsRequired: data.unitsRequired,
     unitsFulfilled: 0,
-    hospitalName: data.hospitalName,
-    hospitalAddress: data.hospitalAddress,
+    hospitalName: data.hospitalName.trim(),
+    hospitalAddress: data.hospitalAddress.trim(),
     division: data.division,
     district: data.district,
     upazila: data.upazila,
     requiredDate: reqDate,
     requiredWithin: data.requiredWithin || void 0,
     urgencyLevel: data.urgencyLevel,
-    reason: data.reason,
-    contactNumber: data.contactNumber,
-    alternativeContactNumber: data.alternativeContactNumber || void 0,
+    reason: data.reason.trim(),
+    contactPersonName: data.contactPersonName ? data.contactPersonName.trim() : void 0,
+    contactNumber: data.contactNumber.trim(),
+    alternativeContactNumber: data.alternativeContactNumber ? data.alternativeContactNumber.trim() : void 0,
+    additionalNotes: data.additionalNotes ? data.additionalNotes.trim() : void 0,
+    consentForPublicShare: data.consentForPublicShare ?? true,
     institutionId: data.institutionId || void 0,
     status: "open",
     expiresAt
@@ -105425,12 +105520,22 @@ async function createRequest(req, res) {
     targetType: "BloodRequest",
     targetId: newRequest._id,
     divisionScope: newRequest.division,
-    details: { bloodGroup: newRequest.bloodGroup, hospital: newRequest.hospitalName }
+    details: {
+      publicId: newRequest.publicId,
+      bloodGroup: newRequest.bloodGroup,
+      hospital: newRequest.hospitalName,
+      unitsRequired: newRequest.unitsRequired
+    }
   });
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${newRequest.publicId}`;
   res.status(201).json({
     success: true,
-    message: "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CB\u09B8\u09CD\u099F \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-    bloodRequest: newRequest
+    message: "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u098F\u09AC\u0982 \u09A1\u09BF\u099C\u09BF\u099F\u09BE\u09B2 \u0995\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09C8\u09B0\u09BF \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+    bloodRequest: {
+      ...newRequest,
+      unitsRemaining: newRequest.unitsRequired,
+      canonicalUrl
+    }
   });
 }
 async function updateRequestStatus(req, res) {
@@ -105439,7 +105544,7 @@ async function updateRequestStatus(req, res) {
     return;
   }
   const { id } = req.params;
-  const { status, unitsFulfilled, moderationNotes } = req.body;
+  const { status, unitsFulfilled, moderationNotes, notes } = req.body;
   const request = dataStore.findBloodRequestById(id);
   if (!request) {
     res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
@@ -105455,27 +105560,61 @@ async function updateRequestStatus(req, res) {
     });
     return;
   }
-  const updatePayload = { status };
+  const updatePayload = {};
   if (unitsFulfilled !== void 0) {
-    updatePayload.unitsFulfilled = unitsFulfilled;
+    const safeUnits = Math.max(0, Math.min(unitsFulfilled, request.unitsRequired));
+    updatePayload.unitsFulfilled = safeUnits;
+    if (safeUnits >= request.unitsRequired) {
+      updatePayload.status = status || "fulfilled";
+    } else if (safeUnits > 0) {
+      updatePayload.status = status === "cancelled" ? "cancelled" : "partially_fulfilled";
+    } else {
+      updatePayload.status = status || request.status;
+    }
+  } else if (status) {
+    updatePayload.status = status;
+    if (status === "fulfilled") {
+      updatePayload.unitsFulfilled = request.unitsRequired;
+    }
   }
   if (moderationNotes) {
     updatePayload.moderationNotes = moderationNotes;
   }
-  const updated = dataStore.updateBloodRequest(id, updatePayload);
+  const historyEntry = {
+    status: updatePayload.status || request.status,
+    unitsFulfilled: updatePayload.unitsFulfilled !== void 0 ? updatePayload.unitsFulfilled : request.unitsFulfilled,
+    changedBy: req.user.userId,
+    changedAt: /* @__PURE__ */ new Date(),
+    notes: notes || moderationNotes || `\u09B8\u09CD\u099F\u09CD\u09AF\u09BE\u099F\u09BE\u09B8 \u0986\u09AA\u09A1\u09C7\u099F: ${updatePayload.status || request.status}`
+  };
+  const currentHistory = request.statusHistory || [];
+  updatePayload.statusHistory = [...currentHistory, historyEntry];
+  const updated = dataStore.updateBloodRequest(request._id, updatePayload);
   await logAuditEvent({
     actorId: req.user.userId,
     actorRole: req.user.role,
     action: "UPDATE_BLOOD_REQUEST_STATUS",
     targetType: "BloodRequest",
-    targetId: id,
+    targetId: request._id,
     divisionScope: request.division,
-    details: { oldStatus: request.status, newStatus: status }
+    details: {
+      oldStatus: request.status,
+      newStatus: updatePayload.status,
+      unitsFulfilled: updatePayload.unitsFulfilled
+    }
   });
+  const unitsRemaining = Math.max(0, (updated?.unitsRequired || request.unitsRequired) - (updated?.unitsFulfilled || 0));
+  const publicId = updated?.publicId || request.publicId || request._id;
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
   res.json({
     success: true,
-    message: "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u09C7\u09B0 \u0985\u09AC\u09B8\u09CD\u09A5\u09BE \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-    bloodRequest: updated
+    message: updated?.status === "fulfilled" ? "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 (Fulfilled) \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u099A\u09BF\u09B9\u09CD\u09A8\u09BF\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u09C7\u09B0 \u0985\u0997\u09CD\u09B0\u0997\u09A4\u09BF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+    bloodRequest: {
+      ...updated,
+      publicId,
+      canonicalUrl,
+      unitsRemaining
+    }
   });
 }
 async function getMyRequests(req, res) {
@@ -105483,7 +105622,15 @@ async function getMyRequests(req, res) {
     res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
     return;
   }
-  const requests = dataStore.bloodRequests.filter((r) => r.requesterId === req.user?.userId);
+  const requests = dataStore.bloodRequests.filter((r) => r.requesterId === req.user?.userId).map((r) => {
+    const publicId = r.publicId || r._id;
+    return {
+      ...r,
+      publicId,
+      unitsRemaining: Math.max(0, r.unitsRequired - (r.unitsFulfilled || 0)),
+      canonicalUrl: `https://blood-donationbangla.vercel.app/blood-request/${publicId}`
+    };
+  });
   res.json({
     success: true,
     requests
@@ -105494,9 +105641,9 @@ async function getMyRequests(req, res) {
 var router3 = (0, import_express3.Router)();
 router3.get(["/", "/search"], searchRequests);
 router3.get(["/my-requests", "/dashboard"], requireAuth, getMyRequests);
-router3.get("/:id", getRequestById);
+router3.get(["/public/:id", "/:id"], getRequestById);
 router3.post("/", requireAuth, validateBody(CreateBloodRequestSchema), createRequest);
-router3.patch("/:id/status", requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
+router3.patch(["/:id/status", "/:id/progress", "/:id"], requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
 var requestRoutes_default = router3;
 
 // src/routes/institutionRoutes.ts

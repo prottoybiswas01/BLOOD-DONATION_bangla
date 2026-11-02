@@ -17,16 +17,17 @@ const router = Router();
 
 // Public search (no phone numbers exposed!)
 router.get(['/', '/search'], searchDonors);
-router.get('/profile/:id', getDonorById);
+router.get(['/profile/:id', '/:id'], getDonorById);
 
 // Authenticated donor dashboard endpoints
-router.get('/me', requireAuth, getMyDonorProfile);
-router.patch('/me', requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router.get(['/me', '/profile'], requireAuth, getMyDonorProfile);
+router.patch(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router.put(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router.post('/record-donation', requireAuth, recordDonation);
 
 // Controlled contact reveal (Authenticated, rate-limited, logged, consent-checked)
 router.post(
-  '/reveal-contact/:id', 
+  ['/reveal-contact/:id', '/:id/reveal-contact'], 
   requireAuth, 
   contactRevealRateLimiter, 
   validateBody(RevealContactSchema), 

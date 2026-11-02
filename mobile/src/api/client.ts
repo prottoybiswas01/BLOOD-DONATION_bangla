@@ -61,47 +61,92 @@ export const TokenStorage = {
   }
 };
 
+export interface RequestOptions extends RequestInit {
+  timeoutMs?: number;
+  retries?: number;
+}
+
 export async function request<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
+  const { timeoutMs = 12000, retries = 1, ...fetchOptions } = options;
   const token = await TokenStorage.getToken();
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (fetchOptions.method || 'GET').toUpperCase();
+  const isIdempotent = method === 'GET' || method === 'HEAD';
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-client-platform': APP_CONFIG.platform,
     'x-app-version': APP_CONFIG.version,
-    ...(options.headers as Record<string, string> || {})
+    ...(fetchOptions.headers as Record<string, string> || {})
   };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
+  let attempt = 0;
+  // Non-idempotent requests (POST, PUT, PATCH, DELETE) never retry to prevent double submissions
+  const maxAttempts = isIdempotent ? Math.max(1, retries + 1) : 1;
 
-  const text = await response.text();
-  let data: any = {};
-  try {
-    data = JSON.parse(text);
-  } catch (err) {
-    data = { success: false, message: text || `HTTP ${response.status} Error` };
+  while (attempt < maxAttempts) {
+    attempt++;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const text = await response.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        data = { success: false, message: text || `HTTP ${response.status} Error` };
+      }
+
+      if (response.status === 401) {
+        // Token expired or invalid session
+        await TokenStorage.clearAll();
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || `সার্ভারে ত্রুটি দেখা দিয়েছে (${response.status})`);
+      }
+
+      return data;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+
+      const isTimeout = err.name === 'AbortError' || err.message?.includes('aborted');
+      const isNetworkError = err.message?.includes('Network request failed') || err.message?.includes('fetch');
+
+      // If we still have retries for idempotent calls, wait 1s and try again
+      if (isIdempotent && attempt < maxAttempts && (isTimeout || isNetworkError)) {
+        await new Promise((res) => setTimeout(res, 1000));
+        continue;
+      }
+
+      if (isTimeout) {
+        throw new Error('সার্ভারের সাড়া পেতে অতিরিক্ত সময় লেগেছে। আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।');
+      }
+
+      if (isNetworkError) {
+        throw new Error('ইন্টারনেট সংযোগ নেই অথবা সার্ভার সাড়া দিচ্ছে না। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
+      }
+
+      throw err;
+    }
   }
 
-  if (response.status === 401) {
-    // Token expired or invalid session
-    await TokenStorage.clearAll();
-  }
-
-  if (!response.ok) {
-    throw new Error(data.message || `সার্ভারে ত্রুটি দেখা দিয়েছে (${response.status})`);
-  }
-
-  return data;
+  throw new Error('অনুরোধটি সম্পন্ন করা সম্ভব হয়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
 }
 
 export const MobileApi = {

@@ -105302,12 +105302,13 @@ async function recordDonation(req, res) {
 // src/routes/donorRoutes.ts
 var router2 = (0, import_express2.Router)();
 router2.get(["/", "/search"], searchDonors);
-router2.get("/profile/:id", getDonorById);
-router2.get("/me", requireAuth, getMyDonorProfile);
-router2.patch("/me", requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router2.get(["/profile/:id", "/:id"], getDonorById);
+router2.get(["/me", "/profile"], requireAuth, getMyDonorProfile);
+router2.patch(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router2.put(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.post("/record-donation", requireAuth, recordDonation);
 router2.post(
-  "/reveal-contact/:id",
+  ["/reveal-contact/:id", "/:id/reveal-contact"],
   requireAuth,
   contactRevealRateLimiter,
   validateBody(RevealContactSchema),

@@ -26,7 +26,6 @@ import { LocationSelector } from '../components/LocationSelector';
 import { RequestCard } from '../components/RequestCard';
 import { BloodRequest } from '../types';
 import { api } from '../api/client';
-import { DemoBanner } from '../components/DemoBanner';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
@@ -68,8 +67,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="space-y-16 pb-16 bg-page">
-      <DemoBanner />
-
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-rose-50/70 via-surface to-page pt-10 pb-16 border-b border-appBorder">
         {/* Subtle decorative background circles */}

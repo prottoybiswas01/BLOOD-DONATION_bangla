@@ -5,7 +5,6 @@ import { BANGLADESH_DIVISIONS } from '../data/bangladeshLocations';
 import { api } from '../api/client';
 import { Institution } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { DemoBanner } from '../components/DemoBanner';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -91,8 +90,7 @@ export const InstitutionDirectory: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <DemoBanner />
-
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-mainText flex items-center gap-3">

@@ -7,7 +7,6 @@ import { DonorCard } from '../components/DonorCard';
 import { ReportModal } from '../components/ReportModal';
 import { DonorProfile } from '../types';
 import { api } from '../api/client';
-import { DemoBanner } from '../components/DemoBanner';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { 
@@ -169,8 +168,7 @@ export const DonorSearch: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <DemoBanner />
-
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

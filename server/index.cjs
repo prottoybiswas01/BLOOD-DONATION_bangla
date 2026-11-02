@@ -107363,6 +107363,7 @@ app.get(["/", "/api", "/api/v1"], (req, res) => {
   });
 });
 app.use("/api/v1", routes_default);
+app.use("/api", routes_default);
 app.use("/v1", routes_default);
 app.use("/", routes_default);
 app.use((req, res) => {

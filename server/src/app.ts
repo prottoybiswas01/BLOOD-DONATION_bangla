@@ -101,6 +101,7 @@ app.get(['/', '/api', '/api/v1'], (req, res) => {
 
 // Versioned & Root API Routes (Support /api/v1, /v1, and stripped paths for Vercel services)
 app.use('/api/v1', apiRoutes);
+app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);
 app.use('/', apiRoutes);
 

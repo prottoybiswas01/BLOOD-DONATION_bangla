@@ -105301,7 +105301,7 @@ async function recordDonation(req, res) {
 
 // src/routes/donorRoutes.ts
 var router2 = (0, import_express2.Router)();
-router2.get("/search", searchDonors);
+router2.get(["/", "/search"], searchDonors);
 router2.get("/profile/:id", getDonorById);
 router2.get("/me", requireAuth, getMyDonorProfile);
 router2.patch("/me", requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
@@ -105489,7 +105489,7 @@ async function getMyRequests(req, res) {
 
 // src/routes/requestRoutes.ts
 var router3 = (0, import_express3.Router)();
-router3.get("/search", searchRequests);
+router3.get(["/", "/search"], searchRequests);
 router3.get("/my-requests", requireAuth, getMyRequests);
 router3.get("/:id", getRequestById);
 router3.post("/", requireAuth, validateBody(CreateBloodRequestSchema), createRequest);

@@ -16,7 +16,7 @@ import { contactRevealRateLimiter } from '../middleware/rateLimiter.js';
 const router = Router();
 
 // Public search (no phone numbers exposed!)
-router.get('/search', searchDonors);
+router.get(['/', '/search'], searchDonors);
 router.get('/profile/:id', getDonorById);
 
 // Authenticated donor dashboard endpoints

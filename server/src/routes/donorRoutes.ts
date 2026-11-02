@@ -20,7 +20,7 @@ router.get(['/', '/search'], searchDonors);
 router.get(['/profile/:id', '/:id'], getDonorById);
 
 // Authenticated donor dashboard endpoints
-router.get(['/me', '/profile'], requireAuth, getMyDonorProfile);
+router.get(['/me', '/profile', '/dashboard'], requireAuth, getMyDonorProfile);
 router.patch(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router.put(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router.post('/record-donation', requireAuth, recordDonation);

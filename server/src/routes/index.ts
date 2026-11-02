@@ -54,12 +54,14 @@ router.get(['/app/version', '/app/latest'], (req, res) => {
     versionCode: 1,
     minSupportedVersion: '1.0.0',
     forceUpdate: false,
-    fileSizeMb: 24.8,
+    fileSizeMb: 60.0,
+    fileSizeBytes: 62911392,
     releaseDate: '2026-11-02',
-    sha256Checksum: 'a7c936df35b4ce70a6c221191a92eef851a7e2b694697bfb557c6b907153641b',
-    downloadUrl: 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla-v1.0.0.apk',
+    sha256Checksum: '3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2',
+    certificateSha256: '2A:52:02:9C:E4:F3:11:D2:11:F7:EB:E8:2A:0D:C5:D2:5B:38:CC:B3:EB:7B:B7:01:DD:72:55:74:26:86:99:FA',
+    downloadUrl: 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk',
     directDownloadPath: '/downloads/blood-donation-bangla.apk',
-    releaseNotes: 'অফিসিয়াল রিলিজ ১.০.০: সরাসরি রক্তদাতা সন্ধান, জরুরি নোটিফিকেশন, ক্যাম্পাস ড্যাশবোর্ড ও অফলাইন জেলা সেন্ট্রয়েড জিওকোডিং।'
+    releaseNotes: 'অফিসিয়াল স্ট্যান্ডঅ্যালোন রিলিজ ১.০.০ (Build 1): সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি Hermes বাইটকোড, গুগল ম্যাপ নেভিগেশন ও সরাসরি রক্তদাতা যোগাযোগ।'
   });
 });
 

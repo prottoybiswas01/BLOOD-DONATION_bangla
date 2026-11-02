@@ -105087,8 +105087,8 @@ router.post("/verify-otp", authRateLimiter, validateBody(VerifyOtpSchema), verif
 router.post("/register", authRateLimiter, validateBody(RegisterSchema), register);
 router.post("/login", authRateLimiter, validateBody(LoginSchema), login);
 router.get("/me", requireAuth, getMe);
-router.post("/change-first-login-password", requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
-router.post(["/forgot-password", "/recovery/forgot-password"], authRateLimiter, submitForgotPassword);
+router.post(["/change-first-login-password", "/change-password-first-login"], requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
+router.post(["/forgot-password", "/recovery/forgot-password", "/recovery-requests", "/recovery/requests"], authRateLimiter, submitForgotPassword);
 router.get(["/recovery-requests", "/recovery/requests"], requireAuth, getPasswordRecoveryRequests);
 router.post(["/recovery-requests/:id/approve", "/recovery/requests/:id/approve"], requireAuth, approvePasswordRecoveryRequest);
 router.post(["/recovery-requests/:id/reject", "/recovery/requests/:id/reject"], requireAuth, rejectPasswordRecoveryRequest);
@@ -105303,7 +105303,7 @@ async function recordDonation(req, res) {
 var router2 = (0, import_express2.Router)();
 router2.get(["/", "/search"], searchDonors);
 router2.get(["/profile/:id", "/:id"], getDonorById);
-router2.get(["/me", "/profile"], requireAuth, getMyDonorProfile);
+router2.get(["/me", "/profile", "/dashboard"], requireAuth, getMyDonorProfile);
 router2.patch(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.put(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.post("/record-donation", requireAuth, recordDonation);
@@ -105491,7 +105491,7 @@ async function getMyRequests(req, res) {
 // src/routes/requestRoutes.ts
 var router3 = (0, import_express3.Router)();
 router3.get(["/", "/search"], searchRequests);
-router3.get("/my-requests", requireAuth, getMyRequests);
+router3.get(["/my-requests", "/dashboard"], requireAuth, getMyRequests);
 router3.get("/:id", getRequestById);
 router3.post("/", requireAuth, validateBody(CreateBloodRequestSchema), createRequest);
 router3.patch("/:id/status", requireAuth, validateBody(UpdateRequestStatusSchema), updateRequestStatus);
@@ -106807,7 +106807,7 @@ var import_express12 = __toESM(require_express2());
 var router12 = (0, import_express12.Router)();
 router12.use(requireAuth, requireRoles("INSTITUTION_MODERATOR", "DIVISION_COORDINATOR", "ADMIN", "SUPER_ADMIN"));
 router12.get("/activities", getModeratorActivities);
-router12.get("/summary", getDivisionModeratorsSummary);
+router12.get(["/summary", "/dashboard"], getDivisionModeratorsSummary);
 var moderatorRoutes_default = router12;
 
 // src/routes/contactRequestRoutes.ts
@@ -107264,12 +107264,14 @@ router16.get(["/app/version", "/app/latest"], (req, res) => {
     versionCode: 1,
     minSupportedVersion: "1.0.0",
     forceUpdate: false,
-    fileSizeMb: 24.8,
+    fileSizeMb: 60,
+    fileSizeBytes: 62911392,
     releaseDate: "2026-11-02",
-    sha256Checksum: "a7c936df35b4ce70a6c221191a92eef851a7e2b694697bfb557c6b907153641b",
-    downloadUrl: "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla-v1.0.0.apk",
+    sha256Checksum: "3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2",
+    certificateSha256: "2A:52:02:9C:E4:F3:11:D2:11:F7:EB:E8:2A:0D:C5:D2:5B:38:CC:B3:EB:7B:B7:01:DD:72:55:74:26:86:99:FA",
+    downloadUrl: "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk",
     directDownloadPath: "/downloads/blood-donation-bangla.apk",
-    releaseNotes: "\u0985\u09AB\u09BF\u09B8\u09BF\u09DF\u09BE\u09B2 \u09B0\u09BF\u09B2\u09BF\u099C \u09E7.\u09E6.\u09E6: \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09B8\u09A8\u09CD\u09A7\u09BE\u09A8, \u099C\u09B0\u09C1\u09B0\u09BF \u09A8\u09CB\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u09B6\u09A8, \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09A1\u09CD\u09AF\u09BE\u09B6\u09AC\u09CB\u09B0\u09CD\u09A1 \u0993 \u0985\u09AB\u09B2\u09BE\u0987\u09A8 \u099C\u09C7\u09B2\u09BE \u09B8\u09C7\u09A8\u09CD\u099F\u09CD\u09B0\u09DF\u09C7\u09A1 \u099C\u09BF\u0993\u0995\u09CB\u09A1\u09BF\u0982\u0964"
+    releaseNotes: "\u0985\u09AB\u09BF\u09B8\u09BF\u09DF\u09BE\u09B2 \u09B8\u09CD\u099F\u09CD\u09AF\u09BE\u09A8\u09CD\u09A1\u0985\u09CD\u09AF\u09BE\u09B2\u09CB\u09A8 \u09B0\u09BF\u09B2\u09BF\u099C \u09E7.\u09E6.\u09E6 (Build 1): \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u0985\u09AB\u09B2\u09BE\u0987\u09A8 \u0993 \u09AA\u09CD\u09B0\u09CB\u09A1\u09BE\u0995\u09B6\u09A8 \u09B0\u09C7\u09A1\u09BF Hermes \u09AC\u09BE\u0987\u099F\u0995\u09CB\u09A1, \u0997\u09C1\u0997\u09B2 \u09AE\u09CD\u09AF\u09BE\u09AA \u09A8\u09C7\u09AD\u09BF\u0997\u09C7\u09B6\u09A8 \u0993 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u0964"
   });
 });
 var routes_default = router16;

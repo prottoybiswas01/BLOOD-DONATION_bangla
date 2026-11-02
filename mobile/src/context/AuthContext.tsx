@@ -68,7 +68,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   const initAuth = async () => {
-    setIsLoading(true);
     try {
       const storedToken = await TokenStorage.getToken();
       if (storedToken) {
@@ -78,23 +77,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(cached.user);
           setDonorProfile(cached.donorProfile);
         }
-        // Verify with server
-        try {
-          const res = await MobileApi.getCurrentUser();
-          if (res.success && res.user) {
-            setUser(res.user);
-            setDonorProfile(res.donorProfile || null);
-            await TokenStorage.saveCachedUser({ user: res.user, donorProfile: res.donorProfile });
-          }
-        } catch (serverErr) {
-          // If offline or network slow, cached user is retained
-          console.warn('Could not refresh session online, keeping cache');
-        }
       }
     } catch (e) {
-      console.warn('initAuth error:', e);
+      console.warn('initAuth local load error:', e);
     } finally {
+      // Unblock initial screen rendering immediately
       setIsLoading(false);
+    }
+
+    // Asynchronously verify session in background without stalling startup
+    try {
+      const storedToken = await TokenStorage.getToken();
+      if (storedToken) {
+        const res = await MobileApi.getCurrentUser();
+        if (res.success && res.user) {
+          setUser(res.user);
+          setDonorProfile(res.donorProfile || null);
+          await TokenStorage.saveCachedUser({ user: res.user, donorProfile: res.donorProfile });
+        } else {
+          // Server rejected user session; revoke cached authentication
+          await TokenStorage.clearAll();
+          setUser(null);
+          setDonorProfile(null);
+          setToken(null);
+        }
+      }
+    } catch (serverErr: any) {
+      if (serverErr?.message?.includes('401') || serverErr?.message?.includes('অননুমোদিত')) {
+        // Session definitively expired on server
+        await TokenStorage.clearAll();
+        setUser(null);
+        setDonorProfile(null);
+        setToken(null);
+      } else {
+        // Ephemeral network outage: retain offline read-only cached profile
+        console.warn('Network offline during session verification, keeping local read cache');
+      }
     }
   };
 

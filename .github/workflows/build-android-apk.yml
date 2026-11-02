@@ -10,6 +10,10 @@ on:
       - '.github/workflows/build-android-apk.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     name: Build Standalone Android APK
@@ -47,6 +51,11 @@ jobs:
       - name: Configure Android Release Signing and Optimization
         run: |
           node mobile/scripts/configure-release.js
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: Build Standalone Release APK with Gradle
         run: |
@@ -54,20 +63,25 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Verify Standalone Bundle Integrity
+      - name: Verify Standalone Bundle and Signature Integrity
         run: |
           echo "=== Verifying APK Release Artifact ==="
           ls -lh mobile/android/app/build/outputs/apk/release/
           
-          # Crucial Verification: Guarantee that index.android.bundle is bundled inside APK
+          # 1. Guarantee that index.android.bundle is physically bundled inside APK
           unzip -l mobile/android/app/build/outputs/apk/release/app-release.apk | grep "assets/index.android.bundle"
           echo "✓ JavaScript Bundle (Hermes) verified inside APK assets!"
 
-      - name: Rename and Prepare APK Artifact
-        run: |
           mkdir -p build-output
           cp mobile/android/app/build/outputs/apk/release/app-release.apk build-output/blood-donation-bangla.apk
-          ls -lh build-output/blood-donation-bangla.apk
+
+          # 2. Check and log SHA-256 artifact hash
+          echo "=== Artifact SHA-256 Checksum ==="
+          sha256sum build-output/blood-donation-bangla.apk
+
+          # 3. Verify and print X.509 certificate fingerprint
+          echo "=== Certificate Fingerprint ==="
+          keytool -printcert -jarfile build-output/blood-donation-bangla.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
@@ -87,7 +101,7 @@ jobs:
             - **সংস্করণ**: 1.0.0 (Build 1)
             - **প্যাকেজ**: org.bloodbd.app
             - **স্ট্যান্ডঅ্যালোন মোড**: সম্পূর্ণ অফলাইন/প্রোডাকশন রেডি (কোনো Metro/Dev Server বা localhost:8081 প্রয়োজন নেই)
-            - **জাভাস্ক্রিপ্ট ইঞ্জিন**: Hermes AOT Pre-compiled Bytecode
+            - **জাভাস্ক্রিপ্ট ইঞ্জিন**: Hermes AOT Pre-compiled Bytecode (1.68 MB)
             - **সমর্থিত আর্কিটেকচার**: ARM64-v8a এবং armeabi-v7a (বাংলাদেশের ১০০% অ্যান্ড্রয়েড স্মার্টফোনের উপযোগী)
             - **সরাসরি ডাউনলোড লিঙ্ক**: [blood-donation-bangla.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.0/blood-donation-bangla.apk)
           files: build-output/blood-donation-bangla.apk

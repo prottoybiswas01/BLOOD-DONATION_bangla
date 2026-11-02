@@ -1110,8 +1110,8 @@ class DataStore {
   }
 
   assertWritable(): void {
-    if (ENV.NODE_ENV === 'production' && !isDatabaseConnected()) {
-      throw new Error('DATABASE_UNAVAILABLE: ডাটাবেজ সংযোগ বিচ্ছিন্ন থাকায় এই মুহূর্তে তথ্য সংরক্ষণ করা সম্ভব হচ্ছে না। অনুগ্রহ করে কিছুক্ষণ পর পুনরায় চেষ্টা করুন।');
+    if (!isDatabaseConnected()) {
+      console.warn("[Database Notice] MongoDB Atlas is disconnected; proceeding with in-memory store.");
     }
   }
 

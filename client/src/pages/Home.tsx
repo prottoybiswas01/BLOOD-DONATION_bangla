@@ -418,12 +418,13 @@ export const Home: React.FC = () => {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3">
                 <a
-                  href="/downloads/blood-donation-bangla.apk"
-                  download="blood-donation-bangla-v1.0.0.apk"
+                  href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk"
+                  target="_blank"
+                  rel="noreferrer"
                   className="px-6 py-3.5 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2.5 transition-all text-sm"
                 >
                   <Download className="w-5 h-5" />
-                  <span>সরাসরি APK ডাউনলোড করুন</span>
+                  <span>সরাসরি APK ফাইল ডাউনলোড করুন</span>
                 </a>
                 <a
                   href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases"
@@ -437,8 +438,11 @@ export const Home: React.FC = () => {
               </div>
             </div>
 
-            {/* Install Guide Card */}
+            {/* Install Guide Card with AI Artwork */}
             <div className="lg:col-span-5 bg-slate-800/90 rounded-2xl p-6 border border-slate-700 space-y-4">
+              <div className="overflow-hidden rounded-xl border border-slate-700 shadow-md">
+                <img src="/images/blood-donation-logo.svg" alt="বাংলাদেশ রক্তদান প্ল্যাটফর্ম এআই ব্যানার ও অ্যাপ লোগো" className="w-full h-auto object-cover" />
+              </div>
               <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <span>নিরাপদ ইনস্টলেশন নির্দেশিকা</span>

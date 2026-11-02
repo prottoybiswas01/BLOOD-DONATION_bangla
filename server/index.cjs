@@ -102009,8 +102009,8 @@ var DataStore = class {
     }
   }
   assertWritable() {
-    if (ENV.NODE_ENV === "production" && !isDatabaseConnected()) {
-      throw new Error("DATABASE_UNAVAILABLE: \u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u0982\u09AF\u09CB\u0997 \u09AC\u09BF\u099A\u09CD\u099B\u09BF\u09A8\u09CD\u09A8 \u09A5\u09BE\u0995\u09BE\u09DF \u098F\u0987 \u09AE\u09C1\u09B9\u09C2\u09B0\u09CD\u09A4\u09C7 \u09A4\u09A5\u09CD\u09AF \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09A3 \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u099A\u09CD\u099B\u09C7 \u09A8\u09BE\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u09AA\u09C1\u09A8\u09B0\u09BE\u09DF \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+    if (!isDatabaseConnected()) {
+      console.warn("[Database Notice] MongoDB Atlas is disconnected; proceeding with in-memory store.");
     }
   }
   persistUser(user) {
@@ -107300,19 +107300,23 @@ async function ensureDbInitialized() {
     const isConnected2 = await connectDB();
     if (isConnected2) {
       await dataStore.syncWithMongoDB();
+      isDbInitialized = true;
     }
   } catch (err) {
     console.warn("[Database Init Warning]:", err?.message);
   } finally {
-    isDbInitialized = true;
     isInitializing = false;
   }
 }
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (!isDbInitialized && !isInitializing) {
-    ensureDbInitialized().catch((err) => {
-      console.warn("[Database Init Background Error]:", err?.message);
-    });
+    try {
+      await Promise.race([
+        ensureDbInitialized(),
+        new Promise((resolve) => setTimeout(resolve, 1500))
+      ]);
+    } catch {
+    }
   }
   next();
 });

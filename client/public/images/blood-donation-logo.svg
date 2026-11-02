@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="50%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#3B0712" />
+    </linearGradient>
+
+    <!-- Crimson Blood Droplet Gradient -->
+    <linearGradient id="dropGrad" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FF5252" />
+      <stop offset="35%" stop-color="#E53935" />
+      <stop offset="70%" stop-color="#C62828" />
+      <stop offset="100%" stop-color="#880E4F" />
+    </linearGradient>
+
+    <!-- Droplet Highlight -->
+    <linearGradient id="highlightGrad" x1="20%" y1="10%" x2="50%" y2="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Gold Heartbeat Pulse -->
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FCD34D" stop-opacity="0" />
+      <stop offset="30%" stop-color="#FDE047" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#FCD34D" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Hands Gradient -->
+    <linearGradient id="handGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#004D40" />
+      <stop offset="50%" stop-color="#00695C" />
+      <stop offset="100%" stop-color="#4DB6AC" />
+    </linearGradient>
+
+    <!-- Glow Filters -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#C62828" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="800" height="600" rx="36" fill="url(#bgGrad)" />
+
+  <!-- Ambient Light Orbs -->
+  <circle cx="220" cy="180" r="160" fill="#E53935" opacity="0.12" filter="url(#glow)" />
+  <circle cx="580" cy="420" r="180" fill="#00695C" opacity="0.18" filter="url(#glow)" />
+  <circle cx="400" cy="300" r="220" fill="#C62828" opacity="0.15" filter="url(#glow)" />
+
+  <!-- Orbiting Decorative Rings -->
+  <circle cx="400" cy="270" r="190" fill="none" stroke="#E2E8F0" stroke-opacity="0.08" stroke-width="1.5" stroke-dasharray="6 8" />
+  <circle cx="400" cy="270" r="230" fill="none" stroke="#F43F5E" stroke-opacity="0.12" stroke-width="1.5" stroke-dasharray="12 12" />
+
+  <!-- Supporting Hands (Geometric Abstract Caring Shape) -->
+  <g transform="translate(400, 390)" opacity="0.95">
+    <!-- Left Hand -->
+    <path d="M-170,30 C-140,-30 -80,-60 -20,-20 C-10,-12 0,0 0,0 C-40,25 -90,45 -150,55 Z" fill="url(#handGrad)" opacity="0.85" />
+    <!-- Right Hand -->
+    <path d="M170,30 C140,-30 80,-60 20,-20 C10,-12 0,0 0,0 C40,25 90,45 150,55 Z" fill="url(#handGrad)" opacity="0.85" />
+    <!-- Gentle Palm Cradle -->
+    <ellipse cx="0" cy="15" rx="85" ry="32" fill="#004D40" opacity="0.6" />
+  </g>
+
+  <!-- Main Blood Drop with Glow and 3D Appearance -->
+  <g filter="url(#softShadow)">
+    <!-- Base Droplet -->
+    <path d="M400,105 C400,105 490,240 490,320 C490,375 450,420 400,420 C350,420 310,375 310,320 C310,240 400,105 400,105 Z" fill="url(#dropGrad)" />
+
+    <!-- Specular Curvature Highlight -->
+    <path d="M365,160 C385,130 400,120 400,120 C360,200 330,260 330,320 C330,350 345,385 365,400 C340,380 325,350 325,320 C325,260 345,210 365,160 Z" fill="url(#highlightGrad)" />
+    <ellipse cx="370" cy="230" rx="14" ry="32" transform="rotate(-25 370 230)" fill="#FFFFFF" opacity="0.25" />
+  </g>
+
+  <!-- Glowing Heartbeat Wave Inside the Droplet -->
+  <g filter="url(#glow)">
+    <path d="M330,320 L365,320 L378,285 L392,350 L408,275 L422,340 L432,320 L470,320" fill="none" stroke="url(#pulseGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Medical Cross Badge in Golden Glow -->
+  <g transform="translate(400, 235)">
+    <circle cx="0" cy="0" r="16" fill="#FFFFFF" opacity="0.9" />
+    <path d="M-3,-9 H3 V-3 H9 V3 H3 V9 H-3 V3 H-9 V-3 H-3 Z" fill="#C62828" />
+  </g>
+
+  <!-- Platform Typography & Branding -->
+  <text x="400" y="490" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="30" fill="#FFFFFF" letter-spacing="1">
+    রক্তদান <tspan fill="#FF5252">বাংলাদেশ</tspan>
+  </text>
+  <text x="400" y="525" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="14" fill="#94A3B8" letter-spacing="3">
+    BANGLADESH BLOOD DONATION PLATFORM
+  </text>
+  <text x="400" y="555" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="12" fill="#38BDF8" letter-spacing="1">
+    ★ খাঁটি নেটিভ মোবাইল অ্যাপ ও ওয়েব সিস্টেম ★
+  </text>
+</svg>

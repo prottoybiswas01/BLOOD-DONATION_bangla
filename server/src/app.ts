@@ -24,20 +24,23 @@ async function ensureDbInitialized() {
     const isConnected = await connectDB();
     if (isConnected) {
       await dataStore.syncWithMongoDB();
+      isDbInitialized = true;
     }
   } catch (err: any) {
     console.warn('[Database Init Warning]:', err?.message);
   } finally {
-    isDbInitialized = true;
     isInitializing = false;
   }
 }
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (!isDbInitialized && !isInitializing) {
-    ensureDbInitialized().catch(err => {
-      console.warn('[Database Init Background Error]:', err?.message);
-    });
+    try {
+      await Promise.race([
+        ensureDbInitialized(),
+        new Promise(resolve => setTimeout(resolve, 1500))
+      ]);
+    } catch {}
   }
   next();
 });

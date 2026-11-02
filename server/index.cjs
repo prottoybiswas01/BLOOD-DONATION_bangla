@@ -101229,9 +101229,9 @@ async function connectDB() {
       bufferCommands: false,
       // Disables Mongoose buffering so requests never hang
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 3e3,
-      // Fail fast if unreachable (e.g. IP whitelist)
-      connectTimeoutMS: 3e3
+      serverSelectionTimeoutMS: 8e3,
+      // Adequate window for serverless cold-starts
+      connectTimeoutMS: 8e3
     };
     console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
     cached.promise = import_mongoose15.default.connect(uri, opts).then((m) => {

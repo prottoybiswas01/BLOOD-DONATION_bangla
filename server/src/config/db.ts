@@ -37,8 +37,8 @@ export async function connectDB(): Promise<boolean> {
     const opts = {
       bufferCommands: false, // Disables Mongoose buffering so requests never hang
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 3000, // Fail fast if unreachable (e.g. IP whitelist)
-      connectTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 8000, // Adequate window for serverless cold-starts
+      connectTimeoutMS: 8000,
     };
 
     console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);

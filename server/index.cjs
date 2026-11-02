@@ -107254,6 +107254,23 @@ router16.get("/health", (req, res) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
+router16.get(["/app/version", "/app/latest"], (req, res) => {
+  res.json({
+    success: true,
+    platform: "android",
+    packageName: "org.bloodbd.app",
+    latestVersion: "1.0.0",
+    versionCode: 1,
+    minSupportedVersion: "1.0.0",
+    forceUpdate: false,
+    fileSizeMb: 24.8,
+    releaseDate: "2026-11-02",
+    sha256Checksum: "a7c936df35b4ce70a6c221191a92eef851a7e2b694697bfb557c6b907153641b",
+    downloadUrl: "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla-v1.0.0.apk",
+    directDownloadPath: "/downloads/blood-donation-bangla.apk",
+    releaseNotes: "\u0985\u09AB\u09BF\u09B8\u09BF\u09DF\u09BE\u09B2 \u09B0\u09BF\u09B2\u09BF\u099C \u09E7.\u09E6.\u09E6: \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09B8\u09A8\u09CD\u09A7\u09BE\u09A8, \u099C\u09B0\u09C1\u09B0\u09BF \u09A8\u09CB\u099F\u09BF\u09AB\u09BF\u0995\u09C7\u09B6\u09A8, \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09A1\u09CD\u09AF\u09BE\u09B6\u09AC\u09CB\u09B0\u09CD\u09A1 \u0993 \u0985\u09AB\u09B2\u09BE\u0987\u09A8 \u099C\u09C7\u09B2\u09BE \u09B8\u09C7\u09A8\u09CD\u099F\u09CD\u09B0\u09DF\u09C7\u09A1 \u099C\u09BF\u0993\u0995\u09CB\u09A1\u09BF\u0982\u0964"
+  });
+});
 var routes_default = router16;
 
 // src/middleware/errorHandler.ts

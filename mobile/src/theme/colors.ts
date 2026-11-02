@@ -1,0 +1,31 @@
+export const Colors = {
+  primary: '#C62828',
+  primaryDark: '#A91F24',
+  primaryLight: '#FCEBEC',
+  primaryHover: '#9A0007',
+  tealAccent: '#00695C',
+  tealLight: '#E0F2F1',
+  surface: '#FFFFFF',
+  page: '#F7F8FA',
+  mainText: '#1F2937',
+  subText: '#64748B',
+  appBorder: '#E5E7EB',
+  success: '#16865B',
+  successLight: '#E8F5E9',
+  warning: '#D97706',
+  warningLight: '#FFFBEB',
+  danger: '#DC2626',
+  dangerLight: '#FEF2F2',
+  info: '#2563EB',
+  infoLight: '#EFF6FF',
+};
+
+export const colors = {
+  ...Colors,
+  teal: Colors.tealAccent,
+  pageBackground: Colors.page,
+  textPrimary: Colors.mainText,
+  textSecondary: Colors.subText,
+  textLight: Colors.subText,
+  border: Colors.appBorder,
+};

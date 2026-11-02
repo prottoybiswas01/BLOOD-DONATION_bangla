@@ -16,7 +16,10 @@ import {
   Award,
   Clock,
   Shield,
-  Activity
+  Activity,
+  Smartphone,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { BLOOD_GROUPS } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
@@ -365,6 +368,125 @@ export const Home: React.FC = () => {
               <p className="text-xs text-subText leading-relaxed">
                 হাসপাতালে উপস্থিত হয়ে স্বাস্থ্য পরীক্ষা ও ক্রস-ম্যাচিং সম্পন্ন করে রক্তদান করুন এবং একটি পরিবারকে নতুন আশা দিন।
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Official Native Android App Distribution Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-rose-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden border border-slate-700">
+          <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 w-80 h-80 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* App Info */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>অফিসিয়াল নেটিভ অ্যান্ড্রয়েড অ্যাপ্লিকেশন • সংস্করণ ১.০.০</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+                স্মার্টফোনে নিন <span className="text-rose-400">বাংলাদেশ রক্তদান</span> অ্যাপ
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                জরুরি মুহূর্তে রক্তের সন্ধান এখন আরও দ্রুত ও সহজ। নেটিভ অ্যান্ড্রয়েড অ্যাপের মাধ্যমে সরাসরি জিপিএস ও জেলাভিত্তিক ফিল্টারিং, ক্যাম্পাসভিত্তিক তালিকা এবং পুশ নোটিফিকেশন সুবিধা উপভোগ করুন।
+              </p>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                  <span className="text-[10px] uppercase text-slate-400 font-semibold block">প্যাকেজ</span>
+                  <span className="text-xs font-bold font-mono text-white truncate block">org.bloodbd.app</span>
+                </div>
+                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                  <span className="text-[10px] uppercase text-slate-400 font-semibold block">ভার্সন</span>
+                  <span className="text-xs font-bold text-white block">v1.0.0 (Build 1)</span>
+                </div>
+                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                  <span className="text-[10px] uppercase text-slate-400 font-semibold block">ফাইলের আকার</span>
+                  <span className="text-xs font-bold text-emerald-400 block">~২৪.৮ মেগাবাইট</span>
+                </div>
+                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                  <span className="text-[10px] uppercase text-slate-400 font-semibold block">ন্যূনতম ওএস</span>
+                  <span className="text-xs font-bold text-white block">Android 6.0+</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3">
+                <a
+                  href="/downloads/blood-donation-bangla.apk"
+                  download="blood-donation-bangla-v1.0.0.apk"
+                  className="px-6 py-3.5 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2.5 transition-all text-sm"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>সরাসরি APK ডাউনলোড করুন</span>
+                </a>
+                <a
+                  href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-5 py-3.5 bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-200 font-bold rounded-2xl border border-slate-600 flex items-center justify-center gap-2 transition-all text-sm"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>গিটহাব রিলিজ পাতা</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Install Guide Card */}
+            <div className="lg:col-span-5 bg-slate-800/90 rounded-2xl p-6 border border-slate-700 space-y-4">
+              <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>নিরাপদ ইনস্টলেশন নির্দেশিকা</span>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-300">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[11px] flex-shrink-0 mt-0.5">
+                    ১
+                  </div>
+                  <p>
+                    উপরের বাটন চেপে <strong className="text-white">APK ফাইলটি</strong> আপনার ফোনে ডাউনলোড করুন।
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[11px] flex-shrink-0 mt-0.5">
+                    ২
+                  </div>
+                  <p>
+                    ডাউনলোড শেষে ফাইলে ক্লিক করে <strong className="text-white">"Install unknown apps"</strong> বা অজানা উৎস থেকে ইনস্টল করার অনুমতি দিন।
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[11px] flex-shrink-0 mt-0.5">
+                    ৩
+                  </div>
+                  <p>
+                    গুগল প্লে প্রোটেক্টের বার্তা প্রদর্শিত হলে <strong className="text-white">"Install anyway"</strong> নির্বাচন করুন।
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[11px] flex-shrink-0 mt-0.5">
+                    ৪
+                  </div>
+                  <p>
+                    ইনস্টল শেষে অ্যাপ ওপেন করে আপনার বর্তমান একাউন্ট দিয়ে লগইন করলেই ডাটা স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-700/80 text-[11px] text-slate-400">
+                <span className="font-mono text-[10px] break-all block">
+                  SHA-256: a7c936df35b4ce70a6c221191a92eef851a7e2b694697bfb557c6b907153641b
+                </span>
+              </div>
             </div>
           </div>
         </div>

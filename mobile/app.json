@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "রক্তদান বাংলাদেশ",
+    "slug": "blood-donation-bangla",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#C62828"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.bloodbd.app"
+    },
+    "android": {
+      "package": "org.bloodbd.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#C62828"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "INTERNET"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "blood-donation-bangla"
+      },
+      "apiUrl": "https://blood-donationbangla.vercel.app/api",
+      "appNameBn": "রক্তদান বাংলাদেশ",
+      "version": "1.0.0"
+    }
+  }
+}

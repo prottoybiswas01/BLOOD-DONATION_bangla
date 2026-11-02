@@ -12,6 +12,8 @@ on:
 jobs:
   build-apk:
     name: Build Standalone Android APK
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
@@ -30,9 +32,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Install Mobile Dependencies
         run: |

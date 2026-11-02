@@ -95940,9 +95940,37 @@ var BANGLADESH_DIVISIONS = [
           { id: "savar", nameEn: "Savar", nameBn: "\u09B8\u09BE\u09AD\u09BE\u09B0" },
           { id: "dhamrai", nameEn: "Dhamrai", nameBn: "\u09A7\u09BE\u09AE\u09B0\u09BE\u0987" },
           { id: "keraniganj", nameEn: "Keraniganj", nameBn: "\u0995\u09C7\u09B0\u09BE\u09A8\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "dohar", nameEn: "Dohar", nameBn: "\u09A6\u09CB\u09B9\u09BE\u09B0" },
+          { id: "nawabganj", nameEn: "Nawabganj", nameBn: "\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C" },
           { id: "badda", nameEn: "Badda", nameBn: "\u09AC\u09BE\u09A1\u09CD\u09A1\u09BE" },
           { id: "khilgaon", nameEn: "Khilgaon", nameBn: "\u0996\u09BF\u09B2\u0997\u09BE\u0981\u0993" },
-          { id: "jatrabari", nameEn: "Jatrabari", nameBn: "\u09AF\u09BE\u09A4\u09CD\u09B0\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
+          { id: "jatrabari", nameEn: "Jatrabari", nameBn: "\u09AF\u09BE\u09A4\u09CD\u09B0\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "tejgaon", nameEn: "Tejgaon", nameBn: "\u09A4\u09C7\u099C\u0997\u09BE\u0981\u0993" },
+          { id: "ramna", nameEn: "Ramna", nameBn: "\u09B0\u09AE\u09A8\u09BE" },
+          { id: "lalbagh", nameEn: "Lalbagh", nameBn: "\u09B2\u09BE\u09B2\u09AC\u09BE\u0997" },
+          { id: "paltan", nameEn: "Paltan", nameBn: "\u09AA\u09B2\u09CD\u099F\u09A8" },
+          { id: "hazaribagh", nameEn: "Hazaribagh", nameBn: "\u09B9\u09BE\u099C\u09BE\u09B0\u09C0\u09AC\u09BE\u0997" },
+          { id: "demra", nameEn: "Demra", nameBn: "\u09A1\u09C7\u09AE\u09B0\u09BE" },
+          { id: "sabujbagh", nameEn: "Sabujbagh", nameBn: "\u09B8\u09AC\u09C1\u099C\u09AC\u09BE\u0997" },
+          { id: "sutrapur", nameEn: "Sutrapur", nameBn: "\u09B8\u09C2\u09A4\u09CD\u09B0\u09BE\u09AA\u09C1\u09B0" },
+          { id: "kotwali_dhk", nameEn: "Kotwali", nameBn: "\u0995\u09CB\u09A4\u09CB\u09AF\u09BC\u09BE\u09B2\u09C0" },
+          { id: "cantonment", nameEn: "Cantonment", nameBn: "\u0995\u09CD\u09AF\u09BE\u09A8\u09CD\u099F\u09A8\u09AE\u09C7\u09A8\u09CD\u099F" },
+          { id: "kafrul", nameEn: "Kafrul", nameBn: "\u0995\u09BE\u09AB\u09B0\u09C1\u09B2" },
+          { id: "rampura", nameEn: "Rampura", nameBn: "\u09B0\u09BE\u09AE\u09AA\u09C1\u09B0\u09BE" },
+          { id: "khilkhet", nameEn: "Khilkhet", nameBn: "\u0996\u09BF\u09B2\u0995\u09CD\u09B7\u09C7\u09A4" },
+          { id: "bhatara", nameEn: "Bhatara", nameBn: "\u09AD\u09BE\u099F\u09BE\u09B0\u09BE" },
+          { id: "turag", nameEn: "Turag", nameBn: "\u09A4\u09C1\u09B0\u09BE\u0997" },
+          { id: "dakshinkhan", nameEn: "Dakshinkhan", nameBn: "\u09A6\u0995\u09CD\u09B7\u09BF\u09A3\u0996\u09BE\u09A8" },
+          { id: "uttarkhan", nameEn: "Uttarkhan", nameBn: "\u0989\u09A4\u09CD\u09A4\u09B0\u0996\u09BE\u09A8" },
+          { id: "kamrangirchar", nameEn: "Kamrangirchar", nameBn: "\u0995\u09BE\u09AE\u09B0\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u099A\u09B0" },
+          { id: "chawkbazar", nameEn: "Chawkbazar", nameBn: "\u099A\u0995\u09AC\u09BE\u099C\u09BE\u09B0" },
+          { id: "wari", nameEn: "Wari", nameBn: "\u0993\u09AF\u09BC\u09BE\u09B0\u09C0" },
+          { id: "shah_ali", nameEn: "Shah Ali", nameBn: "\u09B6\u09BE\u09B9 \u0986\u09B2\u09C0" },
+          { id: "kadamtali", nameEn: "Kadamtali", nameBn: "\u0995\u09A6\u09AE\u09A4\u09B2\u09C0" },
+          { id: "kalabagan", nameEn: "Kalabagan", nameBn: "\u0995\u09B2\u09BE\u09AC\u09BE\u0997\u09BE\u09A8" },
+          { id: "mugda", nameEn: "Mugda", nameBn: "\u09AE\u09C1\u0997\u09A6\u09BE" },
+          { id: "rupnagar", nameEn: "Rupnagar", nameBn: "\u09B0\u09C2\u09AA\u09A8\u0997\u09B0" },
+          { id: "vashantek", nameEn: "Vashantek", nameBn: "\u09AD\u09BE\u09B7\u09BE\u09A8\u099F\u09C7\u0995" }
         ]
       },
       {
@@ -95954,7 +95982,8 @@ var BANGLADESH_DIVISIONS = [
           { id: "kaliakair", nameEn: "Kaliakair", nameBn: "\u0995\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u0995\u09C8\u09B0" },
           { id: "kapasia", nameEn: "Kapasia", nameBn: "\u0995\u09BE\u09AA\u09BE\u09B8\u09BF\u09AF\u09BC\u09BE" },
           { id: "sreepur", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" },
-          { id: "kaliganj", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+          { id: "kaliganj", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "tongi", nameEn: "Tongi", nameBn: "\u099F\u0999\u09CD\u0997\u09C0" }
         ]
       },
       {
@@ -95977,7 +96006,15 @@ var BANGLADESH_DIVISIONS = [
           { id: "tangail_sadar", nameEn: "Tangail Sadar", nameBn: "\u099F\u09BE\u0999\u09CD\u0997\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
           { id: "mirzapur", nameEn: "Mirzapur", nameBn: "\u09AE\u09BF\u09B0\u09CD\u099C\u09BE\u09AA\u09C1\u09B0" },
           { id: "ghatail", nameEn: "Ghatail", nameBn: "\u0998\u09BE\u099F\u09BE\u0987\u09B2" },
-          { id: "madhupur", nameEn: "Madhupur", nameBn: "\u09AE\u09A7\u09C1\u09AA\u09C1\u09B0" }
+          { id: "madhupur", nameEn: "Madhupur", nameBn: "\u09AE\u09A7\u09C1\u09AA\u09C1\u09B0" },
+          { id: "sakhipur", nameEn: "Sakhipur", nameBn: "\u09B8\u0996\u09BF\u09AA\u09C1\u09B0" },
+          { id: "kalihati", nameEn: "Kalihati", nameBn: "\u0995\u09BE\u09B2\u09BF\u09B9\u09BE\u09A4\u09C0" },
+          { id: "basail", nameEn: "Basail", nameBn: "\u09AC\u09BE\u09B8\u09BE\u0987\u09B2" },
+          { id: "delduar", nameEn: "Delduar", nameBn: "\u09A6\u09C7\u09B2\u09A6\u09C1\u09AF\u09BC\u09BE\u09B0" },
+          { id: "nagarpur", nameEn: "Nagarpur", nameBn: "\u09A8\u09BE\u0997\u09B0\u09AA\u09C1\u09B0" },
+          { id: "gopalpur", nameEn: "Gopalpur", nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u09AA\u09C1\u09B0" },
+          { id: "bhuapur", nameEn: "Bhuapur", nameBn: "\u09AD\u09C2\u099E\u09BE\u09AA\u09C1\u09B0" },
+          { id: "dhanbari", nameEn: "Dhanbari", nameBn: "\u09A7\u09A8\u09AC\u09BE\u09A1\u09BC\u09C0" }
         ]
       },
       {
@@ -95987,7 +96024,13 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "faridpur_sadar", nameEn: "Faridpur Sadar", nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
           { id: "bhanga", nameEn: "Bhanga", nameBn: "\u09AD\u09BE\u0999\u09CD\u0997\u09BE" },
-          { id: "boalmari", nameEn: "Boalmari", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09AE\u09BE\u09B0\u09C0" }
+          { id: "boalmari", nameEn: "Boalmari", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09AE\u09BE\u09B0\u09C0" },
+          { id: "sadarpur", nameEn: "Sadarpur", nameBn: "\u09B8\u09A6\u09B0\u09AA\u09C1\u09B0" },
+          { id: "nagarkanda", nameEn: "Nagarkanda", nameBn: "\u09A8\u0997\u09B0\u0995\u09BE\u09A8\u09CD\u09A6\u09BE" },
+          { id: "madhukhali", nameEn: "Madhukhali", nameBn: "\u09AE\u09A7\u09C1\u0996\u09BE\u09B2\u09C0" },
+          { id: "charbhadrasan", nameEn: "Charbhadrasan", nameBn: "\u099A\u09B0\u09AD\u09A6\u09CD\u09B0\u09BE\u09B8\u09A8" },
+          { id: "alfadanga", nameEn: "Alfadanga", nameBn: "\u0986\u09B2\u09AB\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE" },
+          { id: "saltha", nameEn: "Saltha", nameBn: "\u09B8\u09BE\u09B2\u09A5\u09BE" }
         ]
       },
       {
@@ -95996,7 +96039,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "manikganj_sadar", nameEn: "Manikganj Sadar", nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "singair", nameEn: "Singair", nameBn: "\u09B8\u09BF\u0982\u0997\u09BE\u0987\u09B0" }
+          { id: "singair", nameEn: "Singair", nameBn: "\u09B8\u09BF\u0982\u0997\u09BE\u0987\u09B0" },
+          { id: "shibalaya", nameEn: "Shibalaya", nameBn: "\u09B6\u09BF\u09AC\u09BE\u09B2\u09AF\u09BC" },
+          { id: "saturia", nameEn: "Saturia", nameBn: "\u09B8\u09BE\u099F\u09C1\u09B0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "harirampur", nameEn: "Harirampur", nameBn: "\u09B9\u09B0\u09BF\u09B0\u09BE\u09AE\u09AA\u09C1\u09B0" },
+          { id: "ghior", nameEn: "Ghior", nameBn: "\u0998\u09BF\u0993\u09B0" },
+          { id: "daulatpur_man", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" }
         ]
       },
       {
@@ -96005,7 +96053,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "munshiganj_sadar", nameEn: "Munshiganj Sadar", nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "sreenagar", nameEn: "Sreenagar", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09A8\u0997\u09B0" }
+          { id: "tongibari", nameEn: "Tongibari", nameBn: "\u099F\u0982\u0997\u09BF\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "serajdikhan", nameEn: "Serajdikhan", nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u09A6\u09BF\u0996\u09BE\u09A8" },
+          { id: "louhajang", nameEn: "Louhajang", nameBn: "\u09B2\u09CC\u09B9\u099C\u0982" },
+          { id: "sreenagar", nameEn: "Sreenagar", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09A8\u0997\u09B0" },
+          { id: "gazaria", nameEn: "Gazaria", nameBn: "\u0997\u099C\u09BE\u09B0\u09BF\u09AF\u09BC\u09BE" }
         ]
       },
       {
@@ -96014,8 +96066,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0",
         upazilas: [
           { id: "narsingdi_sadar", nameEn: "Narsingdi Sadar", nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "raipura", nameEn: "Raipura", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0\u09BE" },
           { id: "shibpur", nameEn: "Shibpur", nameBn: "\u09B6\u09BF\u09AC\u09AA\u09C1\u09B0" },
-          { id: "raipura", nameEn: "Raipura", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0\u09BE" }
+          { id: "belabo", nameEn: "Belabo", nameBn: "\u09AC\u09C7\u09B2\u09BE\u09AC\u09CB" },
+          { id: "monohardi", nameEn: "Monohardi", nameBn: "\u09AE\u09A8\u09CB\u09B9\u09B0\u09A6\u09C0" },
+          { id: "palash", nameEn: "Palash", nameBn: "\u09AA\u09B2\u09BE\u09B6" }
         ]
       },
       {
@@ -96024,6 +96079,9 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "gopalganj_sadar", nameEn: "Gopalganj Sadar", nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "kashiani", nameEn: "Kashiani", nameBn: "\u0995\u09BE\u09B6\u09BF\u09AF\u09BC\u09BE\u09A8\u09C0" },
+          { id: "kotalipara", nameEn: "Kotalipara", nameBn: "\u0995\u09CB\u099F\u09BE\u09B2\u09C0\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "muksudpur", nameEn: "Muksudpur", nameBn: "\u09AE\u09C1\u0995\u09B8\u09C1\u09A6\u09AA\u09C1\u09B0" },
           { id: "tungipara", nameEn: "Tungipara", nameBn: "\u099F\u09C1\u0999\u09CD\u0997\u09BF\u09AA\u09BE\u09A1\u09BC\u09BE" }
         ]
       },
@@ -96033,7 +96091,10 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "madaripur_sadar", nameEn: "Madaripur Sadar", nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "shibchar", nameEn: "Shibchar", nameBn: "\u09B6\u09BF\u09AC\u099A\u09B0" }
+          { id: "shibchar", nameEn: "Shibchar", nameBn: "\u09B6\u09BF\u09AC\u099A\u09B0" },
+          { id: "kalkini", nameEn: "Kalkini", nameBn: "\u0995\u09BE\u09B2\u0995\u09BF\u09A8\u09BF" },
+          { id: "rajoir", nameEn: "Rajoir", nameBn: "\u09B0\u09BE\u099C\u09C8\u09B0" },
+          { id: "dasar", nameEn: "Dasar", nameBn: "\u09A1\u09BE\u09B8\u09BE\u09B0" }
         ]
       },
       {
@@ -96042,7 +96103,10 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0",
         upazilas: [
           { id: "rajbari_sadar", nameEn: "Rajbari Sadar", nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "pangsha", nameEn: "Pangsha", nameBn: "\u09AA\u09BE\u0982\u09B6\u09BE" }
+          { id: "goalanda", nameEn: "Goalanda", nameBn: "\u0997\u09CB\u09AF\u09BC\u09BE\u09B2\u09A8\u09CD\u09A6" },
+          { id: "pangsha", nameEn: "Pangsha", nameBn: "\u09AA\u09BE\u0982\u09B6\u09BE" },
+          { id: "baliakandi", nameEn: "Baliakandi", nameBn: "\u09AC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u0995\u09BE\u09A8\u09CD\u09A6\u09BF" },
+          { id: "kalukhali", nameEn: "Kalukhali", nameBn: "\u0995\u09BE\u09B2\u09C1\u0996\u09BE\u09B2\u09C0" }
         ]
       },
       {
@@ -96051,7 +96115,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "shariatpur_sadar", nameEn: "Shariatpur Sadar", nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "zajira", nameEn: "Zajira", nameBn: "\u099C\u09BE\u099C\u09BF\u09B0\u09BE" }
+          { id: "naria", nameEn: "Naria", nameBn: "\u09A8\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE" },
+          { id: "zanjira", nameEn: "Zanjira", nameBn: "\u099C\u09BE\u099C\u09BF\u09B0\u09BE" },
+          { id: "bhedarganj", nameEn: "Bhedarganj", nameBn: "\u09AD\u09C7\u09A6\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "damudya", nameEn: "Damudya", nameBn: "\u09A1\u09BE\u09AE\u09C1\u09A1\u09CD\u09AF\u09BE" },
+          { id: "gosairhat", nameEn: "Gosairhat", nameBn: "\u0997\u09CB\u09B8\u09BE\u0987\u09B0\u09B9\u09BE\u099F" }
         ]
       },
       {
@@ -96060,7 +96128,18 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "kishoreganj_sadar", nameEn: "Kishoreganj Sadar", nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "bhairab", nameEn: "Bhairab", nameBn: "\u09AD\u09C8\u09B0\u09AC" }
+          { id: "bhairab", nameEn: "Bhairab", nameBn: "\u09AD\u09C8\u09B0\u09AC" },
+          { id: "bajitpur", nameEn: "Bajitpur", nameBn: "\u09AC\u09BE\u099C\u09BF\u09A4\u09AA\u09C1\u09B0" },
+          { id: "kuliarchar", nameEn: "Kuliarchar", nameBn: "\u0995\u09C1\u09B2\u09BF\u09AF\u09BC\u09BE\u09B0\u099A\u09B0" },
+          { id: "pakundia", nameEn: "Pakundia", nameBn: "\u09AA\u09BE\u0995\u09C1\u09A8\u09CD\u09A6\u09BF\u09AF\u09BC\u09BE" },
+          { id: "katiadi", nameEn: "Katiadi", nameBn: "\u0995\u099F\u09BF\u09AF\u09BC\u09BE\u09A6\u09C0" },
+          { id: "karimganj", nameEn: "Karimganj", nameBn: "\u0995\u09B0\u09BF\u09AE\u0997\u099E\u09CD\u099C" },
+          { id: "tarail", nameEn: "Tarail", nameBn: "\u09A4\u09BE\u09A1\u09BC\u09BE\u0987\u09B2" },
+          { id: "hossainpur", nameEn: "Hossainpur", nameBn: "\u09B9\u09CB\u09B8\u09C7\u09A8\u09AA\u09C1\u09B0" },
+          { id: "itna", nameEn: "Itna", nameBn: "\u0987\u099F\u09A8\u09BE" },
+          { id: "mithamain", nameEn: "Mithamain", nameBn: "\u09AE\u09BF\u09A0\u09BE\u09AE\u0987\u09A8" },
+          { id: "ashtagram", nameEn: "Ashtagram", nameBn: "\u0985\u09B7\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE" },
+          { id: "nikli", nameEn: "Nikli", nameBn: "\u09A8\u09BF\u0995\u09B2\u09C0" }
         ]
       }
     ]
@@ -96075,15 +96154,28 @@ var BANGLADESH_DIVISIONS = [
         nameEn: "Chattogram",
         nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
         upazilas: [
-          { id: "kotwali_ctg", nameEn: "Kotwali", nameBn: "\u0995\u09CB\u09A4\u09CB\u09AF\u09BC\u09BE\u09B2\u09C0" },
-          { id: "panchlaish", nameEn: "Panchlaish", nameBn: "\u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6" },
-          { id: "halishahar", nameEn: "Halishahar", nameBn: "\u09B9\u09BE\u09B2\u09BF\u09B6\u09B9\u09B0" },
-          { id: "agrabad", nameEn: "Agrabad", nameBn: "\u0986\u0997\u09CD\u09B0\u09BE\u09AC\u09BE\u09A6" },
+          { id: "chattogram_sadar", nameEn: "Chattogram Sadar", nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09A6\u09B0" },
+          { id: "anwara", nameEn: "Anwara", nameBn: "\u0986\u09A8\u09CB\u09AF\u09BC\u09BE\u09B0\u09BE" },
+          { id: "banshkhali", nameEn: "Banshkhali", nameBn: "\u09AC\u09BE\u0981\u09B6\u0996\u09BE\u09B2\u09C0" },
+          { id: "boalkhali", nameEn: "Boalkhali", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u0996\u09BE\u09B2\u09C0" },
+          { id: "chandanaish", nameEn: "Chandanaish", nameBn: "\u099A\u09A8\u09CD\u09A6\u09A8\u09BE\u0987\u09B6" },
+          { id: "fatikchhari", nameEn: "Fatikchhari", nameBn: "\u09AB\u099F\u09BF\u0995\u099B\u09A1\u09BC\u09BF" },
           { id: "hathazari", nameEn: "Hathazari", nameBn: "\u09B9\u09BE\u099F\u09B9\u09BE\u099C\u09BE\u09B0\u09C0" },
-          { id: "sitakunda", nameEn: "Sitakunda", nameBn: "\u09B8\u09C0\u09A4\u09BE\u0995\u09C1\u09A3\u09CD\u09A1" },
+          { id: "karnaphuli", nameEn: "Karnaphuli", nameBn: "\u0995\u09B0\u09CD\u09A3\u09AB\u09C1\u09B2\u09C0" },
+          { id: "lohagara", nameEn: "Lohagara", nameBn: "\u09B2\u09CB\u09B9\u09BE\u0997\u09BE\u09A1\u09BC\u09BE" },
           { id: "mirsharai", nameEn: "Mirsharai", nameBn: "\u09AE\u09C0\u09B0\u09B8\u09B0\u09BE\u0987" },
           { id: "patiya", nameEn: "Patiya", nameBn: "\u09AA\u099F\u09BF\u09AF\u09BC\u09BE" },
-          { id: "raozan", nameEn: "Raozan", nameBn: "\u09B0\u09BE\u0989\u099C\u09BE\u09A8" }
+          { id: "rangunia", nameEn: "Rangunia", nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09C1\u09A8\u09BF\u09AF\u09BC\u09BE" },
+          { id: "raozan", nameEn: "Raozan", nameBn: "\u09B0\u09BE\u0989\u099C\u09BE\u09A8" },
+          { id: "sandwip", nameEn: "Sandwip", nameBn: "\u09B8\u09A8\u09CD\u09A6\u09CD\u09AC\u09C0\u09AA" },
+          { id: "satkania", nameEn: "Satkania", nameBn: "\u09B8\u09BE\u09A4\u0995\u09BE\u09A8\u09BF\u09AF\u09BC\u09BE" },
+          { id: "sitakunda", nameEn: "Sitakunda", nameBn: "\u09B8\u09C0\u09A4\u09BE\u0995\u09C1\u09A3\u09CD\u09A1" },
+          { id: "kotwali_ctg", nameEn: "Kotwali", nameBn: "\u0995\u09CB\u09A4\u09CB\u09AF\u09BC\u09BE\u09B2\u09C0" },
+          { id: "panchlaish", nameEn: "Panchlaish", nameBn: "\u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6" },
+          { id: "pahartali", nameEn: "Pahartali", nameBn: "\u09AA\u09BE\u09B9\u09BE\u09A1\u09BC\u09A4\u09B2\u09C0" },
+          { id: "halishahar", nameEn: "Halishahar", nameBn: "\u09B9\u09BE\u09B2\u09BF\u09B6\u09B9\u09B0" },
+          { id: "patenga", nameEn: "Patenga", nameBn: "\u09AA\u09A4\u09C7\u0999\u09CD\u0997\u09BE" },
+          { id: "chandgaon", nameEn: "Chandgaon", nameBn: "\u099A\u09BE\u09A8\u09CD\u09A6\u0997\u09BE\u0981\u0993" }
         ]
       },
       {
@@ -96092,9 +96184,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0",
         upazilas: [
           { id: "coxsbazar_sadar", nameEn: "Cox's Bazar Sadar", nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "ramu", nameEn: "Ramu", nameBn: "\u09B0\u09BE\u09AE\u09C1" },
+          { id: "chakaria", nameEn: "Chakaria", nameBn: "\u099A\u0995\u09CB\u09B0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "maheshkhali", nameEn: "Maheshkhali", nameBn: "\u09AE\u09B9\u09C7\u09B6\u0996\u09BE\u09B2\u09C0" },
           { id: "teknaf", nameEn: "Teknaf", nameBn: "\u099F\u09C7\u0995\u09A8\u09BE\u09AB" },
-          { id: "chakaria", nameEn: "Chakaria", nameBn: "\u099A\u0995\u09CB\u09B0\u09BF\u09AF\u09BC\u09BE" }
+          { id: "ukhiya", nameEn: "Ukhiya", nameBn: "\u0989\u0996\u09BF\u09AF\u09BC\u09BE" },
+          { id: "ramu", nameEn: "Ramu", nameBn: "\u09B0\u09BE\u09AE\u09C1" },
+          { id: "pekua", nameEn: "Pekua", nameBn: "\u09AA\u09C7\u0995\u09C1\u09AF\u09BC\u09BE" },
+          { id: "kutubdia", nameEn: "Kutubdia", nameBn: "\u0995\u09C1\u09A4\u09C1\u09AC\u09A6\u09BF\u09AF\u09BC\u09BE" },
+          { id: "eidgaon", nameEn: "Eidgaon", nameBn: "\u0988\u09A6\u0997\u09BE\u0981\u0993" }
         ]
       },
       {
@@ -96103,9 +96200,22 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0995\u09C1\u09AE\u09BF\u09B2\u09CD\u09B2\u09BE",
         upazilas: [
           { id: "cumilla_adarsha_sadar", nameEn: "Adarsha Sadar", nameBn: "\u0986\u09A6\u09B0\u09CD\u09B6 \u09B8\u09A6\u09B0" },
+          { id: "cumilla_sadar_dakshin", nameEn: "Sadar Dakshin", nameBn: "\u09B8\u09A6\u09B0 \u09A6\u0995\u09CD\u09B7\u09BF\u09A3" },
           { id: "laksham", nameEn: "Laksham", nameBn: "\u09B2\u09BE\u0995\u09B8\u09BE\u09AE" },
           { id: "chandina", nameEn: "Chandina", nameBn: "\u099A\u09BE\u09A8\u09CD\u09A6\u09BF\u09A8\u09BE" },
-          { id: "debidwar", nameEn: "Debidwar", nameBn: "\u09A6\u09C7\u09AC\u09BF\u09A6\u09CD\u09AC\u09BE\u09B0" }
+          { id: "debidwar", nameEn: "Debidwar", nameBn: "\u09A6\u09C7\u09AC\u09BF\u09A6\u09CD\u09AC\u09BE\u09B0" },
+          { id: "daudkandi", nameEn: "Daudkandi", nameBn: "\u09A6\u09BE\u0989\u09A6\u0995\u09BE\u09A8\u09CD\u09A6\u09BF" },
+          { id: "barura", nameEn: "Barura", nameBn: "\u09AC\u09B0\u09C1\u09A1\u09BC\u09BE" },
+          { id: "burichang", nameEn: "Burichang", nameBn: "\u09AC\u09C1\u09A1\u09BC\u09BF\u099A\u0982" },
+          { id: "brahmanpara", nameEn: "Brahmanpara", nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "chauddagram", nameEn: "Chauddagram", nameBn: "\u099A\u09CC\u09A6\u09CD\u09A6\u0997\u09CD\u09B0\u09BE\u09AE" },
+          { id: "homna", nameEn: "Homna", nameBn: "\u09B9\u09CB\u09AE\u09A8\u09BE" },
+          { id: "muradnagar", nameEn: "Muradnagar", nameBn: "\u09AE\u09C1\u09B0\u09BE\u09A6\u09A8\u0997\u09B0" },
+          { id: "nangalkot", nameEn: "Nangalkot", nameBn: "\u09A8\u09BE\u0999\u09CD\u0997\u09B2\u0995\u09CB\u099F" },
+          { id: "meghna", nameEn: "Meghna", nameBn: "\u09AE\u09C7\u0998\u09A8\u09BE" },
+          { id: "titas", nameEn: "Titas", nameBn: "\u09A4\u09BF\u09A4\u09BE\u09B8" },
+          { id: "monohargonj", nameEn: "Monohargonj", nameBn: "\u09AE\u09A8\u09CB\u09B9\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "lalmai", nameEn: "Lalmai", nameBn: "\u09B2\u09BE\u09B2\u09AE\u09BE\u0987" }
         ]
       },
       {
@@ -96115,7 +96225,10 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "feni_sadar", nameEn: "Feni Sadar", nameBn: "\u09AB\u09C7\u09A8\u09C0 \u09B8\u09A6\u09B0" },
           { id: "daganbhuiyan", nameEn: "Daganbhuiyan", nameBn: "\u09A6\u09BE\u0997\u09A8\u09AD\u09C2\u099E\u09BE" },
-          { id: "parshuram", nameEn: "Parshuram", nameBn: "\u09AA\u09B0\u09B6\u09C1\u09B0\u09BE\u09AE" }
+          { id: "parshuram", nameEn: "Parshuram", nameBn: "\u09AA\u09B0\u09B6\u09C1\u09B0\u09BE\u09AE" },
+          { id: "chhagalnaiya", nameEn: "Chhagalnaiya", nameBn: "\u099B\u09BE\u0997\u09B2\u09A8\u09BE\u0987\u09AF\u09BC\u09BE" },
+          { id: "sonagazi", nameEn: "Sonagazi", nameBn: "\u09B8\u09CB\u09A8\u09BE\u0997\u09BE\u099C\u09C0" },
+          { id: "fulgazi", nameEn: "Fulgazi", nameBn: "\u09AB\u09C1\u09B2\u0997\u09BE\u099C\u09C0" }
         ]
       },
       {
@@ -96125,7 +96238,13 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "brahmanbaria_sadar", nameEn: "Brahmanbaria Sadar", nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
           { id: "ashuganj", nameEn: "Ashuganj", nameBn: "\u0986\u09B6\u09C1\u0997\u099E\u09CD\u099C" },
-          { id: "sarail", nameEn: "Sarail", nameBn: "\u09B8\u09B0\u09BE\u0987\u09B2" }
+          { id: "sarail", nameEn: "Sarail", nameBn: "\u09B8\u09B0\u09BE\u0987\u09B2" },
+          { id: "akhaura", nameEn: "Akhaura", nameBn: "\u0986\u0996\u09BE\u0989\u09A1\u09BC\u09BE" },
+          { id: "bancharampur", nameEn: "Bancharampur", nameBn: "\u09AC\u09BE\u099E\u09CD\u099B\u09BE\u09B0\u09BE\u09AE\u09AA\u09C1\u09B0" },
+          { id: "kasba", nameEn: "Kasba", nameBn: "\u0995\u09B8\u09AC\u09BE" },
+          { id: "nabinagar", nameEn: "Nabinagar", nameBn: "\u09A8\u09AC\u09C0\u09A8\u0997\u09B0" },
+          { id: "nasirnagar", nameEn: "Nasirnagar", nameBn: "\u09A8\u09BE\u09B8\u09BF\u09B0\u09A8\u0997\u09B0" },
+          { id: "bijoynagar", nameEn: "Bijoynagar", nameBn: "\u09AC\u09BF\u099C\u09AF\u09BC\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96135,7 +96254,12 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "chandpur_sadar", nameEn: "Chandpur Sadar", nameBn: "\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
           { id: "hajiganj", nameEn: "Hajiganj", nameBn: "\u09B9\u09BE\u099C\u09C0\u0997\u099E\u09CD\u099C" },
-          { id: "matlab", nameEn: "Matlab", nameBn: "\u09AE\u09A4\u09B2\u09AC" }
+          { id: "matlab_uttar", nameEn: "Matlab Uttar", nameBn: "\u09AE\u09A4\u09B2\u09AC \u0989\u09A4\u09CD\u09A4\u09B0" },
+          { id: "matlab_dakshin", nameEn: "Matlab Dakshin", nameBn: "\u09AE\u09A4\u09B2\u09AC \u09A6\u0995\u09CD\u09B7\u09BF\u09A3" },
+          { id: "shahrasti", nameEn: "Shahrasti", nameBn: "\u09B6\u09BE\u09B9\u09B0\u09BE\u09B8\u09CD\u09A4\u09BF" },
+          { id: "kachua", nameEn: "Kachua", nameBn: "\u0995\u099A\u09C1\u09AF\u09BC\u09BE" },
+          { id: "faridganj", nameEn: "Faridganj", nameBn: "\u09AB\u09B0\u09BF\u09A6\u0997\u099E\u09CD\u099C" },
+          { id: "haimchar", nameEn: "Haimchar", nameBn: "\u09B9\u09BE\u0987\u09AE\u099A\u09B0" }
         ]
       },
       {
@@ -96145,7 +96269,13 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "noakhali_sadar", nameEn: "Noakhali Sadar", nameBn: "\u09A8\u09CB\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
           { id: "begumganj", nameEn: "Begumganj", nameBn: "\u09AC\u09C7\u0997\u09AE\u0997\u099E\u09CD\u099C" },
-          { id: "senbagh", nameEn: "Senbagh", nameBn: "\u09B8\u09C7\u09A8\u09AC\u09BE\u0997" }
+          { id: "senbagh", nameEn: "Senbagh", nameBn: "\u09B8\u09C7\u09A8\u09AC\u09BE\u0997" },
+          { id: "chatkhil", nameEn: "Chatkhil", nameBn: "\u099A\u09BE\u099F\u0996\u09BF\u09B2" },
+          { id: "companiganj", nameEn: "Companiganj", nameBn: "\u0995\u09CB\u09AE\u09CD\u09AA\u09BE\u09A8\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "hatiya", nameEn: "Hatiya", nameBn: "\u09B9\u09BE\u09A4\u09BF\u09AF\u09BC\u09BE" },
+          { id: "kabirhat", nameEn: "Kabirhat", nameBn: "\u0995\u09AC\u09BF\u09B0\u09B9\u09BE\u099F" },
+          { id: "sonaimuri", nameEn: "Sonaimuri", nameBn: "\u09B8\u09CB\u09A8\u09BE\u0987\u09AE\u09C1\u09A1\u09BC\u09C0" },
+          { id: "subarnachar", nameEn: "Subarnachar", nameBn: "\u09B8\u09C1\u09AC\u09B0\u09CD\u09A3\u099A\u09B0" }
         ]
       },
       {
@@ -96155,7 +96285,9 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "lakshmipur_sadar", nameEn: "Lakshmipur Sadar", nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
           { id: "ramganj", nameEn: "Ramganj", nameBn: "\u09B0\u09BE\u09AE\u0997\u099E\u09CD\u099C" },
-          { id: "raipur", nameEn: "Raipur", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0" }
+          { id: "raipur", nameEn: "Raipur", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0" },
+          { id: "ramgati", nameEn: "Ramgati", nameBn: "\u09B0\u09BE\u09AE\u0997\u09A4\u09BF" },
+          { id: "kamalnagar", nameEn: "Kamalnagar", nameBn: "\u0995\u09AE\u09B2\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96164,7 +96296,15 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF",
         upazilas: [
           { id: "rangamati_sadar", nameEn: "Rangamati Sadar", nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF \u09B8\u09A6\u09B0" },
-          { id: "kaptai", nameEn: "Kaptai", nameBn: "\u0995\u09BE\u09AA\u09CD\u09A4\u09BE\u0987" }
+          { id: "kaptai", nameEn: "Kaptai", nameBn: "\u0995\u09BE\u09AA\u09CD\u09A4\u09BE\u0987" },
+          { id: "kawkhali_ran", nameEn: "Kawkhali", nameBn: "\u0995\u09BE\u0989\u0996\u09BE\u09B2\u09C0" },
+          { id: "baghaichhari", nameEn: "Baghaichhari", nameBn: "\u09AC\u09BE\u0998\u09BE\u0987\u099B\u09A1\u09BC\u09BF" },
+          { id: "barkal", nameEn: "Barkal", nameBn: "\u09AC\u09B0\u0995\u09B2" },
+          { id: "langadu", nameEn: "Langadu", nameBn: "\u09B2\u0982\u0997\u09A6\u09C1" },
+          { id: "rajasthali", nameEn: "Rajasthali", nameBn: "\u09B0\u09BE\u099C\u09B8\u09CD\u09A5\u09B2\u09C0" },
+          { id: "belaichhari", nameEn: "Belaichhari", nameBn: "\u09AC\u09BF\u09B2\u09BE\u0987\u099B\u09A1\u09BC\u09BF" },
+          { id: "juraichhari", nameEn: "Juraichhari", nameBn: "\u099C\u09C1\u09B0\u09BE\u0987\u099B\u09A1\u09BC\u09BF" },
+          { id: "naniarchar", nameEn: "Naniarchar", nameBn: "\u09A8\u09BE\u09A8\u09BF\u09AF\u09BC\u09BE\u09B0\u099A\u09B0" }
         ]
       },
       {
@@ -96173,7 +96313,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF",
         upazilas: [
           { id: "khagrachhari_sadar", nameEn: "Khagrachhari Sadar", nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF \u09B8\u09A6\u09B0" },
-          { id: "dighinala", nameEn: "Dighinala", nameBn: "\u09A6\u09C0\u0998\u09BF\u09A8\u09BE\u09B2\u09BE" }
+          { id: "dighinala", nameEn: "Dighinala", nameBn: "\u09A6\u09C0\u0998\u09BF\u09A8\u09BE\u09B2\u09BE" },
+          { id: "panchhari", nameEn: "Panchhari", nameBn: "\u09AA\u09BE\u09A8\u099B\u09A1\u09BC\u09BF" },
+          { id: "mahalchhari", nameEn: "Mahalchhari", nameBn: "\u09AE\u09B9\u09BE\u09B2\u099B\u09A1\u09BC\u09BF" },
+          { id: "matiranga", nameEn: "Matiranga", nameBn: "\u09AE\u09BE\u099F\u09BF\u09B0\u09BE\u0999\u09CD\u0997\u09BE" },
+          { id: "manikchhari", nameEn: "Manikchhari", nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u099B\u09A1\u09BC\u09BF" },
+          { id: "ramgarh", nameEn: "Ramgarh", nameBn: "\u09B0\u09BE\u09AE\u0997\u09A1\u09BC" },
+          { id: "lakshmichhari", nameEn: "Lakshmichhari", nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u099B\u09A1\u09BC\u09BF" },
+          { id: "guimara", nameEn: "Guimara", nameBn: "\u0997\u09C1\u0987\u09AE\u09BE\u09B0\u09BE" }
         ]
       },
       {
@@ -96182,7 +96329,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8",
         upazilas: [
           { id: "bandarban_sadar", nameEn: "Bandarban Sadar", nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8 \u09B8\u09A6\u09B0" },
-          { id: "thanchi", nameEn: "Thanchi", nameBn: "\u09A5\u09BE\u09A8\u099A\u09BF" }
+          { id: "thanchi", nameEn: "Thanchi", nameBn: "\u09A5\u09BE\u09A8\u099A\u09BF" },
+          { id: "lama", nameEn: "Lama", nameBn: "\u09B2\u09BE\u09AE\u09BE" },
+          { id: "ruma", nameEn: "Ruma", nameBn: "\u09B0\u09C1\u09AE\u09BE" },
+          { id: "rowangchhari", nameEn: "Rowangchhari", nameBn: "\u09B0\u09CB\u09AF\u09BC\u09BE\u0982\u099B\u09A1\u09BC\u09BF" },
+          { id: "alikadam", nameEn: "Alikadam", nameBn: "\u0986\u09B2\u09C0\u0995\u09A6\u09AE" },
+          { id: "naikhongchhari", nameEn: "Naikhongchhari", nameBn: "\u09A8\u09BE\u0987\u0995\u09CD\u09B7\u09CD\u09AF\u0982\u099B\u09A1\u09BC\u09BF" }
         ]
       }
     ]
@@ -96197,11 +96349,19 @@ var BANGLADESH_DIVISIONS = [
         nameEn: "Rajshahi",
         nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
         upazilas: [
-          { id: "boalia", nameEn: "Boalia", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
-          { id: "rajpara", nameEn: "Rajpara", nameBn: "\u09B0\u09BE\u099C\u09AA\u09BE\u09A1\u09BC\u09BE" },
-          { id: "motihar", nameEn: "Motihar", nameBn: "\u09AE\u09A4\u09BF\u09B9\u09BE\u09B0" },
+          { id: "paba", nameEn: "Paba", nameBn: "\u09AA\u09AC\u09BE" },
           { id: "godagari", nameEn: "Godagari", nameBn: "\u0997\u09CB\u09A6\u09BE\u0997\u09BE\u09A1\u09BC\u09C0" },
-          { id: "paba", nameEn: "Paba", nameBn: "\u09AA\u09AC\u09BE" }
+          { id: "tanore", nameEn: "Tanore", nameBn: "\u09A4\u09BE\u09A8\u09CB\u09B0" },
+          { id: "mohanpur", nameEn: "Mohanpur", nameBn: "\u09AE\u09CB\u09B9\u09A8\u09AA\u09C1\u09B0" },
+          { id: "bagmara", nameEn: "Bagmara", nameBn: "\u09AC\u09BE\u0997\u09AE\u09BE\u09B0\u09BE" },
+          { id: "durgapur_raj", nameEn: "Durgapur", nameBn: "\u09A6\u09C1\u09B0\u09CD\u0997\u09BE\u09AA\u09C1\u09B0" },
+          { id: "puthia", nameEn: "Puthia", nameBn: "\u09AA\u09C1\u09A0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "charghat", nameEn: "Charghat", nameBn: "\u099A\u09BE\u09B0\u0998\u09BE\u099F" },
+          { id: "bagha", nameEn: "Bagha", nameBn: "\u09AC\u09BE\u0998\u09BE" },
+          { id: "boalia", nameEn: "Boalia", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
+          { id: "rajputra", nameEn: "Rajputra", nameBn: "\u09B0\u09BE\u099C\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "motihar", nameEn: "Motihar", nameBn: "\u09AE\u09A4\u09BF\u09B9\u09BE\u09B0" },
+          { id: "shah_makhdum", nameEn: "Shah Makhdum", nameBn: "\u09B6\u09BE\u09B9 \u09AE\u0996\u09A6\u09C1\u09AE" }
         ]
       },
       {
@@ -96210,8 +96370,17 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE",
         upazilas: [
           { id: "bogura_sadar", nameEn: "Bogura Sadar", nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE \u09B8\u09A6\u09B0" },
-          { id: "sherpur", nameEn: "Sherpur", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0" },
-          { id: "shibganj", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
+          { id: "shibganj_bog", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" },
+          { id: "sonatola", nameEn: "Sonatola", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09A4\u09B2\u09BE" },
+          { id: "gabtali", nameEn: "Gabtali", nameBn: "\u0997\u09BE\u09AC\u09A4\u09B2\u09C0" },
+          { id: "shajahanpur", nameEn: "Shajahanpur", nameBn: "\u09B6\u09BE\u099C\u09BE\u09B9\u09BE\u09A8\u09AA\u09C1\u09B0" },
+          { id: "kahaloo", nameEn: "Kahaloo", nameBn: "\u0995\u09BE\u09B9\u09BE\u09B2\u09C1" },
+          { id: "nandigram", nameEn: "Nandigram", nameBn: "\u09A8\u09A8\u09CD\u09A6\u09C0\u0997\u09CD\u09B0\u09BE\u09AE" },
+          { id: "adamdighi", nameEn: "Adamdighi", nameBn: "\u0986\u09A6\u09AE\u09A6\u09C0\u0998\u09BF" },
+          { id: "dhupchanchia", nameEn: "Dhupchanchia", nameBn: "\u09A6\u09C1\u09AA\u099A\u09BE\u0981\u099A\u09BF\u09AF\u09BC\u09BE" },
+          { id: "sariakandi", nameEn: "Sariakandi", nameBn: "\u09B8\u09BE\u09B0\u09BF\u09AF\u09BC\u09BE\u0995\u09BE\u09A8\u09CD\u09A6\u09BF" },
+          { id: "sherpur_bog", nameEn: "Sherpur", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0" },
+          { id: "dhunat", nameEn: "Dhunat", nameBn: "\u09A7\u09C1\u09A8\u099F" }
         ]
       },
       {
@@ -96220,7 +96389,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE",
         upazilas: [
           { id: "pabna_sadar", nameEn: "Pabna Sadar", nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE \u09B8\u09A6\u09B0" },
-          { id: "ishwardi", nameEn: "Ishwardi", nameBn: "\u0988\u09B6\u09CD\u09AC\u09B0\u09A6\u09C0" }
+          { id: "ishwardi", nameEn: "Ishwardi", nameBn: "\u0988\u09B6\u09CD\u09AC\u09B0\u09A6\u09C0" },
+          { id: "atgharia", nameEn: "Atgharia", nameBn: "\u0986\u099F\u0998\u09B0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "bera", nameEn: "Bera", nameBn: "\u09AC\u09C7\u09A1\u09BC\u09BE" },
+          { id: "bhangura", nameEn: "Bhangura", nameBn: "\u09AD\u09BE\u0999\u09CD\u0997\u09C1\u09A1\u09BC\u09BE" },
+          { id: "chatmohar", nameEn: "Chatmohar", nameBn: "\u099A\u09BE\u099F\u09AE\u09CB\u09B9\u09B0" },
+          { id: "faridpur_pab", nameEn: "Faridpur", nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0" },
+          { id: "santhia", nameEn: "Santhia", nameBn: "\u09B8\u09BE\u0981\u09A5\u09BF\u09AF\u09BC\u09BE" },
+          { id: "sujanagar", nameEn: "Sujanagar", nameBn: "\u09B8\u09C1\u099C\u09BE\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96229,8 +96405,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "sirajganj_sadar", nameEn: "Sirajganj Sadar", nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "belkuchi", nameEn: "Belkuchi", nameBn: "\u09AC\u09C7\u09B2\u0995\u09C1\u099A\u09BF" },
+          { id: "chauhali", nameEn: "Chauhali", nameBn: "\u099A\u09CC\u09B9\u09BE\u09B2\u09C0" },
+          { id: "kamarkhanda", nameEn: "Kamarkhanda", nameBn: "\u0995\u09BE\u09AE\u09BE\u09B0\u0996\u09A8\u09CD\u09A6" },
+          { id: "kazipur", nameEn: "Kazipur", nameBn: "\u0995\u09BE\u099C\u09C0\u09AA\u09C1\u09B0" },
+          { id: "raiganj", nameEn: "Raiganj", nameBn: "\u09B0\u09BE\u09AF\u09BC\u0997\u099E\u09CD\u099C" },
           { id: "shahjadpur", nameEn: "Shahjadpur", nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09A6\u09AA\u09C1\u09B0" },
-          { id: "ullapara", nameEn: "Ullapara", nameBn: "\u0989\u09B2\u09CD\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
+          { id: "tarash", nameEn: "Tarash", nameBn: "\u09A4\u09BE\u09A1\u09BC\u09BE\u09B6" },
+          { id: "ullahpara", nameEn: "Ullahpara", nameBn: "\u0989\u09B2\u09CD\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
         ]
       },
       {
@@ -96239,7 +96421,16 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u0993\u0997\u09BE\u0981",
         upazilas: [
           { id: "naogaon_sadar", nameEn: "Naogaon Sadar", nameBn: "\u09A8\u0993\u0997\u09BE\u0981 \u09B8\u09A6\u09B0" },
-          { id: "patnitala", nameEn: "Patnitala", nameBn: "\u09AA\u09A4\u09CD\u09A8\u09C0\u09A4\u09B2\u09BE" }
+          { id: "mohadevpur", nameEn: "Mohadevpur", nameBn: "\u09AE\u09B9\u09BE\u09A6\u09C7\u09AC\u09AA\u09C1\u09B0" },
+          { id: "manda", nameEn: "Manda", nameBn: "\u09AE\u09BE\u09A8\u09CD\u09A6\u09BE" },
+          { id: "niamatpur", nameEn: "Niamatpur", nameBn: "\u09A8\u09BF\u09AF\u09BC\u09BE\u09AE\u09A4\u09AA\u09C1\u09B0" },
+          { id: "atrai", nameEn: "Atrai", nameBn: "\u0986\u09A4\u09CD\u09B0\u09BE\u0987" },
+          { id: "raninagar", nameEn: "Raninagar", nameBn: "\u09B0\u09BE\u09A3\u09C0\u09A8\u0997\u09B0" },
+          { id: "patnitala", nameEn: "Patnitala", nameBn: "\u09AA\u09A4\u09CD\u09A8\u09C0\u09A4\u09B2\u09BE" },
+          { id: "dhamoirhat", nameEn: "Dhamoirhat", nameBn: "\u09A7\u09BE\u09AE\u0987\u09B0\u09B9\u09BE\u099F" },
+          { id: "sapahar", nameEn: "Sapahar", nameBn: "\u09B8\u09BE\u09AA\u09BE\u09B9\u09BE\u09B0" },
+          { id: "porsha", nameEn: "Porsha", nameBn: "\u09AA\u09CB\u09B0\u09B6\u09BE" },
+          { id: "badalgachhi", nameEn: "Badalgachhi", nameBn: "\u09AC\u09A6\u09B2\u0997\u09BE\u099B\u09C0" }
         ]
       },
       {
@@ -96248,7 +96439,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0",
         upazilas: [
           { id: "natore_sadar", nameEn: "Natore Sadar", nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "singra", nameEn: "Singra", nameBn: "\u09B8\u09BF\u0982\u09A1\u09BC\u09BE" }
+          { id: "singra", nameEn: "Singra", nameBn: "\u09B8\u09BF\u0982\u09A1\u09BC\u09BE" },
+          { id: "baraigram", nameEn: "Baraigram", nameBn: "\u09AC\u09A1\u09BC\u09BE\u0987\u0997\u09CD\u09B0\u09BE\u09AE" },
+          { id: "bagatipara", nameEn: "Bagatipara", nameBn: "\u09AC\u09BE\u0997\u09BE\u09A4\u09BF\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "lalpur", nameEn: "Lalpur", nameBn: "\u09B2\u09BE\u09B2\u09AA\u09C1\u09B0" },
+          { id: "gurudaspur", nameEn: "Gurudaspur", nameBn: "\u0997\u09C1\u09B0\u09C1\u09A6\u09BE\u09B8\u09AA\u09C1\u09B0" },
+          { id: "naldanga", nameEn: "Naldanga", nameBn: "\u09A8\u09B2\u09A1\u09BE\u0999\u09CD\u0997\u09BE" }
         ]
       },
       {
@@ -96256,8 +96452,11 @@ var BANGLADESH_DIVISIONS = [
         nameEn: "Chapainawabganj",
         nameBn: "\u099A\u09BE\u0981\u09AA\u09BE\u0987\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C",
         upazilas: [
-          { id: "nawabganj_sadar", nameEn: "Nawabganj Sadar", nameBn: "\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "shibganj_c", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
+          { id: "chapainawabganj_sadar", nameEn: "Chapainawabganj Sadar", nameBn: "\u099A\u09BE\u0981\u09AA\u09BE\u0987\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "shibganj_chapai", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" },
+          { id: "gomastapur", nameEn: "Gomastapur", nameBn: "\u0997\u09CB\u09AE\u09B8\u09CD\u09A4\u09BE\u09AA\u09C1\u09B0" },
+          { id: "nachole", nameEn: "Nachole", nameBn: "\u09A8\u09BE\u099A\u09CB\u09B2" },
+          { id: "bholahat", nameEn: "Bholahat", nameBn: "\u09AD\u09CB\u09B2\u09BE\u09B9\u09BE\u099F" }
         ]
       },
       {
@@ -96266,7 +96465,10 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F",
         upazilas: [
           { id: "joypurhat_sadar", nameEn: "Joypurhat Sadar", nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
-          { id: "panchbibi", nameEn: "Panchbibi", nameBn: "\u09AA\u09BE\u0981\u099A\u09AC\u09BF\u09AC\u09BF" }
+          { id: "panchbibi", nameEn: "Panchbibi", nameBn: "\u09AA\u09BE\u0981\u099A\u09AC\u09BF\u09AC\u09BF" },
+          { id: "akkelpur", nameEn: "Akkelpur", nameBn: "\u0986\u0995\u09CD\u0995\u09C7\u09B2\u09AA\u09C1\u09B0" },
+          { id: "khetlal", nameEn: "Khetlal", nameBn: "\u0996\u09C7\u09A4\u09B2\u09BE\u09B2" },
+          { id: "kalai", nameEn: "Kalai", nameBn: "\u0995\u09BE\u09B2\u09BE\u0987" }
         ]
       }
     ]
@@ -96284,8 +96486,17 @@ var BANGLADESH_DIVISIONS = [
           { id: "khulna_sadar", nameEn: "Khulna Sadar", nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE \u09B8\u09A6\u09B0" },
           { id: "sonadanga", nameEn: "Sonadanga", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE" },
           { id: "khalishpur", nameEn: "Khalishpur", nameBn: "\u0996\u09BE\u09B2\u09BF\u09B6\u09AA\u09C1\u09B0" },
-          { id: "daulatpur", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" },
-          { id: "dumuria", nameEn: "Dumuria", nameBn: "\u09A1\u09C1\u09AE\u09C1\u09B0\u09BF\u09AF\u09BC\u09BE" }
+          { id: "daulatpur_khu", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" },
+          { id: "khan_jahan_ali", nameEn: "Khan Jahan Ali", nameBn: "\u0996\u09BE\u09A8 \u099C\u09BE\u09B9\u09BE\u09A8 \u0986\u09B2\u09C0" },
+          { id: "dumuria", nameEn: "Dumuria", nameBn: "\u09A1\u09C1\u09AE\u09C1\u09B0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "batiaghata", nameEn: "Batiaghata", nameBn: "\u09AC\u099F\u09BF\u09AF\u09BC\u09BE\u0998\u09BE\u099F\u09BE" },
+          { id: "dacope", nameEn: "Dacope", nameBn: "\u09A6\u09BE\u0995\u09CB\u09AA" },
+          { id: "paikgachha", nameEn: "Paikgachha", nameBn: "\u09AA\u09BE\u0987\u0995\u0997\u09BE\u099B\u09BE" },
+          { id: "koyra", nameEn: "Koyra", nameBn: "\u0995\u09AF\u09BC\u09B0\u09BE" },
+          { id: "rupsha", nameEn: "Rupsha", nameBn: "\u09B0\u09C2\u09AA\u09B8\u09BE" },
+          { id: "terokhada", nameEn: "Terokhada", nameBn: "\u09A4\u09C7\u09B0\u0996\u09BE\u09A6\u09BE" },
+          { id: "dighalia", nameEn: "Dighalia", nameBn: "\u09A6\u09BF\u0998\u09B2\u09BF\u09AF\u09BC\u09BE" },
+          { id: "phultala", nameEn: "Phultala", nameBn: "\u09AB\u09C1\u09B2\u09A4\u09B2\u09BE" }
         ]
       },
       {
@@ -96293,9 +96504,14 @@ var BANGLADESH_DIVISIONS = [
         nameEn: "Jashore",
         nameBn: "\u09AF\u09B6\u09CB\u09B0",
         upazilas: [
-          { id: "jashore_sadar", nameEn: "Jashore Sadar", nameBn: "\u09AF\u09B6\u09CB\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "abhaynagar", nameEn: "Abhaynagar", nameBn: "\u0985\u09AD\u09AF\u09BC\u09A8\u0997\u09B0" },
+          { id: "bagherpara", nameEn: "Bagherpara", nameBn: "\u09AC\u09BE\u0998\u09BE\u09B0\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "chaugachha", nameEn: "Chaugachha", nameBn: "\u099A\u09CC\u0997\u09BE\u099B\u09BE" },
           { id: "jhikargachha", nameEn: "Jhikargachha", nameBn: "\u099D\u09BF\u0995\u09B0\u0997\u09BE\u099B\u09BE" },
-          { id: "keshabpur", nameEn: "Keshabpur", nameBn: "\u0995\u09C7\u09B6\u09AC\u09AA\u09C1\u09B0" }
+          { id: "keshabpur", nameEn: "Keshabpur", nameBn: "\u0995\u09C7\u09B6\u09AC\u09AA\u09C1\u09B0" },
+          { id: "jashore_sadar", nameEn: "Jashore Sadar", nameBn: "\u09AF\u09B6\u09CB\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "manirampur", nameEn: "Manirampur", nameBn: "\u09AE\u09A3\u09BF\u09B0\u09BE\u09AE\u09AA\u09C1\u09B0" },
+          { id: "sharsha", nameEn: "Sharsha", nameBn: "\u09B6\u09BE\u09B0\u09CD\u09B6\u09BE" }
         ]
       },
       {
@@ -96304,7 +96520,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE",
         upazilas: [
           { id: "kushtia_sadar", nameEn: "Kushtia Sadar", nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kumarkhali", nameEn: "Kumarkhali", nameBn: "\u0995\u09C1\u09AE\u09BE\u09B0\u0996\u09BE\u09B2\u09C0" }
+          { id: "kumarkhali", nameEn: "Kumarkhali", nameBn: "\u0995\u09C1\u09AE\u09BE\u09B0\u0996\u09BE\u09B2\u09C0" },
+          { id: "daulatpur_kus", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" },
+          { id: "mirpur_kus", nameEn: "Mirpur", nameBn: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0" },
+          { id: "bheramara", nameEn: "Bheramara", nameBn: "\u09AD\u09C7\u09A1\u09BC\u09BE\u09AE\u09BE\u09B0\u09BE" },
+          { id: "khoksa", nameEn: "Khoksa", nameBn: "\u0996\u09CB\u0995\u09B8\u09BE" }
         ]
       },
       {
@@ -96313,7 +96533,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE",
         upazilas: [
           { id: "satkhira_sadar", nameEn: "Satkhira Sadar", nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kaliganj_sat", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+          { id: "assasuni", nameEn: "Assasuni", nameBn: "\u0986\u09B6\u09BE\u09B6\u09C1\u09A8\u09BF" },
+          { id: "debhata", nameEn: "Debhata", nameBn: "\u09A6\u09C7\u09AC\u09B9\u09BE\u099F\u09BE" },
+          { id: "kalaroa", nameEn: "Kalaroa", nameBn: "\u0995\u09B2\u09BE\u09B0\u09CB\u09AF\u09BC\u09BE" },
+          { id: "kaliganj_sat", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "shyamnagar", nameEn: "Shyamnagar", nameBn: "\u09B6\u09CD\u09AF\u09BE\u09AE\u09A8\u0997\u09B0" },
+          { id: "tala", nameEn: "Tala", nameBn: "\u09A4\u09BE\u09B2\u09BE" }
         ]
       },
       {
@@ -96322,7 +96547,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F",
         upazilas: [
           { id: "bagerhat_sadar", nameEn: "Bagerhat Sadar", nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
-          { id: "mongla", nameEn: "Mongla", nameBn: "\u09AE\u09CB\u0982\u09B2\u09BE" }
+          { id: "chitalmari", nameEn: "Chitalmari", nameBn: "\u099A\u09BF\u09A4\u09B2\u09AE\u09BE\u09B0\u09C0" },
+          { id: "fakirhat", nameEn: "Fakirhat", nameBn: "\u09AB\u0995\u09BF\u09B0\u09B9\u09BE\u099F" },
+          { id: "kachua_bag", nameEn: "Kachua", nameBn: "\u0995\u099A\u09C1\u09AF\u09BC\u09BE" },
+          { id: "mollahat", nameEn: "Mollahat", nameBn: "\u09AE\u09CB\u09B2\u09CD\u09B2\u09BE\u09B9\u09BE\u099F" },
+          { id: "mongla", nameEn: "Mongla", nameBn: "\u09AE\u09CB\u0982\u09B2\u09BE" },
+          { id: "morrelganj", nameEn: "Morrelganj", nameBn: "\u09AE\u09CB\u09A1\u09BC\u09C7\u09B2\u0997\u099E\u09CD\u099C" },
+          { id: "rampal", nameEn: "Rampal", nameBn: "\u09B0\u09BE\u09AE\u09AA\u09BE\u09B2" },
+          { id: "sarankhola", nameEn: "Sarankhola", nameBn: "\u09B6\u09B0\u09A3\u0996\u09CB\u09B2\u09BE" }
         ]
       },
       {
@@ -96331,7 +96563,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9",
         upazilas: [
           { id: "jhenaidah_sadar", nameEn: "Jhenaidah Sadar", nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9 \u09B8\u09A6\u09B0" },
-          { id: "kaliganj_jhen", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+          { id: "harinakunda", nameEn: "Harinakunda", nameBn: "\u09B9\u09B0\u09BF\u09A3\u09BE\u0995\u09C1\u09A3\u09CD\u09A1\u09C1" },
+          { id: "kaliganj_jhen", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "kotchandpur", nameEn: "Kotchandpur", nameBn: "\u0995\u09CB\u099F\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0" },
+          { id: "maheshpur", nameEn: "Maheshpur", nameBn: "\u09AE\u09B9\u09C7\u09B6\u09AA\u09C1\u09B0" },
+          { id: "shailkupa", nameEn: "Shailkupa", nameBn: "\u09B6\u09C8\u09B2\u0995\u09C1\u09AA\u09BE" }
         ]
       },
       {
@@ -96340,7 +96576,9 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE",
         upazilas: [
           { id: "chuadanga_sadar", nameEn: "Chuadanga Sadar", nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE \u09B8\u09A6\u09B0" },
-          { id: "damurhuda", nameEn: "Damurhuda", nameBn: "\u09A6\u09BE\u09AE\u09C1\u09A1\u09BC\u09B9\u09C1\u09A6\u09BE" }
+          { id: "alamdanga", nameEn: "Alamdanga", nameBn: "\u0986\u09B2\u09AE\u09A1\u09BE\u0999\u09CD\u0997\u09BE" },
+          { id: "damurhuda", nameEn: "Damurhuda", nameBn: "\u09A6\u09BE\u09AE\u09C1\u09A1\u09BC\u09B9\u09C1\u09A6\u09BE" },
+          { id: "jibannagar", nameEn: "Jibannagar", nameBn: "\u099C\u09C0\u09AC\u09A8\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96349,6 +96587,8 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE",
         upazilas: [
           { id: "magura_sadar", nameEn: "Magura Sadar", nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE \u09B8\u09A6\u09B0" },
+          { id: "mohammadpur_mag", nameEn: "Mohammadpur", nameBn: "\u09AE\u09CB\u09B9\u09BE\u09AE\u09CD\u09AE\u09A6\u09AA\u09C1\u09B0" },
+          { id: "shalikha", nameEn: "Shalikha", nameBn: "\u09B6\u09BE\u09B2\u09BF\u0996\u09BE" },
           { id: "sreepur_mag", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" }
         ]
       },
@@ -96358,7 +96598,8 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "meherpur_sadar", nameEn: "Meherpur Sadar", nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "gangni", nameEn: "Gangni", nameBn: "\u0997\u09BE\u0982\u09A8\u09C0" }
+          { id: "gangni", nameEn: "Gangni", nameBn: "\u0997\u09BE\u0982\u09A8\u09C0" },
+          { id: "mujibnagar", nameEn: "Mujibnagar", nameBn: "\u09AE\u09C1\u099C\u09BF\u09AC\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96367,7 +96608,8 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2",
         upazilas: [
           { id: "narail_sadar", nameEn: "Narail Sadar", nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
-          { id: "lohagagara", nameEn: "Lohagara", nameBn: "\u09B2\u09CB\u09B9\u09BE\u0997\u09A1\u09BC\u09BE" }
+          { id: "kalia", nameEn: "Kalia", nameBn: "\u0995\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
+          { id: "lohagara_nar", nameEn: "Lohagara", nameBn: "\u09B2\u09CB\u09B9\u09BE\u0997\u09BE\u09A1\u09BC\u09BE" }
         ]
       }
     ]
@@ -96384,7 +96626,14 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "barishal_sadar", nameEn: "Barishal Sadar", nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2 \u09B8\u09A6\u09B0" },
           { id: "bakerganj", nameEn: "Bakerganj", nameBn: "\u09AC\u09BE\u0995\u09C7\u09B0\u0997\u099E\u09CD\u099C" },
-          { id: "babuganj", nameEn: "Babuganj", nameBn: "\u09AC\u09BE\u09AC\u09C1\u0997\u099E\u09CD\u099C" }
+          { id: "babuganj", nameEn: "Babuganj", nameBn: "\u09AC\u09BE\u09AC\u09C1\u0997\u099E\u09CD\u099C" },
+          { id: "banaripara", nameEn: "Banaripara", nameBn: "\u09AC\u09BE\u09A8\u09BE\u09B0\u09C0\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "gournadi", nameEn: "Gournadi", nameBn: "\u0997\u09CC\u09B0\u09A8\u09A6\u09C0" },
+          { id: "agailjhara", nameEn: "Agailjhara", nameBn: "\u0986\u0997\u09C8\u09B2\u099D\u09BE\u09A1\u09BC\u09BE" },
+          { id: "mehendiganj", nameEn: "Mehendiganj", nameBn: "\u09AE\u09C7\u09B9\u09C7\u09A8\u09CD\u09A6\u09BF\u0997\u099E\u09CD\u099C" },
+          { id: "muladi", nameEn: "Muladi", nameBn: "\u09AE\u09C1\u09B2\u09BE\u09A6\u09C0" },
+          { id: "hizla", nameEn: "Hizla", nameBn: "\u09B9\u09BF\u099C\u09B2\u09BE" },
+          { id: "wazirpur", nameEn: "Wazirpur", nameBn: "\u0989\u099C\u09BF\u09B0\u09AA\u09C1\u09B0" }
         ]
       },
       {
@@ -96393,7 +96642,13 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0",
         upazilas: [
           { id: "patuakhali_sadar", nameEn: "Patuakhali Sadar", nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "kalapara", nameEn: "Kalapara", nameBn: "\u0995\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
+          { id: "bauphal", nameEn: "Bauphal", nameBn: "\u09AC\u09BE\u0989\u09AB\u09B2" },
+          { id: "dashmina", nameEn: "Dashmina", nameBn: "\u09A6\u09B6\u09AE\u09BF\u09A8\u09BE" },
+          { id: "galachipa", nameEn: "Galachipa", nameBn: "\u0997\u09B2\u09BE\u099A\u09BF\u09AA\u09BE" },
+          { id: "kalapara", nameEn: "Kalapara", nameBn: "\u0995\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "mirzaganj", nameEn: "Mirzaganj", nameBn: "\u09AE\u09BF\u09B0\u09CD\u099C\u09BE\u0997\u099E\u09CD\u099C" },
+          { id: "dumki", nameEn: "Dumki", nameBn: "\u09A6\u09C1\u09AE\u0995\u09BF" },
+          { id: "rangabali", nameEn: "Rangabali", nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AC\u09BE\u09B2\u09C0" }
         ]
       },
       {
@@ -96402,7 +96657,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AD\u09CB\u09B2\u09BE",
         upazilas: [
           { id: "bhola_sadar", nameEn: "Bhola Sadar", nameBn: "\u09AD\u09CB\u09B2\u09BE \u09B8\u09A6\u09B0" },
-          { id: "charfasson", nameEn: "Charfasson", nameBn: "\u099A\u09B0\u09AB\u09CD\u09AF\u09BE\u09B6\u09A8" }
+          { id: "burhanuddin", nameEn: "Burhanuddin", nameBn: "\u09AC\u09CB\u09B0\u09B9\u09BE\u09A8\u0989\u09A6\u09CD\u09A6\u09BF\u09A8" },
+          { id: "char_fasson", nameEn: "Char Fasson", nameBn: "\u099A\u09B0\u09AB\u09CD\u09AF\u09BE\u09B6\u09A8" },
+          { id: "daulatkhan", nameEn: "Daulatkhan", nameBn: "\u09A6\u09CC\u09B2\u09A4\u0996\u09BE\u09A8" },
+          { id: "lalmohan", nameEn: "Lalmohan", nameBn: "\u09B2\u09BE\u09B2\u09AE\u09CB\u09B9\u09A8" },
+          { id: "manpura", nameEn: "Manpura", nameBn: "\u09AE\u09A8\u09AA\u09C1\u09B0\u09BE" },
+          { id: "tazumuddin", nameEn: "Tazumuddin", nameBn: "\u09A4\u099C\u09C1\u09AE\u09A6\u09CD\u09A6\u09BF\u09A8" }
         ]
       },
       {
@@ -96411,7 +96671,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "pirojpur_sadar", nameEn: "Pirojpur Sadar", nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "mathbaria", nameEn: "Mathbaria", nameBn: "\u09AE\u09A0\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE" }
+          { id: "bhandaria", nameEn: "Bhandaria", nameBn: "\u09AD\u09BE\u09A3\u09CD\u09A1\u09BE\u09B0\u09BF\u09AF\u09BC\u09BE" },
+          { id: "mathbaria", nameEn: "Mathbaria", nameBn: "\u09AE\u09A0\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE" },
+          { id: "nazirpur", nameEn: "Nazirpur", nameBn: "\u09A8\u09BE\u099C\u09BF\u09B0\u09AA\u09C1\u09B0" },
+          { id: "nesarabad", nameEn: "Nesarabad (Swarupkati)", nameBn: "\u09A8\u09C7\u099B\u09BE\u09B0\u09BE\u09AC\u09BE\u09A6 (\u09B8\u09CD\u09AC\u09B0\u09C2\u09AA\u0995\u09BE\u09A0\u09BF)" },
+          { id: "kawkhali_pir", nameEn: "Kawkhali", nameBn: "\u0995\u09BE\u0989\u0996\u09BE\u09B2\u09C0" },
+          { id: "indurkani", nameEn: "Indurkani", nameBn: "\u0987\u09A8\u09CD\u09A6\u09C1\u09B0\u0995\u09BE\u09A8\u09C0" }
         ]
       },
       {
@@ -96420,7 +96685,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE",
         upazilas: [
           { id: "barguna_sadar", nameEn: "Barguna Sadar", nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE \u09B8\u09A6\u09B0" },
-          { id: "amtali", nameEn: "Amtali", nameBn: "\u0986\u09AE\u09A4\u09B2\u09C0" }
+          { id: "amtali", nameEn: "Amtali", nameBn: "\u0986\u09AE\u09A4\u09B2\u09C0" },
+          { id: "bamna", nameEn: "Bamna", nameBn: "\u09AC\u09BE\u09AE\u09A8\u09BE" },
+          { id: "betagi", nameEn: "Betagi", nameBn: "\u09AC\u09C7\u09A4\u09BE\u0997\u09C0" },
+          { id: "patharghata", nameEn: "Patharghata", nameBn: "\u09AA\u09BE\u09A5\u09B0\u0998\u09BE\u099F\u09BE" },
+          { id: "taltali", nameEn: "Taltali", nameBn: "\u09A4\u09BE\u09B2\u09A4\u09B2\u09C0" }
         ]
       },
       {
@@ -96429,7 +96698,9 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF",
         upazilas: [
           { id: "jhalokati_sadar", nameEn: "Jhalokati Sadar", nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF \u09B8\u09A6\u09B0" },
-          { id: "nalchity", nameEn: "Nalchity", nameBn: "\u09A8\u09B2\u099B\u09BF\u099F\u09BF" }
+          { id: "kathalia", nameEn: "Kathalia", nameBn: "\u0995\u09BE\u09A0\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
+          { id: "nalchhiti", nameEn: "Nalchhiti", nameBn: "\u09A8\u09B2\u099B\u09BF\u099F\u09BF" },
+          { id: "rajapur", nameEn: "Rajapur", nameBn: "\u09B0\u09BE\u099C\u09BE\u09AA\u09C1\u09B0" }
         ]
       }
     ]
@@ -96446,8 +96717,17 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "sylhet_sadar", nameEn: "Sylhet Sadar", nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F \u09B8\u09A6\u09B0" },
           { id: "beanibazar", nameEn: "Beanibazar", nameBn: "\u09AC\u09BF\u09AF\u09BC\u09BE\u09A8\u09C0\u09AC\u09BE\u099C\u09BE\u09B0" },
+          { id: "bishwanath", nameEn: "Bishwanath", nameBn: "\u09AC\u09BF\u09B6\u09CD\u09AC\u09A8\u09BE\u09A5" },
+          { id: "dakshin_surma", nameEn: "Dakshin Surma", nameBn: "\u09A6\u0995\u09CD\u09B7\u09BF\u09A3 \u09B8\u09C1\u09B0\u09AE\u09BE" },
+          { id: "fenchuganj", nameEn: "Fenchuganj", nameBn: "\u09AB\u09C7\u099E\u09CD\u099A\u09C1\u0997\u099E\u09CD\u099C" },
           { id: "golapganj", nameEn: "Golapganj", nameBn: "\u0997\u09CB\u09B2\u09BE\u09AA\u0997\u099E\u09CD\u099C" },
-          { id: "bishwanath", nameEn: "Bishwanath", nameBn: "\u09AC\u09BF\u09B6\u09CD\u09AC\u09A8\u09BE\u09A5" }
+          { id: "gowainghat", nameEn: "Gowainghat", nameBn: "\u0997\u09CB\u09AF\u09BC\u09BE\u0987\u09A8\u0998\u09BE\u099F" },
+          { id: "jaintiapur", nameEn: "Jaintiapur", nameBn: "\u099C\u09C8\u09A8\u09CD\u09A4\u09BE\u09AA\u09C1\u09B0" },
+          { id: "kanaighat", nameEn: "Kanaighat", nameBn: "\u0995\u09BE\u09A8\u09BE\u0987\u0998\u09BE\u099F" },
+          { id: "companiganj_syl", nameEn: "Companiganj", nameBn: "\u0995\u09CB\u09AE\u09CD\u09AA\u09BE\u09A8\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "zakiganj", nameEn: "Zakiganj", nameBn: "\u099C\u0995\u09BF\u0997\u099E\u09CD\u099C" },
+          { id: "balaganj", nameEn: "Balaganj", nameBn: "\u09AC\u09BE\u09B2\u09BE\u0997\u099E\u09CD\u099C" },
+          { id: "osmani_nagar", nameEn: "Osmani Nagar", nameBn: "\u0993\u09B8\u09AE\u09BE\u09A8\u09C0\u09A8\u0997\u09B0" }
         ]
       },
       {
@@ -96456,8 +96736,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0",
         upazilas: [
           { id: "moulvibazar_sadar", nameEn: "Moulvibazar Sadar", nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "sreemangal", nameEn: "Sreemangal", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AE\u0999\u09CD\u0997\u09B2" },
-          { id: "kulaura", nameEn: "Kulaura", nameBn: "\u0995\u09C1\u09B2\u09BE\u0989\u09A1\u09BC\u09BE" }
+          { id: "barlekha", nameEn: "Barlekha", nameBn: "\u09AC\u09A1\u09BC\u09B2\u09C7\u0996\u09BE" },
+          { id: "juri", nameEn: "Juri", nameBn: "\u099C\u09C1\u09A1\u09BC\u09C0" },
+          { id: "kamalganj", nameEn: "Kamalganj", nameBn: "\u0995\u09AE\u09B2\u0997\u099E\u09CD\u099C" },
+          { id: "kulaura", nameEn: "Kulaura", nameBn: "\u0995\u09C1\u09B2\u09BE\u0989\u09A1\u09BC\u09BE" },
+          { id: "rajnagar", nameEn: "Rajnagar", nameBn: "\u09B0\u09BE\u099C\u09A8\u0997\u09B0" },
+          { id: "sreemangal", nameEn: "Sreemangal", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AE\u0999\u09CD\u0997\u09B2" }
         ]
       },
       {
@@ -96466,8 +96750,14 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "habiganj_sadar", nameEn: "Habiganj Sadar", nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "ajmiriganj", nameEn: "Ajmiriganj", nameBn: "\u0986\u099C\u09AE\u09BF\u09B0\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "bahubal", nameEn: "Bahubal", nameBn: "\u09AC\u09BE\u09B9\u09C1\u09AC\u09B2" },
+          { id: "baniyachong", nameEn: "Baniyachong", nameBn: "\u09AC\u09BE\u09A8\u09BF\u09AF\u09BC\u09BE\u099A\u0982" },
+          { id: "chunarughat", nameEn: "Chunarughat", nameBn: "\u099A\u09C1\u09A8\u09BE\u09B0\u09C1\u0998\u09BE\u099F" },
+          { id: "lakhai", nameEn: "Lakhai", nameBn: "\u09B2\u09BE\u0996\u09BE\u0987" },
           { id: "madhabpur", nameEn: "Madhabpur", nameBn: "\u09AE\u09BE\u09A7\u09AC\u09AA\u09C1\u09B0" },
-          { id: "nabiganj", nameEn: "Nabiganj", nameBn: "\u09A8\u09AC\u09C0\u0997\u099E\u09CD\u099C" }
+          { id: "nabiganj", nameEn: "Nabiganj", nameBn: "\u09A8\u09AC\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "sayestaganj", nameEn: "Sayestaganj", nameBn: "\u09B6\u09BE\u09AF\u09BC\u09C7\u09B8\u09CD\u09A4\u09BE\u0997\u099E\u09CD\u099C" }
         ]
       },
       {
@@ -96476,8 +96766,17 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C",
         upazilas: [
           { id: "sunamganj_sadar", nameEn: "Sunamganj Sadar", nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "bishwamvarpur", nameEn: "Bishwamvarpur", nameBn: "\u09AC\u09BF\u09B6\u09CD\u09AC\u09AE\u09CD\u09AD\u09B0\u09AA\u09C1\u09B0" },
           { id: "chhatak", nameEn: "Chhatak", nameBn: "\u099B\u09BE\u09A4\u0995" },
-          { id: "tahirpur", nameEn: "Tahirpur", nameBn: "\u09A4\u09BE\u09B9\u09BF\u09B0\u09AA\u09C1\u09B0" }
+          { id: "derai", nameEn: "Derai", nameBn: "\u09A6\u09BF\u09B0\u09BE\u0987" },
+          { id: "dharamapasha", nameEn: "Dharamapasha", nameBn: "\u09A7\u09B0\u09CD\u09AE\u09AA\u09BE\u09B6\u09BE" },
+          { id: "dowarabazar", nameEn: "Dowarabazar", nameBn: "\u09A6\u09CB\u09AF\u09BC\u09BE\u09B0\u09BE\u09AC\u09BE\u099C\u09BE\u09B0" },
+          { id: "jagannathpur", nameEn: "Jagannathpur", nameBn: "\u099C\u0997\u09A8\u09CD\u09A8\u09BE\u09A5\u09AA\u09C1\u09B0" },
+          { id: "jamalganj", nameEn: "Jamalganj", nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u0997\u099E\u09CD\u099C" },
+          { id: "sullah", nameEn: "Sullah", nameBn: "\u09B6\u09BE\u09B2\u09CD\u09B2\u09BE" },
+          { id: "tahirpur", nameEn: "Tahirpur", nameBn: "\u09A4\u09BE\u09B9\u09BF\u09B0\u09AA\u09C1\u09B0" },
+          { id: "shantiganj", nameEn: "Shantiganj", nameBn: "\u09B6\u09BE\u09A8\u09CD\u09A4\u09BF\u0997\u099E\u09CD\u099C" },
+          { id: "madhyanagar", nameEn: "Madhyanagar", nameBn: "\u09AE\u09A7\u09CD\u09AF\u09A8\u0997\u09B0" }
         ]
       }
     ]
@@ -96494,7 +96793,12 @@ var BANGLADESH_DIVISIONS = [
         upazilas: [
           { id: "rangpur_sadar", nameEn: "Rangpur Sadar", nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
           { id: "badarganj", nameEn: "Badarganj", nameBn: "\u09AC\u09A6\u09B0\u0997\u099E\u09CD\u099C" },
-          { id: "pirganj", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
+          { id: "gangachhara", nameEn: "Gangachhara", nameBn: "\u0997\u0982\u0997\u09BE\u099A\u09A1\u09BC\u09BE" },
+          { id: "kaunia", nameEn: "Kaunia", nameBn: "\u0995\u09BE\u0989\u09A8\u09BF\u09AF\u09BC\u09BE" },
+          { id: "mithapukur", nameEn: "Mithapukur", nameBn: "\u09AE\u09BF\u09A0\u09BE\u09AA\u09C1\u0995\u09C1\u09B0" },
+          { id: "pirgachha", nameEn: "Pirgachha", nameBn: "\u09AA\u09C0\u09B0\u0997\u09BE\u099B\u09BE" },
+          { id: "pirganj_ran", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "taraganj", nameEn: "Taraganj", nameBn: "\u09A4\u09BE\u09B0\u09BE\u0997\u099E\u09CD\u099C" }
         ]
       },
       {
@@ -96503,7 +96807,17 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "dinajpur_sadar", nameEn: "Dinajpur Sadar", nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "birampur", nameEn: "Birampur", nameBn: "\u09AC\u09BF\u09B0\u09BE\u09AE\u09AA\u09C1\u09B0" },
           { id: "birganj", nameEn: "Birganj", nameBn: "\u09AC\u09C0\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "birol", nameEn: "Birol", nameBn: "\u09AC\u09BF\u09B0\u09B2" },
+          { id: "bochaganj", nameEn: "Bochaganj", nameBn: "\u09AC\u09CB\u099A\u09BE\u0997\u099E\u09CD\u099C" },
+          { id: "chirirbandar", nameEn: "Chirirbandar", nameBn: "\u099A\u09BF\u09B0\u09BF\u09B0\u09AC\u09A8\u09CD\u09A6\u09B0" },
+          { id: "phulbari_din", nameEn: "Phulbari", nameBn: "\u09AB\u09C1\u09B2\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "ghoraghat", nameEn: "Ghoraghat", nameBn: "\u0998\u09CB\u09A1\u09BC\u09BE\u0998\u09BE\u099F" },
+          { id: "hakimpur", nameEn: "Hakimpur", nameBn: "\u09B9\u09BE\u0995\u09BF\u09AE\u09AA\u09C1\u09B0" },
+          { id: "kaharole", nameEn: "Kaharole", nameBn: "\u0995\u09BE\u09B9\u09BE\u09B0\u09CB\u09B2" },
+          { id: "khansama", nameEn: "Khansama", nameBn: "\u0996\u09BE\u09A8\u09B8\u09BE\u09AE\u09BE" },
+          { id: "nawabganj_din", nameEn: "Nawabganj", nameBn: "\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C" },
           { id: "parbatipur", nameEn: "Parbatipur", nameBn: "\u09AA\u09BE\u09B0\u09CD\u09AC\u09A4\u09C0\u09AA\u09C1\u09B0" }
         ]
       },
@@ -96513,7 +96827,12 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE",
         upazilas: [
           { id: "gaibandha_sadar", nameEn: "Gaibandha Sadar", nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE \u09B8\u09A6\u09B0" },
-          { id: "gobindaganj", nameEn: "Gobindaganj", nameBn: "\u0997\u09CB\u09AC\u09BF\u09A8\u09CD\u09A6\u0997\u099E\u09CD\u099C" }
+          { id: "phulchhari", nameEn: "Phulchhari", nameBn: "\u09AB\u09C1\u09B2\u099B\u09A1\u09BC\u09BF" },
+          { id: "gobindaganj", nameEn: "Gobindaganj", nameBn: "\u0997\u09CB\u09AC\u09BF\u09A8\u09CD\u09A6\u0997\u099E\u09CD\u099C" },
+          { id: "palashbari", nameEn: "Palashbari", nameBn: "\u09AA\u09B2\u09BE\u09B6\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "sadullapur", nameEn: "Sadullapur", nameBn: "\u09B8\u09BE\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09AA\u09C1\u09B0" },
+          { id: "sughatta", nameEn: "Sughatta", nameBn: "\u09B8\u09BE\u0998\u09BE\u099F\u09BE" },
+          { id: "sundarganj", nameEn: "Sundarganj", nameBn: "\u09B8\u09C1\u09A8\u09CD\u09A6\u09B0\u0997\u099E\u09CD\u099C" }
         ]
       },
       {
@@ -96522,6 +96841,13 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE",
         upazilas: [
           { id: "kurigram_sadar", nameEn: "Kurigram Sadar", nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09A6\u09B0" },
+          { id: "bhurungamari", nameEn: "Bhurungamari", nameBn: "\u09AD\u09C1\u09B0\u09C1\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u09B0\u09C0" },
+          { id: "char_rajibpur", nameEn: "Char Rajibpur", nameBn: "\u099A\u09B0 \u09B0\u09BE\u099C\u09BF\u09AC\u09AA\u09C1\u09B0" },
+          { id: "chilmari", nameEn: "Chilmari", nameBn: "\u099A\u09BF\u09B2\u09AE\u09BE\u09B0\u09C0" },
+          { id: "phulbari_kur", nameEn: "Phulbari", nameBn: "\u09AB\u09C1\u09B2\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "nageshwari", nameEn: "Nageshwari", nameBn: "\u09A8\u09BE\u0997\u09C7\u09B6\u09CD\u09AC\u09B0\u09C0" },
+          { id: "rajarhat", nameEn: "Rajarhat", nameBn: "\u09B0\u09BE\u099C\u09BE\u09B0\u09B9\u09BE\u099F" },
+          { id: "raomari", nameEn: "Raomari", nameBn: "\u09B0\u09CC\u09AE\u09BE\u09B0\u09C0" },
           { id: "ulipur", nameEn: "Ulipur", nameBn: "\u0989\u09B2\u09BF\u09AA\u09C1\u09B0" }
         ]
       },
@@ -96531,6 +96857,9 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F",
         upazilas: [
           { id: "lalmonirhat_sadar", nameEn: "Lalmonirhat Sadar", nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
+          { id: "aditmari", nameEn: "Aditmari", nameBn: "\u0986\u09A6\u09BF\u09A4\u09AE\u09BE\u09B0\u09C0" },
+          { id: "hatibandha", nameEn: "Hatibandha", nameBn: "\u09B9\u09BE\u09A4\u09C0\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE" },
+          { id: "kaliganj_lal", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" },
           { id: "patgram", nameEn: "Patgram", nameBn: "\u09AA\u09BE\u099F\u0997\u09CD\u09B0\u09BE\u09AE" }
         ]
       },
@@ -96540,7 +96869,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0",
         upazilas: [
           { id: "nilphamari_sadar", nameEn: "Nilphamari Sadar", nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "saidpur", nameEn: "Saidpur", nameBn: "\u09B8\u09C8\u09AF\u09BC\u09A6\u09AA\u09C1\u09B0" }
+          { id: "dimla", nameEn: "Dimla", nameBn: "\u09A1\u09BF\u09AE\u09B2\u09BE" },
+          { id: "domar", nameEn: "Domar", nameBn: "\u09A1\u09CB\u09AE\u09BE\u09B0" },
+          { id: "jaldhaka", nameEn: "Jaldhaka", nameBn: "\u099C\u09B2\u09A2\u09BE\u0995\u09BE" },
+          { id: "kishoreganj_nil", nameEn: "Kishoreganj", nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "syedpur", nameEn: "Syedpur", nameBn: "\u09B8\u09C8\u09AF\u09BC\u09A6\u09AA\u09C1\u09B0" }
         ]
       },
       {
@@ -96549,6 +96882,9 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC",
         upazilas: [
           { id: "panchagarh_sadar", nameEn: "Panchagarh Sadar", nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC \u09B8\u09A6\u09B0" },
+          { id: "atwari", nameEn: "Atwari", nameBn: "\u0986\u099F\u09CB\u09AF\u09BC\u09BE\u09B0\u09C0" },
+          { id: "boda", nameEn: "Boda", nameBn: "\u09AC\u09CB\u09A6\u09BE" },
+          { id: "debiganj", nameEn: "Debiganj", nameBn: "\u09A6\u09C7\u09AC\u09C0\u0997\u099E\u09CD\u099C" },
           { id: "tetulia", nameEn: "Tetulia", nameBn: "\u09A4\u09C7\u0981\u09A4\u09C1\u09B2\u09BF\u09AF\u09BC\u09BE" }
         ]
       },
@@ -96558,7 +96894,10 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993",
         upazilas: [
           { id: "thakurgaon_sadar", nameEn: "Thakurgaon Sadar", nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993 \u09B8\u09A6\u09B0" },
-          { id: "pirganj_thak", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
+          { id: "baliadangi", nameEn: "Baliadangi", nameBn: "\u09AC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09C0" },
+          { id: "haripur", nameEn: "Haripur", nameBn: "\u09B9\u09B0\u09BF\u09AA\u09C1\u09B0" },
+          { id: "pirganj_thak", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "ranisankhail", nameEn: "Ranisankhail", nameBn: "\u09B0\u09BE\u09A3\u09C0\u09B6\u0982\u0995\u09C8\u09B2" }
         ]
       }
     ]
@@ -96574,10 +96913,18 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9",
         upazilas: [
           { id: "mymensingh_sadar", nameEn: "Mymensingh Sadar", nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9 \u09B8\u09A6\u09B0" },
-          { id: "trishal", nameEn: "Trishal", nameBn: "\u09A4\u09CD\u09B0\u09BF\u09B6\u09BE\u09B2" },
-          { id: "muktagachha", nameEn: "Muktagachha", nameBn: "\u09AE\u09C1\u0995\u09CD\u09A4\u09BE\u0997\u09BE\u099B\u09BE" },
           { id: "bhaluka", nameEn: "Bhaluka", nameBn: "\u09AD\u09BE\u09B2\u09C1\u0995\u09BE" },
-          { id: "gafargaon", nameEn: "Gafargaon", nameBn: "\u0997\u09AB\u09B0\u0997\u09BE\u0981\u0993" }
+          { id: "dhobaura", nameEn: "Dhobaura", nameBn: "\u09A7\u09CB\u09AC\u09BE\u0989\u09A1\u09BC\u09BE" },
+          { id: "fulbaria", nameEn: "Fulbaria", nameBn: "\u09AB\u09C1\u09B2\u09AC\u09BE\u09A1\u09BC\u09C0\u09AF\u09BC\u09BE" },
+          { id: "gafargaon", nameEn: "Gafargaon", nameBn: "\u0997\u09AB\u09B0\u0997\u09BE\u0981\u0993" },
+          { id: "gauripur", nameEn: "Gauripur", nameBn: "\u0997\u09CC\u09B0\u09C0\u09AA\u09C1\u09B0" },
+          { id: "haluaghat", nameEn: "Haluaghat", nameBn: "\u09B9\u09BE\u09B2\u09C1\u09AF\u09BC\u09BE\u0998\u09BE\u099F" },
+          { id: "ishwarganj", nameEn: "Ishwarganj", nameBn: "\u0988\u09B6\u09CD\u09AC\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "muktagachha", nameEn: "Muktagachha", nameBn: "\u09AE\u09C1\u0995\u09CD\u09A4\u09BE\u0997\u09BE\u099B\u09BE" },
+          { id: "nandail", nameEn: "Nandail", nameBn: "\u09A8\u09BE\u09A8\u09CD\u09A6\u09BE\u0987\u09B2" },
+          { id: "phulpur", nameEn: "Phulpur", nameBn: "\u09AB\u09C1\u09B2\u09AA\u09C1\u09B0" },
+          { id: "trishal", nameEn: "Trishal", nameBn: "\u09A4\u09CD\u09B0\u09BF\u09B6\u09BE\u09B2" },
+          { id: "tara_khanda", nameEn: "Tara Khanda", nameBn: "\u09A4\u09BE\u09B0\u09BE\u0995\u09BE\u09A8\u09CD\u09A6\u09BE" }
         ]
       },
       {
@@ -96586,6 +96933,11 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "jamalpur_sadar", nameEn: "Jamalpur Sadar", nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "bakshiganj", nameEn: "Bakshiganj", nameBn: "\u09AC\u0995\u09B6\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "dewanganj", nameEn: "Dewanganj", nameBn: "\u09A6\u09C7\u0993\u09AF\u09BC\u09BE\u09A8\u0997\u099E\u09CD\u099C" },
+          { id: "islampur", nameEn: "Islampur", nameBn: "\u0987\u09B8\u09B2\u09BE\u09AE\u09AA\u09C1\u09B0" },
+          { id: "madarganj", nameEn: "Madarganj", nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "melandaha", nameEn: "Melandaha", nameBn: "\u09AE\u09C7\u09B2\u09BE\u09A8\u09CD\u09A6\u09B9" },
           { id: "sarishabari", nameEn: "Sarishabari", nameBn: "\u09B8\u09B0\u09BF\u09B7\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
         ]
       },
@@ -96595,7 +96947,15 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE",
         upazilas: [
           { id: "netrokona_sadar", nameEn: "Netrokona Sadar", nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kendua", nameEn: "Kendua", nameBn: "\u0995\u09C7\u09A8\u09CD\u09A6\u09C1\u09AF\u09BC\u09BE" }
+          { id: "atpara", nameEn: "Atpara", nameBn: "\u0986\u099F\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "barhatta", nameEn: "Barhatta", nameBn: "\u09AC\u09BE\u09B0\u09B9\u09BE\u099F\u09CD\u099F\u09BE" },
+          { id: "durgapur_net", nameEn: "Durgapur", nameBn: "\u09A6\u09C1\u09B0\u09CD\u0997\u09BE\u09AA\u09C1\u09B0" },
+          { id: "khaliajuri", nameEn: "Khaliajuri", nameBn: "\u0996\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u099C\u09C1\u09B0\u09C0" },
+          { id: "kalmakanda", nameEn: "Kalmakanda", nameBn: "\u0995\u09B2\u09AE\u09BE\u0995\u09BE\u09A8\u09CD\u09A6\u09BE" },
+          { id: "kendua", nameEn: "Kendua", nameBn: "\u0995\u09C7\u09A8\u09CD\u09A6\u09C1\u09AF\u09BC\u09BE" },
+          { id: "madan", nameEn: "Madan", nameBn: "\u09AE\u09A6\u09A8" },
+          { id: "mohanganj", nameEn: "Mohanganj", nameBn: "\u09AE\u09CB\u09B9\u09A8\u0997\u099E\u09CD\u099C" },
+          { id: "purbadhala", nameEn: "Purbadhala", nameBn: "\u09AA\u09C2\u09B0\u09CD\u09AC\u09A7\u09B2\u09BE" }
         ]
       },
       {
@@ -96604,7 +96964,10 @@ var BANGLADESH_DIVISIONS = [
         nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0",
         upazilas: [
           { id: "sherpur_sadar", nameEn: "Sherpur Sadar", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "nakla", nameEn: "Nakla", nameBn: "\u09A8\u0995\u09B2\u09BE" }
+          { id: "jhenaigati", nameEn: "Jhenaigati", nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u0997\u09BE\u09A4\u09C0" },
+          { id: "nakla", nameEn: "Nakla", nameBn: "\u09A8\u0995\u09B2\u09BE" },
+          { id: "nalitabari", nameEn: "Nalitabari", nameBn: "\u09A8\u09BE\u09B2\u09BF\u09A4\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" },
+          { id: "sreebardi", nameEn: "Sreebardi", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AC\u09B0\u09A6\u09C0" }
         ]
       }
     ]

@@ -14,3 +14,4 @@ export const APP_CONFIG = {
   healthHotline16263: '16263',
   apkDownloadWebUrl: 'https://blood-donationbangla.vercel.app/#download-app'
 };
+

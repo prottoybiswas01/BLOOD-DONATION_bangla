@@ -20,3 +20,4 @@ cd mobile
 npx expo prebuild
 cd android && ./gradlew assembleRelease
 ```
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   HeartHandshake, 
@@ -7,15 +7,16 @@ import {
   ShieldCheck, 
   Phone, 
   KeyRound, 
-  ArrowRight,
-  ArrowLeft,
-  User,
-  MapPin,
-  Calendar,
-  Lock,
-  Heart,
-  Droplet,
-  Users
+  ArrowRight, 
+  ArrowLeft, 
+  User, 
+  MapPin, 
+  Calendar, 
+  Lock, 
+  Heart, 
+  Droplet, 
+  Users,
+  Building2
 } from 'lucide-react';
 import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
 import { LocationSelector } from '../components/LocationSelector';
@@ -45,8 +46,33 @@ export const DonorRegister: React.FC = () => {
   const [consentToShareContact, setConsentToShareContact] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Institution / Campus list
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [institutionId, setInstitutionId] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      try {
+        const res = await api.getInstitutions();
+        if (res.success && res.institutions) {
+          setInstitutions(res.institutions);
+        }
+      } catch (err) {
+        // non-blocking
+      }
+    };
+    fetchInstitutions();
+  }, []);
+
+  const sanitizePhone = (raw: string) => {
+    let clean = raw.replace(/[\s\-]/g, '');
+    if (clean.startsWith('+88')) clean = clean.slice(3);
+    if (clean.startsWith('88') && clean.length === 13) clean = clean.slice(2);
+    return clean;
+  };
 
   // Validation before proceeding from Step 1 to Step 2
   const handleNextStep1 = (e: React.FormEvent) => {
@@ -57,9 +83,9 @@ export const DonorRegister: React.FC = () => {
       setErrorMsg('অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।');
       return;
     }
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 11) {
-      setErrorMsg('সঠিক ১১ ডিজিটের মোবাইল নম্বর প্রদান করুন (যেমন: 01XXXXXXXXX)।');
+    const cleanPhone = sanitizePhone(phone);
+    if (!cleanPhone || !/^01[3-9]\d{8}$/.test(cleanPhone)) {
+      setErrorMsg('সঠিক ১১ ডিজিটের বাংলাদেশী মোবাইল নম্বর প্রদান করুন (যেমন: 017XXXXXXXX)।');
       return;
     }
     if (!password || password.length < 6) {
@@ -103,21 +129,30 @@ export const DonorRegister: React.FC = () => {
       return;
     }
 
+    const cleanPhone = sanitizePhone(phone);
+    if (!cleanPhone || !/^01[3-9]\d{8}$/.test(cleanPhone)) {
+      setErrorMsg('সঠিক ১১ ডিজিটের বাংলাদেশী মোবাইল নম্বর প্রদান করুন।');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const regRes = await api.register({
         name: name.trim(),
-        phone: phone.trim(),
+        phone: cleanPhone,
         password,
         role,
         bloodGroup: role === 'DONOR' ? bloodGroup : undefined,
         division,
         district,
-        upazila,
+        upazila: upazila || undefined,
+        institutionId: institutionId || undefined,
         dateOfBirth: role === 'DONOR' ? dateOfBirth : undefined,
         gender: role === 'DONOR' ? gender : undefined,
         consentToShareContact,
+        femaleSafetyAcknowledged: gender === 'female',
+        femalePublicPhoneConsent: gender === 'female' ? false : consentToShareContact,
         termsAccepted
       });
 
@@ -432,6 +467,32 @@ export const DonorRegister: React.FC = () => {
                   required
                 />
               </div>
+            </div>
+
+            {/* Campus / Educational Institution Selector */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-mainText flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-teal-700" />
+                  <span>শিক্ষা প্রতিষ্ঠান বা ক্যাম্পাস (ঐচ্ছিক)</span>
+                </label>
+                <span className="text-[11px] text-subText font-normal">কলেজ / বিশ্ববিদ্যালয়</span>
+              </div>
+              <select
+                value={institutionId}
+                onChange={e => setInstitutionId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-xs sm:text-sm text-mainText focus:ring-2 focus:ring-teal-600/20 focus:border-teal-700 transition-all"
+              >
+                <option value="">কোনো প্রতিষ্ঠান নেই / সাধারণ রক্তদাতা</option>
+                {institutions.map(inst => (
+                  <option key={inst._id} value={inst._id}>
+                    {inst.nameBn} ({inst.name}) - {inst.district}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-subText">
+                আপনার ক্যাম্পাস নির্বাচন করলে ক্যাম্পাসের রক্তদান নেটওয়ার্কে অন্তর্ভুক্ত হবেন।
+              </p>
             </div>
 
             {/* Privacy for Donors */}

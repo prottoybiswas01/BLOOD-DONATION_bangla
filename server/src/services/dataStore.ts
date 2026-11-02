@@ -11,6 +11,9 @@ import { AccountStatusHistoryModel } from '../models/AccountStatusHistory.js';
 import { ReportModel } from '../models/Report.js';
 import { NotificationModel } from '../models/Notification.js';
 import { ContactAccessLogModel } from '../models/ContactAccessLog.js';
+import { PhoneChangeRequestModel } from '../models/PhoneChangeRequest.js';
+import { PasswordRecoveryRequestModel } from '../models/PasswordRecoveryRequest.js';
+import { InstitutionChangeRequestModel } from '../models/InstitutionChangeRequest.js';
 import { isDatabaseConnected } from '../config/db.js';
 
 export interface StoredUser {
@@ -1070,6 +1073,9 @@ class DataStore {
         for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
         for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
         for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
+        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
+        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
+        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
         console.log('[Database] Auto-seeding completed successfully in MongoDB Atlas!');
       } else {
         console.log('[Database] Loading existing data from MongoDB Atlas...');
@@ -1089,6 +1095,12 @@ class DataStore {
         if (dbActivities.length > 0) this.moderatorActivities = dbActivities as any;
         const dbHistories = await AccountStatusHistoryModel.find().lean();
         if (dbHistories.length > 0) this.accountStatusHistories = dbHistories as any;
+        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
+        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs as any;
+        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
+        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs as any;
+        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
+        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs as any;
         console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
       }
     } catch (err: any) {
@@ -1162,9 +1174,27 @@ class DataStore {
     }
   }
 
+  persistPhoneChangeRequest(pcr: StoredPhoneChangeRequest) {
+    if (isDatabaseConnected()) {
+      PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistPasswordRecoveryRequest(prr: StoredPasswordRecoveryRequest) {
+    if (isDatabaseConnected()) {
+      PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true }).catch(() => {});
+    }
+  }
+
+  persistInstitutionChangeRequest(icr: StoredInstitutionChangeRequest) {
+    if (isDatabaseConnected()) {
+      InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true }).catch(() => {});
+    }
+  }
+
   // --- User Methods ---
   findUserById(id: string): StoredUser | undefined {
-    return this.users.find(u => u._id === id);
+    return this.users.find(u => String(u._id) === String(id));
   }
 
   findUserByPhone(phone: string): StoredUser | undefined {
@@ -1557,7 +1587,7 @@ class DataStore {
 
   // --- Blood Request Methods ---
   findBloodRequestById(id: string): StoredBloodRequest | undefined {
-    return this.bloodRequests.find(r => r._id === id);
+    return this.bloodRequests.find(r => String(r._id) === String(id));
   }
 
   createBloodRequest(data: Partial<StoredBloodRequest>): StoredBloodRequest {
@@ -1666,7 +1696,7 @@ class DataStore {
 
   // --- Institution Methods ---
   findInstitutionById(id: string): StoredInstitution | undefined {
-    return this.institutions.find(i => i._id === id);
+    return this.institutions.find(i => String(i._id) === String(id));
   }
 
   getInstitutions(filters: { division?: string; status?: string; search?: string }) {
@@ -1783,14 +1813,15 @@ class DataStore {
     status: 'approved' | 'rejected' | 'under_review';
     decisionReason: string;
   }): { success: boolean; message: string; institution?: StoredInstitution } {
-    const req = this.institutionRequests.find(r => r._id === params.requestId);
+    const req = this.institutionRequests.find(r => String(r._id) === String(params.requestId));
     if (!req) {
       return { success: false, message: 'আবেদনটি খুঁজে পাওয়া যায়নি।' };
     }
 
-    // Authorization: Only Super Admin or Coordinator of same division can approve/reject
-    if (params.reviewerRole === 'ADMIN') {
-      return { success: false, message: 'অননুমোদিত: প্ল্যাটফর্ম অ্যাডমিন প্রতিষ্ঠান অনুমোদন বা বাতিল করার ক্ষমতাপ্রাপ্ত নন।' };
+    // Authorization: Super Admin, Admin, or Coordinator of same division can approve/reject
+    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'];
+    if (!allowedRoles.includes(params.reviewerRole)) {
+      return { success: false, message: 'অননুমোদিত: আপনি প্রতিষ্ঠান আবেদন পর্যালোচনা করার ক্ষমতাপ্রাপ্ত নন।' };
     }
 
     if (params.reviewerRole === 'DIVISION_COORDINATOR' && params.reviewerDivision?.toLowerCase() !== req.division.toLowerCase()) {
@@ -2196,6 +2227,7 @@ class DataStore {
     };
 
     this.phoneChangeRequests.unshift(newReq);
+    this.persistPhoneChangeRequest(newReq);
 
     // Notify coordinator of that division
     const coordinators = this.users.filter(
@@ -2250,7 +2282,7 @@ class DataStore {
     reviewer: { userId: string; name: string; role: string },
     reviewNotes?: string
   ): { success: boolean; message: string; request?: StoredPhoneChangeRequest } {
-    const req = this.phoneChangeRequests.find(r => r._id === requestId);
+    const req = this.phoneChangeRequests.find(r => String(r._id) === String(requestId));
     if (!req) {
       return { success: false, message: 'অনুরোধটি খুঁজে পাওয়া যায়নি।' };
     }
@@ -2270,11 +2302,13 @@ class DataStore {
     if (status === 'approved' && targetUser) {
       targetUser.phone = req.newPhone;
       targetUser.updatedAt = new Date();
+      this.persistUser(targetUser);
 
       // Also update any related donor profile
-      const donor = this.donorProfiles.find(d => d.userId === targetUser._id);
+      const donor = this.donorProfiles.find(d => String(d.userId) === String(targetUser._id));
       if (donor) {
         donor.updatedAt = new Date();
+        this.persistDonorProfile(donor);
       }
 
       this.createNotification({
@@ -2293,6 +2327,8 @@ class DataStore {
         link: '/profile'
       });
     }
+
+    this.persistPhoneChangeRequest(req);
 
     return {
       success: true,
@@ -2603,7 +2639,7 @@ class DataStore {
   }
 
   approvePasswordRecoveryRequest(requestId: string, approverUser: StoredUser) {
-    const req = this.passwordRecoveryRequests.find(r => r._id === requestId);
+    const req = this.passwordRecoveryRequests.find(r => String(r._id) === String(requestId));
     if (!req) {
       return { success: false, message: 'আবেদনটি খুঁজে পাওয়া যায়নি।' };
     }
@@ -2646,6 +2682,8 @@ class DataStore {
     targetUser.passwordHash = hash;
     targetUser.requirePasswordChangeAtFirstLogin = true;
     targetUser.updatedAt = now;
+    this.persistUser(targetUser);
+    this.persistPasswordRecoveryRequest(req);
 
     // Audit trail
     this.passwordRecoveryAudits.unshift({
@@ -2679,13 +2717,14 @@ class DataStore {
   }
 
   rejectPasswordRecoveryRequest(requestId: string, rejecterUser: StoredUser, reason: string) {
-    const req = this.passwordRecoveryRequests.find(r => r._id === requestId);
+    const req = this.passwordRecoveryRequests.find(r => String(r._id) === String(requestId));
     if (!req) return { success: false, message: 'আবেদনটি পাওয়া যায়নি।' };
 
     const now = new Date();
     req.status = 'rejected';
     req.rejectionReason = reason;
     req.updatedAt = now;
+    this.persistPasswordRecoveryRequest(req);
 
     this.passwordRecoveryAudits.unshift({
       _id: 'pra_' + Date.now() + Math.random().toString(36).substring(2, 6),
@@ -2826,6 +2865,7 @@ class DataStore {
     };
 
     this.institutionChangeRequests.unshift(newReq);
+    this.persistInstitutionChangeRequest(newReq);
 
     // Notify Super Admin & Coordinator
     const admins = this.users.filter(u => u.role === 'SUPER_ADMIN');
@@ -2869,7 +2909,8 @@ class DataStore {
 
     return {
       success: true,
-      message: 'প্রতিষ্ঠান পরিবর্তনের আবেদন সফলভাবে জমা হয়েছে। সংশ্লিষ্ট কর্তৃপক্ষ অনুমোদন করলে আপনার প্রোফাইলে সংযুক্ত হবে।'
+      message: 'প্রতিষ্ঠান পরিবর্তনের আবেদন সফলভাবে জমা হয়েছে। সংশ্লিষ্ট কর্তৃপক্ষ অনুমোদন করলে আপনার প্রোফাইলে সংযুক্ত হবে।',
+      request: newReq
     };
   }
 
@@ -2893,12 +2934,12 @@ class DataStore {
   }
 
   reviewInstitutionChangeRequest(requestId: string, reviewerUser: StoredUser, status: 'approved' | 'rejected', decisionReason?: string) {
-    const req = this.institutionChangeRequests.find(r => r._id === requestId);
+    const req = this.institutionChangeRequests.find(r => String(r._id) === String(requestId));
     if (!req) return { success: false, message: 'আবেদনটি পাওয়া যায়নি।' };
 
-    // Final approval requires SUPER_ADMIN or DIVISION_COORDINATOR (for that division)
-    if (reviewerUser.role !== 'SUPER_ADMIN' && reviewerUser.role !== 'DIVISION_COORDINATOR') {
-      return { success: false, message: 'অনধিকার চর্চা: প্রতিষ্ঠান পরিবর্তনের চূড়ান্ত অনুমোদন কেবল বিভাগীয় সমন্বয়ক বা সুপার অ্যাডমিন দিতে পারেন।' };
+    // Final approval requires SUPER_ADMIN, ADMIN, or DIVISION_COORDINATOR (for that division)
+    if (reviewerUser.role !== 'SUPER_ADMIN' && reviewerUser.role !== 'ADMIN' && reviewerUser.role !== 'DIVISION_COORDINATOR') {
+      return { success: false, message: 'অনধিকার চর্চা: প্রতিষ্ঠান পরিবর্তনের চূড়ান্ত অনুমোদন কেবল প্ল্যাটফর্ম অ্যাডমিন বা বিভাগীয় সমন্বয়ক দিতে পারেন।' };
     }
 
     if (reviewerUser.role === 'DIVISION_COORDINATOR' && reviewerUser.assignedDivision !== req.division) {
@@ -2918,14 +2959,16 @@ class DataStore {
       if (targetUser) {
         targetUser.assignedInstitution = req.targetInstitutionId;
         targetUser.updatedAt = now;
+        this.persistUser(targetUser);
       }
 
       // Update donor profile
-      const donor = this.donorProfiles.find(d => d.userId === req.userId);
+      const donor = this.donorProfiles.find(d => String(d.userId) === String(req.userId));
       if (donor) {
         donor.institutionId = req.targetInstitutionId;
         donor.institutionMembershipVerified = true;
         donor.updatedAt = now;
+        this.persistDonorProfile(donor);
       }
 
       this.createNotification({
@@ -2942,6 +2985,8 @@ class DataStore {
         type: 'institution_update'
       });
     }
+
+    this.persistInstitutionChangeRequest(req);
 
     return {
       success: true,
@@ -2963,8 +3008,8 @@ class DataStore {
     phone?: string;
     description?: string;
   }, creatorUser: StoredUser) {
-    if (creatorUser.role !== 'SUPER_ADMIN' && creatorUser.role !== 'DIVISION_COORDINATOR') {
-      return { success: false, message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন এবং বিভাগীয় সমন্বয়ক সরাসরি প্রতিষ্ঠান তৈরি করতে পারেন।' };
+    if (creatorUser.role !== 'SUPER_ADMIN' && creatorUser.role !== 'ADMIN' && creatorUser.role !== 'DIVISION_COORDINATOR') {
+      return { success: false, message: 'অনধিকার চর্চা: শুধুমাত্র প্ল্যাটফর্ম অ্যাডমিন এবং বিভাগীয় সমন্বয়ক সরাসরি প্রতিষ্ঠান তৈরি করতে পারেন।' };
     }
 
     if (creatorUser.role === 'DIVISION_COORDINATOR' && creatorUser.assignedDivision !== data.division) {
@@ -3000,6 +3045,7 @@ class DataStore {
     };
 
     this.institutions.unshift(newInst);
+    this.persistInstitution(newInst);
 
     return {
       success: true,

@@ -17,11 +17,11 @@ router.post('/', requireAuth, validateBody(SubmitInstitutionRequestSchema), subm
 // List applications: Super Admin, Admin (read only), Coordinator (division)
 router.get('/', requireAuth, requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'), getInstitutionRequests);
 
-// Review decision (Approve/Reject with reason): strictly Division Coordinator or Super Admin
+// Review decision (Approve/Reject with reason): Super Admin, Admin, or Division Coordinator
 router.patch(
   '/:id/review', 
   requireAuth, 
-  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR', 'ADMIN'), // Admin will be rejected in controller with specific message
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'), 
   validateBody(ReviewInstitutionRequestSchema), 
   reviewInstitutionRequest
 );

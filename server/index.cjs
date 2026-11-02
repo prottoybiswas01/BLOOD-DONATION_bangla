@@ -62822,7 +62822,7 @@ var require_compile = __commonJS({
     var documentSchemaSymbol = require_symbols().documentSchemaSymbol;
     var internalToObjectOptions = require_options().internalToObjectOptions;
     var utils = require_utils5();
-    var Document13;
+    var Document16;
     var getSymbol = require_symbols().getSymbol;
     var scopeSymbol = require_symbols().scopeSymbol;
     var isPOJO = utils.isPOJO;
@@ -62838,7 +62838,7 @@ var require_compile = __commonJS({
       noDottedPath: true
     });
     function compile(tree, proto, prefix, options) {
-      Document13 = Document13 || require_document2();
+      Document16 = Document16 || require_document2();
       const typeKey = options.typeKey;
       for (const key of Object.keys(tree)) {
         const limb = tree[key];
@@ -62848,7 +62848,7 @@ var require_compile = __commonJS({
       }
     }
     function defineKey({ prop, subprops, prototype, prefix, options }) {
-      Document13 = Document13 || require_document2();
+      Document16 = Document16 || require_document2();
       const path = (prefix ? prefix + "." : "") + prop;
       prefix = prefix || "";
       const useGetOptions = prefix ? Object.freeze({}) : noDottedPathGetOptions;
@@ -62862,7 +62862,7 @@ var require_compile = __commonJS({
               this.$__.getters = {};
             }
             if (!this.$__.getters[path]) {
-              const nested = Object.create(Document13.prototype, getOwnPropertyDescriptors(this));
+              const nested = Object.create(Document16.prototype, getOwnPropertyDescriptors(this));
               if (!prefix) {
                 nested.$__[scopeSymbol] = this;
               }
@@ -62943,7 +62943,7 @@ var require_compile = __commonJS({
           set: function(v) {
             if (v != null && v.$__isNested) {
               v = v.$__get();
-            } else if (v instanceof Document13 && !v.$__isNested) {
+            } else if (v instanceof Document16 && !v.$__isNested) {
               v = v.$toObject(internalToObjectOptions);
             }
             const doc = this.$__[scopeSymbol] || this;
@@ -63887,7 +63887,7 @@ var require_getDeepestSubdocumentForPath = __commonJS({
 var require_subdocument = __commonJS({
   "node_modules/mongoose/lib/types/subdocument.js"(exports2, module2) {
     "use strict";
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var immediate = require_immediate();
     var internalToObjectOptions = require_options().internalToObjectOptions;
     var util2 = require("util");
@@ -63916,10 +63916,10 @@ var require_subdocument = __commonJS({
         documentOptions = Object.assign({}, options);
         delete documentOptions.path;
       }
-      Document13.call(this, value, fields, skipId, documentOptions);
+      Document16.call(this, value, fields, skipId, documentOptions);
       delete this.$__.priorDoc;
     }
-    Subdocument.prototype = Object.create(Document13.prototype);
+    Subdocument.prototype = Object.create(Document16.prototype);
     Object.defineProperty(Subdocument.prototype, "$isSubdocument", {
       configurable: false,
       writable: false,
@@ -63974,10 +63974,10 @@ var require_subdocument = __commonJS({
       if (parent != null && fullPath != null) {
         return parent.$isValid(fullPath);
       }
-      return Document13.prototype.$isValid.call(this, path);
+      return Document16.prototype.$isValid.call(this, path);
     };
     Subdocument.prototype.markModified = function(path) {
-      Document13.prototype.markModified.call(this, path);
+      Document16.prototype.markModified.call(this, path);
       const parent = this.$parent();
       if (parent == null) {
         return;
@@ -64003,10 +64003,10 @@ var require_subdocument = __commonJS({
         }
         return parent.$isModified(paths, options, modifiedPaths);
       }
-      return Document13.prototype.isModified.call(this, paths, options, modifiedPaths);
+      return Document16.prototype.isModified.call(this, paths, options, modifiedPaths);
     };
     Subdocument.prototype.$markValid = function(path) {
-      Document13.prototype.$markValid.call(this, path);
+      Document16.prototype.$markValid.call(this, path);
       const parent = this.$parent();
       const fullPath = this.$__pathRelativeToParent(path);
       if (parent != null && fullPath != null) {
@@ -64014,7 +64014,7 @@ var require_subdocument = __commonJS({
       }
     };
     Subdocument.prototype.invalidate = function(path, err, val) {
-      Document13.prototype.invalidate.call(this, path, err, val);
+      Document16.prototype.invalidate.call(this, path, err, val);
       const parent = this.$parent();
       const fullPath = this.$__pathRelativeToParent(path);
       if (parent != null && fullPath != null) {
@@ -64025,7 +64025,7 @@ var require_subdocument = __commonJS({
       return this.ownerDocument().$__.validationError;
     };
     Subdocument.prototype.$ignore = function(path) {
-      Document13.prototype.$ignore.call(this, path);
+      Document16.prototype.$ignore.call(this, path);
       const parent = this.$parent();
       const fullPath = this.$__pathRelativeToParent(path);
       if (parent != null && fullPath != null) {
@@ -64119,7 +64119,7 @@ var require_subdocument = __commonJS({
       Subdocument.prototype[util2.inspect.custom] = Subdocument.prototype.inspect;
     }
     Subdocument.prototype.$toObject = function $toObject(options, json) {
-      const ret = Document13.prototype.$toObject.call(this, options, json);
+      const ret = Document16.prototype.$toObject.call(this, options, json);
       if (Object.keys(ret).length === 0 && options?._calledWithOptions != null) {
         const minimize = options._calledWithOptions?.minimize ?? this?.$__schemaTypeOptions?.minimize ?? options.minimize;
         if (minimize && !this.constructor.$__required && !this.$isDocumentArrayElement) {
@@ -64245,7 +64245,7 @@ var require_arraySubdocument = __commonJS({
 var require_methods2 = __commonJS({
   "node_modules/mongoose/lib/types/array/methods/index.js"(exports2, module2) {
     "use strict";
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var ArraySubdocument = require_arraySubdocument();
     var MongooseError = require_mongooseError();
     var cleanModifiedSubpaths = require_cleanModifiedSubpaths();
@@ -64792,7 +64792,7 @@ var require_methods2 = __commonJS({
         this._markModified();
         while (i--) {
           mem = cur[i];
-          if (mem instanceof Document13) {
+          if (mem instanceof Document16) {
             const some = values.some(function(v) {
               return mem.equals(v);
             });
@@ -65031,7 +65031,7 @@ var require_methods2 = __commonJS({
           options = clone(options);
           options._isNested = true;
           return [].concat(arr).map(function(doc) {
-            return doc instanceof Document13 ? doc.toObject(options) : doc;
+            return doc instanceof Document16 ? doc.toObject(options) : doc;
           });
         }
         return [].concat(arr);
@@ -65074,7 +65074,7 @@ var require_methods2 = __commonJS({
           return false;
         }
         const model = arg.constructor;
-        if (!(arg instanceof Document13) || model.modelName !== ref && model.baseModelName !== ref) {
+        if (!(arg instanceof Document16) || model.modelName !== ref && model.baseModelName !== ref) {
           return false;
         }
       }
@@ -65237,7 +65237,7 @@ var require_methods3 = __commonJS({
   "node_modules/mongoose/lib/types/documentArray/methods/index.js"(exports2, module2) {
     "use strict";
     var ArrayMethods = require_methods2();
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var getDiscriminatorByKey = require_getDiscriminatorByKey();
     var getDiscriminatorByValue = require_getDiscriminatorByValue();
     var internalToObjectOptions = require_options().internalToObjectOptions;
@@ -65361,7 +65361,7 @@ var require_methods3 = __commonJS({
           _id = val.get("_id");
           if (_id == null) {
             continue;
-          } else if (_id instanceof Document13) {
+          } else if (_id instanceof Document16) {
             _id = _id.get("_id");
             if (castedId != null && utils.deepEqual(castedId, _id)) {
               return val;
@@ -65743,7 +65743,7 @@ var require_document2 = __commonJS({
     var ObjectExpectedError = require_objectExpected();
     var ObjectParameterError = require_objectParameter();
     var ParallelValidateError = require_parallelValidate();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var StrictModeError = require_strict();
     var ValidationError2 = require_validation();
     var ValidatorError = require_validator();
@@ -65795,14 +65795,14 @@ var require_document2 = __commonJS({
     var VERSION_WHERE = 1;
     var VERSION_INC = 2;
     var VERSION_ALL = VERSION_WHERE | VERSION_INC;
-    function Document13(obj, fields, skipId, options) {
+    function Document16(obj, fields, skipId, options) {
       if (typeof skipId === "object" && skipId != null) {
         options = skipId;
         skipId = options.skipId;
       }
       options = Object.assign({}, options);
       if (this.$__schema == null) {
-        const _schema = utils.isObject(fields) && !fields.instanceOfSchema ? new Schema13(fields) : fields;
+        const _schema = utils.isObject(fields) && !fields.instanceOfSchema ? new Schema16(fields) : fields;
         this.$__setSchema(_schema);
         fields = skipId;
         skipId = options;
@@ -65862,7 +65862,7 @@ var require_document2 = __commonJS({
         } else {
           this.$set(obj, void 0, true, options);
         }
-        if (obj instanceof Document13) {
+        if (obj instanceof Document16) {
           this.$isNew = obj.$isNew;
         }
       }
@@ -65884,8 +65884,8 @@ var require_document2 = __commonJS({
       }
       applyQueue(this);
     }
-    Document13.prototype.$isMongooseDocumentPrototype = true;
-    Object.defineProperty(Document13.prototype, "isNew", {
+    Document16.prototype.$isMongooseDocumentPrototype = true;
+    Object.defineProperty(Document16.prototype, "isNew", {
       get: function() {
         return this.$isNew;
       },
@@ -65893,7 +65893,7 @@ var require_document2 = __commonJS({
         this.$isNew = value;
       }
     });
-    Object.defineProperty(Document13.prototype, "errors", {
+    Object.defineProperty(Document16.prototype, "errors", {
       get: function() {
         return this.$errors;
       },
@@ -65901,7 +65901,7 @@ var require_document2 = __commonJS({
         this.$errors = value;
       }
     });
-    Document13.prototype.$isNew = true;
+    Document16.prototype.$isNew = true;
     utils.each(
       [
         "on",
@@ -65914,7 +65914,7 @@ var require_document2 = __commonJS({
         "addListener"
       ],
       function(emitterFn) {
-        Document13.prototype[emitterFn] = function() {
+        Document16.prototype[emitterFn] = function() {
           if (!this.$__.emitter) {
             if (emitterFn === "emit") {
               return;
@@ -65924,16 +65924,16 @@ var require_document2 = __commonJS({
           }
           return this.$__.emitter[emitterFn].apply(this.$__.emitter, arguments);
         };
-        Document13.prototype[`$${emitterFn}`] = Document13.prototype[emitterFn];
+        Document16.prototype[`$${emitterFn}`] = Document16.prototype[emitterFn];
       }
     );
-    Document13.prototype.constructor = Document13;
+    Document16.prototype.constructor = Document16;
     for (const i in EventEmitter.prototype) {
-      Document13[i] = EventEmitter.prototype[i];
+      Document16[i] = EventEmitter.prototype[i];
     }
-    Document13.prototype.$__schema;
-    Document13.prototype.schema;
-    Object.defineProperty(Document13.prototype, "$locals", {
+    Document16.prototype.$__schema;
+    Document16.prototype.schema;
+    Object.defineProperty(Document16.prototype, "$locals", {
       configurable: false,
       enumerable: false,
       get: function() {
@@ -65946,15 +65946,15 @@ var require_document2 = __commonJS({
         this.$__.locals = v;
       }
     });
-    Document13.prototype.isNew;
-    Object.defineProperty(Document13.prototype, "$where", {
+    Document16.prototype.isNew;
+    Object.defineProperty(Document16.prototype, "$where", {
       configurable: false,
       enumerable: false,
       writable: true
     });
-    Document13.prototype.id;
-    Document13.prototype.$errors;
-    Object.defineProperty(Document13.prototype, "$op", {
+    Document16.prototype.id;
+    Document16.prototype.$errors;
+    Object.defineProperty(Document16.prototype, "$op", {
       get: function() {
         return this.$__.op || null;
       },
@@ -66008,7 +66008,7 @@ var require_document2 = __commonJS({
         }
       }
     }
-    Document13.prototype.$__buildDoc = function(obj, fields, skipId, exclude, hasIncludedChildren) {
+    Document16.prototype.$__buildDoc = function(obj, fields, skipId, exclude, hasIncludedChildren) {
       const doc = {};
       const paths = Object.keys(this.$__schema.paths).filter((p) => !p.includes("$*"));
       const plen = paths.length;
@@ -66054,10 +66054,10 @@ var require_document2 = __commonJS({
       }
       this._doc = doc;
     };
-    Document13.prototype.toBSON = function() {
+    Document16.prototype.toBSON = function() {
       return this.toObject(internalToObjectOptions);
     };
-    Document13.prototype.init = function(doc, opts, fn) {
+    Document16.prototype.init = function(doc, opts, fn) {
       if (typeof opts === "function") {
         fn = opts;
         opts = null;
@@ -66071,10 +66071,10 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$init = function() {
+    Document16.prototype.$init = function() {
       return this.constructor.prototype.init.apply(this, arguments);
     };
-    Document13.prototype.$__init = function(doc, opts) {
+    Document16.prototype.$__init = function(doc, opts) {
       this.$isNew = false;
       opts = opts || {};
       if (doc._id != null && opts.populated && opts.populated.length) {
@@ -66192,7 +66192,7 @@ var require_document2 = __commonJS({
         }
       }
     }
-    Document13.prototype.updateOne = function updateOne(update, options, callback) {
+    Document16.prototype.updateOne = function updateOne(update, options, callback) {
       const query = this.constructor.updateOne();
       const self2 = this;
       query.pre(function queryPreUpdateOne(cb) {
@@ -66214,12 +66214,12 @@ var require_document2 = __commonJS({
       }
       return query;
     };
-    Document13.prototype.replaceOne = function replaceOne() {
+    Document16.prototype.replaceOne = function replaceOne() {
       const args = [...arguments];
       args.unshift({ _id: this._doc._id });
       return this.constructor.replaceOne.apply(this.constructor, args);
     };
-    Document13.prototype.$session = function $session(session) {
+    Document16.prototype.$session = function $session(session) {
       if (arguments.length === 0) {
         if (this.$__.session != null && this.$__.session.hasEnded) {
           this.$__.session = null;
@@ -66242,7 +66242,7 @@ var require_document2 = __commonJS({
       }
       return session;
     };
-    Document13.prototype.$timestamps = function $timestamps(value) {
+    Document16.prototype.$timestamps = function $timestamps(value) {
       if (arguments.length === 0) {
         if (this.$__.timestamps != null) {
           return this.$__.timestamps;
@@ -66258,7 +66258,7 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.overwrite = function overwrite(obj) {
+    Document16.prototype.overwrite = function overwrite(obj) {
       const keys = Array.from(new Set(Object.keys(this._doc).concat(Object.keys(obj))));
       for (const key of keys) {
         if (key === "_id") {
@@ -66274,7 +66274,7 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$set = function $set(path, val, type, options) {
+    Document16.prototype.$set = function $set(path, val, type, options) {
       if (utils.isPOJO(type)) {
         options = type;
         type = void 0;
@@ -66297,7 +66297,7 @@ var require_document2 = __commonJS({
       if (path == null) {
         [path, val] = [val, path];
       } else if (typeof path !== "string") {
-        if (path instanceof Document13) {
+        if (path instanceof Document16) {
           if (path.$__isNested) {
             path = path.toObject();
           } else {
@@ -66340,7 +66340,7 @@ var require_document2 = __commonJS({
             }
             if (pathtype === "real" || pathtype === "virtual") {
               this.$set(pathName, valForKey, constructing, options);
-            } else if (pathtype === "nested" && valForKey instanceof Document13) {
+            } else if (pathtype === "nested" && valForKey instanceof Document16) {
               this.$set(
                 pathName,
                 valForKey.toObject({ transform: false }),
@@ -66517,7 +66517,7 @@ var require_document2 = __commonJS({
         _markValidSubpaths(this, path);
       }
       if (val != null && merge && schema.$isSingleNested) {
-        if (val instanceof Document13) {
+        if (val instanceof Document16) {
           val = val.toObject({ virtuals: false, transform: false });
         }
         const keys2 = Object.keys(val);
@@ -66532,7 +66532,7 @@ var require_document2 = __commonJS({
           if (schema.options == null) {
             return false;
           }
-          if (!(val instanceof Document13)) {
+          if (!(val instanceof Document16)) {
             return false;
           }
           const model = val.constructor;
@@ -66549,7 +66549,7 @@ var require_document2 = __commonJS({
           return modelName === model.modelName || modelName === model.baseModelName;
         })();
         let didPopulate = false;
-        if (refMatches && val instanceof Document13 && (!val.$__.wasPopulated || utils.deepEqual(val.$__.wasPopulated.value, val._doc._id))) {
+        if (refMatches && val instanceof Document16 && (!val.$__.wasPopulated || utils.deepEqual(val.$__.wasPopulated.value, val._doc._id))) {
           const unpopulatedValue = schema && schema.$isSingleNested ? schema.cast(val, this) : val._doc._id;
           this.$populated(path, unpopulatedValue, { [populateModelSymbol]: val.constructor });
           val.$__.wasPopulated = { value: unpopulatedValue };
@@ -66592,7 +66592,7 @@ var require_document2 = __commonJS({
         if (!didPopulate && this.$__.populated) {
           if (Array.isArray(val) && this.$__.populated[path]) {
             for (let i2 = 0; i2 < val.length; ++i2) {
-              if (val[i2] instanceof Document13) {
+              if (val[i2] instanceof Document16) {
                 val.set(i2, val[i2]._doc._id, true);
               }
             }
@@ -66653,7 +66653,7 @@ var require_document2 = __commonJS({
         return false;
       }
       for (const el of val) {
-        if (!(el instanceof Document13)) {
+        if (!(el instanceof Document16)) {
           return false;
         }
         const modelName = el.constructor.modelName;
@@ -66666,8 +66666,8 @@ var require_document2 = __commonJS({
       }
       return true;
     }
-    Document13.prototype.set = Document13.prototype.$set;
-    Document13.prototype.$__shouldModify = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
+    Document16.prototype.set = Document16.prototype.$set;
+    Document16.prototype.$__shouldModify = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
       if (options && options._skipMarkModified) {
         return false;
       }
@@ -66683,7 +66683,7 @@ var require_document2 = __commonJS({
       if (val === void 0 && path in this.$__.activePaths.getStatePaths("default")) {
         return false;
       }
-      if (this.$populated(path) && val instanceof Document13 && deepEqual(val._doc._id, priorVal)) {
+      if (this.$populated(path) && val instanceof Document16 && deepEqual(val._doc._id, priorVal)) {
         return false;
       }
       if (!deepEqual(val, priorVal !== void 0 ? priorVal : utils.getValue(path, this))) {
@@ -66694,7 +66694,7 @@ var require_document2 = __commonJS({
       }
       return false;
     };
-    Document13.prototype.$__set = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
+    Document16.prototype.$__set = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
       Embedded = Embedded || require_arraySubdocument();
       const shouldModify = this.$__shouldModify(
         pathToMark,
@@ -66789,7 +66789,7 @@ var require_document2 = __commonJS({
         }
       }
     };
-    Document13.prototype.$__getValue = function(path) {
+    Document16.prototype.$__getValue = function(path) {
       if (typeof path !== "string" && !Array.isArray(path)) {
         throw new TypeError(
           `Invalid \`path\`. Must be either string or array. Got "${path}" (type ${typeof path})`
@@ -66797,7 +66797,7 @@ var require_document2 = __commonJS({
       }
       return utils.getValue(path, this._doc);
     };
-    Document13.prototype.$inc = function $inc(path, val) {
+    Document16.prototype.$inc = function $inc(path, val) {
       if (val == null) {
         val = 1;
       }
@@ -66840,11 +66840,11 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$__setValue = function(path, val) {
+    Document16.prototype.$__setValue = function(path, val) {
       utils.setValue(path, val, this._doc);
       return this;
     };
-    Document13.prototype.get = function(path, type, options) {
+    Document16.prototype.get = function(path, type, options) {
       let adhoc;
       if (options == null) {
         options = {};
@@ -66909,9 +66909,9 @@ var require_document2 = __commonJS({
       }
       return obj;
     };
-    Document13.prototype[getSymbol] = Document13.prototype.get;
-    Document13.prototype.$get = Document13.prototype.get;
-    Document13.prototype.$__path = function(path) {
+    Document16.prototype[getSymbol] = Document16.prototype.get;
+    Document16.prototype.$get = Document16.prototype.get;
+    Document16.prototype.$__path = function(path) {
       const adhocs = this.$__.adhocPaths;
       const adhocType = adhocs && Object.hasOwn(adhocs, path) ? adhocs[path] : null;
       if (adhocType) {
@@ -66919,7 +66919,7 @@ var require_document2 = __commonJS({
       }
       return this.$__schema.path(path);
     };
-    Document13.prototype.markModified = function(path, scope) {
+    Document16.prototype.markModified = function(path, scope) {
       this.$__saveInitialState(path);
       this.$__.activePaths.modify(path);
       if (scope != null && !this.$isSubdocument) {
@@ -66927,7 +66927,7 @@ var require_document2 = __commonJS({
         this.$__.pathsToScopes[path] = scope;
       }
     };
-    Document13.prototype.$__saveInitialState = function $__saveInitialState(path) {
+    Document16.prototype.$__saveInitialState = function $__saveInitialState(path) {
       const savedState = this.$__.savedState;
       const savedStatePath = path;
       if (savedState != null) {
@@ -66938,19 +66938,19 @@ var require_document2 = __commonJS({
         }
       }
     };
-    Document13.prototype.unmarkModified = function(path) {
+    Document16.prototype.unmarkModified = function(path) {
       this.$__.activePaths.init(path);
       if (this.$__.pathsToScopes != null) {
         delete this.$__.pathsToScopes[path];
       }
     };
-    Document13.prototype.$ignore = function(path) {
+    Document16.prototype.$ignore = function(path) {
       this.$__.activePaths.ignore(path);
     };
-    Document13.prototype.directModifiedPaths = function() {
+    Document16.prototype.directModifiedPaths = function() {
       return Object.keys(this.$__.activePaths.getStatePaths("modify"));
     };
-    Document13.prototype.$isEmpty = function(path) {
+    Document16.prototype.$isEmpty = function(path) {
       const isEmptyOptions = {
         minimize: true,
         virtuals: false,
@@ -66986,7 +66986,7 @@ var require_document2 = __commonJS({
       }
       return true;
     }
-    Document13.prototype.modifiedPaths = function(options) {
+    Document16.prototype.modifiedPaths = function(options) {
       options = options || {};
       const directModifiedPaths = Object.keys(this.$__.activePaths.getStatePaths("modify"));
       const result = /* @__PURE__ */ new Set();
@@ -67037,8 +67037,8 @@ var require_document2 = __commonJS({
       }
       return Array.from(result);
     };
-    Document13.prototype[documentModifiedPaths] = Document13.prototype.modifiedPaths;
-    Document13.prototype.isModified = function(paths, options, modifiedPaths) {
+    Document16.prototype[documentModifiedPaths] = Document16.prototype.modifiedPaths;
+    Document16.prototype.isModified = function(paths, options, modifiedPaths) {
       if (paths) {
         const ignoreAtomics = options && options.ignoreAtomics;
         const directModifiedPathsObj = this.$__.activePaths.states.modify;
@@ -67075,9 +67075,9 @@ var require_document2 = __commonJS({
       }
       return this.$__.activePaths.some("modify");
     };
-    Document13.prototype.$isModified = Document13.prototype.isModified;
-    Document13.prototype[documentIsModified] = Document13.prototype.isModified;
-    Document13.prototype.$isDefault = function(path) {
+    Document16.prototype.$isModified = Document16.prototype.isModified;
+    Document16.prototype[documentIsModified] = Document16.prototype.isModified;
+    Document16.prototype.$isDefault = function(path) {
       if (path == null) {
         return this.$__.activePaths.some("default");
       }
@@ -67090,14 +67090,14 @@ var require_document2 = __commonJS({
       }
       return paths.some((path2) => Object.hasOwn(this.$__.activePaths.getStatePaths("default"), path2));
     };
-    Document13.prototype.$isDeleted = function(val) {
+    Document16.prototype.$isDeleted = function(val) {
       if (arguments.length === 0) {
         return !!this.$__.isDeleted;
       }
       this.$__.isDeleted = !!val;
       return this;
     };
-    Document13.prototype.isDirectModified = function(path) {
+    Document16.prototype.isDirectModified = function(path) {
       if (path == null) {
         return this.$__.activePaths.some("modify");
       }
@@ -67122,7 +67122,7 @@ var require_document2 = __commonJS({
       }
       return paths.some((path2) => this.isDirectModified(path2));
     };
-    Document13.prototype.isInit = function(path) {
+    Document16.prototype.isInit = function(path) {
       if (path == null) {
         return this.$__.activePaths.some("init");
       }
@@ -67135,7 +67135,7 @@ var require_document2 = __commonJS({
       }
       return paths.some((path2) => Object.hasOwn(this.$__.activePaths.getStatePaths("init"), path2));
     };
-    Document13.prototype.isSelected = function isSelected(path) {
+    Document16.prototype.isSelected = function isSelected(path) {
       if (this.$__.selected == null) {
         return true;
       }
@@ -67186,8 +67186,8 @@ var require_document2 = __commonJS({
       }
       return !inclusive;
     };
-    Document13.prototype.$__isSelected = Document13.prototype.isSelected;
-    Document13.prototype.isDirectSelected = function isDirectSelected(path) {
+    Document16.prototype.$__isSelected = Document16.prototype.isSelected;
+    Document16.prototype.isDirectSelected = function isDirectSelected(path) {
       if (this.$__.selected == null) {
         return true;
       }
@@ -67223,7 +67223,7 @@ var require_document2 = __commonJS({
       }
       return !inclusive;
     };
-    Document13.prototype.validate = async function validate(pathsToValidate, options) {
+    Document16.prototype.validate = async function validate(pathsToValidate, options) {
       if (typeof pathsToValidate === "function" || typeof options === "function" || typeof arguments[2] === "function") {
         throw new MongooseError("Document.prototype.validate() no longer accepts a callback");
       }
@@ -67256,7 +67256,7 @@ var require_document2 = __commonJS({
         });
       });
     };
-    Document13.prototype.$validate = Document13.prototype.validate;
+    Document16.prototype.$validate = Document16.prototype.validate;
     function _evaluateRequiredFunctions(doc) {
       const requiredFields = Object.keys(doc.$__.activePaths.getStatePaths("require"));
       let i = 0;
@@ -67443,7 +67443,7 @@ var require_document2 = __commonJS({
         }
       }
     }
-    Document13.prototype.$__validate = function(pathsToValidate, options, callback) {
+    Document16.prototype.$__validate = function(pathsToValidate, options, callback) {
       if (this.$__.saveOptions && this.$__.saveOptions.pathsToSave && !pathsToValidate) {
         pathsToValidate = [...this.$__.saveOptions.pathsToSave];
       } else if (typeof pathsToValidate === "function") {
@@ -67637,7 +67637,7 @@ var require_document2 = __commonJS({
       paths = Array.from(paths).filter((p) => !pathsToSkip.has(p));
       return new Set(paths);
     }
-    Document13.prototype.validateSync = function(pathsToValidate, options) {
+    Document16.prototype.validateSync = function(pathsToValidate, options) {
       const _this = this;
       if (arguments.length === 1 && typeof arguments[0] === "object" && !Array.isArray(arguments[0])) {
         options = arguments[0];
@@ -67730,7 +67730,7 @@ var require_document2 = __commonJS({
       }
       return err;
     };
-    Document13.prototype.invalidate = function(path, err, val, kind) {
+    Document16.prototype.invalidate = function(path, err, val, kind) {
       if (!this.$__.validationError) {
         this.$__.validationError = new ValidationError2(this);
       }
@@ -67751,7 +67751,7 @@ var require_document2 = __commonJS({
       this.$__.validationError.addError(path, err);
       return this.$__.validationError;
     };
-    Document13.prototype.$markValid = function(path) {
+    Document16.prototype.$markValid = function(path) {
       if (!this.$__.validationError || !this.$__.validationError.errors[path]) {
         return;
       }
@@ -67788,7 +67788,7 @@ var require_document2 = __commonJS({
         path.$immutableSetter.call(subdoc, oldVal);
       }
     }
-    Document13.prototype.$isValid = function(path) {
+    Document16.prototype.$isValid = function(path) {
       if (this.$__.validationError == null || Object.keys(this.$__.validationError.errors).length === 0) {
         return true;
       }
@@ -67803,7 +67803,7 @@ var require_document2 = __commonJS({
       }
       return this.$__.validationError.errors[path] == null;
     };
-    Document13.prototype.$__reset = function reset() {
+    Document16.prototype.$__reset = function reset() {
       let _this = this;
       const subdocs = !this.$isSubdocument ? this.$getAllSubdocs({ useCache: true }) : null;
       if (subdocs && subdocs.length > 0) {
@@ -67837,7 +67837,7 @@ var require_document2 = __commonJS({
       });
       return this;
     };
-    Document13.prototype.$__undoReset = function $__undoReset() {
+    Document16.prototype.$__undoReset = function $__undoReset() {
       if (this.$__.backup == null || this.$__.backup.activePaths == null) {
         return;
       }
@@ -67857,7 +67857,7 @@ var require_document2 = __commonJS({
         }
       }
     };
-    Document13.prototype.$__dirty = function() {
+    Document16.prototype.$__dirty = function() {
       const _this = this;
       let all = this.$__.activePaths.map("modify", function(path) {
         return {
@@ -67899,7 +67899,7 @@ var require_document2 = __commonJS({
       });
       return minimal;
     };
-    Document13.prototype.$__setSchema = function(schema) {
+    Document16.prototype.$__setSchema = function(schema) {
       compile(schema.tree, this, void 0, schema.options);
       for (const key of Object.keys(schema.virtuals)) {
         schema.virtuals[key]._applyDefaultGetters();
@@ -67910,7 +67910,7 @@ var require_document2 = __commonJS({
       this.$__schema = schema;
       this[documentSchemaSymbol] = schema;
     };
-    Document13.prototype.$__getArrayPathsToValidate = function() {
+    Document16.prototype.$__getArrayPathsToValidate = function() {
       DocumentArray || (DocumentArray = require_documentArray());
       return this.$__.activePaths.map("init", "modify", function(i) {
         return this.$__getValue(i);
@@ -67922,7 +67922,7 @@ var require_document2 = __commonJS({
         return doc;
       });
     };
-    Document13.prototype.$getAllSubdocs = function(options) {
+    Document16.prototype.$getAllSubdocs = function(options) {
       if (options?.useCache && this.$__.saveOptions?.__subdocs) {
         return this.$__.saveOptions.__subdocs;
       }
@@ -67976,14 +67976,14 @@ var require_document2 = __commonJS({
         }
       }
     }
-    Document13.prototype.$__handleReject = function handleReject(err) {
+    Document16.prototype.$__handleReject = function handleReject(err) {
       if (this.$listeners("error").length) {
         this.$emit("error", err);
       } else if (this.constructor.listeners && this.constructor.listeners("error").length) {
         this.constructor.emit("error", err);
       }
     };
-    Document13.prototype.$toObject = function(options, json) {
+    Document16.prototype.$toObject = function(options, json) {
       const defaultOptions = this.$__schema._defaultToObjectOptions(json);
       const hasOnlyPrimitiveValues = this.$__hasOnlyPrimitiveValues();
       options = utils.isPOJO(options) ? { ...options } : {};
@@ -68086,7 +68086,7 @@ var require_document2 = __commonJS({
       }
       return ret;
     };
-    Document13.prototype.$__toObjectShallow = function $__toObjectShallow(schemaFieldsOnly) {
+    Document16.prototype.$__toObjectShallow = function $__toObjectShallow(schemaFieldsOnly) {
       const ret = {};
       if (this._doc != null) {
         const keys = schemaFieldsOnly ? Object.keys(this.$__schema.paths) : Object.keys(this._doc);
@@ -68101,7 +68101,7 @@ var require_document2 = __commonJS({
       }
       return ret;
     };
-    Document13.prototype.toObject = function(options) {
+    Document16.prototype.toObject = function(options) {
       return this.$toObject(options);
     };
     function applyVirtuals(self2, json, options, toObjectOptions) {
@@ -68283,24 +68283,24 @@ var require_document2 = __commonJS({
       }
       return json;
     }
-    Document13.prototype.toJSON = function(options) {
+    Document16.prototype.toJSON = function(options) {
       return this.$toObject(options, true);
     };
-    Document13.prototype.ownerDocument = function() {
+    Document16.prototype.ownerDocument = function() {
       return this;
     };
-    Document13.prototype.parent = function() {
+    Document16.prototype.parent = function() {
       if (this.$isSubdocument || this.$__.wasPopulated) {
         return this.$__.parent;
       }
       return this;
     };
-    Document13.prototype.$parent = Document13.prototype.parent;
-    Document13.prototype.$__setParent = function $__setParent(parent) {
+    Document16.prototype.$parent = Document16.prototype.parent;
+    Document16.prototype.$__setParent = function $__setParent(parent) {
       this.$__.parent = parent;
       this.$__parent = parent;
     };
-    Document13.prototype.inspect = function(options) {
+    Document16.prototype.inspect = function(options) {
       const isPOJO = utils.isPOJO(options);
       let opts;
       if (isPOJO) {
@@ -68314,16 +68314,16 @@ var require_document2 = __commonJS({
       return ret;
     };
     if (inspect.custom) {
-      Document13.prototype[inspect.custom] = Document13.prototype.inspect;
+      Document16.prototype[inspect.custom] = Document16.prototype.inspect;
     }
-    Document13.prototype.toString = function() {
+    Document16.prototype.toString = function() {
       const ret = this.inspect();
       if (typeof ret === "string") {
         return ret;
       }
       return inspect(ret);
     };
-    Document13.prototype.equals = function(doc) {
+    Document16.prototype.equals = function(doc) {
       if (!doc) {
         return false;
       }
@@ -68334,7 +68334,7 @@ var require_document2 = __commonJS({
       }
       return tid && tid.equals ? tid.equals(docid) : tid === docid;
     };
-    Document13.prototype.populate = async function populate() {
+    Document16.prototype.populate = async function populate() {
       const pop = {};
       const args = [...arguments];
       if (typeof args[args.length - 1] === "function") {
@@ -68372,7 +68372,7 @@ var require_document2 = __commonJS({
       });
       return topLevelModel.populate(this, paths);
     };
-    Document13.prototype.$getPopulatedDocs = function $getPopulatedDocs() {
+    Document16.prototype.$getPopulatedDocs = function $getPopulatedDocs() {
       let keys = [];
       if (this.$__.populated != null) {
         keys = keys.concat(Object.keys(this.$__.populated));
@@ -68382,13 +68382,13 @@ var require_document2 = __commonJS({
         const value = this.$get(key);
         if (Array.isArray(value)) {
           result = result.concat(value);
-        } else if (value instanceof Document13) {
+        } else if (value instanceof Document16) {
           result.push(value);
         }
       }
       return result;
     };
-    Document13.prototype.populated = function(path, val, options) {
+    Document16.prototype.populated = function(path, val, options) {
       if (val == null || val === true) {
         if (!this.$__.populated) {
           return void 0;
@@ -68417,8 +68417,8 @@ var require_document2 = __commonJS({
       }
       return val;
     };
-    Document13.prototype.$populated = Document13.prototype.populated;
-    Document13.prototype.$assertPopulated = function $assertPopulated(path, values) {
+    Document16.prototype.$populated = Document16.prototype.populated;
+    Document16.prototype.$assertPopulated = function $assertPopulated(path, values) {
       if (Array.isArray(path)) {
         path.forEach((p) => this.$assertPopulated(p, values));
         return this;
@@ -68431,7 +68431,7 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.depopulate = function(path) {
+    Document16.prototype.depopulate = function(path) {
       if (typeof path === "string") {
         path = path.indexOf(" ") === -1 ? [path] : path.split(" ");
       }
@@ -68460,7 +68460,7 @@ var require_document2 = __commonJS({
                 if (subdoc == null) {
                   continue;
                 }
-                rawArray[i] = subdoc instanceof Document13 ? subdoc._doc._id : subdoc._id;
+                rawArray[i] = subdoc instanceof Document16 ? subdoc._doc._id : subdoc._id;
               }
             } else {
               utils.setValue(key, populatedIds, this._doc);
@@ -68487,7 +68487,7 @@ var require_document2 = __commonJS({
                 if (subdoc == null) {
                   continue;
                 }
-                rawArray[i] = subdoc instanceof Document13 ? subdoc._doc._id : subdoc._id;
+                rawArray[i] = subdoc instanceof Document16 ? subdoc._doc._id : subdoc._id;
               }
             } else {
               utils.setValue(singlePath, populatedIds, this._doc);
@@ -68499,15 +68499,15 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$__fullPath = function(path) {
+    Document16.prototype.$__fullPath = function(path) {
       return path || "";
     };
-    Document13.prototype.getChanges = function() {
+    Document16.prototype.getChanges = function() {
       const delta = this.$__delta();
       const changes = delta ? delta[1] : {};
       return changes;
     };
-    Document13.prototype.$__delta = function $__delta() {
+    Document16.prototype.$__delta = function $__delta() {
       const dirty = this.$__dirty();
       const optimisticConcurrency = this.$__schema.options.optimisticConcurrency;
       if (optimisticConcurrency) {
@@ -68719,7 +68719,7 @@ var require_document2 = __commonJS({
       path = path.replace(/\.\d+\./, ".");
       return skipVersioning[path];
     }
-    Document13.prototype.$clone = function() {
+    Document16.prototype.$clone = function() {
       const Model = this.constructor;
       const clonedDoc = new Model();
       clonedDoc.$isNew = this.$isNew;
@@ -68740,7 +68740,7 @@ var require_document2 = __commonJS({
       }
       return clonedDoc;
     };
-    Document13.prototype.$createModifiedPathsSnapshot = function $createModifiedPathsSnapshot() {
+    Document16.prototype.$createModifiedPathsSnapshot = function $createModifiedPathsSnapshot() {
       const subdocSnapshot = /* @__PURE__ */ new WeakMap();
       if (!this.$isSubdocument) {
         const subdocs = this.$getAllSubdocs();
@@ -68754,7 +68754,7 @@ var require_document2 = __commonJS({
         this.$__.version
       );
     };
-    Document13.prototype.$restoreModifiedPathsSnapshot = function $restoreModifiedPathsSnapshot(snapshot) {
+    Document16.prototype.$restoreModifiedPathsSnapshot = function $restoreModifiedPathsSnapshot(snapshot) {
       this.$__.activePaths = snapshot.activePaths.clone();
       this.$__.version = snapshot.version;
       if (!this.$isSubdocument) {
@@ -68767,7 +68767,7 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$clearModifiedPaths = function $clearModifiedPaths() {
+    Document16.prototype.$clearModifiedPaths = function $clearModifiedPaths() {
       this.$__.activePaths.clear("modify");
       this.$__.activePaths.clear("init");
       this.$__.version = 0;
@@ -68779,12 +68779,12 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document13.prototype.$__hasOnlyPrimitiveValues = function $__hasOnlyPrimitiveValues() {
+    Document16.prototype.$__hasOnlyPrimitiveValues = function $__hasOnlyPrimitiveValues() {
       return !this.$__.populated && !this.$__.wasPopulated && (this._doc == null || Object.values(this._doc).every((v) => {
         return v == null || typeof v !== "object" || utils.isNativeObject(v) && !Array.isArray(v) || isBsonType(v, "ObjectId") || isBsonType(v, "Decimal128");
       }));
     };
-    Document13.prototype._applyVersionIncrement = function _applyVersionIncrement() {
+    Document16.prototype._applyVersionIncrement = function _applyVersionIncrement() {
       if (!this.$__.version) return;
       const doIncrement = VERSION_INC === (VERSION_INC & this.$__.version);
       this.$__.version = void 0;
@@ -68794,7 +68794,7 @@ var require_document2 = __commonJS({
         this.$__setValue(key, version + 1);
       }
     };
-    Document13.prototype._applyVersionIncrement = function _applyVersionIncrement() {
+    Document16.prototype._applyVersionIncrement = function _applyVersionIncrement() {
       if (!this.$__.version) return;
       const doIncrement = VERSION_INC === (VERSION_INC & this.$__.version);
       this.$__.version = void 0;
@@ -68804,11 +68804,11 @@ var require_document2 = __commonJS({
         this.$__setValue(key, version + 1);
       }
     };
-    Document13.VERSION_WHERE = VERSION_WHERE;
-    Document13.VERSION_INC = VERSION_INC;
-    Document13.VERSION_ALL = VERSION_ALL;
-    Document13.ValidationError = ValidationError2;
-    module2.exports = exports2 = Document13;
+    Document16.VERSION_WHERE = VERSION_WHERE;
+    Document16.VERSION_INC = VERSION_INC;
+    Document16.VERSION_ALL = VERSION_ALL;
+    Document16.ValidationError = ValidationError2;
+    module2.exports = exports2 = Document16;
   }
 });
 
@@ -68834,7 +68834,7 @@ var require_utils5 = __commonJS({
     var schemaMerge = require_merge();
     var specialProperties = require_specialProperties();
     var { trustedSymbol } = require_trusted();
-    var Document13;
+    var Document16;
     exports2.specialProperties = specialProperties;
     exports2.isMongooseArray = isMongooseArray.isMongooseArray;
     exports2.isMongooseDocumentArray = isMongooseDocumentArray.isMongooseDocumentArray;
@@ -69037,12 +69037,12 @@ var require_utils5 = __commonJS({
       return to;
     };
     exports2.toObject = function toObject(obj) {
-      Document13 || (Document13 = require_document2());
+      Document16 || (Document16 = require_document2());
       let ret;
       if (obj == null) {
         return obj;
       }
-      if (obj instanceof Document13) {
+      if (obj instanceof Document16) {
         return obj.toObject();
       }
       if (Array.isArray(obj)) {
@@ -75596,7 +75596,7 @@ var require_map2 = __commonJS({
     var SchemaType = require_schemaType();
     var createJSONSchemaTypeDefinition = require_createJSONSchemaTypeDefinition();
     var MongooseError = require_mongooseError();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var utils = require_utils5();
     var SchemaMap = class extends SchemaType {
       /**
@@ -75719,7 +75719,7 @@ var require_map2 = __commonJS({
       if (utils.hasUserDefinedProperty(obj, "of")) {
         const isInlineSchema = utils.isPOJO(obj.of) && Object.keys(obj.of).length > 0 && !utils.hasUserDefinedProperty(obj.of, schema.options.typeKey);
         if (isInlineSchema) {
-          _mapType = { [schema.options.typeKey]: new Schema13(obj.of) };
+          _mapType = { [schema.options.typeKey]: new Schema16(obj.of) };
         } else if (utils.isPOJO(obj.of)) {
           _mapType = Object.assign({}, obj.of);
         } else {
@@ -75799,7 +75799,7 @@ var require_objectId = __commonJS({
     var isBsonType = require_isBsonType();
     var utils = require_utils5();
     var CastError = SchemaType.CastError;
-    var Document13;
+    var Document16;
     function SchemaObjectId(key, options, _schemaOptions, parentSchema) {
       const isKeyHexStr = typeof key === "string" && key.length === 24 && /^[a-f0-9]+$/i.test(key);
       const suppressWarning = options && options.suppressWarning;
@@ -75891,8 +75891,8 @@ var require_objectId = __commonJS({
     }
     defaultId.$runBeforeSetters = true;
     function resetId(v) {
-      Document13 || (Document13 = require_document2());
-      if (this instanceof Document13) {
+      Document16 || (Document16 = require_document2());
+      if (this instanceof Document16) {
         if (v === void 0) {
           const _v = new oid();
           return _v;
@@ -76582,9 +76582,9 @@ var require_schema2 = __commonJS({
     var isPOJO = utils.isPOJO;
     var id = 0;
     var numberRE = /^\d+$/;
-    function Schema13(obj, options) {
-      if (!(this instanceof Schema13)) {
-        return new Schema13(obj, options);
+    function Schema16(obj, options) {
+      if (!(this instanceof Schema16)) {
+        return new Schema16(obj, options);
       }
       this.obj = obj;
       this.paths = {};
@@ -76694,34 +76694,34 @@ var require_schema2 = __commonJS({
         })(prop));
       }
     }
-    Schema13.prototype = Object.create(EventEmitter.prototype);
-    Schema13.prototype.constructor = Schema13;
-    Schema13.prototype.instanceOfSchema = true;
-    Object.defineProperty(Schema13.prototype, "$schemaType", {
+    Schema16.prototype = Object.create(EventEmitter.prototype);
+    Schema16.prototype.constructor = Schema16;
+    Schema16.prototype.instanceOfSchema = true;
+    Object.defineProperty(Schema16.prototype, "$schemaType", {
       configurable: false,
       enumerable: false,
       writable: true
     });
-    Object.defineProperty(Schema13.prototype, "childSchemas", {
+    Object.defineProperty(Schema16.prototype, "childSchemas", {
       configurable: false,
       enumerable: true,
       writable: true
     });
-    Object.defineProperty(Schema13.prototype, "virtuals", {
+    Object.defineProperty(Schema16.prototype, "virtuals", {
       configurable: false,
       enumerable: true,
       writable: true
     });
-    Schema13.prototype.obj;
-    Schema13.prototype.paths;
-    Schema13.prototype.tree;
-    Schema13.prototype.clone = function() {
+    Schema16.prototype.obj;
+    Schema16.prototype.paths;
+    Schema16.prototype.tree;
+    Schema16.prototype.clone = function() {
       const s = this._clone();
       s.on("init", (v) => this.emit("init", v));
       return s;
     };
-    Schema13.prototype._clone = function _clone(Constructor) {
-      Constructor = Constructor || (this.base == null ? Schema13 : this.base.Schema);
+    Schema16.prototype._clone = function _clone(Constructor) {
+      Constructor = Constructor || (this.base == null ? Schema16 : this.base.Schema);
       const s = new Constructor({}, this._userProvidedOptions);
       s.base = this.base;
       s.obj = this.obj;
@@ -76789,8 +76789,8 @@ var require_schema2 = __commonJS({
       s.encryptedFields = clone(this.encryptedFields);
       return s;
     };
-    Schema13.prototype.pick = function(paths, options) {
-      const newSchema = new Schema13({}, options || this.options);
+    Schema16.prototype.pick = function(paths, options) {
+      const newSchema = new Schema16({}, options || this.options);
       if (!Array.isArray(paths)) {
         throw new MongooseError('Schema#pick() only accepts an array argument, got "' + typeof paths + '"');
       }
@@ -76819,8 +76819,8 @@ var require_schema2 = __commonJS({
       }
       return newSchema;
     };
-    Schema13.prototype.omit = function(paths, options) {
-      const newSchema = new Schema13(this, options || this.options);
+    Schema16.prototype.omit = function(paths, options) {
+      const newSchema = new Schema16(this, options || this.options);
       if (!Array.isArray(paths)) {
         throw new MongooseError(
           'Schema#omit() only accepts an array argument, got "' + typeof paths + '"'
@@ -76834,7 +76834,7 @@ var require_schema2 = __commonJS({
       }
       return newSchema;
     };
-    Schema13.prototype.defaultOptions = function(options) {
+    Schema16.prototype.defaultOptions = function(options) {
       this._userProvidedOptions = options == null ? {} : clone(options);
       const baseOptions = this.base && this.base.options || {};
       const strict = "strict" in baseOptions ? baseOptions.strict : true;
@@ -76877,12 +76877,12 @@ var require_schema2 = __commonJS({
       }
       return options;
     };
-    Schema13.prototype.discriminator = function(name, schema, options) {
+    Schema16.prototype.discriminator = function(name, schema, options) {
       this._applyDiscriminators = this._applyDiscriminators || /* @__PURE__ */ new Map();
       this._applyDiscriminators.set(name, { schema, options });
       return this;
     };
-    Schema13.prototype._defaultToObjectOptions = function(json) {
+    Schema16.prototype._defaultToObjectOptions = function(json) {
       const path = json ? "toJSON" : "toObject";
       if (this._defaultToObjectOptionsMap && this._defaultToObjectOptionsMap[path]) {
         return this._defaultToObjectOptionsMap[path];
@@ -76894,7 +76894,7 @@ var require_schema2 = __commonJS({
       this._defaultToObjectOptionsMap[path] = defaultOptions;
       return defaultOptions;
     };
-    Schema13.prototype.encryptionType = function encryptionType(encryptionType) {
+    Schema16.prototype.encryptionType = function encryptionType(encryptionType) {
       if (arguments.length === 0) {
         return this.options.encryptionType;
       }
@@ -76903,8 +76903,8 @@ var require_schema2 = __commonJS({
       }
       this.options.encryptionType = encryptionType;
     };
-    Schema13.prototype.add = function add(obj, prefix) {
-      if (obj instanceof Schema13 || obj != null && obj.instanceOfSchema) {
+    Schema16.prototype.add = function add(obj, prefix) {
+      if (obj instanceof Schema16 || obj != null && obj.instanceOfSchema) {
         merge(this, obj);
         return this;
       }
@@ -76931,7 +76931,7 @@ var require_schema2 = __commonJS({
         }
         let isMongooseTypeString = false;
         if (typeof val === "string") {
-          const MongooseTypes2 = this.base != null ? this.base.Schema.Types : Schema13.Types;
+          const MongooseTypes2 = this.base != null ? this.base.Schema.Types : Schema16.Types;
           const upperVal = val.charAt(0).toUpperCase() + val.substring(1);
           isMongooseTypeString = MongooseTypes2[upperVal] != null;
         }
@@ -76983,7 +76983,7 @@ var require_schema2 = __commonJS({
             if (this._userProvidedOptions.toJSON != null) {
               childSchemaOptions.toJSON = utils.omit(this._userProvidedOptions.toJSON, ["transform"]);
             }
-            const _schema = new Schema13(_typeDef, childSchemaOptions);
+            const _schema = new Schema16(_typeDef, childSchemaOptions);
             _schema.$implicitlyCreated = true;
             const schemaWrappedPath = Object.assign({}, val, { [typeKey]: _schema });
             this.path(prefix + key, schemaWrappedPath);
@@ -77024,23 +77024,23 @@ var require_schema2 = __commonJS({
       aliasFields(this, aliasObj);
       return this;
     };
-    Schema13.prototype._addEncryptedField = function _addEncryptedField(path, fieldConfig) {
+    Schema16.prototype._addEncryptedField = function _addEncryptedField(path, fieldConfig) {
       const type = this.path(path).autoEncryptionType();
       if (type == null) {
         throw new Error(`Invalid BSON type for FLE field: '${path}'`);
       }
       this.encryptedFields[path] = clone(fieldConfig);
     };
-    Schema13.prototype._removeEncryptedField = function _removeEncryptedField(path) {
+    Schema16.prototype._removeEncryptedField = function _removeEncryptedField(path) {
       delete this.encryptedFields[path];
     };
-    Schema13.prototype._hasEncryptedFields = function _hasEncryptedFields() {
+    Schema16.prototype._hasEncryptedFields = function _hasEncryptedFields() {
       return Object.keys(this.encryptedFields).length > 0;
     };
-    Schema13.prototype._hasEncryptedField = function _hasEncryptedField(path) {
+    Schema16.prototype._hasEncryptedField = function _hasEncryptedField(path) {
       return path in this.encryptedFields;
     };
-    Schema13.prototype._buildEncryptedFields = function() {
+    Schema16.prototype._buildEncryptedFields = function() {
       const fields = Object.entries(this.encryptedFields).map(
         ([path, config]) => {
           const bsonType = this.path(path).autoEncryptionType();
@@ -77049,7 +77049,7 @@ var require_schema2 = __commonJS({
       );
       return { fields };
     };
-    Schema13.prototype._buildSchemaMap = function() {
+    Schema16.prototype._buildSchemaMap = function() {
       function buildNestedPath(path, object, value) {
         let i = 0, component = path[i];
         for (; i < path.length - 1; ++i, component = path[i]) {
@@ -77077,11 +77077,11 @@ var require_schema2 = __commonJS({
         properties
       };
     };
-    Schema13.prototype.alias = function alias(path, alias) {
+    Schema16.prototype.alias = function alias(path, alias) {
       aliasFields(this, { [path]: alias });
       return this;
     };
-    Schema13.prototype.removeIndex = function removeIndex(index) {
+    Schema16.prototype.removeIndex = function removeIndex(index) {
       if (arguments.length > 1) {
         throw new Error("removeIndex() takes only 1 argument");
       }
@@ -77103,22 +77103,22 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype.clearIndexes = function clearIndexes() {
+    Schema16.prototype.clearIndexes = function clearIndexes() {
       this._indexes.length = 0;
       return this;
     };
-    Schema13.prototype.searchIndex = function searchIndex(description) {
+    Schema16.prototype.searchIndex = function searchIndex(description) {
       this._searchIndexes.push(description);
       return this;
     };
-    Schema13.reserved = /* @__PURE__ */ Object.create(null);
-    Schema13.prototype.reserved = Schema13.reserved;
-    var reserved = Schema13.reserved;
+    Schema16.reserved = /* @__PURE__ */ Object.create(null);
+    Schema16.prototype.reserved = Schema16.reserved;
+    var reserved = Schema16.reserved;
     reserved["prototype"] = // EventEmitter
     reserved.emit = reserved.listeners = reserved.removeListener = // document properties and functions
     reserved.collection = reserved.errors = reserved.get = reserved.init = reserved.isModified = reserved.isNew = reserved.populated = reserved.remove = reserved.save = reserved.toObject = reserved.validate = 1;
     reserved.collection = 1;
-    Schema13.prototype.path = function(path, obj) {
+    Schema16.prototype.path = function(path, obj) {
       if (obj === void 0) {
         if (Object.hasOwn(this.paths, path)) {
           return this.paths[path];
@@ -77269,7 +77269,7 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype._gatherChildSchemas = function _gatherChildSchemas() {
+    Schema16.prototype._gatherChildSchemas = function _gatherChildSchemas() {
       const childSchemas = [];
       for (const path of Object.keys(this.paths)) {
         if (typeof path !== "string") {
@@ -77344,13 +77344,13 @@ var require_schema2 = __commonJS({
       }
       return null;
     }
-    Object.defineProperty(Schema13.prototype, "base", {
+    Object.defineProperty(Schema16.prototype, "base", {
       configurable: true,
       enumerable: false,
       writable: true,
       value: null
     });
-    Schema13.prototype.interpretAsType = function(path, obj, options) {
+    Schema16.prototype.interpretAsType = function(path, obj, options) {
       if (obj instanceof SchemaType) {
         if (obj.path === path) {
           return obj;
@@ -77359,7 +77359,7 @@ var require_schema2 = __commonJS({
         clone2.path = path;
         return clone2;
       }
-      const MongooseTypes2 = this.base != null ? this.base.Schema.Types : Schema13.Types;
+      const MongooseTypes2 = this.base != null ? this.base.Schema.Types : Schema16.Types;
       const Types = this.base != null ? this.base.Types : require_types2();
       if (!utils.isPOJO(obj) && !(obj instanceof SchemaTypeOptions)) {
         const constructorName = utils.getFunctionName(obj.constructor);
@@ -77385,9 +77385,9 @@ var require_schema2 = __commonJS({
       if (Array.isArray(type) || type === Array || type === "array" || type === MongooseTypes2.Array) {
         let cast = type === Array || type === "array" ? obj.cast || obj.of : type[0];
         if (cast && cast.instanceOfSchema) {
-          if (!(cast instanceof Schema13)) {
+          if (!(cast instanceof Schema16)) {
             if (this.options._isMerging) {
-              cast = new Schema13(cast);
+              cast = new Schema16(cast);
             } else {
               throw new TypeError("Schema for array path `" + path + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path}: new Schema(...)`);
             }
@@ -77395,9 +77395,9 @@ var require_schema2 = __commonJS({
           return new MongooseTypes2.DocumentArray(path, cast, obj, null, this);
         }
         if (cast && cast[options.typeKey] && cast[options.typeKey].instanceOfSchema) {
-          if (!(cast[options.typeKey] instanceof Schema13)) {
+          if (!(cast[options.typeKey] instanceof Schema16)) {
             if (this.options._isMerging) {
-              cast[options.typeKey] = new Schema13(cast[options.typeKey]);
+              cast[options.typeKey] = new Schema16(cast[options.typeKey]);
             } else {
               throw new TypeError("Schema for array path `" + path + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path}: new Schema(...)`);
             }
@@ -77435,10 +77435,10 @@ var require_schema2 = __commonJS({
             }
             if (Object.hasOwn(this._userProvidedOptions, "_id")) {
               childSchemaOptions._id = this._userProvidedOptions._id;
-            } else if (Schema13.Types.DocumentArray.defaultOptions._id != null) {
-              childSchemaOptions._id = Schema13.Types.DocumentArray.defaultOptions._id;
+            } else if (Schema16.Types.DocumentArray.defaultOptions._id != null) {
+              childSchemaOptions._id = Schema16.Types.DocumentArray.defaultOptions._id;
             }
-            const childSchema = new Schema13(castFromTypeKey, childSchemaOptions);
+            const childSchema = new Schema16(castFromTypeKey, childSchemaOptions);
             childSchema.$implicitlyCreated = true;
             return new MongooseTypes2.DocumentArray(path, childSchema, obj, null, this);
           } else {
@@ -77498,7 +77498,7 @@ var require_schema2 = __commonJS({
       const schemaType = new MongooseTypes2[name](path, obj, options, this);
       return schemaType;
     };
-    Schema13.prototype.eachPath = function(fn) {
+    Schema16.prototype.eachPath = function(fn) {
       const keys = Object.keys(this.paths);
       const len = keys.length;
       for (let i = 0; i < len; ++i) {
@@ -77506,7 +77506,7 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype.requiredPaths = function requiredPaths(invalidate) {
+    Schema16.prototype.requiredPaths = function requiredPaths(invalidate) {
       if (this._requiredpaths && !invalidate) {
         return this._requiredpaths;
       }
@@ -77522,14 +77522,14 @@ var require_schema2 = __commonJS({
       this._requiredpaths = ret;
       return this._requiredpaths;
     };
-    Schema13.prototype.indexedPaths = function indexedPaths() {
+    Schema16.prototype.indexedPaths = function indexedPaths() {
       if (this._indexedpaths) {
         return this._indexedpaths;
       }
       this._indexedpaths = this.indexes();
       return this._indexedpaths;
     };
-    Schema13.prototype.pathType = function(path) {
+    Schema16.prototype.pathType = function(path) {
       if (Object.hasOwn(this.paths, path)) {
         return "real";
       }
@@ -77556,7 +77556,7 @@ var require_schema2 = __commonJS({
       }
       return "adhocOrUndefined";
     };
-    Schema13.prototype.hasMixedParent = function(path) {
+    Schema16.prototype.hasMixedParent = function(path) {
       const subpaths = path.split(/\./g);
       path = "";
       for (let i = 0; i < subpaths.length; ++i) {
@@ -77567,7 +77567,7 @@ var require_schema2 = __commonJS({
       }
       return null;
     };
-    Schema13.prototype.setupTimestamp = function(timestamps) {
+    Schema16.prototype.setupTimestamp = function(timestamps) {
       return setupTimestamps(this, timestamps);
     };
     function getPositionalPathType(self2, path, cleanPath) {
@@ -77621,11 +77621,11 @@ var require_schema2 = __commonJS({
       getPositionalPathType(self2, path, cleanPath);
       return self2.subpaths[cleanPath];
     }
-    Schema13.prototype.queue = function(name, args) {
+    Schema16.prototype.queue = function(name, args) {
       this.callQueue.push([name, args]);
       return this;
     };
-    Schema13.prototype.pre = function(name) {
+    Schema16.prototype.pre = function(name) {
       if (name instanceof RegExp) {
         const remainingArgs = Array.prototype.slice.call(arguments, 1);
         for (const fn of hookNames) {
@@ -77645,7 +77645,7 @@ var require_schema2 = __commonJS({
       this.s.hooks.pre.apply(this.s.hooks, arguments);
       return this;
     };
-    Schema13.prototype.post = function(name) {
+    Schema16.prototype.post = function(name) {
       if (name instanceof RegExp) {
         const remainingArgs = Array.prototype.slice.call(arguments, 1);
         for (const fn of hookNames) {
@@ -77665,7 +77665,7 @@ var require_schema2 = __commonJS({
       this.s.hooks.post.apply(this.s.hooks, arguments);
       return this;
     };
-    Schema13.prototype.plugin = function(fn, opts) {
+    Schema16.prototype.plugin = function(fn, opts) {
       if (typeof fn !== "function") {
         throw new Error('First param to `schema.plugin()` must be a function, got "' + typeof fn + '"');
       }
@@ -77680,7 +77680,7 @@ var require_schema2 = __commonJS({
       fn(this, opts);
       return this;
     };
-    Schema13.prototype.method = function(name, fn, options) {
+    Schema16.prototype.method = function(name, fn, options) {
       if (typeof name !== "string") {
         for (const i in name) {
           this.methods[i] = name[i];
@@ -77692,7 +77692,7 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype.static = function(name, fn) {
+    Schema16.prototype.static = function(name, fn) {
       if (typeof name !== "string") {
         for (const i in name) {
           this.statics[i] = name[i];
@@ -77702,7 +77702,7 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype.index = function(fields, options) {
+    Schema16.prototype.index = function(fields, options) {
       fields || (fields = {});
       options || (options = {});
       if (options.expires) {
@@ -77728,7 +77728,7 @@ var require_schema2 = __commonJS({
       this._indexes.push([fields, options]);
       return this;
     };
-    Schema13.prototype.set = function(key, value, tags) {
+    Schema16.prototype.set = function(key, value, tags) {
       if (arguments.length === 1) {
         return this.options[key];
       }
@@ -77792,11 +77792,11 @@ var require_schema2 = __commonJS({
         _propagateOptionsToImplicitlyCreatedSchemas(schema, options);
       }
     }
-    Schema13.prototype.get = function(key) {
+    Schema16.prototype.get = function(key) {
       return this.options[key];
     };
     var indexTypes = "2d 2dsphere hashed text".split(" ");
-    Object.defineProperty(Schema13, "indexTypes", {
+    Object.defineProperty(Schema16, "indexTypes", {
       get: function() {
         return indexTypes;
       },
@@ -77804,10 +77804,10 @@ var require_schema2 = __commonJS({
         throw new Error("Cannot overwrite Schema.indexTypes");
       }
     });
-    Schema13.prototype.indexes = function() {
+    Schema16.prototype.indexes = function() {
       return getIndexes(this);
     };
-    Schema13.prototype.virtual = function(name, options) {
+    Schema16.prototype.virtual = function(name, options) {
       if (name instanceof VirtualType || getConstructorName(name) === "VirtualType") {
         return this.virtual(name.path, name.options);
       }
@@ -77913,10 +77913,10 @@ var require_schema2 = __commonJS({
       }
       return virtuals[name];
     };
-    Schema13.prototype.virtualpath = function(name) {
+    Schema16.prototype.virtualpath = function(name) {
       return Object.hasOwn(this.virtuals, name) ? this.virtuals[name] : null;
     };
-    Schema13.prototype.remove = function(path) {
+    Schema16.prototype.remove = function(path) {
       if (typeof path === "string") {
         path = [path];
       }
@@ -77968,7 +77968,7 @@ var require_schema2 = __commonJS({
       }
       delete branch[last];
     }
-    Schema13.prototype.removeVirtual = function(path) {
+    Schema16.prototype.removeVirtual = function(path) {
       if (typeof path === "string") {
         path = [path];
       }
@@ -77990,7 +77990,7 @@ var require_schema2 = __commonJS({
       }
       return this;
     };
-    Schema13.prototype.loadClass = function(model, virtualsOnly) {
+    Schema16.prototype.loadClass = function(model, virtualsOnly) {
       if (model === Object.prototype || model === Function.prototype || Object.hasOwn(model.prototype, "$isMongooseModelPrototype") || Object.hasOwn(model.prototype, "$isMongooseDocumentPrototype")) {
         return this;
       }
@@ -78031,7 +78031,7 @@ var require_schema2 = __commonJS({
       }, this);
       return this;
     };
-    Schema13.prototype._getSchema = function(path) {
+    Schema16.prototype._getSchema = function(path) {
       const _this = this;
       const pathschema = _this.path(path);
       const resultPath = [];
@@ -78107,7 +78107,7 @@ var require_schema2 = __commonJS({
       }
       return search(parts, _this);
     };
-    Schema13.prototype._getPathType = function(path) {
+    Schema16.prototype._getPathType = function(path) {
       const _this = this;
       const pathschema = _this.path(path);
       if (pathschema) {
@@ -78146,7 +78146,7 @@ var require_schema2 = __commonJS({
       }
       return search(path.split("."), _this);
     };
-    Schema13.prototype._transformDuplicateKeyError = function _transformDuplicateKeyError(error) {
+    Schema16.prototype._transformDuplicateKeyError = function _transformDuplicateKeyError(error) {
       if (!this._duplicateKeyErrorMessagesByPath) {
         return error;
       }
@@ -78170,10 +78170,10 @@ var require_schema2 = __commonJS({
     function isArrayFilter(piece) {
       return piece.startsWith("$[") && piece.endsWith("]");
     }
-    Schema13.prototype._preCompile = function _preCompile() {
+    Schema16.prototype._preCompile = function _preCompile() {
       this.plugin(idGetter, { deduplicate: true });
     };
-    Schema13.prototype.toJSONSchema = function toJSONSchema(options) {
+    Schema16.prototype.toJSONSchema = function toJSONSchema(options) {
       const useBsonType = options?.useBsonType ?? false;
       const result = useBsonType ? { required: [], properties: {} } : { type: "object", required: [], properties: {} };
       for (const path of Object.keys(this.paths)) {
@@ -78223,8 +78223,8 @@ var require_schema2 = __commonJS({
       }
       return result;
     };
-    module2.exports = exports2 = Schema13;
-    Schema13.Types = MongooseTypes = require_schema();
+    module2.exports = exports2 = Schema16;
+    Schema16.Types = MongooseTypes = require_schema();
     exports2.ObjectId = MongooseTypes.ObjectId;
   }
 });
@@ -79522,7 +79522,7 @@ var require_connection2 = __commonJS({
     "use strict";
     var ChangeStream = require_changeStream();
     var EventEmitter = require("events").EventEmitter;
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var STATES = require_connectionState();
     var MongooseBulkWriteError = require_bulkWriteError();
     var MongooseError = require_error2();
@@ -79830,10 +79830,10 @@ var require_connection2 = __commonJS({
         });
       });
     };
-    async function _wrapUserTransaction(fn, session, mongoose14) {
+    async function _wrapUserTransaction(fn, session, mongoose17) {
       try {
-        const res = mongoose14.transactionAsyncLocalStorage == null ? await fn(session) : await new Promise((resolve) => {
-          mongoose14.transactionAsyncLocalStorage.run(
+        const res = mongoose17.transactionAsyncLocalStorage == null ? await fn(session) : await new Promise((resolve) => {
+          mongoose17.transactionAsyncLocalStorage.run(
             { session },
             () => resolve(fn(session))
           );
@@ -80179,7 +80179,7 @@ var require_connection2 = __commonJS({
       }
       if (utils.isObject(schema)) {
         if (!schema.instanceOfSchema) {
-          schema = new Schema13(schema);
+          schema = new Schema16(schema);
         } else if (!(schema instanceof this.base.Schema)) {
           schema = schema._clone(this.base.Schema);
         }
@@ -80562,7 +80562,7 @@ var require_connection3 = __commonJS({
     var processConnectionOptions = require_processConnectionOptions();
     var setTimeout2 = require_timers().setTimeout;
     var utils = require_utils5();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     function NativeConnection() {
       MongooseConnection.apply(this, arguments);
       this._listening = false;
@@ -80760,7 +80760,7 @@ var require_connection3 = __commonJS({
         const { schema, collection: { collectionName } } = model;
         const namespace = `${this.$dbName}.${collectionName}`;
         const mappings = schema.encryptionType() === "csfle" ? csfleMappings : qeMappings;
-        mappings[namespace] ??= new Schema13({}, { encryptionType: schema.encryptionType() });
+        mappings[namespace] ??= new Schema16({}, { encryptionType: schema.encryptionType() });
         const isNonRootDiscriminator = schema.discriminatorMapping && !schema.discriminatorMapping.isRoot;
         if (isNonRootDiscriminator) {
           const rootSchema = schema._baseSchema;
@@ -90207,7 +90207,7 @@ var require_model = __commonJS({
     "use strict";
     var Aggregate = require_aggregate2();
     var ChangeStream = require_changeStream();
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var DocumentNotFoundError = require_notFound();
     var EventEmitter = require("events").EventEmitter;
     var Kareem = require_kareem();
@@ -90217,7 +90217,7 @@ var require_model = __commonJS({
     var OverwriteModelError = require_overwriteModel();
     var Query = require_query2();
     var SaveOptions = require_saveOptions();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var ValidationError2 = require_validation();
     var VersionError = require_version();
     var ParallelSaveError = require_parallelSave();
@@ -90275,20 +90275,20 @@ var require_model = __commonJS({
     var modelDbSymbol = Symbol("mongoose#Model#db");
     var modelSymbol = require_symbols().modelSymbol;
     var subclassedSymbol = Symbol("mongoose#Model#subclassed");
-    var { VERSION_INC, VERSION_WHERE, VERSION_ALL } = Document13;
+    var { VERSION_INC, VERSION_WHERE, VERSION_ALL } = Document16;
     var saveToObjectOptions = Object.assign({}, internalToObjectOptions, {
       bson: true
     });
     function Model(doc, fields, skipId) {
-      if (fields instanceof Schema13) {
+      if (fields instanceof Schema16) {
         throw new TypeError("2nd argument to `Model` constructor must be a POJO or string, **not** a schema. Make sure you're calling `mongoose.model()`, not `mongoose.Model()`.");
       }
       if (typeof doc === "string") {
         throw new TypeError("First argument to `Model` constructor must be an object, **not** a string. Make sure you're calling `mongoose.model()`, not `mongoose.Model()`.");
       }
-      Document13.call(this, doc, fields, skipId);
+      Document16.call(this, doc, fields, skipId);
     }
-    Object.setPrototypeOf(Model.prototype, Document13.prototype);
+    Object.setPrototypeOf(Model.prototype, Document16.prototype);
     Model.prototype.$isMongooseModelPrototype = true;
     Model.prototype.db;
     Model.useConnection = function useConnection(connection) {
@@ -90709,9 +90709,9 @@ var require_model = __commonJS({
       const overwriteModels = typeof options.overwriteModels === "boolean" ? options.overwriteModels : false;
       _checkContext(this, "discriminator");
       if (utils.isObject(schema) && !schema.instanceOfSchema) {
-        schema = new Schema13(schema);
+        schema = new Schema16(schema);
       }
-      if (schema instanceof Schema13 && clone2) {
+      if (schema instanceof Schema16 && clone2) {
         schema = schema.clone();
       }
       schema = discriminator(this, name, schema, value, mergePlugins, options.mergeHooks, overwriteModels);
@@ -91338,7 +91338,7 @@ var require_model = __commonJS({
       if (typeof arguments[0] === "function" || typeof arguments[1] === "function" || typeof arguments[2] === "function" || typeof arguments[3] === "function") {
         throw new MongooseError("Model.findByIdAndUpdate() no longer accepts a callback");
       }
-      if (id instanceof Document13) {
+      if (id instanceof Document16) {
         id = id._doc._id;
       }
       return this.findOneAndUpdate.call(this, { _id: id }, update, options);
@@ -92102,7 +92102,7 @@ var require_model = __commonJS({
       setDefaultOptions();
       const writeOperations = documents.map((document2, i) => {
         if (!options.skipValidation) {
-          if (!(document2 instanceof Document13)) {
+          if (!(document2 instanceof Document16)) {
             throw new Error(`documents.${i} was not a mongoose document, documents must be an array of mongoose documents (instanceof mongoose.Document).`);
           }
           if (options.validateBeforeSave == null || options.validateBeforeSave) {
@@ -92183,7 +92183,7 @@ var require_model = __commonJS({
     };
     function _update(model, op, conditions, doc, options) {
       const mq = new model.Query({}, {}, model, model.collection);
-      if (conditions instanceof Document13) {
+      if (conditions instanceof Document16) {
         conditions = conditions.toObject();
       } else {
         conditions = clone(conditions);
@@ -92523,7 +92523,7 @@ var require_model = __commonJS({
           if (Array.isArray(_val)) {
             _val = utils.array.unique(utils.array.flatten(_val));
             for (let __val of _val) {
-              if (__val instanceof Document13) {
+              if (__val instanceof Document16) {
                 __val = __val._doc._id;
               }
               if (__val?.constructor?.name === "Binary" && __val.sub_type === 4 && typeof __val.toUUID === "function") {
@@ -92552,7 +92552,7 @@ var require_model = __commonJS({
               }
             }
           } else {
-            if (_val instanceof Document13) {
+            if (_val instanceof Document16) {
               _val = _val._doc._id;
             }
             if (_val?.constructor?.name === "Binary" && _val.sub_type === 4 && typeof _val.toUUID === "function") {
@@ -92566,7 +92566,7 @@ var require_model = __commonJS({
               if (Array.isArray(rawDocs[key])) {
                 rawDocs[key].push(val);
                 rawOrder[key].push(i);
-              } else if (isVirtual || rawDocs[key].constructor !== val.constructor || (rawDocs[key] instanceof Document13 ? String(rawDocs[key]._doc._id) : String(rawDocs[key]._id)) !== (val instanceof Document13 ? String(val._doc._id) : String(val._id))) {
+              } else if (isVirtual || rawDocs[key].constructor !== val.constructor || (rawDocs[key] instanceof Document16 ? String(rawDocs[key]._doc._id) : String(rawDocs[key]._id)) !== (val instanceof Document16 ? String(val._doc._id) : String(val._id))) {
                 rawDocs[key] = [rawDocs[key], val];
                 rawOrder[key] = [rawOrder[key], i];
               }
@@ -92988,17 +92988,17 @@ var require_browserDocument = __commonJS({
     var NodeJSDocument = require_document2();
     var EventEmitter = require("events").EventEmitter;
     var MongooseError = require_error2();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var ObjectId2 = require_objectid();
     var ValidationError2 = MongooseError.ValidationError;
     var applyHooks = require_applyHooks();
     var isObject = require_isObject();
-    function Document13(obj, schema, fields, skipId, skipInit) {
-      if (!(this instanceof Document13)) {
-        return new Document13(obj, schema, fields, skipId, skipInit);
+    function Document16(obj, schema, fields, skipId, skipInit) {
+      if (!(this instanceof Document16)) {
+        return new Document16(obj, schema, fields, skipId, skipInit);
       }
       if (isObject(schema) && !schema.instanceOfSchema) {
-        schema = new Schema13(schema);
+        schema = new Schema16(schema);
       }
       schema = this.schema || schema;
       if (!this.schema && schema.options._id) {
@@ -93020,10 +93020,10 @@ var require_browserDocument = __commonJS({
         this[s] = schema.statics[s];
       }
     }
-    Document13.prototype = Object.create(NodeJSDocument.prototype);
-    Document13.prototype.constructor = Document13;
-    Document13.events = new EventEmitter();
-    Document13.$emitter = new EventEmitter();
+    Document16.prototype = Object.create(NodeJSDocument.prototype);
+    Document16.prototype.constructor = Document16;
+    Document16.events = new EventEmitter();
+    Document16.$emitter = new EventEmitter();
     [
       "on",
       "once",
@@ -93034,12 +93034,12 @@ var require_browserDocument = __commonJS({
       "removeAllListeners",
       "addListener"
     ].forEach(function(emitterFn) {
-      Document13[emitterFn] = function() {
-        return Document13.$emitter[emitterFn].apply(Document13.$emitter, arguments);
+      Document16[emitterFn] = function() {
+        return Document16.$emitter[emitterFn].apply(Document16.$emitter, arguments);
       };
     });
-    Document13.ValidationError = ValidationError2;
-    module2.exports = exports2 = Document13;
+    Document16.ValidationError = ValidationError2;
+    module2.exports = exports2 = Document16;
   }
 });
 
@@ -93047,14 +93047,14 @@ var require_browserDocument = __commonJS({
 var require_documentProvider = __commonJS({
   "node_modules/mongoose/lib/documentProvider.js"(exports2, module2) {
     "use strict";
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var BrowserDocument = require_browserDocument();
     var isBrowser = false;
     module2.exports = function documentProvider() {
       if (isBrowser) {
         return BrowserDocument;
       }
-      return Document13;
+      return Document16;
     };
     module2.exports.setBrowser = function(flag) {
       isBrowser = flag;
@@ -93066,10 +93066,10 @@ var require_documentProvider = __commonJS({
 var require_mongoose = __commonJS({
   "node_modules/mongoose/lib/mongoose.js"(exports2, module2) {
     "use strict";
-    var Document13 = require_document2();
+    var Document16 = require_document2();
     var EventEmitter = require("events").EventEmitter;
     var Kareem = require_kareem();
-    var Schema13 = require_schema2();
+    var Schema16 = require_schema2();
     var SchemaType = require_schemaType();
     var SchemaTypes = require_schema();
     var VirtualType = require_virtualType();
@@ -93120,12 +93120,12 @@ var require_mongoose = __commonJS({
         const _this = this;
         this.Schema = function() {
           this.base = _this;
-          return Schema13.apply(this, arguments);
+          return Schema16.apply(this, arguments);
         };
-        this.Schema.prototype = Object.create(Schema13.prototype);
-        Object.assign(this.Schema, Schema13);
+        this.Schema.prototype = Object.create(Schema16.prototype);
+        Object.assign(this.Schema, Schema16);
         this.Schema.base = this;
-        this.Schema.Types = Object.assign({}, Schema13.Types);
+        this.Schema.Types = Object.assign({}, Schema16.Types);
       } else {
         for (const key of ["Schema", "model"]) {
           this[key] = Mongoose.prototype[key];
@@ -93147,7 +93147,7 @@ var require_mongoose = __commonJS({
     Mongoose.prototype.ConnectionStates = STATES;
     Mongoose.prototype.driver = driver;
     Mongoose.prototype.setDriver = function setDriver(driver2) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       if (_mongoose.__driver === driver2) {
         return _mongoose;
       }
@@ -93165,7 +93165,7 @@ var require_mongoose = __commonJS({
         }
       }
       if (driver2.SchemaTypes != null) {
-        Object.assign(mongoose14.Schema.Types, driver2.SchemaTypes);
+        Object.assign(mongoose17.Schema.Types, driver2.SchemaTypes);
       }
       const Connection = driver2.Connection;
       const oldDefaultConnection = _mongoose.connections[0];
@@ -93183,7 +93183,7 @@ var require_mongoose = __commonJS({
       return _mongoose;
     };
     Mongoose.prototype.set = function getsetOptions(key, value) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       if (arguments.length === 1 && typeof key !== "object") {
         if (VALID_OPTIONS.indexOf(key) === -1) {
           const error2 = new SetOptionError();
@@ -93244,7 +93244,7 @@ var require_mongoose = __commonJS({
     };
     Mongoose.prototype.get = Mongoose.prototype.set;
     Mongoose.prototype.createConnection = function createConnection(uri, options) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       const Connection = _mongoose.__driver.Connection;
       const conn = new Connection(_mongoose);
       _mongoose.connections.push(conn);
@@ -93259,7 +93259,7 @@ var require_mongoose = __commonJS({
       if (typeof options === "function" || arguments.length >= 3 && typeof arguments[2] === "function") {
         throw new MongooseError("Mongoose.prototype.connect() no longer accepts a callback");
       }
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       if (_mongoose.connection == null) {
         _createDefaultConnection(_mongoose);
       }
@@ -93270,7 +93270,7 @@ var require_mongoose = __commonJS({
       if (arguments.length >= 1 && typeof arguments[0] === "function") {
         throw new MongooseError("Mongoose.prototype.disconnect() no longer accepts a callback");
       }
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       const remaining = _mongoose.connections.length;
       if (remaining <= 0) {
         return;
@@ -93278,18 +93278,18 @@ var require_mongoose = __commonJS({
       await Promise.all(_mongoose.connections.map((conn) => conn.close()));
     };
     Mongoose.prototype.startSession = function startSession() {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       return _mongoose.connection.startSession.apply(_mongoose.connection, arguments);
     };
     Mongoose.prototype.pluralize = function pluralize(fn) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       if (arguments.length > 0) {
         _mongoose._pluralize = fn;
       }
       return _mongoose._pluralize;
     };
     Mongoose.prototype.model = function model(name, schema, collection, options) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       if (typeof schema === "string") {
         collection = schema;
         schema = false;
@@ -93301,10 +93301,10 @@ var require_mongoose = __commonJS({
         }
         return model3;
       }
-      if (utils.isObject(schema) && !(schema instanceof Schema13)) {
-        schema = new Schema13(schema);
+      if (utils.isObject(schema) && !(schema instanceof Schema16)) {
+        schema = new Schema16(schema);
       }
-      if (schema && !(schema instanceof Schema13)) {
+      if (schema && !(schema instanceof Schema16)) {
         throw new _mongoose.Error("The 2nd parameter to `mongoose.model()` should be a schema or a POJO");
       }
       options = options || {};
@@ -93337,7 +93337,7 @@ var require_mongoose = __commonJS({
       return model2;
     };
     Mongoose.prototype._model = function _model(name, schema, collection, options) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       let model;
       if (typeof name === "function") {
         model = name;
@@ -93376,25 +93376,25 @@ var require_mongoose = __commonJS({
       return model;
     };
     Mongoose.prototype.deleteModel = function deleteModel(name) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       _mongoose.connection.deleteModel(name);
       delete _mongoose.models[name];
       return _mongoose;
     };
     Mongoose.prototype.modelNames = function modelNames() {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       const names = Object.keys(_mongoose.models);
       return names;
     };
     Mongoose.prototype._applyPlugins = function _applyPlugins(schema, options) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       options = options || {};
       options.applyPluginsToDiscriminators = _mongoose.options && _mongoose.options.applyPluginsToDiscriminators || false;
       options.applyPluginsToChildSchemas = typeof (_mongoose.options && _mongoose.options.applyPluginsToChildSchemas) === "boolean" ? _mongoose.options.applyPluginsToChildSchemas : true;
       applyPlugins(schema, _mongoose.plugins, options, "$globalPluginsApplied");
     };
     Mongoose.prototype.plugin = function plugin(fn, opts) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       _mongoose.plugins.push([fn, opts]);
       return _mongoose;
     };
@@ -93433,25 +93433,25 @@ var require_mongoose = __commonJS({
     Mongoose.prototype.BaseConnection = require_connection2();
     Mongoose.prototype.version = pkg.version;
     Mongoose.prototype.Mongoose = Mongoose;
-    Mongoose.prototype.Schema = Schema13;
+    Mongoose.prototype.Schema = Schema16;
     Mongoose.prototype.SchemaType = SchemaType;
-    Mongoose.prototype.SchemaTypes = Schema13.Types;
+    Mongoose.prototype.SchemaTypes = Schema16.Types;
     Mongoose.prototype.VirtualType = VirtualType;
     Mongoose.prototype.Types = Types;
     Mongoose.prototype.Query = Query;
     Mongoose.prototype.Model = Model;
-    Mongoose.prototype.Document = Document13;
+    Mongoose.prototype.Document = Document16;
     Mongoose.prototype.DocumentProvider = require_documentProvider();
     Mongoose.prototype.ObjectId = SchemaTypes.ObjectId;
     Mongoose.prototype.isValidObjectId = function isValidObjectId(v) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       return _mongoose.Types.ObjectId.isValid(v);
     };
     Mongoose.prototype.isObjectIdOrHexString = function isObjectIdOrHexString(v) {
       return isBsonType(v, "ObjectId") || typeof v === "string" && objectIdHexRegexp.test(v);
     };
     Mongoose.prototype.syncIndexes = function syncIndexes(options) {
-      const _mongoose = this instanceof Mongoose ? this : mongoose14;
+      const _mongoose = this instanceof Mongoose ? this : mongoose17;
       return _mongoose.connection.syncIndexes(options);
     };
     Mongoose.prototype.Decimal128 = SchemaTypes.Decimal128;
@@ -93471,15 +93471,15 @@ var require_mongoose = __commonJS({
     Mongoose.prototype.skipMiddlewareFunction = Kareem.skipWrappedFunction;
     Mongoose.prototype.overwriteMiddlewareResult = Kareem.overwriteResult;
     Mongoose.prototype.omitUndefined = require_omitUndefined();
-    function _createDefaultConnection(mongoose15) {
-      if (mongoose15.connection) {
+    function _createDefaultConnection(mongoose18) {
+      if (mongoose18.connection) {
         return;
       }
-      const conn = mongoose15.createConnection();
+      const conn = mongoose18.createConnection();
       conn[defaultConnectionSymbol] = true;
-      conn.models = mongoose15.models;
+      conn.models = mongoose18.models;
     }
-    var mongoose14 = module2.exports = exports2 = new Mongoose({
+    var mongoose17 = module2.exports = exports2 = new Mongoose({
       [defaultMongooseSymbol]: true
     });
   }
@@ -93491,10 +93491,10 @@ var require_lib9 = __commonJS({
     "use strict";
     var mongodbDriver = require_node_mongodb_native();
     require_driver().set(mongodbDriver);
-    var mongoose14 = require_mongoose();
-    mongoose14.setDriver(mongodbDriver);
-    mongoose14.Mongoose.prototype.mongo = require_lib6();
-    module2.exports = mongoose14;
+    var mongoose17 = require_mongoose();
+    mongoose17.setDriver(mongodbDriver);
+    mongoose17.Mongoose.prototype.mongo = require_lib6();
+    module2.exports = mongoose17;
   }
 });
 
@@ -93502,55 +93502,55 @@ var require_lib9 = __commonJS({
 var require_mongoose2 = __commonJS({
   "node_modules/mongoose/index.js"(exports2, module2) {
     "use strict";
-    var mongoose14 = require_lib9();
-    module2.exports = mongoose14;
-    module2.exports.default = mongoose14;
-    module2.exports.mongoose = mongoose14;
-    module2.exports.cast = mongoose14.cast;
-    module2.exports.STATES = mongoose14.STATES;
-    module2.exports.setDriver = mongoose14.setDriver;
-    module2.exports.set = mongoose14.set;
-    module2.exports.get = mongoose14.get;
-    module2.exports.createConnection = mongoose14.createConnection;
-    module2.exports.connect = mongoose14.connect;
-    module2.exports.disconnect = mongoose14.disconnect;
-    module2.exports.startSession = mongoose14.startSession;
-    module2.exports.pluralize = mongoose14.pluralize;
-    module2.exports.model = mongoose14.model;
-    module2.exports.deleteModel = mongoose14.deleteModel;
-    module2.exports.modelNames = mongoose14.modelNames;
-    module2.exports.plugin = mongoose14.plugin;
-    module2.exports.connections = mongoose14.connections;
-    module2.exports.version = mongoose14.version;
-    module2.exports.Aggregate = mongoose14.Aggregate;
-    module2.exports.Mongoose = mongoose14.Mongoose;
-    module2.exports.Schema = mongoose14.Schema;
-    module2.exports.SchemaType = mongoose14.SchemaType;
-    module2.exports.SchemaTypes = mongoose14.SchemaTypes;
-    module2.exports.VirtualType = mongoose14.VirtualType;
-    module2.exports.Types = mongoose14.Types;
-    module2.exports.Query = mongoose14.Query;
-    module2.exports.Model = mongoose14.Model;
-    module2.exports.Document = mongoose14.Document;
-    module2.exports.ObjectId = mongoose14.ObjectId;
-    module2.exports.isValidObjectId = mongoose14.isValidObjectId;
-    module2.exports.isObjectIdOrHexString = mongoose14.isObjectIdOrHexString;
-    module2.exports.syncIndexes = mongoose14.syncIndexes;
-    module2.exports.Decimal128 = mongoose14.Decimal128;
-    module2.exports.Mixed = mongoose14.Mixed;
-    module2.exports.Date = mongoose14.Date;
-    module2.exports.Number = mongoose14.Number;
-    module2.exports.Error = mongoose14.Error;
-    module2.exports.MongooseError = mongoose14.MongooseError;
-    module2.exports.now = mongoose14.now;
-    module2.exports.CastError = mongoose14.CastError;
-    module2.exports.SchemaTypeOptions = mongoose14.SchemaTypeOptions;
-    module2.exports.mongo = mongoose14.mongo;
-    module2.exports.mquery = mongoose14.mquery;
-    module2.exports.sanitizeFilter = mongoose14.sanitizeFilter;
-    module2.exports.trusted = mongoose14.trusted;
-    module2.exports.skipMiddlewareFunction = mongoose14.skipMiddlewareFunction;
-    module2.exports.overwriteMiddlewareResult = mongoose14.overwriteMiddlewareResult;
+    var mongoose17 = require_lib9();
+    module2.exports = mongoose17;
+    module2.exports.default = mongoose17;
+    module2.exports.mongoose = mongoose17;
+    module2.exports.cast = mongoose17.cast;
+    module2.exports.STATES = mongoose17.STATES;
+    module2.exports.setDriver = mongoose17.setDriver;
+    module2.exports.set = mongoose17.set;
+    module2.exports.get = mongoose17.get;
+    module2.exports.createConnection = mongoose17.createConnection;
+    module2.exports.connect = mongoose17.connect;
+    module2.exports.disconnect = mongoose17.disconnect;
+    module2.exports.startSession = mongoose17.startSession;
+    module2.exports.pluralize = mongoose17.pluralize;
+    module2.exports.model = mongoose17.model;
+    module2.exports.deleteModel = mongoose17.deleteModel;
+    module2.exports.modelNames = mongoose17.modelNames;
+    module2.exports.plugin = mongoose17.plugin;
+    module2.exports.connections = mongoose17.connections;
+    module2.exports.version = mongoose17.version;
+    module2.exports.Aggregate = mongoose17.Aggregate;
+    module2.exports.Mongoose = mongoose17.Mongoose;
+    module2.exports.Schema = mongoose17.Schema;
+    module2.exports.SchemaType = mongoose17.SchemaType;
+    module2.exports.SchemaTypes = mongoose17.SchemaTypes;
+    module2.exports.VirtualType = mongoose17.VirtualType;
+    module2.exports.Types = mongoose17.Types;
+    module2.exports.Query = mongoose17.Query;
+    module2.exports.Model = mongoose17.Model;
+    module2.exports.Document = mongoose17.Document;
+    module2.exports.ObjectId = mongoose17.ObjectId;
+    module2.exports.isValidObjectId = mongoose17.isValidObjectId;
+    module2.exports.isObjectIdOrHexString = mongoose17.isObjectIdOrHexString;
+    module2.exports.syncIndexes = mongoose17.syncIndexes;
+    module2.exports.Decimal128 = mongoose17.Decimal128;
+    module2.exports.Mixed = mongoose17.Mixed;
+    module2.exports.Date = mongoose17.Date;
+    module2.exports.Number = mongoose17.Number;
+    module2.exports.Error = mongoose17.Error;
+    module2.exports.MongooseError = mongoose17.MongooseError;
+    module2.exports.now = mongoose17.now;
+    module2.exports.CastError = mongoose17.CastError;
+    module2.exports.SchemaTypeOptions = mongoose17.SchemaTypeOptions;
+    module2.exports.mongo = mongoose17.mongo;
+    module2.exports.mquery = mongoose17.mquery;
+    module2.exports.sanitizeFilter = mongoose17.sanitizeFilter;
+    module2.exports.trusted = mongoose17.trusted;
+    module2.exports.skipMiddlewareFunction = mongoose17.skipMiddlewareFunction;
+    module2.exports.overwriteMiddlewareResult = mongoose17.overwriteMiddlewareResult;
   }
 });
 
@@ -101088,15 +101088,128 @@ var ContactAccessLogModel = import_mongoose11.default.model(
   ContactAccessLogSchema
 );
 
-// src/config/db.ts
+// src/models/PhoneChangeRequest.ts
 var import_mongoose12 = __toESM(require_mongoose2());
+var PhoneChangeRequestSchema = new import_mongoose12.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose12.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    userRole: { type: String, required: true },
+    currentPhone: { type: String, required: true },
+    newPhone: { type: String, required: true },
+    reason: { type: String, required: true, trim: true },
+    division: { type: String },
+    district: { type: String },
+    institutionId: { type: String },
+    institutionName: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose12.Schema.Types.Mixed },
+    reviewedByName: { type: String },
+    reviewedAt: { type: Date },
+    reviewNotes: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+PhoneChangeRequestSchema.index({ status: 1, createdAt: -1 });
+PhoneChangeRequestSchema.index({ division: 1, status: 1 });
+PhoneChangeRequestSchema.index({ institutionId: 1, status: 1 });
+var PhoneChangeRequestModel = import_mongoose12.default.model(
+  "PhoneChangeRequest",
+  PhoneChangeRequestSchema
+);
+
+// src/models/PasswordRecoveryRequest.ts
+var import_mongoose13 = __toESM(require_mongoose2());
+var PasswordRecoveryRequestSchema = new import_mongoose13.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose13.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    phone: { type: String, required: true, index: true },
+    userRole: { type: String, required: true },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true },
+    institutionId: { type: import_mongoose13.Schema.Types.Mixed, index: true },
+    institutionName: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "used", "expired"],
+      default: "pending",
+      index: true
+    },
+    reason: { type: String },
+    temporaryPasswordHash: { type: String },
+    expiresAt: { type: Date },
+    isUsed: { type: Boolean, default: false },
+    approvedBy: { type: import_mongoose13.Schema.Types.Mixed },
+    approvedByName: { type: String },
+    approvedByRole: { type: String },
+    approvedAt: { type: Date },
+    rejectionReason: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+var PasswordRecoveryRequestModel = import_mongoose13.default.model(
+  "PasswordRecoveryRequest",
+  PasswordRecoveryRequestSchema
+);
+
+// src/models/InstitutionChangeRequest.ts
+var import_mongoose14 = __toESM(require_mongoose2());
+var InstitutionChangeRequestSchema = new import_mongoose14.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    phone: { type: String, required: true },
+    userRole: { type: String, required: true },
+    currentInstitutionId: { type: import_mongoose14.Schema.Types.Mixed },
+    currentInstitutionName: { type: String },
+    targetInstitutionId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
+    targetInstitutionName: { type: String, required: true },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true },
+    studentOrStaffId: { type: String },
+    department: { type: String },
+    reason: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "under_review", "approved", "rejected"],
+      default: "pending",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose14.Schema.Types.Mixed },
+    reviewedByName: { type: String },
+    decisionReason: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+var InstitutionChangeRequestModel = import_mongoose14.default.model(
+  "InstitutionChangeRequest",
+  InstitutionChangeRequestSchema
+);
+
+// src/config/db.ts
+var import_mongoose15 = __toESM(require_mongoose2());
 var cached = global.mongoose;
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 var isConnected = false;
 async function connectDB() {
-  if (cached.conn && import_mongoose12.default.connection.readyState === 1) {
+  if (cached.conn && import_mongoose15.default.connection.readyState === 1) {
     isConnected = true;
     return true;
   }
@@ -101111,7 +101224,7 @@ async function connectDB() {
       connectTimeoutMS: 3e3
     };
     console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
-    cached.promise = import_mongoose12.default.connect(uri, opts).then((m) => {
+    cached.promise = import_mongoose15.default.connect(uri, opts).then((m) => {
       console.log("[Database] Successfully connected to MongoDB Atlas database.");
       isConnected = true;
       return m;
@@ -101130,7 +101243,7 @@ async function connectDB() {
   }
 }
 function isDatabaseConnected() {
-  return isConnected && import_mongoose12.default.connection.readyState === 1;
+  return isConnected && import_mongoose15.default.connection.readyState === 1;
 }
 
 // src/services/dataStore.ts
@@ -101851,6 +101964,9 @@ var DataStore = class {
         for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
         for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
         for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
+        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
+        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
+        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
         console.log("[Database] Auto-seeding completed successfully in MongoDB Atlas!");
       } else {
         console.log("[Database] Loading existing data from MongoDB Atlas...");
@@ -101870,6 +101986,12 @@ var DataStore = class {
         if (dbActivities.length > 0) this.moderatorActivities = dbActivities;
         const dbHistories = await AccountStatusHistoryModel.find().lean();
         if (dbHistories.length > 0) this.accountStatusHistories = dbHistories;
+        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
+        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs;
+        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
+        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs;
+        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
+        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs;
         console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
       }
     } catch (err) {
@@ -101942,9 +102064,27 @@ var DataStore = class {
       });
     }
   }
+  persistPhoneChangeRequest(pcr) {
+    if (isDatabaseConnected()) {
+      PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistPasswordRecoveryRequest(prr) {
+    if (isDatabaseConnected()) {
+      PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistInstitutionChangeRequest(icr) {
+    if (isDatabaseConnected()) {
+      InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true }).catch(() => {
+      });
+    }
+  }
   // --- User Methods ---
   findUserById(id) {
-    return this.users.find((u) => u._id === id);
+    return this.users.find((u) => String(u._id) === String(id));
   }
   findUserByPhone(phone) {
     return this.users.find((u) => u.phone === phone);
@@ -102256,7 +102396,7 @@ var DataStore = class {
   }
   // --- Blood Request Methods ---
   findBloodRequestById(id) {
-    return this.bloodRequests.find((r) => r._id === id);
+    return this.bloodRequests.find((r) => String(r._id) === String(id));
   }
   createBloodRequest(data) {
     const newReq = {
@@ -102345,7 +102485,7 @@ var DataStore = class {
   }
   // --- Institution Methods ---
   findInstitutionById(id) {
-    return this.institutions.find((i) => i._id === id);
+    return this.institutions.find((i) => String(i._id) === String(id));
   }
   getInstitutions(filters) {
     let result = [...this.institutions];
@@ -102443,12 +102583,13 @@ var DataStore = class {
     return list;
   }
   reviewInstitutionRequest(params) {
-    const req = this.institutionRequests.find((r) => r._id === params.requestId);
+    const req = this.institutionRequests.find((r) => String(r._id) === String(params.requestId));
     if (!req) {
       return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
     }
-    if (params.reviewerRole === "ADMIN") {
-      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09AC\u09BE \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE\u09B0 \u0995\u09CD\u09B7\u09AE\u09A4\u09BE\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09A8\u0964" };
+    const allowedRoles = ["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"];
+    if (!allowedRoles.includes(params.reviewerRole)) {
+      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE\u09B0 \u0995\u09CD\u09B7\u09AE\u09A4\u09BE\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09A8\u0964" };
     }
     if (params.reviewerRole === "DIVISION_COORDINATOR" && params.reviewerDivision?.toLowerCase() !== req.division.toLowerCase()) {
       return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2\u09AE\u09BE\u09A4\u09CD\u09B0 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
@@ -102772,6 +102913,7 @@ var DataStore = class {
       updatedAt: /* @__PURE__ */ new Date()
     };
     this.phoneChangeRequests.unshift(newReq);
+    this.persistPhoneChangeRequest(newReq);
     const coordinators = this.users.filter(
       (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === (user.division || "").toLowerCase()
     );
@@ -102810,7 +102952,7 @@ var DataStore = class {
     return this.phoneChangeRequests.find((r) => r.userId === userId && r.status === "pending") || null;
   }
   updatePhoneChangeRequest(requestId, status, reviewer, reviewNotes) {
-    const req = this.phoneChangeRequests.find((r) => r._id === requestId);
+    const req = this.phoneChangeRequests.find((r) => String(r._id) === String(requestId));
     if (!req) {
       return { success: false, message: "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
     }
@@ -102827,9 +102969,11 @@ var DataStore = class {
     if (status === "approved" && targetUser) {
       targetUser.phone = req.newPhone;
       targetUser.updatedAt = /* @__PURE__ */ new Date();
-      const donor = this.donorProfiles.find((d) => d.userId === targetUser._id);
+      this.persistUser(targetUser);
+      const donor = this.donorProfiles.find((d) => String(d.userId) === String(targetUser._id));
       if (donor) {
         donor.updatedAt = /* @__PURE__ */ new Date();
+        this.persistDonorProfile(donor);
       }
       this.createNotification({
         userId: targetUser._id,
@@ -102847,6 +102991,7 @@ var DataStore = class {
         link: "/profile"
       });
     }
+    this.persistPhoneChangeRequest(req);
     return {
       success: true,
       message: status === "approved" ? "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7 \u098F\u09AC\u0982 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
@@ -103101,7 +103246,7 @@ var DataStore = class {
     }));
   }
   approvePasswordRecoveryRequest(requestId, approverUser) {
-    const req = this.passwordRecoveryRequests.find((r) => r._id === requestId);
+    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
     if (!req) {
       return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
     }
@@ -103133,6 +103278,8 @@ var DataStore = class {
     targetUser.passwordHash = hash2;
     targetUser.requirePasswordChangeAtFirstLogin = true;
     targetUser.updatedAt = now;
+    this.persistUser(targetUser);
+    this.persistPasswordRecoveryRequest(req);
     this.passwordRecoveryAudits.unshift({
       _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
       requestId: req._id,
@@ -103160,12 +103307,13 @@ var DataStore = class {
     };
   }
   rejectPasswordRecoveryRequest(requestId, rejecterUser, reason) {
-    const req = this.passwordRecoveryRequests.find((r) => r._id === requestId);
+    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
     if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
     const now = /* @__PURE__ */ new Date();
     req.status = "rejected";
     req.rejectionReason = reason;
     req.updatedAt = now;
+    this.persistPasswordRecoveryRequest(req);
     this.passwordRecoveryAudits.unshift({
       _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
       requestId: req._id,
@@ -103278,6 +103426,7 @@ var DataStore = class {
       updatedAt: now
     };
     this.institutionChangeRequests.unshift(newReq);
+    this.persistInstitutionChangeRequest(newReq);
     const admins = this.users.filter((u) => u.role === "SUPER_ADMIN");
     for (const a of admins) {
       this.createNotification({
@@ -103314,7 +103463,8 @@ var DataStore = class {
     }
     return {
       success: true,
-      message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09B2\u09C7 \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AC\u09C7\u0964"
+      message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09B2\u09C7 \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AC\u09C7\u0964",
+      request: newReq
     };
   }
   getInstitutionChangeRequests(filter) {
@@ -103334,10 +103484,10 @@ var DataStore = class {
     return [];
   }
   reviewInstitutionChangeRequest(requestId, reviewerUser, status, decisionReason) {
-    const req = this.institutionChangeRequests.find((r) => r._id === requestId);
+    const req = this.institutionChangeRequests.find((r) => String(r._id) === String(requestId));
     if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    if (reviewerUser.role !== "SUPER_ADMIN" && reviewerUser.role !== "DIVISION_COORDINATOR") {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099A\u09C2\u09A1\u09BC\u09BE\u09A8\u09CD\u09A4 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09C7\u09AC\u09B2 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09AC\u09BE \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09A6\u09BF\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    if (reviewerUser.role !== "SUPER_ADMIN" && reviewerUser.role !== "ADMIN" && reviewerUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099A\u09C2\u09A1\u09BC\u09BE\u09A8\u09CD\u09A4 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09C7\u09AC\u09B2 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AC\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09A6\u09BF\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
     }
     if (reviewerUser.role === "DIVISION_COORDINATOR" && reviewerUser.assignedDivision !== req.division) {
       return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
@@ -103353,12 +103503,14 @@ var DataStore = class {
       if (targetUser) {
         targetUser.assignedInstitution = req.targetInstitutionId;
         targetUser.updatedAt = now;
+        this.persistUser(targetUser);
       }
-      const donor = this.donorProfiles.find((d) => d.userId === req.userId);
+      const donor = this.donorProfiles.find((d) => String(d.userId) === String(req.userId));
       if (donor) {
         donor.institutionId = req.targetInstitutionId;
         donor.institutionMembershipVerified = true;
         donor.updatedAt = now;
+        this.persistDonorProfile(donor);
       }
       this.createNotification({
         userId: req.userId,
@@ -103374,6 +103526,7 @@ var DataStore = class {
         type: "institution_update"
       });
     }
+    this.persistInstitutionChangeRequest(req);
     return {
       success: true,
       message: status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
@@ -103381,8 +103534,8 @@ var DataStore = class {
   }
   // Manual Institution Creation by SUPER_ADMIN or DIVISION_COORDINATOR
   manualCreateInstitution(data, creatorUser) {
-    if (creatorUser.role !== "SUPER_ADMIN" && creatorUser.role !== "DIVISION_COORDINATOR") {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u098F\u09AC\u0982 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    if (creatorUser.role !== "SUPER_ADMIN" && creatorUser.role !== "ADMIN" && creatorUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u098F\u09AC\u0982 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
     }
     if (creatorUser.role === "DIVISION_COORDINATOR" && creatorUser.assignedDivision !== data.division) {
       return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
@@ -103412,6 +103565,7 @@ var DataStore = class {
       updatedAt: now
     };
     this.institutions.unshift(newInst);
+    this.persistInstitution(newInst);
     return {
       success: true,
       institution: newInst,
@@ -103487,12 +103641,12 @@ var SmsService = class {
 };
 
 // src/models/AuditLog.ts
-var import_mongoose13 = __toESM(require_mongoose2());
-var AuditLogSchema = new import_mongoose13.Schema(
+var import_mongoose16 = __toESM(require_mongoose2());
+var AuditLogSchema = new import_mongoose16.Schema(
   {
     _id: { type: String },
     actorId: {
-      type: import_mongoose13.Schema.Types.Mixed,
+      type: import_mongoose16.Schema.Types.Mixed,
       required: true,
       index: true
     },
@@ -103501,8 +103655,8 @@ var AuditLogSchema = new import_mongoose13.Schema(
     targetType: { type: String, required: true, index: true },
     targetId: { type: String },
     divisionScope: { type: String, index: true },
-    institutionScope: { type: import_mongoose13.Schema.Types.Mixed, index: true },
-    details: { type: import_mongoose13.Schema.Types.Mixed },
+    institutionScope: { type: import_mongoose16.Schema.Types.Mixed, index: true },
+    details: { type: import_mongoose16.Schema.Types.Mixed },
     ipAddress: { type: String }
   },
   {
@@ -103510,7 +103664,7 @@ var AuditLogSchema = new import_mongoose13.Schema(
   }
 );
 AuditLogSchema.index({ createdAt: -1 });
-var AuditLogModel = import_mongoose13.default.model("AuditLog", AuditLogSchema);
+var AuditLogModel = import_mongoose16.default.model("AuditLog", AuditLogSchema);
 
 // src/services/auditService.ts
 var inMemoryAuditLogs = [];
@@ -104917,11 +105071,11 @@ router.post("/register", authRateLimiter, validateBody(RegisterSchema), register
 router.post("/login", authRateLimiter, validateBody(LoginSchema), login);
 router.get("/me", requireAuth, getMe);
 router.post("/change-first-login-password", requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
-router.post("/forgot-password", authRateLimiter, submitForgotPassword);
-router.get("/recovery-requests", requireAuth, getPasswordRecoveryRequests);
-router.post("/recovery-requests/:id/approve", requireAuth, approvePasswordRecoveryRequest);
-router.post("/recovery-requests/:id/reject", requireAuth, rejectPasswordRecoveryRequest);
-router.get("/recovery-history", requireAuth, getPasswordRecoveryHistory);
+router.post(["/forgot-password", "/recovery/forgot-password"], authRateLimiter, submitForgotPassword);
+router.get(["/recovery-requests", "/recovery/requests"], requireAuth, getPasswordRecoveryRequests);
+router.post(["/recovery-requests/:id/approve", "/recovery/requests/:id/approve"], requireAuth, approvePasswordRecoveryRequest);
+router.post(["/recovery-requests/:id/reject", "/recovery/requests/:id/reject"], requireAuth, rejectPasswordRecoveryRequest);
+router.get(["/recovery-history", "/recovery/history"], requireAuth, getPasswordRecoveryHistory);
 var authRoutes_default = router;
 
 // src/routes/donorRoutes.ts
@@ -106149,7 +106303,7 @@ router6.get(
 router6.post(
   "/institutions/manual",
   requireAuth,
-  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"),
   manualCreateInstitution
 );
 router6.use(requireAuth, requireRoles("SUPER_ADMIN", "ADMIN"));
@@ -106441,13 +106595,6 @@ async function reviewInstitutionRequest(req, res) {
   }
   const { id } = req.params;
   const { status, decisionReason } = req.body;
-  if (req.user.role === "ADMIN") {
-    res.status(403).json({
-      success: false,
-      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u09AC\u09BE \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE\u09B0 \u0985\u09A8\u09C1\u09AE\u09A4\u09BF \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09C7\u0987\u0964 \u098F\u099F\u09BF \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09AC\u09BE \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8\u09C7\u09B0 \u098F\u0996\u09A4\u09BF\u09AF\u09BC\u09BE\u09B0\u09AD\u09C1\u0995\u09CD\u09A4\u0964"
-    });
-    return;
-  }
   const result = dataStore.reviewInstitutionRequest({
     requestId: id,
     reviewerId: req.user.userId,
@@ -106483,8 +106630,7 @@ router10.get("/", requireAuth, requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_CO
 router10.patch(
   "/:id/review",
   requireAuth,
-  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR", "ADMIN"),
-  // Admin will be rejected in controller with specific message
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"),
   validateBody(ReviewInstitutionRequestSchema),
   reviewInstitutionRequest
 );
@@ -106862,7 +107008,7 @@ async function reviewPhoneChangeRequest(req, res) {
   }
   const { id } = req.params;
   const { status, reviewNotes } = req.body;
-  const targetReq = dataStore.phoneChangeRequests.find((r) => r._id === id);
+  const targetReq = dataStore.phoneChangeRequests.find((r) => String(r._id) === String(id));
   if (!targetReq) {
     res.status(404).json({ success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
@@ -107059,7 +107205,7 @@ router15.get(
 router15.patch(
   "/:id/review",
   requireAuth,
-  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"),
   validateBody(ReviewInstitutionChangeSchema),
   reviewInstitutionChangeRequest
 );

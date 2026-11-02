@@ -135,7 +135,7 @@ export async function reviewPhoneChangeRequest(req: AuthRequest, res: Response):
   const { status, reviewNotes } = req.body;
 
   // Find target request to verify role scope
-  const targetReq = dataStore.phoneChangeRequests.find(r => r._id === id);
+  const targetReq = dataStore.phoneChangeRequests.find(r => String(r._id) === String(id));
   if (!targetReq) {
     res.status(404).json({ success: false, message: 'আবেদনটি খুঁজে পাওয়া যায়নি।' });
     return;

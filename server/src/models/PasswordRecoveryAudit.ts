@@ -42,3 +42,4 @@ export const PasswordRecoveryAuditModel = mongoose.model<IPasswordRecoveryAudit>
   'PasswordRecoveryAudit',
   PasswordRecoveryAuditSchema
 );
+

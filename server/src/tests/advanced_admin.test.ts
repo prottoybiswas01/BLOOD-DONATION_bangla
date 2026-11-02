@@ -24,7 +24,7 @@ test('1. Role Hierarchy & Super Admin Safeguards: Cannot demote or block the las
   assert.strictEqual(canDemote, false, 'Demoting the last active super admin is prohibited');
 });
 
-test('2. Platform Admin Restrictions: Admin cannot approve or reject institutional registration requests', () => {
+test('2. Platform Admin Permissions: Admin can approve or reject institutional registration requests while unauthorized roles cannot', () => {
   // Create an institution request
   const request = dataStore.createInstitutionRequest({
     name: 'Test College Blood Club',
@@ -43,7 +43,20 @@ test('2. Platform Admin Restrictions: Admin cannot approve or reject institution
   assert.ok(request._id, 'Institution request should be created');
   assert.strictEqual(request.status, 'pending_review');
 
-  // Verify Admin role is not permitted to review/approve institution requests
+  // Verify unauthorized role (MEMBER) cannot review/approve
+  const memberActor = dataStore.findUserByPhone('01711111111');
+  assert.ok(memberActor, 'Member user must exist');
+  const unauthorizedReview = dataStore.reviewInstitutionRequest({
+    requestId: request._id,
+    reviewerId: memberActor._id,
+    reviewerRole: memberActor.role,
+    reviewerDivision: memberActor.division,
+    status: 'approved',
+    decisionReason: 'Member attempted approval'
+  });
+  assert.strictEqual(unauthorizedReview.success, false, 'Member cannot review or approve institution requests');
+
+  // Verify Admin role is permitted to review/approve institution requests
   const adminActor = dataStore.findUserByPhone('01700000007'); // Admin seed
   assert.ok(adminActor, 'Admin user must exist');
   assert.strictEqual(adminActor.role, 'ADMIN');
@@ -55,11 +68,11 @@ test('2. Platform Admin Restrictions: Admin cannot approve or reject institution
     reviewerRole: adminActor.role,
     reviewerDivision: adminActor.assignedDivision,
     status: 'approved',
-    decisionReason: 'Admin attempted approval'
+    decisionReason: 'Admin verified and approved college'
   });
 
-  assert.strictEqual(adminReview.success, false, 'Admin cannot review or approve institution requests');
-  assert.match(adminReview.message, /অননুমোদিত: প্ল্যাটফর্ম অ্যাডমিন/);
+  assert.strictEqual(adminReview.success, true, 'Admin can review and approve institution requests');
+  assert.ok(adminReview.institution, 'Approved institution should be created');
 });
 
 test('3. Division Coordinator Scoping: Can only review requests and manage within assigned division', () => {
@@ -262,4 +275,58 @@ test('7. Institutional Contact Request Flow', () => {
   assert.ok(updatedReq);
   assert.strictEqual(updatedReq.status, 'in_progress');
   assert.ok(updatedReq.handledAt);
+});
+
+test('8. Phone Number Change Approval Flow by Admin/Moderator', () => {
+  // Test approving existing pending request pcr_1
+  const existingReq = dataStore.phoneChangeRequests.find(r => r._id === 'pcr_1');
+  assert.ok(existingReq, 'Existing pending request pcr_1 should exist');
+  assert.strictEqual(existingReq.status, 'pending');
+
+  const admin = dataStore.findUserByPhone('01700000007');
+  assert.ok(admin);
+
+  const reviewRes = dataStore.updatePhoneChangeRequest(
+    'pcr_1',
+    'approved',
+    { userId: admin._id, name: admin.name, role: admin.role },
+    'নথিপত্র যাচাইপূর্বক নম্বর পরিবর্তন অনুমোদিত হলো'
+  );
+
+  assert.ok(reviewRes.success, 'Review should succeed');
+  assert.strictEqual(reviewRes.request?.status, 'approved');
+
+  // Verify user's phone is actually updated
+  const updatedUser = dataStore.findUserById(existingReq.userId);
+  assert.strictEqual(updatedUser?.phone, existingReq.newPhone, 'User phone number must be updated');
+});
+
+test('9. Institution Change Request Approval by Admin', () => {
+  const user = dataStore.users.find(u => u.phone === '01722222222');
+  assert.ok(user);
+
+  const changeRes = dataStore.createInstitutionChangeRequest({
+    userId: user._id,
+    targetInstitutionId: 'inst_buet',
+    studentOrStaffId: 'BUET-2024-001',
+    department: 'CSE',
+    reason: 'বুয়েট ক্যাম্পাসে স্থানান্তর হওয়ার কারণে প্রতিষ্ঠান পরিবর্তন'
+  });
+
+  assert.ok(changeRes.success);
+  assert.ok(changeRes.request?._id);
+
+  const admin = dataStore.findUserByPhone('01700000007');
+  assert.ok(admin);
+
+  const reviewRes = dataStore.reviewInstitutionChangeRequest(
+    changeRes.request!._id,
+    admin,
+    'approved',
+    'বিশ্ববিদ্যালয় ট্রান্সফার সার্টিফিকেট যাচাই করে অনুমোদিত'
+  );
+
+  assert.ok(reviewRes.success);
+  const updatedUser = dataStore.findUserById(user._id);
+  assert.strictEqual(updatedUser?.assignedInstitution, 'inst_buet', 'Assigned institution must be updated to target');
 });

@@ -35,13 +35,14 @@ router.get(
   getInstitutionChangeRequests
 );
 
-// Super Admin & Division Coordinator review and approve/reject
+// Super Admin, Admin & Division Coordinator review and approve/reject
 router.patch(
   '/:id/review', 
   requireAuth, 
-  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR'), 
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'), 
   validateBody(ReviewInstitutionChangeSchema), 
   reviewInstitutionChangeRequest
 );
 
 export default router;
+

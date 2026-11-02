@@ -30,11 +30,11 @@ router.post('/login', authRateLimiter, validateBody(LoginSchema), login);
 router.get('/me', requireAuth, getMe);
 router.post('/change-first-login-password', requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
 
-// Password Recovery System
-router.post('/forgot-password', authRateLimiter, submitForgotPassword);
-router.get('/recovery-requests', requireAuth, getPasswordRecoveryRequests);
-router.post('/recovery-requests/:id/approve', requireAuth, approvePasswordRecoveryRequest);
-router.post('/recovery-requests/:id/reject', requireAuth, rejectPasswordRecoveryRequest);
-router.get('/recovery-history', requireAuth, getPasswordRecoveryHistory);
+// Password Recovery System (Supports both /recovery-requests and /recovery/requests)
+router.post(['/forgot-password', '/recovery/forgot-password'], authRateLimiter, submitForgotPassword);
+router.get(['/recovery-requests', '/recovery/requests'], requireAuth, getPasswordRecoveryRequests);
+router.post(['/recovery-requests/:id/approve', '/recovery/requests/:id/approve'], requireAuth, approvePasswordRecoveryRequest);
+router.post(['/recovery-requests/:id/reject', '/recovery/requests/:id/reject'], requireAuth, rejectPasswordRecoveryRequest);
+router.get(['/recovery-history', '/recovery/history'], requireAuth, getPasswordRecoveryHistory);
 
 export default router;

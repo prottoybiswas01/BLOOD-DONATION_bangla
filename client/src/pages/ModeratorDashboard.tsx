@@ -225,14 +225,14 @@ export const ModeratorDashboard: React.FC = () => {
     }
   };
 
-  const handleReviewPhoneRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleReviewPhoneRequest = async (e?: React.SyntheticEvent) => {
+    if (e?.preventDefault) e.preventDefault();
     if (!reviewingPhoneReq) return;
     setSubmittingPhoneReview(true);
     try {
       const res = await api.reviewPhoneChangeRequest(reviewingPhoneReq._id, {
         status: phoneReviewStatus,
-        reviewNotes: phoneReviewNotes
+        reviewNotes: phoneReviewNotes.trim() || undefined
       });
       if (res.success) {
         setReviewingPhoneReq(null);
@@ -561,7 +561,25 @@ export const ModeratorDashboard: React.FC = () => {
             }`}
           >
             <Phone className="w-4 h-4" />
-            <span>নম্বর পরিবর্তনের আবেদন ({phoneChangeRequests.filter(r => r.status === 'pending').length})</span>
+            <span>নম্বর পরিবর্তন ({phoneChangeRequests.filter(r => r.status === 'pending').length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('password_recovery')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'password_recovery' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>পাসওয়ার্ড রিকভারি ({recoveryRequests.filter(r => r.status === 'pending').length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('institution_changes')}
+            className={`pb-3 px-3 border-b-2 whitespace-nowrap transition-all flex items-center gap-2 ${
+              activeTab === 'institution_changes' ? 'border-teal-700 text-teal-800' : 'border-transparent text-subText hover:text-mainText'
+            }`}
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>ক্যাম্পাস পরিবর্তন ({instChanges.filter(r => r.status === 'pending').length})</span>
           </button>
         </div>
 
@@ -810,6 +828,185 @@ export const ModeratorDashboard: React.FC = () => {
                             </Button>
                           ) : (
                             <span className="text-[11px] text-slate-400">পর্যালোচিত</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: PASSWORD RECOVERY */}
+        {activeTab === 'password_recovery' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-amber-600" />
+                  <span>ক্যাম্পাস সদস্যদের পাসওয়ার্ড রিকভারি আবেদন</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">আপনার প্রতিষ্ঠানের যেসব সদস্য লগইন সমস্যায় পড়েছেন তাদের এককালীন অস্থায়ী পাসওয়ার্ড প্রদান</p>
+              </div>
+              <Badge variant="warning">মোট: {recoveryRequests.length} টি আবেদন</Badge>
+            </div>
+
+            {recoveryRequests.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                কোনো পাসওয়ার্ড রিকভারি আবেদন অপেক্ষমাণ নেই।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">সদস্যের নাম</th>
+                      <th className="py-3 px-4">মোবাইল নম্বর</th>
+                      <th className="py-3 px-4">রিকভারির কারণ</th>
+                      <th className="py-3 px-4">আবেদনের তারিখ</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {recoveryRequests.map((r: any) => (
+                      <tr key={r._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-mainText">{r.userName}</div>
+                          <div className="text-[10px] text-subText">{r.userRole}</div>
+                        </td>
+                        <td className="py-3 px-4 font-mono font-medium text-slate-700">{r.userPhone}</td>
+                        <td className="py-3 px-4 text-slate-700 max-w-xs">{r.reason}</td>
+                        <td className="py-3 px-4 text-subText">
+                          {r.createdAt ? new Date(r.createdAt).toLocaleString('bn-BD') : '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge 
+                            variant={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning'} 
+                            size="sm"
+                          >
+                            {r.status === 'approved' ? 'অনুমোদিত' : r.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                          {r.status === 'pending' ? (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => {
+                                  setApprovingRecovery(r);
+                                  setRecoveryApproveNotes('ক্যাম্পাস সদস্যের পরিচয় নিশ্চিত হয়ে অনুমোদিত');
+                                }}
+                                className="bg-amber-600 hover:bg-amber-700"
+                              >
+                                অনুমোদন ও পাসওয়ার্ড
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setRejectingRecovery(r);
+                                  setRecoveryRejectReason('');
+                                }}
+                              >
+                                বাতিল
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">নিষ্পন্ন</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: INSTITUTION CHANGES */}
+        {activeTab === 'institution_changes' && (
+          <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-appBorder">
+              <div>
+                <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-teal-700" />
+                  <span>ক্যাম্পাস ও প্রতিষ্ঠান পরিবর্তন আবেদন</span>
+                </h3>
+                <p className="text-xs text-subText mt-0.5">আপনার শিক্ষা প্রতিষ্ঠানে যুক্ত হওয়ার বা স্থানান্তরিত হওয়ার আবেদন পর্যালোচনা</p>
+              </div>
+              <Badge variant="teal">মোট: {instChanges.length} টি আবেদন</Badge>
+            </div>
+
+            {instChanges.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-xs">
+                কোনো ক্যাম্পাস পরিবর্তন আবেদন অপেক্ষমাণ নেই।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-appBorder rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">সদস্যের নাম</th>
+                      <th className="py-3 px-4">মোবাইল নম্বর</th>
+                      <th className="py-3 px-4">বর্তমান প্রতিষ্ঠান</th>
+                      <th className="py-3 px-4">অনুরোধকৃত নতুন প্রতিষ্ঠান</th>
+                      <th className="py-3 px-4">আইডি / বিভাগ</th>
+                      <th className="py-3 px-4">অবস্থা</th>
+                      <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {instChanges.map((c: any) => (
+                      <tr key={c._id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-mainText">{c.userName}</td>
+                        <td className="py-3 px-4 font-mono font-medium text-slate-700">{c.phone || c.userPhone}</td>
+                        <td className="py-3 px-4 text-slate-500">{c.currentInstitutionName || 'অনির্দিষ্ট'}</td>
+                        <td className="py-3 px-4 font-bold text-teal-700">{c.targetInstitutionName}</td>
+                        <td className="py-3 px-4 text-[11px] text-subText">
+                          {c.studentOrStaffId ? `ID: ${c.studentOrStaffId}` : ''} {c.department ? `(${c.department})` : ''}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge 
+                            variant={c.status === 'approved' ? 'success' : c.status === 'rejected' ? 'danger' : 'warning'} 
+                            size="sm"
+                          >
+                            {c.status === 'approved' ? 'অনুমোদিত' : c.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                          {c.status === 'pending' ? (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => {
+                                  setReviewingChangeReq(c);
+                                  setChangeDecision('approved');
+                                  setChangeReviewNotes('ক্যাম্পাস স্থানান্তর যাচাইপূর্বক অনুমোদন প্রদান করা হলো।');
+                                }}
+                                className="bg-teal-700 hover:bg-teal-800"
+                              >
+                                অনুমোদন
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setReviewingChangeReq(c);
+                                  setChangeDecision('rejected');
+                                  setChangeReviewNotes('তথ্য সন্তোষজনক না হওয়ায় বাতিল করা হলো।');
+                                }}
+                              >
+                                বাতিল
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">নিষ্পন্ন</span>
                           )}
                         </td>
                       </tr>

@@ -83,15 +83,6 @@ export async function reviewInstitutionRequest(req: AuthRequest, res: Response):
   const { id } = req.params;
   const { status, decisionReason } = req.body;
 
-  // Strict restriction: Admin role must NOT approve or reject new institution registration requests!
-  if (req.user.role === 'ADMIN') {
-    res.status(403).json({
-      success: false,
-      message: 'অনধিকার চর্চা: প্ল্যাটফর্ম অ্যাডমিন হিসেবে প্রতিষ্ঠান অনুমোদন বা বাতিল করার অনুমতি আপনার নেই। এটি বিভাগীয় সমন্বয়ক বা সুপার অ্যাডমিনের এখতিয়ারভুক্ত।'
-    });
-    return;
-  }
-
   const result = dataStore.reviewInstitutionRequest({
     requestId: id,
     reviewerId: req.user.userId,

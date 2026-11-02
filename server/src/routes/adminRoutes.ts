@@ -32,11 +32,11 @@ router.get(
   searchScopedUser
 );
 
-// Manual Institution Creation (Only Super Admin and Division Coordinator)
+// Manual Institution Creation (Super Admin, Admin, and Division Coordinator)
 router.post(
   '/institutions/manual',
   requireAuth,
-  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR'),
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'),
   manualCreateInstitution
 );
 

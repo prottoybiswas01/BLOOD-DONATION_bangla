@@ -157,6 +157,12 @@ export const AdminDashboard: React.FC = () => {
   const [phoneReviewNotes, setPhoneReviewNotes] = useState('');
   const [submittingPhoneReview, setSubmittingPhoneReview] = useState(false);
 
+  // Institution Request Review Modal
+  const [reviewingInstReq, setReviewingInstReq] = useState<any | null>(null);
+  const [instReviewDecision, setInstReviewDecision] = useState<'approved' | 'rejected'>('approved');
+  const [instDecisionReason, setInstDecisionReason] = useState('নথিপত্র ও তথ্যাদি যাচাইপূর্বক শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তি আবেদন অনুমোদন করা হলো।');
+  const [submittingInstReview, setSubmittingInstReview] = useState(false);
+
   // Institution Drill Down Modal
   const [drillDownInst, setDrillDownInst] = useState<any | null>(null);
   const [drillDownLoading, setDrillDownLoading] = useState(false);
@@ -320,14 +326,14 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleReviewPhoneRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleReviewPhoneRequest = async (e?: React.SyntheticEvent) => {
+    if (e?.preventDefault) e.preventDefault();
     if (!reviewingPhoneReq) return;
     setSubmittingPhoneReview(true);
     try {
       const res = await api.reviewPhoneChangeRequest(reviewingPhoneReq._id, {
         status: phoneReviewStatus,
-        reviewNotes: phoneReviewNotes
+        reviewNotes: phoneReviewNotes.trim() || undefined
       });
       if (res.success) {
         setMsg({ text: res.message || 'নম্বর পরিবর্তনের আবেদন পর্যালোচনা সম্পন্ন হয়েছে।', type: 'success' });
@@ -341,6 +347,33 @@ export const AdminDashboard: React.FC = () => {
       setMsg({ text: err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
     } finally {
       setSubmittingPhoneReview(false);
+    }
+  };
+
+  const handleReviewInstitutionRequest = async () => {
+    if (!reviewingInstReq) return;
+    if (!instDecisionReason.trim() || instDecisionReason.trim().length < 5) {
+      setMsg({ text: 'অনুমোদন বা বাতিলের সুস্পষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।', type: 'error' });
+      return;
+    }
+    setSubmittingInstReview(true);
+    try {
+      const res = await api.reviewInstitutionRequest(reviewingInstReq._id, {
+        status: instReviewDecision,
+        decisionReason: instDecisionReason.trim()
+      });
+      if (res.success) {
+        setMsg({ text: res.message || 'শিক্ষা প্রতিষ্ঠানের আবেদন পর্যালোচনা সম্পন্ন হয়েছে।', type: 'success' });
+        setReviewingInstReq(null);
+        setInstDecisionReason('নথিপত্র ও তথ্যাদি যাচাইপূর্বক শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তি আবেদন অনুমোদন করা হলো।');
+        loadData();
+      } else {
+        setMsg({ text: res.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err.message || 'পর্যালোচনা ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setSubmittingInstReview(false);
     }
   };
 
@@ -920,6 +953,103 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="neutral">মোট: {filteredUsers.length} জন</Badge>
                 </div>
 
+                {/* Scoped Direct Search */}
+                <div className="p-4 bg-slate-50/70 border border-appBorder rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-mainText flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-primary" />
+                      নির্দিষ্ট অ্যাকাউন্ট নির্ভুল অনুসন্ধান (মোবাইল নম্বর বা ইউজার আইডি)
+                    </span>
+                  </div>
+                  <form onSubmit={handleScopedSearch} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="সরাসরি মোবাইল নম্বর (যেমন: 017XXXXXXXX) বা আইডি..."
+                      className="flex-1 px-3 py-2 bg-white border border-appBorder rounded-xl text-xs text-mainText font-mono focus:border-primary"
+                    />
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="sm"
+                      isLoading={searchingUser}
+                    >
+                      খুঁজুন
+                    </Button>
+                    {searchResult && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSearchResult(null);
+                          setSearchQuery('');
+                        }}
+                      >
+                        রিসেট
+                      </Button>
+                    )}
+                  </form>
+
+                  {searchResult && (
+                    <div className="p-3 bg-white rounded-xl border border-appBorder text-xs space-y-2 animate-in fade-in">
+                      {searchResult.success && searchResult.user ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="font-bold text-mainText text-sm flex items-center gap-2">
+                              <span>{searchResult.user.name}</span>
+                              <Badge variant="primary" size="sm">{searchResult.user.role}</Badge>
+                              <Badge variant={searchResult.user.accountStatus === 'active' ? 'success' : 'danger'} size="sm">
+                                {searchResult.user.accountStatus}
+                              </Badge>
+                            </div>
+                            <div className="text-[11px] text-subText mt-1">
+                              মোবাইল: <strong className="font-mono text-slate-800">{searchResult.user.phone}</strong> | আইডি: {searchResult.user._id} | অবস্থান: {searchResult.user.district}, {searchResult.user.division}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(searchResult.user)}
+                            >
+                              সম্পাদনা
+                            </Button>
+                            {searchResult.user.accountStatus === 'active' ? (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setBlockingUser(searchResult.user);
+                                  setBlockReason('');
+                                }}
+                              >
+                                স্থগিত করুন
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => {
+                                  setUnblockingUser(searchResult.user);
+                                  setUnblockReason('');
+                                }}
+                              >
+                                সচল করুন
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-rose-600 font-medium">
+                          {searchResult.guidanceBn || searchResult.message || 'কোনো ব্যবহারকারী পাওয়া যায়নি।'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Filter and Search Bar */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="relative">
@@ -1286,7 +1416,7 @@ export const AdminDashboard: React.FC = () => {
             {/* TAB 5: INSTITUTIONS */}
             {activeTab === 'institutions' && (
               <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-base font-bold text-mainText flex items-center gap-2">
                       <Building2 className="w-5 h-5 text-tealAccent" />
@@ -1294,7 +1424,18 @@ export const AdminDashboard: React.FC = () => {
                     </h3>
                     <p className="text-xs text-subText mt-0.5">রক্তদান কার্যক্রমে অনুমোদিত বিশ্ববিদ্যালয় ও কলেজসমূহ</p>
                   </div>
-                  <Badge variant="teal">{institutions.length} টি প্রতিষ্ঠান</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="teal">{institutions.length} টি প্রতিষ্ঠান</Badge>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowManualInstModal(true)}
+                      icon={<Plus className="w-4 h-4" />}
+                      className="bg-teal-700 hover:bg-teal-800"
+                    >
+                      নতুন প্রতিষ্ঠান যুক্ত করুন
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1340,14 +1481,9 @@ export const AdminDashboard: React.FC = () => {
                       <FileText className="w-5 h-5 text-tealAccent" />
                       <span>শিক্ষা প্রতিষ্ঠান নিবন্ধন আবেদনসমূহ</span>
                     </h3>
-                    <p className="text-xs text-subText mt-0.5">নতুন শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তির জন্য জমা পড়া আবেদন</p>
+                    <p className="text-xs text-subText mt-0.5">নতুন শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তির জন্য জমা পড়া আবেদন পর্যালোচনা ও অনুমোদন</p>
                   </div>
-                  {!isSuperAdmin && (
-                    <span className="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                      <Info className="w-4 h-4 text-amber-600" />
-                      অনুমোদন বিভাগীয় সমন্বয়ক বা সুপার অ্যাডমিনের এখতিয়ারভুক্ত
-                    </span>
-                  )}
+                  <Badge variant="teal">মোট: {institutionRequests.length} টি আবেদন</Badge>
                 </div>
 
                 {institutionRequests.length === 0 ? (
@@ -1362,6 +1498,7 @@ export const AdminDashboard: React.FC = () => {
                           <th className="py-3 px-4">অবস্থান</th>
                           <th className="py-3 px-4">আবেদনকারী</th>
                           <th className="py-3 px-4">অবস্থা</th>
+                          <th className="py-3 px-4 text-right">পদক্ষেপ</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1384,6 +1521,24 @@ export const AdminDashboard: React.FC = () => {
                               >
                                 {req.status === 'approved' ? 'অনুমোদিত' : req.status === 'rejected' ? 'বাতিল' : 'বিচারাধীন'}
                               </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {req.status === 'pending_review' || req.status === 'pending' || req.status === 'under_review' ? (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setReviewingInstReq(req);
+                                    setInstReviewDecision('approved');
+                                    setInstDecisionReason('নথিপত্র ও তথ্যাদি যাচাইপূর্বক শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তি আবেদন অনুমোদন করা হলো।');
+                                  }}
+                                  className="bg-teal-700 hover:bg-teal-800"
+                                >
+                                  পর্যালোচনা
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">নিষ্পন্ন</span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -1534,7 +1689,233 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 10: SETTINGS */}
+            {/* TAB 10: PASSWORD RECOVERY */}
+            {activeTab === 'password_recovery' && (
+              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                      <KeyRound className="w-5 h-5 text-amber-600" />
+                      <span>পাসওয়ার্ড রিকভারি আবেদনসমূহ</span>
+                    </h3>
+                    <p className="text-xs text-subText mt-0.5">লগইন সমস্যায় ভোগা সদস্যদের এককালীন সিকিউর পাসওয়ার্ড ইস্যু ব্যবস্থাপনা</p>
+                  </div>
+                  <Badge variant="warning">মোট: {recoveryRequests.length} টি আবেদন</Badge>
+                </div>
+
+                {recoveryRequests.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো পাসওয়ার্ড রিকভারি আবেদন অপেক্ষমাণ নেই।</div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">সদস্যের নাম</th>
+                          <th className="py-3 px-4">মোবাইল নম্বর</th>
+                          <th className="py-3 px-4">প্রতিষ্ঠান / বিভাগ</th>
+                          <th className="py-3 px-4">রিকভারির কারণ</th>
+                          <th className="py-3 px-4">সময়</th>
+                          <th className="py-3 px-4">অবস্থা</th>
+                          <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {recoveryRequests.map((r: any) => (
+                          <tr key={r._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-mainText">{r.userName}</div>
+                              <div className="text-[10px] text-subText">{r.userRole}</div>
+                            </td>
+                            <td className="py-3 px-4 font-mono font-medium text-slate-700">{r.userPhone}</td>
+                            <td className="py-3 px-4">{r.institutionName || r.division || 'অনির্দিষ্ট'}</td>
+                            <td className="py-3 px-4 text-slate-700 max-w-xs">{r.reason}</td>
+                            <td className="py-3 px-4 text-subText">{new Date(r.createdAt).toLocaleString('bn-BD')}</td>
+                            <td className="py-3 px-4">
+                              <Badge 
+                                variant={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning'} 
+                                size="sm"
+                              >
+                                {r.status === 'approved' ? 'অনুমোদিত' : r.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                              {r.status === 'pending' ? (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                      setApprovingRecovery(r);
+                                      setRecoveryApproveNotes('পরিচয় নিশ্চিত হয়ে অনুমোদিত');
+                                    }}
+                                    className="bg-amber-600 hover:bg-amber-700"
+                                  >
+                                    অনুমোদন ও পাসওয়ার্ড
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => {
+                                      setRejectingRecovery(r);
+                                      setRecoveryRejectReason('');
+                                    }}
+                                  >
+                                    বাতিল
+                                  </Button>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">নিষ্পন্ন</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 11: INSTITUTION CHANGES */}
+            {activeTab === 'institution_changes' && (
+              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                      <RotateCcw className="w-5 h-5 text-blue-600" />
+                      <span>প্রতিষ্ঠান ও ক্যাম্পাস পরিবর্তন আবেদন</span>
+                    </h3>
+                    <p className="text-xs text-subText mt-0.5">নতুন শিক্ষা প্রতিষ্ঠানে স্থানান্তর হওয়া সদস্যদের ক্যাম্পাসের রেকর্ড পরিবর্তন আবেদন</p>
+                  </div>
+                  <Badge variant="neutral">মোট: {instChanges.length} টি আবেদন</Badge>
+                </div>
+
+                {instChanges.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো ক্যাম্পাস পরিবর্তন আবেদন অপেক্ষমাণ নেই।</div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">সদস্যের নাম</th>
+                          <th className="py-3 px-4">মোবাইল নম্বর</th>
+                          <th className="py-3 px-4">বর্তমান প্রতিষ্ঠান</th>
+                          <th className="py-3 px-4">অনুরোধকৃত নতুন প্রতিষ্ঠান</th>
+                          <th className="py-3 px-4">আইডি / বিভাগ</th>
+                          <th className="py-3 px-4">অবস্থা</th>
+                          <th className="py-3 px-4 text-right">পদক্ষেপ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {instChanges.map((c: any) => (
+                          <tr key={c._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4 font-bold text-mainText">{c.userName}</td>
+                            <td className="py-3 px-4 font-mono font-medium text-slate-700">{c.phone || c.userPhone}</td>
+                            <td className="py-3 px-4 text-slate-500">{c.currentInstitutionName || 'অনির্দিষ্ট'}</td>
+                            <td className="py-3 px-4 font-bold text-blue-700">{c.targetInstitutionName}</td>
+                            <td className="py-3 px-4 text-[11px] text-subText">
+                              {c.studentOrStaffId ? `ID: ${c.studentOrStaffId}` : ''} {c.department ? `(${c.department})` : ''}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge 
+                                variant={c.status === 'approved' ? 'success' : c.status === 'rejected' ? 'danger' : 'warning'} 
+                                size="sm"
+                              >
+                                {c.status === 'approved' ? 'অনুমোদিত' : c.status === 'rejected' ? 'বাতিল' : 'অপেক্ষমাণ'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                              {c.status === 'pending' ? (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                      setReviewingChangeReq(c);
+                                      setChangeDecision('approved');
+                                      setChangeReviewNotes('স্থানান্তর যাচাইপূর্বক নতুন প্রতিষ্ঠানে অনুমোদন প্রদান করা হলো।');
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    অনুমোদন
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => {
+                                      setReviewingChangeReq(c);
+                                      setChangeDecision('rejected');
+                                      setChangeReviewNotes('তথ্য সন্তোষজনক না হওয়ায় বাতিল করা হলো।');
+                                    }}
+                                  >
+                                    বাতিল
+                                  </Button>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">নিষ্পন্ন</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 12: RECOVERY HISTORY */}
+            {activeTab === 'recovery_history' && (
+              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-mainText flex items-center gap-2">
+                    <History className="w-5 h-5 text-slate-800" />
+                    <span>পাসওয়ার্ড রিকভারি অডিট হিস্ট্রি</span>
+                  </h3>
+                  <p className="text-xs text-subText mt-0.5">কে কোন সদস্যের জন্য এককালীন পাসওয়ার্ড অনুমোদন করেছেন তার অপরিবর্তনীয় নিরাপত্তা অডিট রেকর্ড</p>
+                </div>
+
+                {recoveryHistory.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো রিকভারি ইতিহাস পাওয়া যায়নি।</div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">লক্ষ্য সদস্য</th>
+                          <th className="py-3 px-4">মোবাইল</th>
+                          <th className="py-3 px-4">অনুমোদনকারী কর্মকর্তা</th>
+                          <th className="py-3 px-4">অ্যাকশন</th>
+                          <th className="py-3 px-4">কারণ / নোট</th>
+                          <th className="py-3 px-4">সময়</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {recoveryHistory.map((h: any) => (
+                          <tr key={h._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4 font-bold text-mainText">{h.userName}</td>
+                            <td className="py-3 px-4 font-mono font-medium text-slate-700">{h.phone}</td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-mainText">{h.issuedByName}</div>
+                              <div className="text-[10px] text-subText">{h.issuerRole}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant={h.action === 'OTP_GENERATED' ? 'success' : 'danger'} size="sm">
+                                {h.action === 'OTP_GENERATED' ? 'পাসওয়ার্ড ইস্যু' : 'বাতিলকৃত'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-slate-700 max-w-xs">{h.reason}</td>
+                            <td className="py-3 px-4 text-subText">{new Date(h.createdAt).toLocaleString('bn-BD')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 13: SETTINGS */}
             {activeTab === 'settings' && (
               <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-6">
                 <div>
@@ -2237,6 +2618,114 @@ export const AdminDashboard: React.FC = () => {
               placeholder="আবেদনটি পর্যবেক্ষণপূর্বক সিদ্ধান্ত গ্রহণ করা হলো..."
               className="w-full px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText"
             />
+          </div>
+        </Modal>
+      )}
+
+      {/* Institution Request Review Modal */}
+      {reviewingInstReq && (
+        <Modal
+          isOpen={Boolean(reviewingInstReq)}
+          onClose={() => setReviewingInstReq(null)}
+          title={`শিক্ষা প্রতিষ্ঠানের আবেদন পর্যালোচনা (${reviewingInstReq.nameBn || reviewingInstReq.name})`}
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReviewingInstReq(null)}>বাতিল</Button>
+              <Button
+                variant={instReviewDecision === 'approved' ? 'primary' : 'danger'}
+                size="sm"
+                onClick={handleReviewInstitutionRequest}
+                isLoading={submittingInstReview}
+                className={instReviewDecision === 'approved' ? 'bg-teal-700 hover:bg-teal-800' : ''}
+              >
+                {instReviewDecision === 'approved' ? 'অনুমোদন নিশ্চিত করুন' : 'প্রত্যাখ্যান করুন'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-appBorder space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-mainText text-sm">{reviewingInstReq.nameBn} ({reviewingInstReq.name})</span>
+                <Badge variant="teal" size="sm">{reviewingInstReq.code}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-subText block">ধরণ:</span>
+                  <span className="font-semibold text-mainText">{reviewingInstReq.type}</span>
+                </div>
+                <div>
+                  <span className="text-subText block">অবস্থান:</span>
+                  <span className="font-semibold text-mainText">{reviewingInstReq.district}, {reviewingInstReq.division}</span>
+                </div>
+                <div>
+                  <span className="text-subText block">আবেদনকারী:</span>
+                  <span className="font-semibold text-mainText">{reviewingInstReq.applicantName}</span>
+                </div>
+                <div>
+                  <span className="text-subText block">যোগাযোগ:</span>
+                  <span className="font-mono text-mainText">{reviewingInstReq.applicantPhone}</span>
+                </div>
+              </div>
+              {reviewingInstReq.address && (
+                <div className="pt-1 text-[11px]">
+                  <span className="text-subText block">ঠিকানা:</span>
+                  <span className="text-mainText">{reviewingInstReq.address}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">পর্যালোচনা সিদ্ধান্ত</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInstReviewDecision('approved');
+                    if (!instDecisionReason || instDecisionReason.includes('বাতিল')) {
+                      setInstDecisionReason('নথিপত্র ও তথ্যাদি যাচাইপূর্বক শিক্ষা প্রতিষ্ঠান অন্তর্ভুক্তি আবেদন অনুমোদন করা হলো।');
+                    }
+                  }}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    instReviewDecision === 'approved'
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>অনুমোদন করুন</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInstReviewDecision('rejected');
+                    if (!instDecisionReason || instDecisionReason.includes('অনুমোদন')) {
+                      setInstDecisionReason('প্রয়োজনীয় তথ্যাদি ও কাগজপত্রের ঘাটতি থাকার কারণে আবেদনটি বাতিল করা হলো।');
+                    }
+                  }}
+                  className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                    instReviewDecision === 'rejected'
+                      ? 'bg-rose-50 border-rose-500 text-rose-800 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4 text-rose-600" />
+                  <span>প্রত্যাখ্যান করুন</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">সিদ্ধান্তের কারণ / মন্তব্য (বাধ্যতামূলক, কমপক্ষে ৫ অক্ষর)</label>
+              <textarea
+                rows={3}
+                required
+                value={instDecisionReason}
+                onChange={e => setInstDecisionReason(e.target.value)}
+                placeholder="অনুমোদন বা বাতিলের সুস্পষ্ট কারণ লিখুন..."
+                className="w-full text-xs p-2.5 rounded-xl border border-appBorder focus:border-bloodRed outline-none"
+              />
+            </div>
           </div>
         </Modal>
       )}

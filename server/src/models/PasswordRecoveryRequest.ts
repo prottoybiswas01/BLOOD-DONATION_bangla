@@ -63,3 +63,4 @@ export const PasswordRecoveryRequestModel = mongoose.model<IPasswordRecoveryRequ
   'PasswordRecoveryRequest',
   PasswordRecoveryRequestSchema
 );
+

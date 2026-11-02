@@ -99911,13 +99911,14 @@ import_dotenv.default.config();
 var ENV = {
   PORT: process.env.PORT || "5000",
   NODE_ENV: process.env.NODE_ENV || "development",
-  MONGO_URI: process.env.MONGO_URI || "mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority",
-  JWT_SECRET: process.env.JWT_SECRET || "dev_bangladesh_blood_platform_key_2026",
+  MONGO_URI: process.env.MONGO_URI || "",
+  JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev_bangladesh_blood_platform_key_2026"),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   SMS_PROVIDER: process.env.SMS_PROVIDER || "mock",
   // 'mock' | 'bulksmsbd' | 'greenweb' | 'twilio'
   SMS_API_KEY: process.env.SMS_API_KEY || "",
   CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : [],
   DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10)
 };
 
@@ -101213,7 +101214,16 @@ async function connectDB() {
     isConnected = true;
     return true;
   }
-  const uri = ENV.MONGO_URI || "mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority";
+  const uri = ENV.MONGO_URI;
+  if (!uri) {
+    if (ENV.NODE_ENV === "production") {
+      console.error("[Security Critical] MONGO_URI is missing from environment variables in production!");
+    } else {
+      console.warn("[Database] No MONGO_URI configured in environment variables.");
+    }
+    isConnected = false;
+    return false;
+  }
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
@@ -101998,6 +102008,11 @@ var DataStore = class {
       console.warn("[Database Sync Warning]:", err.message);
     }
   }
+  assertWritable() {
+    if (ENV.NODE_ENV === "production" && !isDatabaseConnected()) {
+      throw new Error("DATABASE_UNAVAILABLE: \u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u0982\u09AF\u09CB\u0997 \u09AC\u09BF\u099A\u09CD\u099B\u09BF\u09A8\u09CD\u09A8 \u09A5\u09BE\u0995\u09BE\u09DF \u098F\u0987 \u09AE\u09C1\u09B9\u09C2\u09B0\u09CD\u09A4\u09C7 \u09A4\u09A5\u09CD\u09AF \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09A3 \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u099A\u09CD\u099B\u09C7 \u09A8\u09BE\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u09AA\u09C1\u09A8\u09B0\u09BE\u09DF \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+    }
+  }
   persistUser(user) {
     if (isDatabaseConnected()) {
       UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {
@@ -102090,6 +102105,7 @@ var DataStore = class {
     return this.users.find((u) => u.phone === phone);
   }
   createUser(userData) {
+    this.assertWritable();
     const newUser = {
       _id: "usr_" + Date.now() + Math.random().toString(36).substring(2, 7),
       name: userData.name || "",
@@ -102399,6 +102415,7 @@ var DataStore = class {
     return this.bloodRequests.find((r) => String(r._id) === String(id));
   }
   createBloodRequest(data) {
+    this.assertWritable();
     const newReq = {
       _id: "req_" + Date.now() + Math.random().toString(36).substring(2, 7),
       requesterId: data.requesterId || "",
@@ -107242,7 +107259,10 @@ var routes_default = router16;
 // src/middleware/errorHandler.ts
 function errorHandler(err, req, res, next) {
   console.error("[API Error]:", err);
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+  if (err.message && typeof err.message === "string" && err.message.startsWith("DATABASE_UNAVAILABLE:")) {
+    statusCode = 503;
+  }
   const message = err.message || "\u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7 \u0985\u09AD\u09CD\u09AF\u09A8\u09CD\u09A4\u09B0\u09C0\u09A3 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF \u09A6\u09C7\u0996\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09AA\u09B0\u09C7 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964";
   res.status(statusCode).json({
     success: false,
@@ -107284,11 +107304,28 @@ app.use(helmet({
 }));
 app.use((0, import_cors.default)({
   origin: (origin, callback) => {
-    callback(null, true);
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (ENV.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+    const allowed = [
+      ENV.CLIENT_URL,
+      ...ENV.ALLOWED_ORIGINS,
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://blood-donationbangla.vercel.app"
+    ].filter(Boolean);
+    const isVercel = origin.endsWith(".vercel.app");
+    if (allowed.includes(origin) || isVercel) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS request blocked by security policy"), false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization", "x-client-platform", "x-app-version"]
 }));
 app.use(import_express17.default.json({ limit: "1mb" }));
 app.use(import_express17.default.urlencoded({ extended: true, limit: "1mb" }));

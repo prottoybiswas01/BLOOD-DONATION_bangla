@@ -21,7 +21,17 @@ export async function connectDB(): Promise<boolean> {
     return true;
   }
 
-  const uri = ENV.MONGO_URI || 'mongodb+srv://donor012027_db_user:FqIyqHxV9thNXl4g@cluster0.zbhuecg.mongodb.net/bangladesh_blood_db?retryWrites=true&w=majority';
+  const uri = ENV.MONGO_URI;
+
+  if (!uri) {
+    if (ENV.NODE_ENV === 'production') {
+      console.error('[Security Critical] MONGO_URI is missing from environment variables in production!');
+    } else {
+      console.warn('[Database] No MONGO_URI configured in environment variables.');
+    }
+    isConnected = false;
+    return false;
+  }
 
   if (!cached.promise) {
     const opts = {

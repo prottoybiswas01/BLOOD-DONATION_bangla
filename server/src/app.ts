@@ -50,12 +50,30 @@ app.use(helmet({
 // Cross-Origin Resource Sharing
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow all origins (localhost, Vercel deployments, custom domains)
-    callback(null, true);
+    // Native mobile apps and non-browser clients do not send Origin header
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (ENV.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    const allowed = [
+      ENV.CLIENT_URL,
+      ...ENV.ALLOWED_ORIGINS,
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://blood-donationbangla.vercel.app'
+    ].filter(Boolean);
+
+    const isVercel = origin.endsWith('.vercel.app');
+    if (allowed.includes(origin) || isVercel) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS request blocked by security policy'), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-client-platform', 'x-app-version']
 }));
 
 // Body parser

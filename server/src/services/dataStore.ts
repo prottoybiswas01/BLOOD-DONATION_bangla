@@ -15,6 +15,7 @@ import { PhoneChangeRequestModel } from '../models/PhoneChangeRequest.js';
 import { PasswordRecoveryRequestModel } from '../models/PasswordRecoveryRequest.js';
 import { InstitutionChangeRequestModel } from '../models/InstitutionChangeRequest.js';
 import { isDatabaseConnected } from '../config/db.js';
+import { ENV } from '../config/env.js';
 
 export interface StoredUser {
   _id: string;
@@ -1108,6 +1109,12 @@ class DataStore {
     }
   }
 
+  assertWritable(): void {
+    if (ENV.NODE_ENV === 'production' && !isDatabaseConnected()) {
+      throw new Error('DATABASE_UNAVAILABLE: ডাটাবেজ সংযোগ বিচ্ছিন্ন থাকায় এই মুহূর্তে তথ্য সংরক্ষণ করা সম্ভব হচ্ছে না। অনুগ্রহ করে কিছুক্ষণ পর পুনরায় চেষ্টা করুন।');
+    }
+  }
+
   persistUser(user: StoredUser) {
     if (isDatabaseConnected()) {
       UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {});
@@ -1202,6 +1209,7 @@ class DataStore {
   }
 
   createUser(userData: Partial<StoredUser>): StoredUser {
+    this.assertWritable();
     const newUser: StoredUser = {
       _id: 'usr_' + Date.now() + Math.random().toString(36).substring(2, 7),
       name: userData.name || '',
@@ -1591,6 +1599,7 @@ class DataStore {
   }
 
   createBloodRequest(data: Partial<StoredBloodRequest>): StoredBloodRequest {
+    this.assertWritable();
     const newReq: StoredBloodRequest = {
       _id: 'req_' + Date.now() + Math.random().toString(36).substring(2, 7),
       requesterId: data.requesterId || '',

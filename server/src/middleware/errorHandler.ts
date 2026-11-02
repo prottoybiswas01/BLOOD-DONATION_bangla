@@ -4,7 +4,11 @@ import { ENV } from '../config/env.js';
 export function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   console.error('[API Error]:', err);
 
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+  if (err.message && typeof err.message === 'string' && err.message.startsWith('DATABASE_UNAVAILABLE:')) {
+    statusCode = 503;
+  }
+
   const message = err.message || 'সার্ভারে অভ্যন্তরীণ ত্রুটি দেখা দিয়েছে। পরে চেষ্টা করুন।';
 
   res.status(statusCode).json({

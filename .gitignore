@@ -10,8 +10,23 @@ server/dist/
 
 # Environment files
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Android Keystores & Credentials
+*.keystore
+*.jks
+credentials.json
+google-services.json
+
+# Mobile App & Expo
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/android/
+mobile/ios/
+*.apk
+*.aab
 
 # Logs
 logs/

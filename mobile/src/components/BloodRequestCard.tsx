@@ -13,7 +13,7 @@ export interface BloodRequestItem {
   hospitalAddress?: string;
   district: string;
   division: string;
-  urgencyLevel: 'normal' | 'urgent' | 'critical';
+  urgencyLevel: 'emergency' | 'critical' | 'urgent' | 'standard' | 'normal';
   contactNumber: string;
   requiredDate?: string;
   reason?: string;
@@ -40,7 +40,7 @@ export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request }) =
   };
 
   const getUrgencyBadge = () => {
-    if (request.urgencyLevel === 'critical') {
+    if (request.urgencyLevel === 'critical' || request.urgencyLevel === 'emergency') {
       return <Badge variant="danger" size="sm">মুমূর্ষু (Critical)</Badge>;
     }
     if (request.urgencyLevel === 'urgent') {
@@ -237,4 +237,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

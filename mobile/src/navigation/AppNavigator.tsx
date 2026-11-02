@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Text, 
+  Platform,
+  BackHandler
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
+import { AppRoutes, MainTabKey, resolveNavigationTarget } from './routes';
 
 // Screens
 import { HomeScreen } from '../screens/HomeScreen';
@@ -20,46 +29,39 @@ import { ModeratorDashboardScreen } from '../screens/ModeratorDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 
-// Tab Wrapper Component that maintains state and renders active tab screen with custom bottom bar
+// Persistent Tab Navigator: Keeps screen states and lists alive without remount overhead
 const MainTabNavigator: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [currentTab, setCurrentTab] = useState<'Home' | 'Donors' | 'Requests' | 'Institutions' | 'Profile'>('Home');
+  const [currentTab, setCurrentTab] = useState<MainTabKey>('Home');
+  const insets = useSafeAreaInsets();
 
-  const renderActiveTabScreen = () => {
-    switch (currentTab) {
-      case 'Home':
-        return (
-          <HomeScreen
-            onNavigate={(screen) => {
-              if (screen === 'DonorSearch' || screen === 'Donors') setCurrentTab('Donors');
-              else if (screen === 'BloodRequests' || screen === 'Requests') setCurrentTab('Requests');
-              else if (screen === 'Institutions') setCurrentTab('Institutions');
-              else if (screen === 'Profile') setCurrentTab('Profile');
-              else navigation.navigate(screen);
-            }}
-          />
-        );
-      case 'Donors':
-        return <DonorSearchScreen />;
-      case 'Requests':
-        return (
-          <BloodRequestsScreen
-            onNavigateCreate={() => navigation.navigate('CreateRequest')}
-          />
-        );
-      case 'Institutions':
-        return <InstitutionsScreen />;
-      case 'Profile':
-        return <ProfileScreen navigation={navigation} />;
-      default:
-        return (
-          <HomeScreen
-            onNavigate={(screen) => navigation.navigate(screen)}
-          />
-        );
+  // Android hardware back button handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (currentTab !== 'Home') {
+        setCurrentTab('Home');
+        return true; // Prevent app exit, go to Home tab
+      }
+      return false; // On Home tab, let default Android back action occur
+    };
+
+    const backHandlerSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
+    return () => backHandlerSubscription.remove();
+  }, [currentTab]);
+
+  const handleNavigate = (target: string) => {
+    const resolved = resolveNavigationTarget(target);
+    if (resolved.type === 'tab') {
+      setCurrentTab(resolved.tab);
+    } else {
+      navigation.navigate(resolved.screen);
     }
   };
 
-  const tabs: { key: typeof currentTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  const tabs: { key: MainTabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { key: 'Home', label: 'হোম', icon: 'home' },
     { key: 'Donors', label: 'রক্তদাতা', icon: 'water' },
     { key: 'Requests', label: 'জরুরি আবেদন', icon: 'medkit' },
@@ -69,54 +71,94 @@ const MainTabNavigator: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   return (
     <View style={styles.tabContainer}>
-      <View style={styles.tabContent}>{renderActiveTabScreen()}</View>
-      <SafeAreaView style={styles.bottomBarSafeArea}>
-        <View style={styles.bottomBar}>
-          {tabs.map((tab) => {
-            const isActive = currentTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={styles.tabButton}
-                onPress={() => setCurrentTab(tab.key)}
-                activeOpacity={0.7}
-              >
+      {/* Persistent Tab Views to preserve state, scroll position & cache */}
+      <View style={styles.screensArea}>
+        <View style={[styles.screenWrapper, currentTab === 'Home' ? styles.visibleScreen : styles.hiddenScreen]}>
+          <HomeScreen onNavigate={handleNavigate} />
+        </View>
+
+        <View style={[styles.screenWrapper, currentTab === 'Donors' ? styles.visibleScreen : styles.hiddenScreen]}>
+          <DonorSearchScreen />
+        </View>
+
+        <View style={[styles.screenWrapper, currentTab === 'Requests' ? styles.visibleScreen : styles.hiddenScreen]}>
+          <BloodRequestsScreen onNavigateCreate={() => navigation.navigate(AppRoutes.CREATE_REQUEST)} />
+        </View>
+
+        <View style={[styles.screenWrapper, currentTab === 'Institutions' ? styles.visibleScreen : styles.hiddenScreen]}>
+          <InstitutionsScreen />
+        </View>
+
+        <View style={[styles.screenWrapper, currentTab === 'Profile' ? styles.visibleScreen : styles.hiddenScreen]}>
+          <ProfileScreen navigation={navigation} />
+        </View>
+      </View>
+
+      {/* Native-feeling Bottom Navigation Bar with Safe Area Insets */}
+      <View 
+        style={[
+          styles.bottomBar, 
+          { 
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 8),
+            height: 60 + Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 8)
+          }
+        ]}
+      >
+        {tabs.map((tab) => {
+          const isActive = currentTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tabButton}
+              onPress={() => setCurrentTab(tab.key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={tab.label}
+            >
+              <View style={[styles.iconIndicator, isActive && styles.iconIndicatorActive]}>
                 <Ionicons
                   name={tab.icon}
-                  size={22}
-                  color={isActive ? Colors.primary : Colors.subText}
+                  size={21}
+                  color={isActive ? Colors.primary : '#64748B'}
                 />
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </SafeAreaView>
+              </View>
+              <Text 
+                style={[
+                  styles.tabLabel, 
+                  isActive && styles.tabLabelActive
+                ]}
+                numberOfLines={1}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const CreateRequestScreenWrapper: React.FC<{ navigation: any }> = ({ navigation }) => (
   <CreateRequestScreen
-    onSuccess={() => navigation.navigate('MainTabs')}
-    onNavigateLogin={() => navigation.navigate('Login')}
+    onSuccess={() => navigation.navigate(AppRoutes.MAIN_TABS)}
+    onNavigateLogin={() => navigation.navigate(AppRoutes.LOGIN)}
   />
 );
 
 const LoginScreenWrapper: React.FC<{ navigation: any }> = ({ navigation }) => (
   <LoginScreen
-    onSuccess={() => navigation.navigate('MainTabs')}
-    onNavigateRegister={() => navigation.navigate('Register')}
-    onNavigateRecovery={() => navigation.navigate('PasswordRecovery')}
+    onSuccess={() => navigation.navigate(AppRoutes.MAIN_TABS)}
+    onNavigateRegister={() => navigation.navigate(AppRoutes.REGISTER)}
+    onNavigateRecovery={() => navigation.navigate(AppRoutes.PASSWORD_RECOVERY)}
   />
 );
 
 const RegisterScreenWrapper: React.FC<{ navigation: any }> = ({ navigation }) => (
   <RegisterScreen
-    onSuccess={() => navigation.navigate('MainTabs')}
-    onNavigateLogin={() => navigation.navigate('Login')}
+    onSuccess={() => navigation.navigate(AppRoutes.MAIN_TABS)}
+    onNavigateLogin={() => navigation.navigate(AppRoutes.LOGIN)}
   />
 );
 
@@ -145,38 +187,59 @@ export const AppNavigator: React.FC = () => {
 const styles = StyleSheet.create({
   tabContainer: {
     flex: 1,
-    backgroundColor: Colors.page
+    backgroundColor: Colors.page,
   },
-  tabContent: {
-    flex: 1
+  screensArea: {
+    flex: 1,
   },
-  bottomBarSafeArea: {
-    backgroundColor: Colors.surface
+  screenWrapper: {
+    flex: 1,
+  },
+  visibleScreen: {
+    display: 'flex',
+  },
+  hiddenScreen: {
+    display: 'none',
   },
   bottomBar: {
     flexDirection: 'row',
-    height: 60,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.appBorder,
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 4 : 0
+    paddingTop: 6,
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6
+    minHeight: 48,
+    paddingVertical: 2,
+  },
+  iconIndicator: {
+    width: 38,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconIndicatorActive: {
+    backgroundColor: '#FEE2E2',
   },
   tabLabel: {
-    fontSize: 11,
-    color: Colors.subText,
+    fontSize: 10.5,
+    color: '#64748B',
     marginTop: 2,
-    fontWeight: '500'
+    fontWeight: '600',
   },
   tabLabelActive: {
     color: Colors.primary,
-    fontWeight: '700'
-  }
+    fontWeight: '800',
+  },
 });

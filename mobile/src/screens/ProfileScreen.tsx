@@ -190,7 +190,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            navigation.navigate('Home');
+            navigation.navigate('MainTabs');
           }
         }
       ]

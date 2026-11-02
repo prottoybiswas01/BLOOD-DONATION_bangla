@@ -3,15 +3,16 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
   TouchableOpacity, 
-  ActivityIndicator, 
-  RefreshControl 
+  RefreshControl,
+  FlatList,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { MobileApi } from '../api/client';
 import { BloodRequestCard, BloodRequestItem } from '../components/BloodRequestCard';
+import { StateView } from '../components/StateView';
 
 interface BloodRequestsScreenProps {
   onNavigateCreate: () => void;
@@ -21,16 +22,22 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
   const [requests, setRequests] = useState<BloodRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [filterUrgency, setFilterUrgency] = useState<string>('all');
 
-  const loadRequests = async () => {
+  const loadRequests = async (skipCache: boolean = false) => {
+    setLoading(true);
+    setRequestError(null);
     try {
-      const res = await MobileApi.getBloodRequests({ limit: 20 });
-      if (res.success && res.requests) {
+      const res = await MobileApi.getBloodRequests({ limit: 25 }, skipCache);
+      if (res.success && Array.isArray(res.requests)) {
         setRequests(res.requests);
+      } else {
+        setRequests([]);
       }
-    } catch (e) {
-      console.warn('Load requests error:', e);
+    } catch (e: any) {
+      const message = e?.userMessage || e?.message || 'রক্তের আবেদনসমূহ লোড করা সম্ভব হয়নি।';
+      setRequestError(message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -38,16 +45,19 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
   };
 
   useEffect(() => {
-    loadRequests();
+    loadRequests(false);
   }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadRequests();
+    loadRequests(true);
   };
 
   const filtered = requests.filter(r => {
     if (filterUrgency === 'all') return true;
+    if (filterUrgency === 'critical' || filterUrgency === 'emergency') {
+      return r.urgencyLevel === 'emergency' || r.urgencyLevel === 'critical';
+    }
     return r.urgencyLevel === filterUrgency;
   });
 
@@ -57,59 +67,88 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
       <View style={styles.filterBar}>
         {[
           { id: 'all', label: 'সকল আবেদন' },
-          { id: 'critical', label: '🚨 মুমূর্ষু' },
+          { id: 'emergency', label: '🚨 মুমূর্ষু' },
           { id: 'urgent', label: '⚠️ জরুরি' },
           { id: 'normal', label: 'নিয়মিত' }
-        ].map(tab => (
-          <TouchableOpacity
-            key={tab.id}
-            onPress={() => setFilterUrgency(tab.id)}
-            style={[
-              styles.filterTab,
-              filterUrgency === tab.id && styles.filterTabActive
-            ]}
-          >
-            <Text style={[
-              styles.filterTabText,
-              filterUrgency === tab.id && styles.filterTabTextActive
-            ]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        ].map(tab => {
+          const isActive = filterUrgency === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => setFilterUrgency(tab.id)}
+              style={[
+                styles.filterTab,
+                isActive && styles.filterTabActive
+              ]}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.filterTabText,
+                isActive && styles.filterTabTextActive
+              ]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
-        }
-      >
-        {loading ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
+      {/* Main List with Explicit UI States */}
+      <View style={styles.listContainer}>
+        {loading && requests.length === 0 ? (
+          <StateView 
+            type="loading" 
+            message="জরুরি রক্তের আবেদনসমূহ লোড হচ্ছে..." 
+          />
+        ) : requestError && requests.length === 0 ? (
+          <StateView 
+            type="error"
+            title="আবেদনগুলো লোড করা সম্ভব হয়নি"
+            message={requestError}
+            onRetry={() => loadRequests(true)}
+            retryLabel="পুনরায় চেষ্টা করুন"
+          />
         ) : filtered.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="clipboard-outline" size={40} color="#CBD5E1" />
-            <Text style={styles.emptyTitle}>কোনো আবেদন পাওয়া যায়নি</Text>
-            <Text style={styles.emptySub}>
-              বর্তমানে এই ক্যাটাগরিতে কোনো জরুরি রক্তের আবেদন অপেক্ষমাণ নেই।
-            </Text>
-          </View>
+          <StateView 
+            type="empty"
+            icon="clipboard-outline"
+            title="কোনো আবেদন পাওয়া যায়নি"
+            message={filterUrgency !== 'all' 
+              ? 'নির্বাচিত ক্যাটাগরিতে এই মুহূর্তে কোনো সক্রিয় রক্তের আবেদন নেই।' 
+              : 'বর্তমানে প্ল্যাটফর্মে কোনো অপেক্ষমাণ রক্তের আবেদন নেই। আপনার বা আপনার পরিচিত কারও রক্তের প্রয়োজন হলে এখনই আবেদন পোস্ট করুন।'}
+            onAction={onNavigateCreate}
+            actionLabel="রক্তের আবেদন করুন"
+          />
         ) : (
-          filtered.map(r => (
-            <BloodRequestCard key={r._id} request={r} />
-          ))
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => <BloodRequestCard request={item} />}
+            contentContainerStyle={styles.flatListContent}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={[Colors.primary]} 
+              />
+            }
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+            showsVerticalScrollIndicator={false}
+          />
         )}
-      </ScrollView>
+      </View>
 
-      {/* Floating Action Button */}
+      {/* Native Floating Action Button */}
       <TouchableOpacity
-        activeOpacity={0.9}
+        activeOpacity={0.88}
         onPress={onNavigateCreate}
         style={styles.fab}
+        accessibilityLabel="রক্তের আবেদন তৈরি করুন"
       >
-        <Ionicons name="add" size={24} color="#FFFFFF" />
+        <Ionicons name="add" size={24} color="#FFFFFF" style={{ marginRight: 6 }} />
         <Text style={styles.fabText}>রক্তের আবেদন করুন</Text>
       </TouchableOpacity>
     </View>
@@ -132,7 +171,7 @@ const styles = StyleSheet.create({
   },
   filterTab: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 10,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
@@ -149,53 +188,35 @@ const styles = StyleSheet.create({
   },
   filterTabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
-  list: {
+  listContainer: {
     flex: 1,
   },
-  emptyCard: {
-    backgroundColor: Colors.surface,
-    padding: 30,
-    borderRadius: 18,
-    alignItems: 'center',
-    marginTop: 30,
-    borderWidth: 1,
-    borderColor: Colors.appBorder,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.mainText,
-    marginTop: 10,
-  },
-  emptySub: {
-    fontSize: 12,
-    color: Colors.subText,
-    textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 18,
+  flatListContent: {
+    padding: 16,
+    paddingBottom: 90,
   },
   fab: {
     position: 'absolute',
     bottom: 20,
-    right: 20,
+    right: 18,
     backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 30,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
+    minHeight: 48,
   },
   fabText: {
     color: '#FFFFFF',
-    fontSize: 13,
     fontWeight: '800',
-    marginLeft: 6,
+    fontSize: 14,
   },
 });
-

@@ -121,9 +121,15 @@ export async function detectDeviceDistrict(): Promise<{
       };
     }
 
-    const loc = await Location.getCurrentPositionAsync({
+    // Guard with a fast 3.5s timeout so GPS lock never blocks the app
+    const positionPromise = Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('GPS_TIMEOUT')), 3500)
+    );
+
+    const loc = await Promise.race([positionPromise, timeoutPromise]);
 
     const detected = matchCoordinatesToDistrict(
       loc.coords.latitude,
@@ -137,8 +143,7 @@ export async function detectDeviceDistrict(): Promise<{
   } catch (err: any) {
     return {
       success: false,
-      error: err.message || 'লোকেশন শনাক্ত করতে সমস্যা হয়েছে।'
+      error: err.message === 'GPS_TIMEOUT' ? 'জিপিএস থেকে সাড়া পেতে দেরি হচ্ছে।' : (err.message || 'লোকেশন শনাক্ত করা যায়নি।')
     };
   }
 }
-

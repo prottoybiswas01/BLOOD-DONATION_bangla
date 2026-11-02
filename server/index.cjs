@@ -23166,4196 +23166,6 @@ var require_lib3 = __commonJS({
   }
 });
 
-// node_modules/jws/lib/data-stream.js
-var require_data_stream = __commonJS({
-  "node_modules/jws/lib/data-stream.js"(exports2, module2) {
-    var Buffer3 = require_safe_buffer().Buffer;
-    var Stream = require("stream");
-    var util2 = require("util");
-    function DataStream(data) {
-      this.buffer = null;
-      this.writable = true;
-      this.readable = true;
-      if (!data) {
-        this.buffer = Buffer3.alloc(0);
-        return this;
-      }
-      if (typeof data.pipe === "function") {
-        this.buffer = Buffer3.alloc(0);
-        data.pipe(this);
-        return this;
-      }
-      if (data.length || typeof data === "object") {
-        this.buffer = data;
-        this.writable = false;
-        process.nextTick(function() {
-          this.emit("end", data);
-          this.readable = false;
-          this.emit("close");
-        }.bind(this));
-        return this;
-      }
-      throw new TypeError("Unexpected data type (" + typeof data + ")");
-    }
-    util2.inherits(DataStream, Stream);
-    DataStream.prototype.write = function write(data) {
-      this.buffer = Buffer3.concat([this.buffer, Buffer3.from(data)]);
-      this.emit("data", data);
-    };
-    DataStream.prototype.end = function end(data) {
-      if (data)
-        this.write(data);
-      this.emit("end", data);
-      this.emit("close");
-      this.writable = false;
-      this.readable = false;
-    };
-    module2.exports = DataStream;
-  }
-});
-
-// node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js
-var require_param_bytes_for_alg = __commonJS({
-  "node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js"(exports2, module2) {
-    "use strict";
-    function getParamSize(keySize) {
-      var result = (keySize / 8 | 0) + (keySize % 8 === 0 ? 0 : 1);
-      return result;
-    }
-    var paramBytesForAlg = {
-      ES256: getParamSize(256),
-      ES384: getParamSize(384),
-      ES512: getParamSize(521)
-    };
-    function getParamBytesForAlg(alg) {
-      var paramBytes = paramBytesForAlg[alg];
-      if (paramBytes) {
-        return paramBytes;
-      }
-      throw new Error('Unknown algorithm "' + alg + '"');
-    }
-    module2.exports = getParamBytesForAlg;
-  }
-});
-
-// node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js
-var require_ecdsa_sig_formatter = __commonJS({
-  "node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports2, module2) {
-    "use strict";
-    var Buffer3 = require_safe_buffer().Buffer;
-    var getParamBytesForAlg = require_param_bytes_for_alg();
-    var MAX_OCTET = 128;
-    var CLASS_UNIVERSAL = 0;
-    var PRIMITIVE_BIT = 32;
-    var TAG_SEQ = 16;
-    var TAG_INT = 2;
-    var ENCODED_TAG_SEQ = TAG_SEQ | PRIMITIVE_BIT | CLASS_UNIVERSAL << 6;
-    var ENCODED_TAG_INT = TAG_INT | CLASS_UNIVERSAL << 6;
-    function base64Url(base64) {
-      return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-    }
-    function signatureAsBuffer(signature) {
-      if (Buffer3.isBuffer(signature)) {
-        return signature;
-      } else if ("string" === typeof signature) {
-        return Buffer3.from(signature, "base64");
-      }
-      throw new TypeError("ECDSA signature must be a Base64 string or a Buffer");
-    }
-    function derToJose(signature, alg) {
-      signature = signatureAsBuffer(signature);
-      var paramBytes = getParamBytesForAlg(alg);
-      var maxEncodedParamLength = paramBytes + 1;
-      var inputLength = signature.length;
-      var offset = 0;
-      if (signature[offset++] !== ENCODED_TAG_SEQ) {
-        throw new Error('Could not find expected "seq"');
-      }
-      var seqLength = signature[offset++];
-      if (seqLength === (MAX_OCTET | 1)) {
-        seqLength = signature[offset++];
-      }
-      if (inputLength - offset < seqLength) {
-        throw new Error('"seq" specified length of "' + seqLength + '", only "' + (inputLength - offset) + '" remaining');
-      }
-      if (signature[offset++] !== ENCODED_TAG_INT) {
-        throw new Error('Could not find expected "int" for "r"');
-      }
-      var rLength = signature[offset++];
-      if (inputLength - offset - 2 < rLength) {
-        throw new Error('"r" specified length of "' + rLength + '", only "' + (inputLength - offset - 2) + '" available');
-      }
-      if (maxEncodedParamLength < rLength) {
-        throw new Error('"r" specified length of "' + rLength + '", max of "' + maxEncodedParamLength + '" is acceptable');
-      }
-      var rOffset = offset;
-      offset += rLength;
-      if (signature[offset++] !== ENCODED_TAG_INT) {
-        throw new Error('Could not find expected "int" for "s"');
-      }
-      var sLength = signature[offset++];
-      if (inputLength - offset !== sLength) {
-        throw new Error('"s" specified length of "' + sLength + '", expected "' + (inputLength - offset) + '"');
-      }
-      if (maxEncodedParamLength < sLength) {
-        throw new Error('"s" specified length of "' + sLength + '", max of "' + maxEncodedParamLength + '" is acceptable');
-      }
-      var sOffset = offset;
-      offset += sLength;
-      if (offset !== inputLength) {
-        throw new Error('Expected to consume entire buffer, but "' + (inputLength - offset) + '" bytes remain');
-      }
-      var rPadding = paramBytes - rLength, sPadding = paramBytes - sLength;
-      var dst = Buffer3.allocUnsafe(rPadding + rLength + sPadding + sLength);
-      for (offset = 0; offset < rPadding; ++offset) {
-        dst[offset] = 0;
-      }
-      signature.copy(dst, offset, rOffset + Math.max(-rPadding, 0), rOffset + rLength);
-      offset = paramBytes;
-      for (var o = offset; offset < o + sPadding; ++offset) {
-        dst[offset] = 0;
-      }
-      signature.copy(dst, offset, sOffset + Math.max(-sPadding, 0), sOffset + sLength);
-      dst = dst.toString("base64");
-      dst = base64Url(dst);
-      return dst;
-    }
-    function countPadding(buf, start, stop) {
-      var padding = 0;
-      while (start + padding < stop && buf[start + padding] === 0) {
-        ++padding;
-      }
-      var needsSign = buf[start + padding] >= MAX_OCTET;
-      if (needsSign) {
-        --padding;
-      }
-      return padding;
-    }
-    function joseToDer(signature, alg) {
-      signature = signatureAsBuffer(signature);
-      var paramBytes = getParamBytesForAlg(alg);
-      var signatureBytes = signature.length;
-      if (signatureBytes !== paramBytes * 2) {
-        throw new TypeError('"' + alg + '" signatures must be "' + paramBytes * 2 + '" bytes, saw "' + signatureBytes + '"');
-      }
-      var rPadding = countPadding(signature, 0, paramBytes);
-      var sPadding = countPadding(signature, paramBytes, signature.length);
-      var rLength = paramBytes - rPadding;
-      var sLength = paramBytes - sPadding;
-      var rsBytes = 1 + 1 + rLength + 1 + 1 + sLength;
-      var shortLength = rsBytes < MAX_OCTET;
-      var dst = Buffer3.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
-      var offset = 0;
-      dst[offset++] = ENCODED_TAG_SEQ;
-      if (shortLength) {
-        dst[offset++] = rsBytes;
-      } else {
-        dst[offset++] = MAX_OCTET | 1;
-        dst[offset++] = rsBytes & 255;
-      }
-      dst[offset++] = ENCODED_TAG_INT;
-      dst[offset++] = rLength;
-      if (rPadding < 0) {
-        dst[offset++] = 0;
-        offset += signature.copy(dst, offset, 0, paramBytes);
-      } else {
-        offset += signature.copy(dst, offset, rPadding, paramBytes);
-      }
-      dst[offset++] = ENCODED_TAG_INT;
-      dst[offset++] = sLength;
-      if (sPadding < 0) {
-        dst[offset++] = 0;
-        signature.copy(dst, offset, paramBytes);
-      } else {
-        signature.copy(dst, offset, paramBytes + sPadding);
-      }
-      return dst;
-    }
-    module2.exports = {
-      derToJose,
-      joseToDer
-    };
-  }
-});
-
-// node_modules/buffer-equal-constant-time/index.js
-var require_buffer_equal_constant_time = __commonJS({
-  "node_modules/buffer-equal-constant-time/index.js"(exports2, module2) {
-    "use strict";
-    var Buffer3 = require("buffer").Buffer;
-    var SlowBuffer = require("buffer").SlowBuffer;
-    module2.exports = bufferEq;
-    function bufferEq(a, b) {
-      if (!Buffer3.isBuffer(a) || !Buffer3.isBuffer(b)) {
-        return false;
-      }
-      if (a.length !== b.length) {
-        return false;
-      }
-      var c = 0;
-      for (var i = 0; i < a.length; i++) {
-        c |= a[i] ^ b[i];
-      }
-      return c === 0;
-    }
-    bufferEq.install = function() {
-      Buffer3.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
-        return bufferEq(this, that);
-      };
-    };
-    var origBufEqual = Buffer3.prototype.equal;
-    var origSlowBufEqual = SlowBuffer.prototype.equal;
-    bufferEq.restore = function() {
-      Buffer3.prototype.equal = origBufEqual;
-      SlowBuffer.prototype.equal = origSlowBufEqual;
-    };
-  }
-});
-
-// node_modules/jwa/index.js
-var require_jwa = __commonJS({
-  "node_modules/jwa/index.js"(exports2, module2) {
-    var Buffer3 = require_safe_buffer().Buffer;
-    var crypto2 = require("crypto");
-    var formatEcdsa = require_ecdsa_sig_formatter();
-    var util2 = require("util");
-    var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
-    var MSG_INVALID_SECRET = "secret must be a string or buffer";
-    var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
-    var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
-    if (supportsKeyObjects) {
-      MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
-      MSG_INVALID_SECRET += "or a KeyObject";
-    }
-    function checkIsPublicKey(key) {
-      if (Buffer3.isBuffer(key)) {
-        return;
-      }
-      if (typeof key === "string") {
-        return;
-      }
-      if (!supportsKeyObjects) {
-        throw typeError(MSG_INVALID_VERIFIER_KEY);
-      }
-      if (typeof key !== "object") {
-        throw typeError(MSG_INVALID_VERIFIER_KEY);
-      }
-      if (typeof key.type !== "string") {
-        throw typeError(MSG_INVALID_VERIFIER_KEY);
-      }
-      if (typeof key.asymmetricKeyType !== "string") {
-        throw typeError(MSG_INVALID_VERIFIER_KEY);
-      }
-      if (typeof key.export !== "function") {
-        throw typeError(MSG_INVALID_VERIFIER_KEY);
-      }
-    }
-    function checkIsPrivateKey(key) {
-      if (Buffer3.isBuffer(key)) {
-        return;
-      }
-      if (typeof key === "string") {
-        return;
-      }
-      if (typeof key === "object") {
-        return;
-      }
-      throw typeError(MSG_INVALID_SIGNER_KEY);
-    }
-    function checkIsSecretKey(key) {
-      if (Buffer3.isBuffer(key)) {
-        return;
-      }
-      if (typeof key === "string") {
-        return key;
-      }
-      if (!supportsKeyObjects) {
-        throw typeError(MSG_INVALID_SECRET);
-      }
-      if (typeof key !== "object") {
-        throw typeError(MSG_INVALID_SECRET);
-      }
-      if (key.type !== "secret") {
-        throw typeError(MSG_INVALID_SECRET);
-      }
-      if (typeof key.export !== "function") {
-        throw typeError(MSG_INVALID_SECRET);
-      }
-    }
-    function fromBase64(base64) {
-      return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-    }
-    function toBase64(base64url) {
-      base64url = base64url.toString();
-      var padding = 4 - base64url.length % 4;
-      if (padding !== 4) {
-        for (var i = 0; i < padding; ++i) {
-          base64url += "=";
-        }
-      }
-      return base64url.replace(/\-/g, "+").replace(/_/g, "/");
-    }
-    function typeError(template) {
-      var args = [].slice.call(arguments, 1);
-      var errMsg = util2.format.bind(util2, template).apply(null, args);
-      return new TypeError(errMsg);
-    }
-    function bufferOrString(obj) {
-      return Buffer3.isBuffer(obj) || typeof obj === "string";
-    }
-    function normalizeInput(thing) {
-      if (!bufferOrString(thing))
-        thing = JSON.stringify(thing);
-      return thing;
-    }
-    function createHmacSigner(bits) {
-      return function sign(thing, secret) {
-        checkIsSecretKey(secret);
-        thing = normalizeInput(thing);
-        var hmac = crypto2.createHmac("sha" + bits, secret);
-        var sig = (hmac.update(thing), hmac.digest("base64"));
-        return fromBase64(sig);
-      };
-    }
-    var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
-      if (a.byteLength !== b.byteLength) {
-        return false;
-      }
-      return crypto2.timingSafeEqual(a, b);
-    } : function timingSafeEqual2(a, b) {
-      if (!bufferEqual) {
-        bufferEqual = require_buffer_equal_constant_time();
-      }
-      return bufferEqual(a, b);
-    };
-    function createHmacVerifier(bits) {
-      return function verify(thing, signature, secret) {
-        var computedSig = createHmacSigner(bits)(thing, secret);
-        return timingSafeEqual(Buffer3.from(signature), Buffer3.from(computedSig));
-      };
-    }
-    function createKeySigner(bits) {
-      return function sign(thing, privateKey) {
-        checkIsPrivateKey(privateKey);
-        thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
-        var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
-        return fromBase64(sig);
-      };
-    }
-    function createKeyVerifier(bits) {
-      return function verify(thing, signature, publicKey) {
-        checkIsPublicKey(publicKey);
-        thing = normalizeInput(thing);
-        signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
-        verifier.update(thing);
-        return verifier.verify(publicKey, signature, "base64");
-      };
-    }
-    function createPSSKeySigner(bits) {
-      return function sign(thing, privateKey) {
-        checkIsPrivateKey(privateKey);
-        thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
-        var sig = (signer.update(thing), signer.sign({
-          key: privateKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
-        }, "base64"));
-        return fromBase64(sig);
-      };
-    }
-    function createPSSKeyVerifier(bits) {
-      return function verify(thing, signature, publicKey) {
-        checkIsPublicKey(publicKey);
-        thing = normalizeInput(thing);
-        signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
-        verifier.update(thing);
-        return verifier.verify({
-          key: publicKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
-        }, signature, "base64");
-      };
-    }
-    function createECDSASigner(bits) {
-      var inner = createKeySigner(bits);
-      return function sign() {
-        var signature = inner.apply(null, arguments);
-        signature = formatEcdsa.derToJose(signature, "ES" + bits);
-        return signature;
-      };
-    }
-    function createECDSAVerifer(bits) {
-      var inner = createKeyVerifier(bits);
-      return function verify(thing, signature, publicKey) {
-        signature = formatEcdsa.joseToDer(signature, "ES" + bits).toString("base64");
-        var result = inner(thing, signature, publicKey);
-        return result;
-      };
-    }
-    function createNoneSigner() {
-      return function sign() {
-        return "";
-      };
-    }
-    function createNoneVerifier() {
-      return function verify(thing, signature) {
-        return signature === "";
-      };
-    }
-    module2.exports = function jwa(algorithm) {
-      var signerFactories = {
-        hs: createHmacSigner,
-        rs: createKeySigner,
-        ps: createPSSKeySigner,
-        es: createECDSASigner,
-        none: createNoneSigner
-      };
-      var verifierFactories = {
-        hs: createHmacVerifier,
-        rs: createKeyVerifier,
-        ps: createPSSKeyVerifier,
-        es: createECDSAVerifer,
-        none: createNoneVerifier
-      };
-      var match = algorithm.match(/^(RS|PS|ES|HS)(256|384|512)$|^(none)$/);
-      if (!match)
-        throw typeError(MSG_INVALID_ALGORITHM, algorithm);
-      var algo = (match[1] || match[3]).toLowerCase();
-      var bits = match[2];
-      return {
-        sign: signerFactories[algo](bits),
-        verify: verifierFactories[algo](bits)
-      };
-    };
-  }
-});
-
-// node_modules/jws/lib/tostring.js
-var require_tostring = __commonJS({
-  "node_modules/jws/lib/tostring.js"(exports2, module2) {
-    var Buffer3 = require("buffer").Buffer;
-    module2.exports = function toString(obj) {
-      if (typeof obj === "string")
-        return obj;
-      if (typeof obj === "number" || Buffer3.isBuffer(obj))
-        return obj.toString();
-      return JSON.stringify(obj);
-    };
-  }
-});
-
-// node_modules/jws/lib/sign-stream.js
-var require_sign_stream = __commonJS({
-  "node_modules/jws/lib/sign-stream.js"(exports2, module2) {
-    var Buffer3 = require_safe_buffer().Buffer;
-    var DataStream = require_data_stream();
-    var jwa = require_jwa();
-    var Stream = require("stream");
-    var toString = require_tostring();
-    var util2 = require("util");
-    function base64url(string, encoding) {
-      return Buffer3.from(string, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-    }
-    function jwsSecuredInput(header, payload, encoding) {
-      encoding = encoding || "utf8";
-      var encodedHeader = base64url(toString(header), "binary");
-      var encodedPayload = base64url(toString(payload), encoding);
-      return util2.format("%s.%s", encodedHeader, encodedPayload);
-    }
-    function jwsSign(opts) {
-      var header = opts.header;
-      var payload = opts.payload;
-      var secretOrKey = opts.secret || opts.privateKey;
-      var encoding = opts.encoding;
-      var algo = jwa(header.alg);
-      var securedInput = jwsSecuredInput(header, payload, encoding);
-      var signature = algo.sign(securedInput, secretOrKey);
-      return util2.format("%s.%s", securedInput, signature);
-    }
-    function SignStream(opts) {
-      var secret = opts.secret;
-      secret = secret == null ? opts.privateKey : secret;
-      secret = secret == null ? opts.key : secret;
-      if (/^hs/i.test(opts.header.alg) === true && secret == null) {
-        throw new TypeError("secret must be a string or buffer or a KeyObject");
-      }
-      var secretStream = new DataStream(secret);
-      this.readable = true;
-      this.header = opts.header;
-      this.encoding = opts.encoding;
-      this.secret = this.privateKey = this.key = secretStream;
-      this.payload = new DataStream(opts.payload);
-      this.secret.once("close", function() {
-        if (!this.payload.writable && this.readable)
-          this.sign();
-      }.bind(this));
-      this.payload.once("close", function() {
-        if (!this.secret.writable && this.readable)
-          this.sign();
-      }.bind(this));
-    }
-    util2.inherits(SignStream, Stream);
-    SignStream.prototype.sign = function sign() {
-      try {
-        var signature = jwsSign({
-          header: this.header,
-          payload: this.payload.buffer,
-          secret: this.secret.buffer,
-          encoding: this.encoding
-        });
-        this.emit("done", signature);
-        this.emit("data", signature);
-        this.emit("end");
-        this.readable = false;
-        return signature;
-      } catch (e) {
-        this.readable = false;
-        this.emit("error", e);
-        this.emit("close");
-      }
-    };
-    SignStream.sign = jwsSign;
-    module2.exports = SignStream;
-  }
-});
-
-// node_modules/jws/lib/verify-stream.js
-var require_verify_stream = __commonJS({
-  "node_modules/jws/lib/verify-stream.js"(exports2, module2) {
-    var Buffer3 = require_safe_buffer().Buffer;
-    var DataStream = require_data_stream();
-    var jwa = require_jwa();
-    var Stream = require("stream");
-    var toString = require_tostring();
-    var util2 = require("util");
-    var JWS_REGEX = /^[a-zA-Z0-9\-_]+?\.[a-zA-Z0-9\-_]+?\.([a-zA-Z0-9\-_]+)?$/;
-    function isObject(thing) {
-      return Object.prototype.toString.call(thing) === "[object Object]";
-    }
-    function safeJsonParse(thing) {
-      if (isObject(thing))
-        return thing;
-      try {
-        return JSON.parse(thing);
-      } catch (e) {
-        return void 0;
-      }
-    }
-    function headerFromJWS(jwsSig) {
-      var encodedHeader = jwsSig.split(".", 1)[0];
-      return safeJsonParse(Buffer3.from(encodedHeader, "base64").toString("binary"));
-    }
-    function securedInputFromJWS(jwsSig) {
-      return jwsSig.split(".", 2).join(".");
-    }
-    function signatureFromJWS(jwsSig) {
-      return jwsSig.split(".")[2];
-    }
-    function payloadFromJWS(jwsSig, encoding) {
-      encoding = encoding || "utf8";
-      var payload = jwsSig.split(".")[1];
-      return Buffer3.from(payload, "base64").toString(encoding);
-    }
-    function isValidJws(string) {
-      return JWS_REGEX.test(string) && !!headerFromJWS(string);
-    }
-    function jwsVerify(jwsSig, algorithm, secretOrKey) {
-      if (!algorithm) {
-        var err = new Error("Missing algorithm parameter for jws.verify");
-        err.code = "MISSING_ALGORITHM";
-        throw err;
-      }
-      jwsSig = toString(jwsSig);
-      var signature = signatureFromJWS(jwsSig);
-      var securedInput = securedInputFromJWS(jwsSig);
-      var algo = jwa(algorithm);
-      return algo.verify(securedInput, signature, secretOrKey);
-    }
-    function jwsDecode(jwsSig, opts) {
-      opts = opts || {};
-      jwsSig = toString(jwsSig);
-      if (!isValidJws(jwsSig))
-        return null;
-      var header = headerFromJWS(jwsSig);
-      if (!header)
-        return null;
-      var payload = payloadFromJWS(jwsSig);
-      if (header.typ === "JWT" || opts.json)
-        payload = JSON.parse(payload, opts.encoding);
-      return {
-        header,
-        payload,
-        signature: signatureFromJWS(jwsSig)
-      };
-    }
-    function VerifyStream(opts) {
-      opts = opts || {};
-      var secretOrKey = opts.secret;
-      secretOrKey = secretOrKey == null ? opts.publicKey : secretOrKey;
-      secretOrKey = secretOrKey == null ? opts.key : secretOrKey;
-      if (/^hs/i.test(opts.algorithm) === true && secretOrKey == null) {
-        throw new TypeError("secret must be a string or buffer or a KeyObject");
-      }
-      var secretStream = new DataStream(secretOrKey);
-      this.readable = true;
-      this.algorithm = opts.algorithm;
-      this.encoding = opts.encoding;
-      this.secret = this.publicKey = this.key = secretStream;
-      this.signature = new DataStream(opts.signature);
-      this.secret.once("close", function() {
-        if (!this.signature.writable && this.readable)
-          this.verify();
-      }.bind(this));
-      this.signature.once("close", function() {
-        if (!this.secret.writable && this.readable)
-          this.verify();
-      }.bind(this));
-    }
-    util2.inherits(VerifyStream, Stream);
-    VerifyStream.prototype.verify = function verify() {
-      try {
-        var valid = jwsVerify(this.signature.buffer, this.algorithm, this.key.buffer);
-        var obj = jwsDecode(this.signature.buffer, this.encoding);
-        this.emit("done", valid, obj);
-        this.emit("data", valid);
-        this.emit("end");
-        this.readable = false;
-        return valid;
-      } catch (e) {
-        this.readable = false;
-        this.emit("error", e);
-        this.emit("close");
-      }
-    };
-    VerifyStream.decode = jwsDecode;
-    VerifyStream.isValid = isValidJws;
-    VerifyStream.verify = jwsVerify;
-    module2.exports = VerifyStream;
-  }
-});
-
-// node_modules/jws/index.js
-var require_jws = __commonJS({
-  "node_modules/jws/index.js"(exports2) {
-    var SignStream = require_sign_stream();
-    var VerifyStream = require_verify_stream();
-    var ALGORITHMS = [
-      "HS256",
-      "HS384",
-      "HS512",
-      "RS256",
-      "RS384",
-      "RS512",
-      "PS256",
-      "PS384",
-      "PS512",
-      "ES256",
-      "ES384",
-      "ES512"
-    ];
-    exports2.ALGORITHMS = ALGORITHMS;
-    exports2.sign = SignStream.sign;
-    exports2.verify = VerifyStream.verify;
-    exports2.decode = VerifyStream.decode;
-    exports2.isValid = VerifyStream.isValid;
-    exports2.createSign = function createSign(opts) {
-      return new SignStream(opts);
-    };
-    exports2.createVerify = function createVerify(opts) {
-      return new VerifyStream(opts);
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/decode.js
-var require_decode = __commonJS({
-  "node_modules/jsonwebtoken/decode.js"(exports2, module2) {
-    var jws = require_jws();
-    module2.exports = function(jwt3, options) {
-      options = options || {};
-      var decoded = jws.decode(jwt3, options);
-      if (!decoded) {
-        return null;
-      }
-      var payload = decoded.payload;
-      if (typeof payload === "string") {
-        try {
-          var obj = JSON.parse(payload);
-          if (obj !== null && typeof obj === "object") {
-            payload = obj;
-          }
-        } catch (e) {
-        }
-      }
-      if (options.complete === true) {
-        return {
-          header: decoded.header,
-          payload,
-          signature: decoded.signature
-        };
-      }
-      return payload;
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/lib/JsonWebTokenError.js
-var require_JsonWebTokenError = __commonJS({
-  "node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports2, module2) {
-    var JsonWebTokenError = function(message, error) {
-      Error.call(this, message);
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, this.constructor);
-      }
-      this.name = "JsonWebTokenError";
-      this.message = message;
-      if (error) this.inner = error;
-    };
-    JsonWebTokenError.prototype = Object.create(Error.prototype);
-    JsonWebTokenError.prototype.constructor = JsonWebTokenError;
-    module2.exports = JsonWebTokenError;
-  }
-});
-
-// node_modules/jsonwebtoken/lib/NotBeforeError.js
-var require_NotBeforeError = __commonJS({
-  "node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports2, module2) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var NotBeforeError = function(message, date) {
-      JsonWebTokenError.call(this, message);
-      this.name = "NotBeforeError";
-      this.date = date;
-    };
-    NotBeforeError.prototype = Object.create(JsonWebTokenError.prototype);
-    NotBeforeError.prototype.constructor = NotBeforeError;
-    module2.exports = NotBeforeError;
-  }
-});
-
-// node_modules/jsonwebtoken/lib/TokenExpiredError.js
-var require_TokenExpiredError = __commonJS({
-  "node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports2, module2) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var TokenExpiredError = function(message, expiredAt) {
-      JsonWebTokenError.call(this, message);
-      this.name = "TokenExpiredError";
-      this.expiredAt = expiredAt;
-    };
-    TokenExpiredError.prototype = Object.create(JsonWebTokenError.prototype);
-    TokenExpiredError.prototype.constructor = TokenExpiredError;
-    module2.exports = TokenExpiredError;
-  }
-});
-
-// node_modules/jsonwebtoken/node_modules/ms/index.js
-var require_ms3 = __commonJS({
-  "node_modules/jsonwebtoken/node_modules/ms/index.js"(exports2, module2) {
-    var s = 1e3;
-    var m = s * 60;
-    var h = m * 60;
-    var d = h * 24;
-    var w = d * 7;
-    var y = d * 365.25;
-    module2.exports = function(val, options) {
-      options = options || {};
-      var type = typeof val;
-      if (type === "string" && val.length > 0) {
-        return parse(val);
-      } else if (type === "number" && isFinite(val)) {
-        return options.long ? fmtLong(val) : fmtShort(val);
-      }
-      throw new Error(
-        "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
-      );
-    };
-    function parse(str) {
-      str = String(str);
-      if (str.length > 100) {
-        return;
-      }
-      var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
-        str
-      );
-      if (!match) {
-        return;
-      }
-      var n = parseFloat(match[1]);
-      var type = (match[2] || "ms").toLowerCase();
-      switch (type) {
-        case "years":
-        case "year":
-        case "yrs":
-        case "yr":
-        case "y":
-          return n * y;
-        case "weeks":
-        case "week":
-        case "w":
-          return n * w;
-        case "days":
-        case "day":
-        case "d":
-          return n * d;
-        case "hours":
-        case "hour":
-        case "hrs":
-        case "hr":
-        case "h":
-          return n * h;
-        case "minutes":
-        case "minute":
-        case "mins":
-        case "min":
-        case "m":
-          return n * m;
-        case "seconds":
-        case "second":
-        case "secs":
-        case "sec":
-        case "s":
-          return n * s;
-        case "milliseconds":
-        case "millisecond":
-        case "msecs":
-        case "msec":
-        case "ms":
-          return n;
-        default:
-          return void 0;
-      }
-    }
-    function fmtShort(ms) {
-      var msAbs = Math.abs(ms);
-      if (msAbs >= d) {
-        return Math.round(ms / d) + "d";
-      }
-      if (msAbs >= h) {
-        return Math.round(ms / h) + "h";
-      }
-      if (msAbs >= m) {
-        return Math.round(ms / m) + "m";
-      }
-      if (msAbs >= s) {
-        return Math.round(ms / s) + "s";
-      }
-      return ms + "ms";
-    }
-    function fmtLong(ms) {
-      var msAbs = Math.abs(ms);
-      if (msAbs >= d) {
-        return plural(ms, msAbs, d, "day");
-      }
-      if (msAbs >= h) {
-        return plural(ms, msAbs, h, "hour");
-      }
-      if (msAbs >= m) {
-        return plural(ms, msAbs, m, "minute");
-      }
-      if (msAbs >= s) {
-        return plural(ms, msAbs, s, "second");
-      }
-      return ms + " ms";
-    }
-    function plural(ms, msAbs, n, name) {
-      var isPlural = msAbs >= n * 1.5;
-      return Math.round(ms / n) + " " + name + (isPlural ? "s" : "");
-    }
-  }
-});
-
-// node_modules/jsonwebtoken/lib/timespan.js
-var require_timespan = __commonJS({
-  "node_modules/jsonwebtoken/lib/timespan.js"(exports2, module2) {
-    var ms = require_ms3();
-    module2.exports = function(time, iat) {
-      var timestamp = iat || Math.floor(Date.now() / 1e3);
-      if (typeof time === "string") {
-        var milliseconds = ms(time);
-        if (typeof milliseconds === "undefined") {
-          return;
-        }
-        return Math.floor(timestamp + milliseconds / 1e3);
-      } else if (typeof time === "number") {
-        return timestamp + time;
-      } else {
-        return;
-      }
-    };
-  }
-});
-
-// node_modules/semver/internal/constants.js
-var require_constants = __commonJS({
-  "node_modules/semver/internal/constants.js"(exports2, module2) {
-    "use strict";
-    var SEMVER_SPEC_VERSION = "2.0.0";
-    var MAX_LENGTH = 256;
-    var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || /* istanbul ignore next */
-    9007199254740991;
-    var MAX_SAFE_COMPONENT_LENGTH = 16;
-    var MAX_SAFE_BUILD_LENGTH = MAX_LENGTH - 6;
-    var RELEASE_TYPES = [
-      "major",
-      "premajor",
-      "minor",
-      "preminor",
-      "patch",
-      "prepatch",
-      "prerelease"
-    ];
-    module2.exports = {
-      MAX_LENGTH,
-      MAX_SAFE_COMPONENT_LENGTH,
-      MAX_SAFE_BUILD_LENGTH,
-      MAX_SAFE_INTEGER,
-      RELEASE_TYPES,
-      SEMVER_SPEC_VERSION,
-      FLAG_INCLUDE_PRERELEASE: 1,
-      FLAG_LOOSE: 2
-    };
-  }
-});
-
-// node_modules/semver/internal/debug.js
-var require_debug2 = __commonJS({
-  "node_modules/semver/internal/debug.js"(exports2, module2) {
-    "use strict";
-    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args) => console.error("SEMVER", ...args) : () => {
-    };
-    module2.exports = debug;
-  }
-});
-
-// node_modules/semver/internal/re.js
-var require_re = __commonJS({
-  "node_modules/semver/internal/re.js"(exports2, module2) {
-    "use strict";
-    var {
-      MAX_SAFE_COMPONENT_LENGTH,
-      MAX_SAFE_BUILD_LENGTH,
-      MAX_LENGTH
-    } = require_constants();
-    var debug = require_debug2();
-    exports2 = module2.exports = {};
-    var re = exports2.re = [];
-    var safeRe = exports2.safeRe = [];
-    var src = exports2.src = [];
-    var safeSrc = exports2.safeSrc = [];
-    var t = exports2.t = {};
-    var R = 0;
-    var LETTERDASHNUMBER = "[a-zA-Z0-9-]";
-    var safeRegexReplacements = [
-      ["\\s", 1],
-      ["\\d", MAX_LENGTH],
-      [LETTERDASHNUMBER, MAX_SAFE_BUILD_LENGTH]
-    ];
-    var makeSafeRegex = (value) => {
-      for (const [token, max] of safeRegexReplacements) {
-        value = value.split(`${token}*`).join(`${token}{0,${max}}`).split(`${token}+`).join(`${token}{1,${max}}`);
-      }
-      return value;
-    };
-    var createToken = (name, value, isGlobal) => {
-      const safe = makeSafeRegex(value);
-      const index = R++;
-      debug(name, index, value);
-      t[name] = index;
-      src[index] = value;
-      safeSrc[index] = safe;
-      re[index] = new RegExp(value, isGlobal ? "g" : void 0);
-      safeRe[index] = new RegExp(safe, isGlobal ? "g" : void 0);
-    };
-    createToken("NUMERICIDENTIFIER", "0|[1-9]\\d*");
-    createToken("NUMERICIDENTIFIERLOOSE", "\\d+");
-    createToken("NONNUMERICIDENTIFIER", `\\d*[a-zA-Z-]${LETTERDASHNUMBER}*`);
-    createToken("MAINVERSION", `(${src[t.NUMERICIDENTIFIER]})\\.(${src[t.NUMERICIDENTIFIER]})\\.(${src[t.NUMERICIDENTIFIER]})`);
-    createToken("MAINVERSIONLOOSE", `(${src[t.NUMERICIDENTIFIERLOOSE]})\\.(${src[t.NUMERICIDENTIFIERLOOSE]})\\.(${src[t.NUMERICIDENTIFIERLOOSE]})`);
-    createToken("PRERELEASEIDENTIFIER", `(?:${src[t.NONNUMERICIDENTIFIER]}|${src[t.NUMERICIDENTIFIER]})`);
-    createToken("PRERELEASEIDENTIFIERLOOSE", `(?:${src[t.NONNUMERICIDENTIFIER]}|${src[t.NUMERICIDENTIFIERLOOSE]})`);
-    createToken("PRERELEASE", `(?:-(${src[t.PRERELEASEIDENTIFIER]}(?:\\.${src[t.PRERELEASEIDENTIFIER]})*))`);
-    createToken("PRERELEASELOOSE", `(?:-?(${src[t.PRERELEASEIDENTIFIERLOOSE]}(?:\\.${src[t.PRERELEASEIDENTIFIERLOOSE]})*))`);
-    createToken("BUILDIDENTIFIER", `${LETTERDASHNUMBER}+`);
-    createToken("BUILD", `(?:\\+(${src[t.BUILDIDENTIFIER]}(?:\\.${src[t.BUILDIDENTIFIER]})*))`);
-    createToken("FULLPLAIN", `v?${src[t.MAINVERSION]}${src[t.PRERELEASE]}?${src[t.BUILD]}?`);
-    createToken("FULL", `^${src[t.FULLPLAIN]}$`);
-    createToken("LOOSEPLAIN", `[v=\\s]*${src[t.MAINVERSIONLOOSE]}${src[t.PRERELEASELOOSE]}?${src[t.BUILD]}?`);
-    createToken("LOOSE", `^${src[t.LOOSEPLAIN]}$`);
-    createToken("GTLT", "((?:<|>)?=?)");
-    createToken("XRANGEIDENTIFIERLOOSE", `${src[t.NUMERICIDENTIFIERLOOSE]}|x|X|\\*`);
-    createToken("XRANGEIDENTIFIER", `${src[t.NUMERICIDENTIFIER]}|x|X|\\*`);
-    createToken("XRANGEPLAIN", `[v=\\s]*(${src[t.XRANGEIDENTIFIER]})(?:\\.(${src[t.XRANGEIDENTIFIER]})(?:\\.(${src[t.XRANGEIDENTIFIER]})(?:${src[t.PRERELEASE]})?${src[t.BUILD]}?)?)?`);
-    createToken("XRANGEPLAINLOOSE", `[v=\\s]*(${src[t.XRANGEIDENTIFIERLOOSE]})(?:\\.(${src[t.XRANGEIDENTIFIERLOOSE]})(?:\\.(${src[t.XRANGEIDENTIFIERLOOSE]})(?:${src[t.PRERELEASELOOSE]})?${src[t.BUILD]}?)?)?`);
-    createToken("XRANGE", `^${src[t.GTLT]}\\s*${src[t.XRANGEPLAIN]}$`);
-    createToken("XRANGELOOSE", `^${src[t.GTLT]}\\s*${src[t.XRANGEPLAINLOOSE]}$`);
-    createToken("COERCEPLAIN", `${"(^|[^\\d])(\\d{1,"}${MAX_SAFE_COMPONENT_LENGTH}})(?:\\.(\\d{1,${MAX_SAFE_COMPONENT_LENGTH}}))?(?:\\.(\\d{1,${MAX_SAFE_COMPONENT_LENGTH}}))?`);
-    createToken("COERCE", `${src[t.COERCEPLAIN]}(?:$|[^\\d])`);
-    createToken("COERCEFULL", src[t.COERCEPLAIN] + `(?:${src[t.PRERELEASE]})?(?:${src[t.BUILD]})?(?:$|[^\\d])`);
-    createToken("COERCERTL", src[t.COERCE], true);
-    createToken("COERCERTLFULL", src[t.COERCEFULL], true);
-    createToken("LONETILDE", "(?:~>?)");
-    createToken("TILDETRIM", `(\\s*)${src[t.LONETILDE]}\\s+`, true);
-    exports2.tildeTrimReplace = "$1~";
-    createToken("TILDE", `^${src[t.LONETILDE]}${src[t.XRANGEPLAIN]}$`);
-    createToken("TILDELOOSE", `^${src[t.LONETILDE]}${src[t.XRANGEPLAINLOOSE]}$`);
-    createToken("LONECARET", "(?:\\^)");
-    createToken("CARETTRIM", `(\\s*)${src[t.LONECARET]}\\s+`, true);
-    exports2.caretTrimReplace = "$1^";
-    createToken("CARET", `^${src[t.LONECARET]}${src[t.XRANGEPLAIN]}$`);
-    createToken("CARETLOOSE", `^${src[t.LONECARET]}${src[t.XRANGEPLAINLOOSE]}$`);
-    createToken("COMPARATORLOOSE", `^${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]})$|^$`);
-    createToken("COMPARATOR", `^${src[t.GTLT]}\\s*(${src[t.FULLPLAIN]})$|^$`);
-    createToken("COMPARATORTRIM", `(\\s*)${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]}|${src[t.XRANGEPLAIN]})`, true);
-    exports2.comparatorTrimReplace = "$1$2$3";
-    createToken("HYPHENRANGE", `^\\s*(${src[t.XRANGEPLAIN]})\\s+-\\s+(${src[t.XRANGEPLAIN]})\\s*$`);
-    createToken("HYPHENRANGELOOSE", `^\\s*(${src[t.XRANGEPLAINLOOSE]})\\s+-\\s+(${src[t.XRANGEPLAINLOOSE]})\\s*$`);
-    createToken("STAR", "(<|>)?=?\\s*\\*");
-    createToken("GTE0", "^\\s*>=\\s*0\\.0\\.0\\s*$");
-    createToken("GTE0PRE", "^\\s*>=\\s*0\\.0\\.0-0\\s*$");
-  }
-});
-
-// node_modules/semver/internal/parse-options.js
-var require_parse_options = __commonJS({
-  "node_modules/semver/internal/parse-options.js"(exports2, module2) {
-    "use strict";
-    var looseOption = Object.freeze({ loose: true });
-    var emptyOpts = Object.freeze({});
-    var parseOptions2 = (options) => {
-      if (!options) {
-        return emptyOpts;
-      }
-      if (typeof options !== "object") {
-        return looseOption;
-      }
-      return options;
-    };
-    module2.exports = parseOptions2;
-  }
-});
-
-// node_modules/semver/internal/identifiers.js
-var require_identifiers = __commonJS({
-  "node_modules/semver/internal/identifiers.js"(exports2, module2) {
-    "use strict";
-    var numeric = /^[0-9]+$/;
-    var compareIdentifiers = (a, b) => {
-      if (typeof a === "number" && typeof b === "number") {
-        return a === b ? 0 : a < b ? -1 : 1;
-      }
-      const anum = numeric.test(a);
-      const bnum = numeric.test(b);
-      if (anum && bnum) {
-        a = +a;
-        b = +b;
-      }
-      return a === b ? 0 : anum && !bnum ? -1 : bnum && !anum ? 1 : a < b ? -1 : 1;
-    };
-    var rcompareIdentifiers = (a, b) => compareIdentifiers(b, a);
-    module2.exports = {
-      compareIdentifiers,
-      rcompareIdentifiers
-    };
-  }
-});
-
-// node_modules/semver/classes/semver.js
-var require_semver = __commonJS({
-  "node_modules/semver/classes/semver.js"(exports2, module2) {
-    "use strict";
-    var debug = require_debug2();
-    var { MAX_LENGTH, MAX_SAFE_INTEGER } = require_constants();
-    var { safeRe: re, t } = require_re();
-    var parseOptions2 = require_parse_options();
-    var { compareIdentifiers } = require_identifiers();
-    var isPrereleaseIdentifier = (prerelease, identifier) => {
-      const identifiers = identifier.split(".");
-      if (identifiers.length > prerelease.length) {
-        return false;
-      }
-      for (let i = 0; i < identifiers.length; i++) {
-        if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
-          return false;
-        }
-      }
-      return true;
-    };
-    var SemVer = class _SemVer {
-      constructor(version, options) {
-        options = parseOptions2(options);
-        if (version instanceof _SemVer) {
-          if (version.loose === !!options.loose && version.includePrerelease === !!options.includePrerelease) {
-            return version;
-          } else {
-            version = version.version;
-          }
-        } else if (typeof version !== "string") {
-          throw new TypeError(`Invalid version. Must be a string. Got type "${typeof version}".`);
-        }
-        if (version.length > MAX_LENGTH) {
-          throw new TypeError(
-            `version is longer than ${MAX_LENGTH} characters`
-          );
-        }
-        debug("SemVer", version, options);
-        this.options = options;
-        this.loose = !!options.loose;
-        this.includePrerelease = !!options.includePrerelease;
-        const m = version.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL]);
-        if (!m) {
-          throw new TypeError(`Invalid Version: ${version}`);
-        }
-        this.raw = version;
-        this.major = +m[1];
-        this.minor = +m[2];
-        this.patch = +m[3];
-        if (this.major > MAX_SAFE_INTEGER || this.major < 0) {
-          throw new TypeError("Invalid major version");
-        }
-        if (this.minor > MAX_SAFE_INTEGER || this.minor < 0) {
-          throw new TypeError("Invalid minor version");
-        }
-        if (this.patch > MAX_SAFE_INTEGER || this.patch < 0) {
-          throw new TypeError("Invalid patch version");
-        }
-        if (!m[4]) {
-          this.prerelease = [];
-        } else {
-          this.prerelease = m[4].split(".").map((id) => {
-            if (/^[0-9]+$/.test(id)) {
-              const num = +id;
-              if (num >= 0 && num < MAX_SAFE_INTEGER) {
-                return num;
-              }
-            }
-            return id;
-          });
-        }
-        this.build = m[5] ? m[5].split(".") : [];
-        this.format();
-      }
-      format() {
-        this.version = `${this.major}.${this.minor}.${this.patch}`;
-        if (this.prerelease.length) {
-          this.version += `-${this.prerelease.join(".")}`;
-        }
-        return this.version;
-      }
-      toString() {
-        return this.version;
-      }
-      compare(other) {
-        debug("SemVer.compare", this.version, this.options, other);
-        if (!(other instanceof _SemVer)) {
-          if (typeof other === "string" && other === this.version) {
-            return 0;
-          }
-          other = new _SemVer(other, this.options);
-        }
-        if (other.version === this.version) {
-          return 0;
-        }
-        return this.compareMain(other) || this.comparePre(other);
-      }
-      compareMain(other) {
-        if (!(other instanceof _SemVer)) {
-          other = new _SemVer(other, this.options);
-        }
-        if (this.major < other.major) {
-          return -1;
-        }
-        if (this.major > other.major) {
-          return 1;
-        }
-        if (this.minor < other.minor) {
-          return -1;
-        }
-        if (this.minor > other.minor) {
-          return 1;
-        }
-        if (this.patch < other.patch) {
-          return -1;
-        }
-        if (this.patch > other.patch) {
-          return 1;
-        }
-        return 0;
-      }
-      comparePre(other) {
-        if (!(other instanceof _SemVer)) {
-          other = new _SemVer(other, this.options);
-        }
-        if (this.prerelease.length && !other.prerelease.length) {
-          return -1;
-        } else if (!this.prerelease.length && other.prerelease.length) {
-          return 1;
-        } else if (!this.prerelease.length && !other.prerelease.length) {
-          return 0;
-        }
-        let i = 0;
-        do {
-          const a = this.prerelease[i];
-          const b = other.prerelease[i];
-          debug("prerelease compare", i, a, b);
-          if (a === void 0 && b === void 0) {
-            return 0;
-          } else if (b === void 0) {
-            return 1;
-          } else if (a === void 0) {
-            return -1;
-          } else if (a === b) {
-            continue;
-          } else {
-            return compareIdentifiers(a, b);
-          }
-        } while (++i);
-      }
-      compareBuild(other) {
-        if (!(other instanceof _SemVer)) {
-          other = new _SemVer(other, this.options);
-        }
-        let i = 0;
-        do {
-          const a = this.build[i];
-          const b = other.build[i];
-          debug("build compare", i, a, b);
-          if (a === void 0 && b === void 0) {
-            return 0;
-          } else if (b === void 0) {
-            return 1;
-          } else if (a === void 0) {
-            return -1;
-          } else if (a === b) {
-            continue;
-          } else {
-            return compareIdentifiers(a, b);
-          }
-        } while (++i);
-      }
-      // preminor will bump the version up to the next minor release, and immediately
-      // down to pre-release. premajor and prepatch work the same way.
-      inc(release, identifier, identifierBase) {
-        if (release.startsWith("pre")) {
-          if (!identifier && identifierBase === false) {
-            throw new Error("invalid increment argument: identifier is empty");
-          }
-          if (identifier) {
-            const match = `-${identifier}`.match(this.options.loose ? re[t.PRERELEASELOOSE] : re[t.PRERELEASE]);
-            if (!match || match[1] !== identifier) {
-              throw new Error(`invalid identifier: ${identifier}`);
-            }
-          }
-        }
-        switch (release) {
-          case "premajor":
-            this.prerelease.length = 0;
-            this.patch = 0;
-            this.minor = 0;
-            this.major++;
-            this.inc("pre", identifier, identifierBase);
-            break;
-          case "preminor":
-            this.prerelease.length = 0;
-            this.patch = 0;
-            this.minor++;
-            this.inc("pre", identifier, identifierBase);
-            break;
-          case "prepatch":
-            this.prerelease.length = 0;
-            this.inc("patch", identifier, identifierBase);
-            this.inc("pre", identifier, identifierBase);
-            break;
-          // If the input is a non-prerelease version, this acts the same as
-          // prepatch.
-          case "prerelease":
-            if (this.prerelease.length === 0) {
-              this.inc("patch", identifier, identifierBase);
-            }
-            this.inc("pre", identifier, identifierBase);
-            break;
-          case "release":
-            if (this.prerelease.length === 0) {
-              throw new Error(`version ${this.raw} is not a prerelease`);
-            }
-            this.prerelease.length = 0;
-            break;
-          case "major":
-            if (this.minor !== 0 || this.patch !== 0 || this.prerelease.length === 0) {
-              this.major++;
-            }
-            this.minor = 0;
-            this.patch = 0;
-            this.prerelease = [];
-            break;
-          case "minor":
-            if (this.patch !== 0 || this.prerelease.length === 0) {
-              this.minor++;
-            }
-            this.patch = 0;
-            this.prerelease = [];
-            break;
-          case "patch":
-            if (this.prerelease.length === 0) {
-              this.patch++;
-            }
-            this.prerelease = [];
-            break;
-          // This probably shouldn't be used publicly.
-          // 1.0.0 'pre' would become 1.0.0-0 which is the wrong direction.
-          case "pre": {
-            const base = Number(identifierBase) ? 1 : 0;
-            if (this.prerelease.length === 0) {
-              this.prerelease = [base];
-            } else {
-              let i = this.prerelease.length;
-              while (--i >= 0) {
-                if (typeof this.prerelease[i] === "number") {
-                  this.prerelease[i]++;
-                  i = -2;
-                }
-              }
-              if (i === -1) {
-                if (identifier === this.prerelease.join(".") && identifierBase === false) {
-                  throw new Error("invalid increment argument: identifier already exists");
-                }
-                this.prerelease.push(base);
-              }
-            }
-            if (identifier) {
-              let prerelease = [identifier, base];
-              if (identifierBase === false) {
-                prerelease = [identifier];
-              }
-              if (isPrereleaseIdentifier(this.prerelease, identifier)) {
-                const prereleaseBase = this.prerelease[identifier.split(".").length];
-                if (isNaN(prereleaseBase)) {
-                  this.prerelease = prerelease;
-                }
-              } else {
-                this.prerelease = prerelease;
-              }
-            }
-            break;
-          }
-          default:
-            throw new Error(`invalid increment argument: ${release}`);
-        }
-        this.raw = this.format();
-        if (this.build.length) {
-          this.raw += `+${this.build.join(".")}`;
-        }
-        return this;
-      }
-    };
-    module2.exports = SemVer;
-  }
-});
-
-// node_modules/semver/functions/parse.js
-var require_parse2 = __commonJS({
-  "node_modules/semver/functions/parse.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var parse = (version, options, throwErrors = false) => {
-      if (version instanceof SemVer) {
-        return version;
-      }
-      try {
-        return new SemVer(version, options);
-      } catch (er) {
-        if (!throwErrors) {
-          return null;
-        }
-        throw er;
-      }
-    };
-    module2.exports = parse;
-  }
-});
-
-// node_modules/semver/functions/valid.js
-var require_valid = __commonJS({
-  "node_modules/semver/functions/valid.js"(exports2, module2) {
-    "use strict";
-    var parse = require_parse2();
-    var valid = (version, options) => {
-      const v = parse(version, options);
-      return v ? v.version : null;
-    };
-    module2.exports = valid;
-  }
-});
-
-// node_modules/semver/functions/clean.js
-var require_clean = __commonJS({
-  "node_modules/semver/functions/clean.js"(exports2, module2) {
-    "use strict";
-    var parse = require_parse2();
-    var clean = (version, options) => {
-      const s = parse(version.trim().replace(/^[=v]+/, ""), options);
-      return s ? s.version : null;
-    };
-    module2.exports = clean;
-  }
-});
-
-// node_modules/semver/functions/inc.js
-var require_inc = __commonJS({
-  "node_modules/semver/functions/inc.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var inc = (version, release, options, identifier, identifierBase) => {
-      if (typeof options === "string") {
-        identifierBase = identifier;
-        identifier = options;
-        options = void 0;
-      }
-      try {
-        return new SemVer(
-          version instanceof SemVer ? version.version : version,
-          options
-        ).inc(release, identifier, identifierBase).version;
-      } catch (er) {
-        return null;
-      }
-    };
-    module2.exports = inc;
-  }
-});
-
-// node_modules/semver/functions/diff.js
-var require_diff = __commonJS({
-  "node_modules/semver/functions/diff.js"(exports2, module2) {
-    "use strict";
-    var parse = require_parse2();
-    var diff = (version1, version2) => {
-      const v1 = parse(version1, null, true);
-      const v2 = parse(version2, null, true);
-      const comparison = v1.compare(v2);
-      if (comparison === 0) {
-        return null;
-      }
-      const v1Higher = comparison > 0;
-      const highVersion = v1Higher ? v1 : v2;
-      const lowVersion = v1Higher ? v2 : v1;
-      const highHasPre = !!highVersion.prerelease.length;
-      const lowHasPre = !!lowVersion.prerelease.length;
-      if (lowHasPre && !highHasPre) {
-        if (!lowVersion.patch && !lowVersion.minor) {
-          return "major";
-        }
-        if (lowVersion.compareMain(highVersion) === 0) {
-          if (lowVersion.minor && !lowVersion.patch) {
-            return "minor";
-          }
-          return "patch";
-        }
-      }
-      const prefix = highHasPre ? "pre" : "";
-      if (v1.major !== v2.major) {
-        return prefix + "major";
-      }
-      if (v1.minor !== v2.minor) {
-        return prefix + "minor";
-      }
-      if (v1.patch !== v2.patch) {
-        return prefix + "patch";
-      }
-      return "prerelease";
-    };
-    module2.exports = diff;
-  }
-});
-
-// node_modules/semver/functions/major.js
-var require_major = __commonJS({
-  "node_modules/semver/functions/major.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var major = (a, loose) => new SemVer(a, loose).major;
-    module2.exports = major;
-  }
-});
-
-// node_modules/semver/functions/minor.js
-var require_minor = __commonJS({
-  "node_modules/semver/functions/minor.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var minor = (a, loose) => new SemVer(a, loose).minor;
-    module2.exports = minor;
-  }
-});
-
-// node_modules/semver/functions/patch.js
-var require_patch = __commonJS({
-  "node_modules/semver/functions/patch.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var patch = (a, loose) => new SemVer(a, loose).patch;
-    module2.exports = patch;
-  }
-});
-
-// node_modules/semver/functions/prerelease.js
-var require_prerelease = __commonJS({
-  "node_modules/semver/functions/prerelease.js"(exports2, module2) {
-    "use strict";
-    var parse = require_parse2();
-    var prerelease = (version, options) => {
-      const parsed = parse(version, options);
-      return parsed && parsed.prerelease.length ? parsed.prerelease : null;
-    };
-    module2.exports = prerelease;
-  }
-});
-
-// node_modules/semver/functions/compare.js
-var require_compare = __commonJS({
-  "node_modules/semver/functions/compare.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var compare2 = (a, b, loose) => new SemVer(a, loose).compare(new SemVer(b, loose));
-    module2.exports = compare2;
-  }
-});
-
-// node_modules/semver/functions/rcompare.js
-var require_rcompare = __commonJS({
-  "node_modules/semver/functions/rcompare.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var rcompare = (a, b, loose) => compare2(b, a, loose);
-    module2.exports = rcompare;
-  }
-});
-
-// node_modules/semver/functions/compare-loose.js
-var require_compare_loose = __commonJS({
-  "node_modules/semver/functions/compare-loose.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var compareLoose = (a, b) => compare2(a, b, true);
-    module2.exports = compareLoose;
-  }
-});
-
-// node_modules/semver/functions/compare-build.js
-var require_compare_build = __commonJS({
-  "node_modules/semver/functions/compare-build.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var compareBuild = (a, b, loose) => {
-      const versionA = new SemVer(a, loose);
-      const versionB = new SemVer(b, loose);
-      return versionA.compare(versionB) || versionA.compareBuild(versionB);
-    };
-    module2.exports = compareBuild;
-  }
-});
-
-// node_modules/semver/functions/sort.js
-var require_sort = __commonJS({
-  "node_modules/semver/functions/sort.js"(exports2, module2) {
-    "use strict";
-    var compareBuild = require_compare_build();
-    var sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose));
-    module2.exports = sort;
-  }
-});
-
-// node_modules/semver/functions/rsort.js
-var require_rsort = __commonJS({
-  "node_modules/semver/functions/rsort.js"(exports2, module2) {
-    "use strict";
-    var compareBuild = require_compare_build();
-    var rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose));
-    module2.exports = rsort;
-  }
-});
-
-// node_modules/semver/functions/gt.js
-var require_gt = __commonJS({
-  "node_modules/semver/functions/gt.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var gt = (a, b, loose) => compare2(a, b, loose) > 0;
-    module2.exports = gt;
-  }
-});
-
-// node_modules/semver/functions/lt.js
-var require_lt = __commonJS({
-  "node_modules/semver/functions/lt.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var lt = (a, b, loose) => compare2(a, b, loose) < 0;
-    module2.exports = lt;
-  }
-});
-
-// node_modules/semver/functions/eq.js
-var require_eq = __commonJS({
-  "node_modules/semver/functions/eq.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var eq = (a, b, loose) => compare2(a, b, loose) === 0;
-    module2.exports = eq;
-  }
-});
-
-// node_modules/semver/functions/neq.js
-var require_neq = __commonJS({
-  "node_modules/semver/functions/neq.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var neq = (a, b, loose) => compare2(a, b, loose) !== 0;
-    module2.exports = neq;
-  }
-});
-
-// node_modules/semver/functions/gte.js
-var require_gte = __commonJS({
-  "node_modules/semver/functions/gte.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var gte = (a, b, loose) => compare2(a, b, loose) >= 0;
-    module2.exports = gte;
-  }
-});
-
-// node_modules/semver/functions/lte.js
-var require_lte = __commonJS({
-  "node_modules/semver/functions/lte.js"(exports2, module2) {
-    "use strict";
-    var compare2 = require_compare();
-    var lte = (a, b, loose) => compare2(a, b, loose) <= 0;
-    module2.exports = lte;
-  }
-});
-
-// node_modules/semver/functions/cmp.js
-var require_cmp = __commonJS({
-  "node_modules/semver/functions/cmp.js"(exports2, module2) {
-    "use strict";
-    var eq = require_eq();
-    var neq = require_neq();
-    var gt = require_gt();
-    var gte = require_gte();
-    var lt = require_lt();
-    var lte = require_lte();
-    var cmp = (a, op, b, loose) => {
-      switch (op) {
-        case "===":
-          if (typeof a === "object") {
-            a = a.version;
-          }
-          if (typeof b === "object") {
-            b = b.version;
-          }
-          return a === b;
-        case "!==":
-          if (typeof a === "object") {
-            a = a.version;
-          }
-          if (typeof b === "object") {
-            b = b.version;
-          }
-          return a !== b;
-        case "":
-        case "=":
-        case "==":
-          return eq(a, b, loose);
-        case "!=":
-          return neq(a, b, loose);
-        case ">":
-          return gt(a, b, loose);
-        case ">=":
-          return gte(a, b, loose);
-        case "<":
-          return lt(a, b, loose);
-        case "<=":
-          return lte(a, b, loose);
-        default:
-          throw new TypeError(`Invalid operator: ${op}`);
-      }
-    };
-    module2.exports = cmp;
-  }
-});
-
-// node_modules/semver/functions/coerce.js
-var require_coerce = __commonJS({
-  "node_modules/semver/functions/coerce.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var parse = require_parse2();
-    var { safeRe: re, t } = require_re();
-    var coerce2 = (version, options) => {
-      if (version instanceof SemVer) {
-        return version;
-      }
-      if (typeof version === "number") {
-        version = String(version);
-      }
-      if (typeof version !== "string") {
-        return null;
-      }
-      options = options || {};
-      let match = null;
-      if (!options.rtl) {
-        match = version.match(options.includePrerelease ? re[t.COERCEFULL] : re[t.COERCE]);
-      } else {
-        const coerceRtlRegex = options.includePrerelease ? re[t.COERCERTLFULL] : re[t.COERCERTL];
-        let next;
-        while ((next = coerceRtlRegex.exec(version)) && (!match || match.index + match[0].length !== version.length)) {
-          if (!match || next.index + next[0].length !== match.index + match[0].length) {
-            match = next;
-          }
-          coerceRtlRegex.lastIndex = next.index + next[1].length + next[2].length;
-        }
-        coerceRtlRegex.lastIndex = -1;
-      }
-      if (match === null) {
-        return null;
-      }
-      const major = match[2];
-      const minor = match[3] || "0";
-      const patch = match[4] || "0";
-      const prerelease = options.includePrerelease && match[5] ? `-${match[5]}` : "";
-      const build = options.includePrerelease && match[6] ? `+${match[6]}` : "";
-      return parse(`${major}.${minor}.${patch}${prerelease}${build}`, options);
-    };
-    module2.exports = coerce2;
-  }
-});
-
-// node_modules/semver/functions/truncate.js
-var require_truncate = __commonJS({
-  "node_modules/semver/functions/truncate.js"(exports2, module2) {
-    "use strict";
-    var parse = require_parse2();
-    var constants = require_constants();
-    var SemVer = require_semver();
-    var truncate = (version, truncation, options) => {
-      if (!constants.RELEASE_TYPES.includes(truncation)) {
-        return null;
-      }
-      const clonedVersion = cloneInputVersion(version, options);
-      return clonedVersion && doTruncation(clonedVersion, truncation);
-    };
-    var cloneInputVersion = (version, options) => {
-      const versionStringToParse = version instanceof SemVer ? version.version : version;
-      return parse(versionStringToParse, options);
-    };
-    var doTruncation = (version, truncation) => {
-      if (isPrerelease(truncation)) {
-        return version.version;
-      }
-      version.prerelease = [];
-      switch (truncation) {
-        case "major":
-          version.minor = 0;
-          version.patch = 0;
-          break;
-        case "minor":
-          version.patch = 0;
-          break;
-      }
-      return version.format();
-    };
-    var isPrerelease = (type) => {
-      return type.startsWith("pre");
-    };
-    module2.exports = truncate;
-  }
-});
-
-// node_modules/semver/internal/lrucache.js
-var require_lrucache = __commonJS({
-  "node_modules/semver/internal/lrucache.js"(exports2, module2) {
-    "use strict";
-    var LRUCache = class {
-      constructor() {
-        this.max = 1e3;
-        this.map = /* @__PURE__ */ new Map();
-      }
-      get(key) {
-        const value = this.map.get(key);
-        if (value === void 0) {
-          return void 0;
-        } else {
-          this.map.delete(key);
-          this.map.set(key, value);
-          return value;
-        }
-      }
-      delete(key) {
-        return this.map.delete(key);
-      }
-      set(key, value) {
-        const deleted = this.delete(key);
-        if (!deleted && value !== void 0) {
-          if (this.map.size >= this.max) {
-            const firstKey = this.map.keys().next().value;
-            this.delete(firstKey);
-          }
-          this.map.set(key, value);
-        }
-        return this;
-      }
-    };
-    module2.exports = LRUCache;
-  }
-});
-
-// node_modules/semver/classes/range.js
-var require_range2 = __commonJS({
-  "node_modules/semver/classes/range.js"(exports2, module2) {
-    "use strict";
-    var SPACE_CHARACTERS = /\s+/g;
-    var Range = class _Range {
-      constructor(range, options) {
-        options = parseOptions2(options);
-        if (range instanceof _Range) {
-          if (range.loose === !!options.loose && range.includePrerelease === !!options.includePrerelease) {
-            return range;
-          } else {
-            return new _Range(range.raw, options);
-          }
-        }
-        if (range instanceof Comparator) {
-          this.raw = range.value;
-          this.set = [[range]];
-          this.formatted = void 0;
-          return this;
-        }
-        this.options = options;
-        this.loose = !!options.loose;
-        this.includePrerelease = !!options.includePrerelease;
-        this.raw = range.trim().replace(SPACE_CHARACTERS, " ");
-        this.set = this.raw.split("||").map((r) => this.parseRange(r.trim())).filter((c) => c.length);
-        if (!this.set.length) {
-          throw new TypeError(`Invalid SemVer Range: ${this.raw}`);
-        }
-        if (this.set.length > 1) {
-          const first = this.set[0];
-          this.set = this.set.filter((c) => !isNullSet(c[0]));
-          if (this.set.length === 0) {
-            this.set = [first];
-          } else if (this.set.length > 1) {
-            for (const c of this.set) {
-              if (c.length === 1 && isAny(c[0])) {
-                this.set = [c];
-                break;
-              }
-            }
-          }
-        }
-        this.formatted = void 0;
-      }
-      get range() {
-        if (this.formatted === void 0) {
-          this.formatted = "";
-          for (let i = 0; i < this.set.length; i++) {
-            if (i > 0) {
-              this.formatted += "||";
-            }
-            const comps = this.set[i];
-            for (let k = 0; k < comps.length; k++) {
-              if (k > 0) {
-                this.formatted += " ";
-              }
-              this.formatted += comps[k].toString().trim();
-            }
-          }
-        }
-        return this.formatted;
-      }
-      format() {
-        return this.range;
-      }
-      toString() {
-        return this.range;
-      }
-      parseRange(range) {
-        range = range.replace(BUILDSTRIPRE, "");
-        const memoOpts = (this.options.includePrerelease && FLAG_INCLUDE_PRERELEASE) | (this.options.loose && FLAG_LOOSE);
-        const memoKey = memoOpts + ":" + range;
-        const cached2 = cache.get(memoKey);
-        if (cached2) {
-          return cached2;
-        }
-        const loose = this.options.loose;
-        const hr = loose ? re[t.HYPHENRANGELOOSE] : re[t.HYPHENRANGE];
-        range = range.replace(hr, hyphenReplace(this.options.includePrerelease));
-        debug("hyphen replace", range);
-        range = range.replace(re[t.COMPARATORTRIM], comparatorTrimReplace);
-        debug("comparator trim", range);
-        range = range.replace(re[t.TILDETRIM], tildeTrimReplace);
-        debug("tilde trim", range);
-        range = range.replace(re[t.CARETTRIM], caretTrimReplace);
-        debug("caret trim", range);
-        let rangeList = range.split(" ").map((comp) => parseComparator(comp, this.options)).join(" ").split(/\s+/).map((comp) => replaceGTE0(comp, this.options));
-        if (loose) {
-          rangeList = rangeList.filter((comp) => {
-            debug("loose invalid filter", comp, this.options);
-            return !!comp.match(re[t.COMPARATORLOOSE]);
-          });
-        }
-        debug("range list", rangeList);
-        const rangeMap = /* @__PURE__ */ new Map();
-        const comparators = rangeList.map((comp) => new Comparator(comp, this.options));
-        for (const comp of comparators) {
-          if (isNullSet(comp)) {
-            return [comp];
-          }
-          rangeMap.set(comp.value, comp);
-        }
-        if (rangeMap.size > 1 && rangeMap.has("")) {
-          rangeMap.delete("");
-        }
-        const result = [...rangeMap.values()];
-        cache.set(memoKey, result);
-        return result;
-      }
-      intersects(range, options) {
-        if (!(range instanceof _Range)) {
-          throw new TypeError("a Range is required");
-        }
-        return this.set.some((thisComparators) => {
-          return isSatisfiable(thisComparators, options) && range.set.some((rangeComparators) => {
-            return isSatisfiable(rangeComparators, options) && thisComparators.every((thisComparator) => {
-              return rangeComparators.every((rangeComparator) => {
-                return thisComparator.intersects(rangeComparator, options);
-              });
-            });
-          });
-        });
-      }
-      // if ANY of the sets match ALL of its comparators, then pass
-      test(version) {
-        if (!version) {
-          return false;
-        }
-        if (typeof version === "string") {
-          try {
-            version = new SemVer(version, this.options);
-          } catch (er) {
-            return false;
-          }
-        }
-        for (let i = 0; i < this.set.length; i++) {
-          if (testSet(this.set[i], version, this.options)) {
-            return true;
-          }
-        }
-        return false;
-      }
-    };
-    module2.exports = Range;
-    var LRU = require_lrucache();
-    var cache = new LRU();
-    var parseOptions2 = require_parse_options();
-    var Comparator = require_comparator();
-    var debug = require_debug2();
-    var SemVer = require_semver();
-    var {
-      safeRe: re,
-      src,
-      t,
-      comparatorTrimReplace,
-      tildeTrimReplace,
-      caretTrimReplace
-    } = require_re();
-    var { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require_constants();
-    var BUILDSTRIPRE = new RegExp(src[t.BUILD], "g");
-    var isNullSet = (c) => c.value === "<0.0.0-0";
-    var isAny = (c) => c.value === "";
-    var isSatisfiable = (comparators, options) => {
-      let result = true;
-      const remainingComparators = comparators.slice();
-      let testComparator = remainingComparators.pop();
-      while (result && remainingComparators.length) {
-        result = remainingComparators.every((otherComparator) => {
-          return testComparator.intersects(otherComparator, options);
-        });
-        testComparator = remainingComparators.pop();
-      }
-      return result;
-    };
-    var parseComparator = (comp, options) => {
-      comp = comp.replace(re[t.BUILD], "");
-      debug("comp", comp, options);
-      comp = replaceCarets(comp, options);
-      debug("caret", comp);
-      comp = replaceTildes(comp, options);
-      debug("tildes", comp);
-      comp = replaceXRanges(comp, options);
-      debug("xrange", comp);
-      comp = replaceStars(comp, options);
-      debug("stars", comp);
-      return comp;
-    };
-    var isX = (id) => !id || id.toLowerCase() === "x" || id === "*";
-    var invalidXRangeOrder = (M, m, p) => isX(M) && !isX(m) || isX(m) && p && !isX(p);
-    var replaceTildes = (comp, options) => {
-      return comp.trim().split(/\s+/).map((c) => replaceTilde(c, options)).join(" ");
-    };
-    var replaceTilde = (comp, options) => {
-      const r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE];
-      const z = options.includePrerelease ? "-0" : "";
-      return comp.replace(r, (_, M, m, p, pr) => {
-        debug("tilde", comp, _, M, m, p, pr);
-        let ret;
-        if (isX(M)) {
-          ret = "";
-        } else if (isX(m)) {
-          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
-        } else if (isX(p)) {
-          ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
-        } else if (pr) {
-          debug("replaceTilde pr", pr);
-          ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`;
-        } else {
-          ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`;
-        }
-        debug("tilde return", ret);
-        return ret;
-      });
-    };
-    var replaceCarets = (comp, options) => {
-      return comp.trim().split(/\s+/).map((c) => replaceCaret(c, options)).join(" ");
-    };
-    var replaceCaret = (comp, options) => {
-      debug("caret", comp, options);
-      const r = options.loose ? re[t.CARETLOOSE] : re[t.CARET];
-      const z = options.includePrerelease ? "-0" : "";
-      return comp.replace(r, (_, M, m, p, pr) => {
-        debug("caret", comp, _, M, m, p, pr);
-        let ret;
-        if (isX(M)) {
-          ret = "";
-        } else if (isX(m)) {
-          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
-        } else if (isX(p)) {
-          if (M === "0") {
-            ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
-          } else {
-            ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`;
-          }
-        } else if (pr) {
-          debug("replaceCaret pr", pr);
-          if (M === "0") {
-            if (m === "0") {
-              ret = `>=${M}.${m}.${p}-${pr} <${M}.${m}.${+p + 1}-0`;
-            } else {
-              ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`;
-            }
-          } else {
-            ret = `>=${M}.${m}.${p}-${pr} <${+M + 1}.0.0-0`;
-          }
-        } else {
-          debug("no pr");
-          if (M === "0") {
-            if (m === "0") {
-              ret = `>=${M}.${m}.${p} <${M}.${m}.${+p + 1}-0`;
-            } else {
-              ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`;
-            }
-          } else {
-            ret = `>=${M}.${m}.${p} <${+M + 1}.0.0-0`;
-          }
-        }
-        debug("caret return", ret);
-        return ret;
-      });
-    };
-    var replaceXRanges = (comp, options) => {
-      debug("replaceXRanges", comp, options);
-      return comp.split(/\s+/).map((c) => replaceXRange(c, options)).join(" ");
-    };
-    var replaceXRange = (comp, options) => {
-      comp = comp.trim();
-      const r = options.loose ? re[t.XRANGELOOSE] : re[t.XRANGE];
-      return comp.replace(r, (ret, gtlt, M, m, p, pr) => {
-        debug("xRange", comp, ret, gtlt, M, m, p, pr);
-        if (invalidXRangeOrder(M, m, p)) {
-          return comp;
-        }
-        const xM = isX(M);
-        const xm = xM || isX(m);
-        const xp = xm || isX(p);
-        const anyX = xp;
-        if (gtlt === "=" && anyX) {
-          gtlt = "";
-        }
-        pr = options.includePrerelease ? "-0" : "";
-        if (xM) {
-          if (gtlt === ">" || gtlt === "<") {
-            ret = "<0.0.0-0";
-          } else {
-            ret = "*";
-          }
-        } else if (gtlt && anyX) {
-          if (xm) {
-            m = 0;
-          }
-          p = 0;
-          if (gtlt === ">") {
-            gtlt = ">=";
-            if (xm) {
-              M = +M + 1;
-              m = 0;
-              p = 0;
-            } else {
-              m = +m + 1;
-              p = 0;
-            }
-          } else if (gtlt === "<=") {
-            gtlt = "<";
-            if (xm) {
-              M = +M + 1;
-            } else {
-              m = +m + 1;
-            }
-          }
-          if (gtlt === "<") {
-            pr = "-0";
-          }
-          ret = `${gtlt + M}.${m}.${p}${pr}`;
-        } else if (xm) {
-          ret = `>=${M}.0.0${pr} <${+M + 1}.0.0-0`;
-        } else if (xp) {
-          ret = `>=${M}.${m}.0${pr} <${M}.${+m + 1}.0-0`;
-        }
-        debug("xRange return", ret);
-        return ret;
-      });
-    };
-    var replaceStars = (comp, options) => {
-      debug("replaceStars", comp, options);
-      return comp.trim().replace(re[t.STAR], "");
-    };
-    var replaceGTE0 = (comp, options) => {
-      debug("replaceGTE0", comp, options);
-      return comp.trim().replace(re[options.includePrerelease ? t.GTE0PRE : t.GTE0], "");
-    };
-    var hyphenReplace = (incPr) => ($0, from, fM, fm, fp, fpr, fb, to, tM, tm, tp, tpr) => {
-      if (isX(fM)) {
-        from = "";
-      } else if (isX(fm)) {
-        from = `>=${fM}.0.0${incPr ? "-0" : ""}`;
-      } else if (isX(fp)) {
-        from = `>=${fM}.${fm}.0${incPr ? "-0" : ""}`;
-      } else if (fpr) {
-        from = `>=${from}`;
-      } else {
-        from = `>=${from}${incPr ? "-0" : ""}`;
-      }
-      if (isX(tM)) {
-        to = "";
-      } else if (isX(tm)) {
-        to = `<${+tM + 1}.0.0-0`;
-      } else if (isX(tp)) {
-        to = `<${tM}.${+tm + 1}.0-0`;
-      } else if (tpr) {
-        to = `<=${tM}.${tm}.${tp}-${tpr}`;
-      } else if (incPr) {
-        to = `<${tM}.${tm}.${+tp + 1}-0`;
-      } else {
-        to = `<=${to}`;
-      }
-      return `${from} ${to}`.trim();
-    };
-    var testSet = (set, version, options) => {
-      for (let i = 0; i < set.length; i++) {
-        if (!set[i].test(version)) {
-          return false;
-        }
-      }
-      if (version.prerelease.length && !options.includePrerelease) {
-        for (let i = 0; i < set.length; i++) {
-          debug(set[i].semver);
-          if (set[i].semver === Comparator.ANY) {
-            continue;
-          }
-          if (set[i].semver.prerelease.length > 0) {
-            const allowed = set[i].semver;
-            if (allowed.major === version.major && allowed.minor === version.minor && allowed.patch === version.patch) {
-              return true;
-            }
-          }
-        }
-        return false;
-      }
-      return true;
-    };
-  }
-});
-
-// node_modules/semver/classes/comparator.js
-var require_comparator = __commonJS({
-  "node_modules/semver/classes/comparator.js"(exports2, module2) {
-    "use strict";
-    var ANY = Symbol("SemVer ANY");
-    var Comparator = class _Comparator {
-      static get ANY() {
-        return ANY;
-      }
-      constructor(comp, options) {
-        options = parseOptions2(options);
-        if (comp instanceof _Comparator) {
-          if (comp.loose === !!options.loose) {
-            return comp;
-          } else {
-            comp = comp.value;
-          }
-        }
-        comp = comp.trim().split(/\s+/).join(" ");
-        debug("comparator", comp, options);
-        this.options = options;
-        this.loose = !!options.loose;
-        this.parse(comp);
-        if (this.semver === ANY) {
-          this.value = "";
-        } else {
-          this.value = this.operator + this.semver.version;
-        }
-        debug("comp", this);
-      }
-      parse(comp) {
-        const r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR];
-        const m = comp.match(r);
-        if (!m) {
-          throw new TypeError(`Invalid comparator: ${comp}`);
-        }
-        this.operator = m[1] !== void 0 ? m[1] : "";
-        if (this.operator === "=") {
-          this.operator = "";
-        }
-        if (!m[2]) {
-          this.semver = ANY;
-        } else {
-          this.semver = new SemVer(m[2], this.options.loose);
-        }
-      }
-      toString() {
-        return this.value;
-      }
-      test(version) {
-        debug("Comparator.test", version, this.options.loose);
-        if (this.semver === ANY || version === ANY) {
-          return true;
-        }
-        if (typeof version === "string") {
-          try {
-            version = new SemVer(version, this.options);
-          } catch (er) {
-            return false;
-          }
-        }
-        return cmp(version, this.operator, this.semver, this.options);
-      }
-      intersects(comp, options) {
-        if (!(comp instanceof _Comparator)) {
-          throw new TypeError("a Comparator is required");
-        }
-        if (this.operator === "") {
-          if (this.value === "") {
-            return true;
-          }
-          return new Range(comp.value, options).test(this.value);
-        } else if (comp.operator === "") {
-          if (comp.value === "") {
-            return true;
-          }
-          return new Range(this.value, options).test(comp.semver);
-        }
-        options = parseOptions2(options);
-        if (options.includePrerelease && (this.value === "<0.0.0-0" || comp.value === "<0.0.0-0")) {
-          return false;
-        }
-        if (!options.includePrerelease && (this.value.startsWith("<0.0.0") || comp.value.startsWith("<0.0.0"))) {
-          return false;
-        }
-        if (this.operator.startsWith(">") && comp.operator.startsWith(">")) {
-          return true;
-        }
-        if (this.operator.startsWith("<") && comp.operator.startsWith("<")) {
-          return true;
-        }
-        if (this.semver.version === comp.semver.version && this.operator.includes("=") && comp.operator.includes("=")) {
-          return true;
-        }
-        if (cmp(this.semver, "<", comp.semver, options) && this.operator.startsWith(">") && comp.operator.startsWith("<")) {
-          return true;
-        }
-        if (cmp(this.semver, ">", comp.semver, options) && this.operator.startsWith("<") && comp.operator.startsWith(">")) {
-          return true;
-        }
-        return false;
-      }
-    };
-    module2.exports = Comparator;
-    var parseOptions2 = require_parse_options();
-    var { safeRe: re, t } = require_re();
-    var cmp = require_cmp();
-    var debug = require_debug2();
-    var SemVer = require_semver();
-    var Range = require_range2();
-  }
-});
-
-// node_modules/semver/functions/satisfies.js
-var require_satisfies = __commonJS({
-  "node_modules/semver/functions/satisfies.js"(exports2, module2) {
-    "use strict";
-    var Range = require_range2();
-    var satisfies = (version, range, options) => {
-      try {
-        range = new Range(range, options);
-      } catch (er) {
-        return false;
-      }
-      return range.test(version);
-    };
-    module2.exports = satisfies;
-  }
-});
-
-// node_modules/semver/ranges/to-comparators.js
-var require_to_comparators = __commonJS({
-  "node_modules/semver/ranges/to-comparators.js"(exports2, module2) {
-    "use strict";
-    var Range = require_range2();
-    var toComparators = (range, options) => new Range(range, options).set.map((comp) => comp.map((c) => c.value).join(" ").trim().split(" "));
-    module2.exports = toComparators;
-  }
-});
-
-// node_modules/semver/ranges/max-satisfying.js
-var require_max_satisfying = __commonJS({
-  "node_modules/semver/ranges/max-satisfying.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var Range = require_range2();
-    var maxSatisfying = (versions, range, options) => {
-      let max = null;
-      let maxSV = null;
-      let rangeObj = null;
-      try {
-        rangeObj = new Range(range, options);
-      } catch (er) {
-        return null;
-      }
-      versions.forEach((v) => {
-        if (rangeObj.test(v)) {
-          if (!max || maxSV.compare(v) === -1) {
-            max = v;
-            maxSV = new SemVer(max, options);
-          }
-        }
-      });
-      return max;
-    };
-    module2.exports = maxSatisfying;
-  }
-});
-
-// node_modules/semver/ranges/min-satisfying.js
-var require_min_satisfying = __commonJS({
-  "node_modules/semver/ranges/min-satisfying.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var Range = require_range2();
-    var minSatisfying = (versions, range, options) => {
-      let min = null;
-      let minSV = null;
-      let rangeObj = null;
-      try {
-        rangeObj = new Range(range, options);
-      } catch (er) {
-        return null;
-      }
-      versions.forEach((v) => {
-        if (rangeObj.test(v)) {
-          if (!min || minSV.compare(v) === 1) {
-            min = v;
-            minSV = new SemVer(min, options);
-          }
-        }
-      });
-      return min;
-    };
-    module2.exports = minSatisfying;
-  }
-});
-
-// node_modules/semver/ranges/min-version.js
-var require_min_version = __commonJS({
-  "node_modules/semver/ranges/min-version.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var Range = require_range2();
-    var gt = require_gt();
-    var minVersion = (range, loose) => {
-      range = new Range(range, loose);
-      let minver = new SemVer("0.0.0");
-      if (range.test(minver)) {
-        return minver;
-      }
-      minver = new SemVer("0.0.0-0");
-      if (range.test(minver)) {
-        return minver;
-      }
-      minver = null;
-      for (let i = 0; i < range.set.length; ++i) {
-        const comparators = range.set[i];
-        let setMin = null;
-        comparators.forEach((comparator) => {
-          const compver = new SemVer(comparator.semver.version);
-          switch (comparator.operator) {
-            case ">":
-              if (compver.prerelease.length === 0) {
-                compver.patch++;
-              } else {
-                compver.prerelease.push(0);
-              }
-              compver.raw = compver.format();
-            /* fallthrough */
-            case "":
-            case ">=":
-              if (!setMin || gt(compver, setMin)) {
-                setMin = compver;
-              }
-              break;
-            case "<":
-            case "<=":
-              break;
-            /* istanbul ignore next */
-            default:
-              throw new Error(`Unexpected operation: ${comparator.operator}`);
-          }
-        });
-        if (setMin && (!minver || gt(minver, setMin))) {
-          minver = setMin;
-        }
-      }
-      if (minver && range.test(minver)) {
-        return minver;
-      }
-      return null;
-    };
-    module2.exports = minVersion;
-  }
-});
-
-// node_modules/semver/ranges/valid.js
-var require_valid2 = __commonJS({
-  "node_modules/semver/ranges/valid.js"(exports2, module2) {
-    "use strict";
-    var Range = require_range2();
-    var validRange = (range, options) => {
-      try {
-        return new Range(range, options).range || "*";
-      } catch (er) {
-        return null;
-      }
-    };
-    module2.exports = validRange;
-  }
-});
-
-// node_modules/semver/ranges/outside.js
-var require_outside = __commonJS({
-  "node_modules/semver/ranges/outside.js"(exports2, module2) {
-    "use strict";
-    var SemVer = require_semver();
-    var Comparator = require_comparator();
-    var { ANY } = Comparator;
-    var Range = require_range2();
-    var satisfies = require_satisfies();
-    var gt = require_gt();
-    var lt = require_lt();
-    var lte = require_lte();
-    var gte = require_gte();
-    var outside = (version, range, hilo, options) => {
-      version = new SemVer(version, options);
-      range = new Range(range, options);
-      let gtfn, ltefn, ltfn, comp, ecomp;
-      switch (hilo) {
-        case ">":
-          gtfn = gt;
-          ltefn = lte;
-          ltfn = lt;
-          comp = ">";
-          ecomp = ">=";
-          break;
-        case "<":
-          gtfn = lt;
-          ltefn = gte;
-          ltfn = gt;
-          comp = "<";
-          ecomp = "<=";
-          break;
-        default:
-          throw new TypeError('Must provide a hilo val of "<" or ">"');
-      }
-      if (satisfies(version, range, options)) {
-        return false;
-      }
-      for (let i = 0; i < range.set.length; ++i) {
-        const comparators = range.set[i];
-        let high = null;
-        let low = null;
-        comparators.forEach((comparator) => {
-          if (comparator.semver === ANY) {
-            comparator = new Comparator(">=0.0.0");
-          }
-          high = high || comparator;
-          low = low || comparator;
-          if (gtfn(comparator.semver, high.semver, options)) {
-            high = comparator;
-          } else if (ltfn(comparator.semver, low.semver, options)) {
-            low = comparator;
-          }
-        });
-        if (high.operator === comp || high.operator === ecomp) {
-          return false;
-        }
-        if ((!low.operator || low.operator === comp) && ltefn(version, low.semver)) {
-          return false;
-        } else if (low.operator === ecomp && ltfn(version, low.semver)) {
-          return false;
-        }
-      }
-      return true;
-    };
-    module2.exports = outside;
-  }
-});
-
-// node_modules/semver/ranges/gtr.js
-var require_gtr = __commonJS({
-  "node_modules/semver/ranges/gtr.js"(exports2, module2) {
-    "use strict";
-    var outside = require_outside();
-    var gtr = (version, range, options) => outside(version, range, ">", options);
-    module2.exports = gtr;
-  }
-});
-
-// node_modules/semver/ranges/ltr.js
-var require_ltr = __commonJS({
-  "node_modules/semver/ranges/ltr.js"(exports2, module2) {
-    "use strict";
-    var outside = require_outside();
-    var ltr = (version, range, options) => outside(version, range, "<", options);
-    module2.exports = ltr;
-  }
-});
-
-// node_modules/semver/ranges/intersects.js
-var require_intersects = __commonJS({
-  "node_modules/semver/ranges/intersects.js"(exports2, module2) {
-    "use strict";
-    var Range = require_range2();
-    var intersects = (r1, r2, options) => {
-      r1 = new Range(r1, options);
-      r2 = new Range(r2, options);
-      return r1.intersects(r2, options);
-    };
-    module2.exports = intersects;
-  }
-});
-
-// node_modules/semver/ranges/simplify.js
-var require_simplify = __commonJS({
-  "node_modules/semver/ranges/simplify.js"(exports2, module2) {
-    "use strict";
-    var satisfies = require_satisfies();
-    var compare2 = require_compare();
-    module2.exports = (versions, range, options) => {
-      const set = [];
-      let first = null;
-      let prev = null;
-      const v = versions.sort((a, b) => compare2(a, b, options));
-      for (const version of v) {
-        const included = satisfies(version, range, options);
-        if (included) {
-          prev = version;
-          if (!first) {
-            first = version;
-          }
-        } else {
-          if (prev) {
-            set.push([first, prev]);
-          }
-          prev = null;
-          first = null;
-        }
-      }
-      if (first) {
-        set.push([first, null]);
-      }
-      const ranges = [];
-      for (const [min, max] of set) {
-        if (min === max) {
-          ranges.push(min);
-        } else if (!max && min === v[0]) {
-          ranges.push("*");
-        } else if (!max) {
-          ranges.push(`>=${min}`);
-        } else if (min === v[0]) {
-          ranges.push(`<=${max}`);
-        } else {
-          ranges.push(`${min} - ${max}`);
-        }
-      }
-      const simplified = ranges.join(" || ");
-      const original = typeof range.raw === "string" ? range.raw : String(range);
-      return simplified.length < original.length ? simplified : range;
-    };
-  }
-});
-
-// node_modules/semver/ranges/subset.js
-var require_subset = __commonJS({
-  "node_modules/semver/ranges/subset.js"(exports2, module2) {
-    "use strict";
-    var Range = require_range2();
-    var Comparator = require_comparator();
-    var { ANY } = Comparator;
-    var satisfies = require_satisfies();
-    var compare2 = require_compare();
-    var subset = (sub, dom, options = {}) => {
-      if (sub === dom) {
-        return true;
-      }
-      sub = new Range(sub, options);
-      dom = new Range(dom, options);
-      let sawNonNull = false;
-      OUTER: for (const simpleSub of sub.set) {
-        for (const simpleDom of dom.set) {
-          const isSub = simpleSubset(simpleSub, simpleDom, options);
-          sawNonNull = sawNonNull || isSub !== null;
-          if (isSub) {
-            continue OUTER;
-          }
-        }
-        if (sawNonNull) {
-          return false;
-        }
-      }
-      return true;
-    };
-    var minimumVersionWithPreRelease = [new Comparator(">=0.0.0-0")];
-    var minimumVersion = [new Comparator(">=0.0.0")];
-    var simpleSubset = (sub, dom, options) => {
-      if (sub === dom) {
-        return true;
-      }
-      if (sub.length === 1 && sub[0].semver === ANY) {
-        if (dom.length === 1 && dom[0].semver === ANY) {
-          return true;
-        } else if (options.includePrerelease) {
-          sub = minimumVersionWithPreRelease;
-        } else {
-          sub = minimumVersion;
-        }
-      }
-      if (dom.length === 1 && dom[0].semver === ANY) {
-        if (options.includePrerelease) {
-          return true;
-        } else {
-          dom = minimumVersion;
-        }
-      }
-      const eqSet = /* @__PURE__ */ new Set();
-      let gt, lt;
-      for (const c of sub) {
-        if (c.operator === ">" || c.operator === ">=") {
-          gt = higherGT(gt, c, options);
-        } else if (c.operator === "<" || c.operator === "<=") {
-          lt = lowerLT(lt, c, options);
-        } else {
-          eqSet.add(c.semver);
-        }
-      }
-      if (eqSet.size > 1) {
-        return null;
-      }
-      let gtltComp;
-      if (gt && lt) {
-        gtltComp = compare2(gt.semver, lt.semver, options);
-        if (gtltComp > 0) {
-          return null;
-        } else if (gtltComp === 0 && (gt.operator !== ">=" || lt.operator !== "<=")) {
-          return null;
-        }
-      }
-      for (const eq of eqSet) {
-        if (gt && !satisfies(eq, String(gt), options)) {
-          return null;
-        }
-        if (lt && !satisfies(eq, String(lt), options)) {
-          return null;
-        }
-        for (const c of dom) {
-          if (!satisfies(eq, String(c), options)) {
-            return false;
-          }
-        }
-        return true;
-      }
-      let higher, lower;
-      let hasDomLT, hasDomGT;
-      let needDomLTPre = lt && !options.includePrerelease && lt.semver.prerelease.length ? lt.semver : false;
-      let needDomGTPre = gt && !options.includePrerelease && gt.semver.prerelease.length ? gt.semver : false;
-      if (needDomLTPre && needDomLTPre.prerelease.length === 1 && lt.operator === "<" && needDomLTPre.prerelease[0] === 0) {
-        needDomLTPre = false;
-      }
-      for (const c of dom) {
-        hasDomGT = hasDomGT || c.operator === ">" || c.operator === ">=";
-        hasDomLT = hasDomLT || c.operator === "<" || c.operator === "<=";
-        if (gt) {
-          if (needDomGTPre) {
-            if (c.semver.prerelease && c.semver.prerelease.length && c.semver.major === needDomGTPre.major && c.semver.minor === needDomGTPre.minor && c.semver.patch === needDomGTPre.patch) {
-              needDomGTPre = false;
-            }
-          }
-          if (c.operator === ">" || c.operator === ">=") {
-            higher = higherGT(gt, c, options);
-            if (higher === c && higher !== gt) {
-              return false;
-            }
-          } else if (gt.operator === ">=" && !c.test(gt.semver)) {
-            return false;
-          }
-        }
-        if (lt) {
-          if (needDomLTPre) {
-            if (c.semver.prerelease && c.semver.prerelease.length && c.semver.major === needDomLTPre.major && c.semver.minor === needDomLTPre.minor && c.semver.patch === needDomLTPre.patch) {
-              needDomLTPre = false;
-            }
-          }
-          if (c.operator === "<" || c.operator === "<=") {
-            lower = lowerLT(lt, c, options);
-            if (lower === c && lower !== lt) {
-              return false;
-            }
-          } else if (lt.operator === "<=" && !c.test(lt.semver)) {
-            return false;
-          }
-        }
-        if (!c.operator && (lt || gt) && gtltComp !== 0) {
-          return false;
-        }
-      }
-      if (gt && hasDomLT && !lt && gtltComp !== 0) {
-        return false;
-      }
-      if (lt && hasDomGT && !gt && gtltComp !== 0) {
-        return false;
-      }
-      if (needDomGTPre || needDomLTPre) {
-        return false;
-      }
-      return true;
-    };
-    var higherGT = (a, b, options) => {
-      if (!a) {
-        return b;
-      }
-      const comp = compare2(a.semver, b.semver, options);
-      return comp > 0 ? a : comp < 0 ? b : b.operator === ">" && a.operator === ">=" ? b : a;
-    };
-    var lowerLT = (a, b, options) => {
-      if (!a) {
-        return b;
-      }
-      const comp = compare2(a.semver, b.semver, options);
-      return comp < 0 ? a : comp > 0 ? b : b.operator === "<" && a.operator === "<=" ? b : a;
-    };
-    module2.exports = subset;
-  }
-});
-
-// node_modules/semver/index.js
-var require_semver2 = __commonJS({
-  "node_modules/semver/index.js"(exports2, module2) {
-    "use strict";
-    var internalRe = require_re();
-    var constants = require_constants();
-    var SemVer = require_semver();
-    var identifiers = require_identifiers();
-    var parse = require_parse2();
-    var valid = require_valid();
-    var clean = require_clean();
-    var inc = require_inc();
-    var diff = require_diff();
-    var major = require_major();
-    var minor = require_minor();
-    var patch = require_patch();
-    var prerelease = require_prerelease();
-    var compare2 = require_compare();
-    var rcompare = require_rcompare();
-    var compareLoose = require_compare_loose();
-    var compareBuild = require_compare_build();
-    var sort = require_sort();
-    var rsort = require_rsort();
-    var gt = require_gt();
-    var lt = require_lt();
-    var eq = require_eq();
-    var neq = require_neq();
-    var gte = require_gte();
-    var lte = require_lte();
-    var cmp = require_cmp();
-    var coerce2 = require_coerce();
-    var truncate = require_truncate();
-    var Comparator = require_comparator();
-    var Range = require_range2();
-    var satisfies = require_satisfies();
-    var toComparators = require_to_comparators();
-    var maxSatisfying = require_max_satisfying();
-    var minSatisfying = require_min_satisfying();
-    var minVersion = require_min_version();
-    var validRange = require_valid2();
-    var outside = require_outside();
-    var gtr = require_gtr();
-    var ltr = require_ltr();
-    var intersects = require_intersects();
-    var simplifyRange = require_simplify();
-    var subset = require_subset();
-    module2.exports = {
-      parse,
-      valid,
-      clean,
-      inc,
-      diff,
-      major,
-      minor,
-      patch,
-      prerelease,
-      compare: compare2,
-      rcompare,
-      compareLoose,
-      compareBuild,
-      sort,
-      rsort,
-      gt,
-      lt,
-      eq,
-      neq,
-      gte,
-      lte,
-      cmp,
-      coerce: coerce2,
-      truncate,
-      Comparator,
-      Range,
-      satisfies,
-      toComparators,
-      maxSatisfying,
-      minSatisfying,
-      minVersion,
-      validRange,
-      outside,
-      gtr,
-      ltr,
-      intersects,
-      simplifyRange,
-      subset,
-      SemVer,
-      re: internalRe.re,
-      src: internalRe.src,
-      tokens: internalRe.t,
-      SEMVER_SPEC_VERSION: constants.SEMVER_SPEC_VERSION,
-      RELEASE_TYPES: constants.RELEASE_TYPES,
-      compareIdentifiers: identifiers.compareIdentifiers,
-      rcompareIdentifiers: identifiers.rcompareIdentifiers
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js
-var require_asymmetricKeyDetailsSupported = __commonJS({
-  "node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js"(exports2, module2) {
-    var semver = require_semver2();
-    module2.exports = semver.satisfies(process.version, ">=15.7.0");
-  }
-});
-
-// node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js
-var require_rsaPssKeyDetailsSupported = __commonJS({
-  "node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js"(exports2, module2) {
-    var semver = require_semver2();
-    module2.exports = semver.satisfies(process.version, ">=16.9.0");
-  }
-});
-
-// node_modules/jsonwebtoken/lib/validateAsymmetricKey.js
-var require_validateAsymmetricKey = __commonJS({
-  "node_modules/jsonwebtoken/lib/validateAsymmetricKey.js"(exports2, module2) {
-    var ASYMMETRIC_KEY_DETAILS_SUPPORTED = require_asymmetricKeyDetailsSupported();
-    var RSA_PSS_KEY_DETAILS_SUPPORTED = require_rsaPssKeyDetailsSupported();
-    var allowedAlgorithmsForKeys = {
-      "ec": ["ES256", "ES384", "ES512"],
-      "rsa": ["RS256", "PS256", "RS384", "PS384", "RS512", "PS512"],
-      "rsa-pss": ["PS256", "PS384", "PS512"]
-    };
-    var allowedCurves = {
-      ES256: "prime256v1",
-      ES384: "secp384r1",
-      ES512: "secp521r1"
-    };
-    module2.exports = function(algorithm, key) {
-      if (!algorithm || !key) return;
-      const keyType = key.asymmetricKeyType;
-      if (!keyType) return;
-      const allowedAlgorithms = allowedAlgorithmsForKeys[keyType];
-      if (!allowedAlgorithms) {
-        throw new Error(`Unknown key type "${keyType}".`);
-      }
-      if (!allowedAlgorithms.includes(algorithm)) {
-        throw new Error(`"alg" parameter for "${keyType}" key type must be one of: ${allowedAlgorithms.join(", ")}.`);
-      }
-      if (ASYMMETRIC_KEY_DETAILS_SUPPORTED) {
-        switch (keyType) {
-          case "ec":
-            const keyCurve = key.asymmetricKeyDetails.namedCurve;
-            const allowedCurve = allowedCurves[algorithm];
-            if (keyCurve !== allowedCurve) {
-              throw new Error(`"alg" parameter "${algorithm}" requires curve "${allowedCurve}".`);
-            }
-            break;
-          case "rsa-pss":
-            if (RSA_PSS_KEY_DETAILS_SUPPORTED) {
-              const length = parseInt(algorithm.slice(-3), 10);
-              const { hashAlgorithm, mgf1HashAlgorithm, saltLength } = key.asymmetricKeyDetails;
-              if (hashAlgorithm !== `sha${length}` || mgf1HashAlgorithm !== hashAlgorithm) {
-                throw new Error(`Invalid key for this operation, its RSA-PSS parameters do not meet the requirements of "alg" ${algorithm}.`);
-              }
-              if (saltLength !== void 0 && saltLength > length >> 3) {
-                throw new Error(`Invalid key for this operation, its RSA-PSS parameter saltLength does not meet the requirements of "alg" ${algorithm}.`);
-              }
-            }
-            break;
-        }
-      }
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/lib/psSupported.js
-var require_psSupported = __commonJS({
-  "node_modules/jsonwebtoken/lib/psSupported.js"(exports2, module2) {
-    var semver = require_semver2();
-    module2.exports = semver.satisfies(process.version, "^6.12.0 || >=8.0.0");
-  }
-});
-
-// node_modules/jsonwebtoken/verify.js
-var require_verify = __commonJS({
-  "node_modules/jsonwebtoken/verify.js"(exports2, module2) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var NotBeforeError = require_NotBeforeError();
-    var TokenExpiredError = require_TokenExpiredError();
-    var decode = require_decode();
-    var timespan = require_timespan();
-    var validateAsymmetricKey = require_validateAsymmetricKey();
-    var PS_SUPPORTED = require_psSupported();
-    var jws = require_jws();
-    var { KeyObject, createSecretKey, createPublicKey } = require("crypto");
-    var PUB_KEY_ALGS = ["RS256", "RS384", "RS512"];
-    var EC_KEY_ALGS = ["ES256", "ES384", "ES512"];
-    var RSA_KEY_ALGS = ["RS256", "RS384", "RS512"];
-    var HS_ALGS = ["HS256", "HS384", "HS512"];
-    if (PS_SUPPORTED) {
-      PUB_KEY_ALGS.splice(PUB_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
-      RSA_KEY_ALGS.splice(RSA_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
-    }
-    module2.exports = function(jwtString, secretOrPublicKey, options, callback) {
-      if (typeof options === "function" && !callback) {
-        callback = options;
-        options = {};
-      }
-      if (!options) {
-        options = {};
-      }
-      options = Object.assign({}, options);
-      let done;
-      if (callback) {
-        done = callback;
-      } else {
-        done = function(err, data) {
-          if (err) throw err;
-          return data;
-        };
-      }
-      if (options.clockTimestamp && typeof options.clockTimestamp !== "number") {
-        return done(new JsonWebTokenError("clockTimestamp must be a number"));
-      }
-      if (options.nonce !== void 0 && (typeof options.nonce !== "string" || options.nonce.trim() === "")) {
-        return done(new JsonWebTokenError("nonce must be a non-empty string"));
-      }
-      if (options.allowInvalidAsymmetricKeyTypes !== void 0 && typeof options.allowInvalidAsymmetricKeyTypes !== "boolean") {
-        return done(new JsonWebTokenError("allowInvalidAsymmetricKeyTypes must be a boolean"));
-      }
-      const clockTimestamp = options.clockTimestamp || Math.floor(Date.now() / 1e3);
-      if (!jwtString) {
-        return done(new JsonWebTokenError("jwt must be provided"));
-      }
-      if (typeof jwtString !== "string") {
-        return done(new JsonWebTokenError("jwt must be a string"));
-      }
-      const parts = jwtString.split(".");
-      if (parts.length !== 3) {
-        return done(new JsonWebTokenError("jwt malformed"));
-      }
-      let decodedToken;
-      try {
-        decodedToken = decode(jwtString, { complete: true });
-      } catch (err) {
-        return done(err);
-      }
-      if (!decodedToken) {
-        return done(new JsonWebTokenError("invalid token"));
-      }
-      const header = decodedToken.header;
-      let getSecret;
-      if (typeof secretOrPublicKey === "function") {
-        if (!callback) {
-          return done(new JsonWebTokenError("verify must be called asynchronous if secret or public key is provided as a callback"));
-        }
-        getSecret = secretOrPublicKey;
-      } else {
-        getSecret = function(header2, secretCallback) {
-          return secretCallback(null, secretOrPublicKey);
-        };
-      }
-      return getSecret(header, function(err, secretOrPublicKey2) {
-        if (err) {
-          return done(new JsonWebTokenError("error in secret or public key callback: " + err.message));
-        }
-        const hasSignature = parts[2].trim() !== "";
-        if (!hasSignature && secretOrPublicKey2) {
-          return done(new JsonWebTokenError("jwt signature is required"));
-        }
-        if (hasSignature && !secretOrPublicKey2) {
-          return done(new JsonWebTokenError("secret or public key must be provided"));
-        }
-        if (!hasSignature && !options.algorithms) {
-          return done(new JsonWebTokenError('please specify "none" in "algorithms" to verify unsigned tokens'));
-        }
-        if (secretOrPublicKey2 != null && !(secretOrPublicKey2 instanceof KeyObject)) {
-          try {
-            secretOrPublicKey2 = createPublicKey(secretOrPublicKey2);
-          } catch (_) {
-            try {
-              secretOrPublicKey2 = createSecretKey(typeof secretOrPublicKey2 === "string" ? Buffer.from(secretOrPublicKey2) : secretOrPublicKey2);
-            } catch (_2) {
-              return done(new JsonWebTokenError("secretOrPublicKey is not valid key material"));
-            }
-          }
-        }
-        if (!options.algorithms) {
-          if (secretOrPublicKey2.type === "secret") {
-            options.algorithms = HS_ALGS;
-          } else if (["rsa", "rsa-pss"].includes(secretOrPublicKey2.asymmetricKeyType)) {
-            options.algorithms = RSA_KEY_ALGS;
-          } else if (secretOrPublicKey2.asymmetricKeyType === "ec") {
-            options.algorithms = EC_KEY_ALGS;
-          } else {
-            options.algorithms = PUB_KEY_ALGS;
-          }
-        }
-        if (options.algorithms.indexOf(decodedToken.header.alg) === -1) {
-          return done(new JsonWebTokenError("invalid algorithm"));
-        }
-        if (header.alg.startsWith("HS") && secretOrPublicKey2.type !== "secret") {
-          return done(new JsonWebTokenError(`secretOrPublicKey must be a symmetric key when using ${header.alg}`));
-        } else if (/^(?:RS|PS|ES)/.test(header.alg) && secretOrPublicKey2.type !== "public") {
-          return done(new JsonWebTokenError(`secretOrPublicKey must be an asymmetric key when using ${header.alg}`));
-        }
-        if (!options.allowInvalidAsymmetricKeyTypes) {
-          try {
-            validateAsymmetricKey(header.alg, secretOrPublicKey2);
-          } catch (e) {
-            return done(e);
-          }
-        }
-        let valid;
-        try {
-          valid = jws.verify(jwtString, decodedToken.header.alg, secretOrPublicKey2);
-        } catch (e) {
-          return done(e);
-        }
-        if (!valid) {
-          return done(new JsonWebTokenError("invalid signature"));
-        }
-        const payload = decodedToken.payload;
-        if (typeof payload.nbf !== "undefined" && !options.ignoreNotBefore) {
-          if (typeof payload.nbf !== "number") {
-            return done(new JsonWebTokenError("invalid nbf value"));
-          }
-          if (payload.nbf > clockTimestamp + (options.clockTolerance || 0)) {
-            return done(new NotBeforeError("jwt not active", new Date(payload.nbf * 1e3)));
-          }
-        }
-        if (typeof payload.exp !== "undefined" && !options.ignoreExpiration) {
-          if (typeof payload.exp !== "number") {
-            return done(new JsonWebTokenError("invalid exp value"));
-          }
-          if (clockTimestamp >= payload.exp + (options.clockTolerance || 0)) {
-            return done(new TokenExpiredError("jwt expired", new Date(payload.exp * 1e3)));
-          }
-        }
-        if (options.audience) {
-          const audiences = Array.isArray(options.audience) ? options.audience : [options.audience];
-          const target = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-          const match = target.some(function(targetAudience) {
-            return audiences.some(function(audience) {
-              return audience instanceof RegExp ? audience.test(targetAudience) : audience === targetAudience;
-            });
-          });
-          if (!match) {
-            return done(new JsonWebTokenError("jwt audience invalid. expected: " + audiences.join(" or ")));
-          }
-        }
-        if (options.issuer) {
-          const invalid_issuer = typeof options.issuer === "string" && payload.iss !== options.issuer || Array.isArray(options.issuer) && options.issuer.indexOf(payload.iss) === -1;
-          if (invalid_issuer) {
-            return done(new JsonWebTokenError("jwt issuer invalid. expected: " + options.issuer));
-          }
-        }
-        if (options.subject) {
-          if (payload.sub !== options.subject) {
-            return done(new JsonWebTokenError("jwt subject invalid. expected: " + options.subject));
-          }
-        }
-        if (options.jwtid) {
-          if (payload.jti !== options.jwtid) {
-            return done(new JsonWebTokenError("jwt jwtid invalid. expected: " + options.jwtid));
-          }
-        }
-        if (options.nonce) {
-          if (payload.nonce !== options.nonce) {
-            return done(new JsonWebTokenError("jwt nonce invalid. expected: " + options.nonce));
-          }
-        }
-        if (options.maxAge) {
-          if (typeof payload.iat !== "number") {
-            return done(new JsonWebTokenError("iat required when maxAge is specified"));
-          }
-          const maxAgeTimestamp = timespan(options.maxAge, payload.iat);
-          if (typeof maxAgeTimestamp === "undefined") {
-            return done(new JsonWebTokenError('"maxAge" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
-          }
-          if (clockTimestamp >= maxAgeTimestamp + (options.clockTolerance || 0)) {
-            return done(new TokenExpiredError("maxAge exceeded", new Date(maxAgeTimestamp * 1e3)));
-          }
-        }
-        if (options.complete === true) {
-          const signature = decodedToken.signature;
-          return done(null, {
-            header,
-            payload,
-            signature
-          });
-        }
-        return done(null, payload);
-      });
-    };
-  }
-});
-
-// node_modules/lodash.includes/index.js
-var require_lodash = __commonJS({
-  "node_modules/lodash.includes/index.js"(exports2, module2) {
-    var INFINITY = 1 / 0;
-    var MAX_SAFE_INTEGER = 9007199254740991;
-    var MAX_INTEGER = 17976931348623157e292;
-    var NAN = 0 / 0;
-    var argsTag = "[object Arguments]";
-    var funcTag = "[object Function]";
-    var genTag = "[object GeneratorFunction]";
-    var stringTag = "[object String]";
-    var symbolTag = "[object Symbol]";
-    var reTrim = /^\s+|\s+$/g;
-    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-    var reIsBinary = /^0b[01]+$/i;
-    var reIsOctal = /^0o[0-7]+$/i;
-    var reIsUint = /^(?:0|[1-9]\d*)$/;
-    var freeParseInt = parseInt;
-    function arrayMap(array, iteratee) {
-      var index = -1, length = array ? array.length : 0, result = Array(length);
-      while (++index < length) {
-        result[index] = iteratee(array[index], index, array);
-      }
-      return result;
-    }
-    function baseFindIndex(array, predicate, fromIndex, fromRight) {
-      var length = array.length, index = fromIndex + (fromRight ? 1 : -1);
-      while (fromRight ? index-- : ++index < length) {
-        if (predicate(array[index], index, array)) {
-          return index;
-        }
-      }
-      return -1;
-    }
-    function baseIndexOf(array, value, fromIndex) {
-      if (value !== value) {
-        return baseFindIndex(array, baseIsNaN, fromIndex);
-      }
-      var index = fromIndex - 1, length = array.length;
-      while (++index < length) {
-        if (array[index] === value) {
-          return index;
-        }
-      }
-      return -1;
-    }
-    function baseIsNaN(value) {
-      return value !== value;
-    }
-    function baseTimes(n, iteratee) {
-      var index = -1, result = Array(n);
-      while (++index < n) {
-        result[index] = iteratee(index);
-      }
-      return result;
-    }
-    function baseValues(object, props) {
-      return arrayMap(props, function(key) {
-        return object[key];
-      });
-    }
-    function overArg(func, transform) {
-      return function(arg) {
-        return func(transform(arg));
-      };
-    }
-    var objectProto = Object.prototype;
-    var hasOwnProperty = objectProto.hasOwnProperty;
-    var objectToString = objectProto.toString;
-    var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-    var nativeKeys = overArg(Object.keys, Object);
-    var nativeMax = Math.max;
-    function arrayLikeKeys(value, inherited) {
-      var result = isArray(value) || isArguments(value) ? baseTimes(value.length, String) : [];
-      var length = result.length, skipIndexes = !!length;
-      for (var key in value) {
-        if ((inherited || hasOwnProperty.call(value, key)) && !(skipIndexes && (key == "length" || isIndex(key, length)))) {
-          result.push(key);
-        }
-      }
-      return result;
-    }
-    function baseKeys(object) {
-      if (!isPrototype(object)) {
-        return nativeKeys(object);
-      }
-      var result = [];
-      for (var key in Object(object)) {
-        if (hasOwnProperty.call(object, key) && key != "constructor") {
-          result.push(key);
-        }
-      }
-      return result;
-    }
-    function isIndex(value, length) {
-      length = length == null ? MAX_SAFE_INTEGER : length;
-      return !!length && (typeof value == "number" || reIsUint.test(value)) && (value > -1 && value % 1 == 0 && value < length);
-    }
-    function isPrototype(value) {
-      var Ctor = value && value.constructor, proto = typeof Ctor == "function" && Ctor.prototype || objectProto;
-      return value === proto;
-    }
-    function includes(collection, value, fromIndex, guard) {
-      collection = isArrayLike(collection) ? collection : values(collection);
-      fromIndex = fromIndex && !guard ? toInteger(fromIndex) : 0;
-      var length = collection.length;
-      if (fromIndex < 0) {
-        fromIndex = nativeMax(length + fromIndex, 0);
-      }
-      return isString2(collection) ? fromIndex <= length && collection.indexOf(value, fromIndex) > -1 : !!length && baseIndexOf(collection, value, fromIndex) > -1;
-    }
-    function isArguments(value) {
-      return isArrayLikeObject(value) && hasOwnProperty.call(value, "callee") && (!propertyIsEnumerable.call(value, "callee") || objectToString.call(value) == argsTag);
-    }
-    var isArray = Array.isArray;
-    function isArrayLike(value) {
-      return value != null && isLength(value.length) && !isFunction(value);
-    }
-    function isArrayLikeObject(value) {
-      return isObjectLike(value) && isArrayLike(value);
-    }
-    function isFunction(value) {
-      var tag = isObject(value) ? objectToString.call(value) : "";
-      return tag == funcTag || tag == genTag;
-    }
-    function isLength(value) {
-      return typeof value == "number" && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-    }
-    function isObject(value) {
-      var type = typeof value;
-      return !!value && (type == "object" || type == "function");
-    }
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isString2(value) {
-      return typeof value == "string" || !isArray(value) && isObjectLike(value) && objectToString.call(value) == stringTag;
-    }
-    function isSymbol(value) {
-      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
-    }
-    function toFinite(value) {
-      if (!value) {
-        return value === 0 ? value : 0;
-      }
-      value = toNumber(value);
-      if (value === INFINITY || value === -INFINITY) {
-        var sign = value < 0 ? -1 : 1;
-        return sign * MAX_INTEGER;
-      }
-      return value === value ? value : 0;
-    }
-    function toInteger(value) {
-      var result = toFinite(value), remainder = result % 1;
-      return result === result ? remainder ? result - remainder : result : 0;
-    }
-    function toNumber(value) {
-      if (typeof value == "number") {
-        return value;
-      }
-      if (isSymbol(value)) {
-        return NAN;
-      }
-      if (isObject(value)) {
-        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
-        value = isObject(other) ? other + "" : other;
-      }
-      if (typeof value != "string") {
-        return value === 0 ? value : +value;
-      }
-      value = value.replace(reTrim, "");
-      var isBinary = reIsBinary.test(value);
-      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
-    }
-    function keys(object) {
-      return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
-    }
-    function values(object) {
-      return object ? baseValues(object, keys(object)) : [];
-    }
-    module2.exports = includes;
-  }
-});
-
-// node_modules/lodash.isboolean/index.js
-var require_lodash2 = __commonJS({
-  "node_modules/lodash.isboolean/index.js"(exports2, module2) {
-    var boolTag = "[object Boolean]";
-    var objectProto = Object.prototype;
-    var objectToString = objectProto.toString;
-    function isBoolean(value) {
-      return value === true || value === false || isObjectLike(value) && objectToString.call(value) == boolTag;
-    }
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    module2.exports = isBoolean;
-  }
-});
-
-// node_modules/lodash.isinteger/index.js
-var require_lodash3 = __commonJS({
-  "node_modules/lodash.isinteger/index.js"(exports2, module2) {
-    var INFINITY = 1 / 0;
-    var MAX_INTEGER = 17976931348623157e292;
-    var NAN = 0 / 0;
-    var symbolTag = "[object Symbol]";
-    var reTrim = /^\s+|\s+$/g;
-    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-    var reIsBinary = /^0b[01]+$/i;
-    var reIsOctal = /^0o[0-7]+$/i;
-    var freeParseInt = parseInt;
-    var objectProto = Object.prototype;
-    var objectToString = objectProto.toString;
-    function isInteger(value) {
-      return typeof value == "number" && value == toInteger(value);
-    }
-    function isObject(value) {
-      var type = typeof value;
-      return !!value && (type == "object" || type == "function");
-    }
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isSymbol(value) {
-      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
-    }
-    function toFinite(value) {
-      if (!value) {
-        return value === 0 ? value : 0;
-      }
-      value = toNumber(value);
-      if (value === INFINITY || value === -INFINITY) {
-        var sign = value < 0 ? -1 : 1;
-        return sign * MAX_INTEGER;
-      }
-      return value === value ? value : 0;
-    }
-    function toInteger(value) {
-      var result = toFinite(value), remainder = result % 1;
-      return result === result ? remainder ? result - remainder : result : 0;
-    }
-    function toNumber(value) {
-      if (typeof value == "number") {
-        return value;
-      }
-      if (isSymbol(value)) {
-        return NAN;
-      }
-      if (isObject(value)) {
-        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
-        value = isObject(other) ? other + "" : other;
-      }
-      if (typeof value != "string") {
-        return value === 0 ? value : +value;
-      }
-      value = value.replace(reTrim, "");
-      var isBinary = reIsBinary.test(value);
-      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
-    }
-    module2.exports = isInteger;
-  }
-});
-
-// node_modules/lodash.isnumber/index.js
-var require_lodash4 = __commonJS({
-  "node_modules/lodash.isnumber/index.js"(exports2, module2) {
-    var numberTag = "[object Number]";
-    var objectProto = Object.prototype;
-    var objectToString = objectProto.toString;
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isNumber(value) {
-      return typeof value == "number" || isObjectLike(value) && objectToString.call(value) == numberTag;
-    }
-    module2.exports = isNumber;
-  }
-});
-
-// node_modules/lodash.isplainobject/index.js
-var require_lodash5 = __commonJS({
-  "node_modules/lodash.isplainobject/index.js"(exports2, module2) {
-    var objectTag = "[object Object]";
-    function isHostObject(value) {
-      var result = false;
-      if (value != null && typeof value.toString != "function") {
-        try {
-          result = !!(value + "");
-        } catch (e) {
-        }
-      }
-      return result;
-    }
-    function overArg(func, transform) {
-      return function(arg) {
-        return func(transform(arg));
-      };
-    }
-    var funcProto = Function.prototype;
-    var objectProto = Object.prototype;
-    var funcToString = funcProto.toString;
-    var hasOwnProperty = objectProto.hasOwnProperty;
-    var objectCtorString = funcToString.call(Object);
-    var objectToString = objectProto.toString;
-    var getPrototype = overArg(Object.getPrototypeOf, Object);
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isPlainObject(value) {
-      if (!isObjectLike(value) || objectToString.call(value) != objectTag || isHostObject(value)) {
-        return false;
-      }
-      var proto = getPrototype(value);
-      if (proto === null) {
-        return true;
-      }
-      var Ctor = hasOwnProperty.call(proto, "constructor") && proto.constructor;
-      return typeof Ctor == "function" && Ctor instanceof Ctor && funcToString.call(Ctor) == objectCtorString;
-    }
-    module2.exports = isPlainObject;
-  }
-});
-
-// node_modules/lodash.isstring/index.js
-var require_lodash6 = __commonJS({
-  "node_modules/lodash.isstring/index.js"(exports2, module2) {
-    var stringTag = "[object String]";
-    var objectProto = Object.prototype;
-    var objectToString = objectProto.toString;
-    var isArray = Array.isArray;
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isString2(value) {
-      return typeof value == "string" || !isArray(value) && isObjectLike(value) && objectToString.call(value) == stringTag;
-    }
-    module2.exports = isString2;
-  }
-});
-
-// node_modules/lodash.once/index.js
-var require_lodash7 = __commonJS({
-  "node_modules/lodash.once/index.js"(exports2, module2) {
-    var FUNC_ERROR_TEXT = "Expected a function";
-    var INFINITY = 1 / 0;
-    var MAX_INTEGER = 17976931348623157e292;
-    var NAN = 0 / 0;
-    var symbolTag = "[object Symbol]";
-    var reTrim = /^\s+|\s+$/g;
-    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-    var reIsBinary = /^0b[01]+$/i;
-    var reIsOctal = /^0o[0-7]+$/i;
-    var freeParseInt = parseInt;
-    var objectProto = Object.prototype;
-    var objectToString = objectProto.toString;
-    function before(n, func) {
-      var result;
-      if (typeof func != "function") {
-        throw new TypeError(FUNC_ERROR_TEXT);
-      }
-      n = toInteger(n);
-      return function() {
-        if (--n > 0) {
-          result = func.apply(this, arguments);
-        }
-        if (n <= 1) {
-          func = void 0;
-        }
-        return result;
-      };
-    }
-    function once(func) {
-      return before(2, func);
-    }
-    function isObject(value) {
-      var type = typeof value;
-      return !!value && (type == "object" || type == "function");
-    }
-    function isObjectLike(value) {
-      return !!value && typeof value == "object";
-    }
-    function isSymbol(value) {
-      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
-    }
-    function toFinite(value) {
-      if (!value) {
-        return value === 0 ? value : 0;
-      }
-      value = toNumber(value);
-      if (value === INFINITY || value === -INFINITY) {
-        var sign = value < 0 ? -1 : 1;
-        return sign * MAX_INTEGER;
-      }
-      return value === value ? value : 0;
-    }
-    function toInteger(value) {
-      var result = toFinite(value), remainder = result % 1;
-      return result === result ? remainder ? result - remainder : result : 0;
-    }
-    function toNumber(value) {
-      if (typeof value == "number") {
-        return value;
-      }
-      if (isSymbol(value)) {
-        return NAN;
-      }
-      if (isObject(value)) {
-        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
-        value = isObject(other) ? other + "" : other;
-      }
-      if (typeof value != "string") {
-        return value === 0 ? value : +value;
-      }
-      value = value.replace(reTrim, "");
-      var isBinary = reIsBinary.test(value);
-      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
-    }
-    module2.exports = once;
-  }
-});
-
-// node_modules/jsonwebtoken/sign.js
-var require_sign2 = __commonJS({
-  "node_modules/jsonwebtoken/sign.js"(exports2, module2) {
-    var timespan = require_timespan();
-    var PS_SUPPORTED = require_psSupported();
-    var validateAsymmetricKey = require_validateAsymmetricKey();
-    var jws = require_jws();
-    var includes = require_lodash();
-    var isBoolean = require_lodash2();
-    var isInteger = require_lodash3();
-    var isNumber = require_lodash4();
-    var isPlainObject = require_lodash5();
-    var isString2 = require_lodash6();
-    var once = require_lodash7();
-    var { KeyObject, createSecretKey, createPrivateKey } = require("crypto");
-    var SUPPORTED_ALGS = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512", "none"];
-    if (PS_SUPPORTED) {
-      SUPPORTED_ALGS.splice(3, 0, "PS256", "PS384", "PS512");
-    }
-    var sign_options_schema = {
-      expiresIn: { isValid: function(value) {
-        return isInteger(value) || isString2(value) && value;
-      }, message: '"expiresIn" should be a number of seconds or string representing a timespan' },
-      notBefore: { isValid: function(value) {
-        return isInteger(value) || isString2(value) && value;
-      }, message: '"notBefore" should be a number of seconds or string representing a timespan' },
-      audience: { isValid: function(value) {
-        return isString2(value) || Array.isArray(value);
-      }, message: '"audience" must be a string or array' },
-      algorithm: { isValid: includes.bind(null, SUPPORTED_ALGS), message: '"algorithm" must be a valid string enum value' },
-      header: { isValid: isPlainObject, message: '"header" must be an object' },
-      encoding: { isValid: isString2, message: '"encoding" must be a string' },
-      issuer: { isValid: isString2, message: '"issuer" must be a string' },
-      subject: { isValid: isString2, message: '"subject" must be a string' },
-      jwtid: { isValid: isString2, message: '"jwtid" must be a string' },
-      noTimestamp: { isValid: isBoolean, message: '"noTimestamp" must be a boolean' },
-      keyid: { isValid: isString2, message: '"keyid" must be a string' },
-      mutatePayload: { isValid: isBoolean, message: '"mutatePayload" must be a boolean' },
-      allowInsecureKeySizes: { isValid: isBoolean, message: '"allowInsecureKeySizes" must be a boolean' },
-      allowInvalidAsymmetricKeyTypes: { isValid: isBoolean, message: '"allowInvalidAsymmetricKeyTypes" must be a boolean' }
-    };
-    var registered_claims_schema = {
-      iat: { isValid: isNumber, message: '"iat" should be a number of seconds' },
-      exp: { isValid: isNumber, message: '"exp" should be a number of seconds' },
-      nbf: { isValid: isNumber, message: '"nbf" should be a number of seconds' }
-    };
-    function validate(schema, allowUnknown, object, parameterName) {
-      if (!isPlainObject(object)) {
-        throw new Error('Expected "' + parameterName + '" to be a plain object.');
-      }
-      Object.keys(object).forEach(function(key) {
-        const validator = schema[key];
-        if (!validator) {
-          if (!allowUnknown) {
-            throw new Error('"' + key + '" is not allowed in "' + parameterName + '"');
-          }
-          return;
-        }
-        if (!validator.isValid(object[key])) {
-          throw new Error(validator.message);
-        }
-      });
-    }
-    function validateOptions(options) {
-      return validate(sign_options_schema, false, options, "options");
-    }
-    function validatePayload(payload) {
-      return validate(registered_claims_schema, true, payload, "payload");
-    }
-    var options_to_payload = {
-      "audience": "aud",
-      "issuer": "iss",
-      "subject": "sub",
-      "jwtid": "jti"
-    };
-    var options_for_objects = [
-      "expiresIn",
-      "notBefore",
-      "noTimestamp",
-      "audience",
-      "issuer",
-      "subject",
-      "jwtid"
-    ];
-    module2.exports = function(payload, secretOrPrivateKey, options, callback) {
-      if (typeof options === "function") {
-        callback = options;
-        options = {};
-      } else {
-        options = options || {};
-      }
-      const isObjectPayload = typeof payload === "object" && !Buffer.isBuffer(payload);
-      const header = Object.assign({
-        alg: options.algorithm || "HS256",
-        typ: isObjectPayload ? "JWT" : void 0,
-        kid: options.keyid
-      }, options.header);
-      function failure(err) {
-        if (callback) {
-          return callback(err);
-        }
-        throw err;
-      }
-      if (!secretOrPrivateKey && options.algorithm !== "none") {
-        return failure(new Error("secretOrPrivateKey must have a value"));
-      }
-      if (secretOrPrivateKey != null && !(secretOrPrivateKey instanceof KeyObject)) {
-        try {
-          secretOrPrivateKey = createPrivateKey(secretOrPrivateKey);
-        } catch (_) {
-          try {
-            secretOrPrivateKey = createSecretKey(typeof secretOrPrivateKey === "string" ? Buffer.from(secretOrPrivateKey) : secretOrPrivateKey);
-          } catch (_2) {
-            return failure(new Error("secretOrPrivateKey is not valid key material"));
-          }
-        }
-      }
-      if (header.alg.startsWith("HS") && secretOrPrivateKey.type !== "secret") {
-        return failure(new Error(`secretOrPrivateKey must be a symmetric key when using ${header.alg}`));
-      } else if (/^(?:RS|PS|ES)/.test(header.alg)) {
-        if (secretOrPrivateKey.type !== "private") {
-          return failure(new Error(`secretOrPrivateKey must be an asymmetric key when using ${header.alg}`));
-        }
-        if (!options.allowInsecureKeySizes && !header.alg.startsWith("ES") && secretOrPrivateKey.asymmetricKeyDetails !== void 0 && //KeyObject.asymmetricKeyDetails is supported in Node 15+
-        secretOrPrivateKey.asymmetricKeyDetails.modulusLength < 2048) {
-          return failure(new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`));
-        }
-      }
-      if (typeof payload === "undefined") {
-        return failure(new Error("payload is required"));
-      } else if (isObjectPayload) {
-        try {
-          validatePayload(payload);
-        } catch (error) {
-          return failure(error);
-        }
-        if (!options.mutatePayload) {
-          payload = Object.assign({}, payload);
-        }
-      } else {
-        const invalid_options = options_for_objects.filter(function(opt) {
-          return typeof options[opt] !== "undefined";
-        });
-        if (invalid_options.length > 0) {
-          return failure(new Error("invalid " + invalid_options.join(",") + " option for " + typeof payload + " payload"));
-        }
-      }
-      if (typeof payload.exp !== "undefined" && typeof options.expiresIn !== "undefined") {
-        return failure(new Error('Bad "options.expiresIn" option the payload already has an "exp" property.'));
-      }
-      if (typeof payload.nbf !== "undefined" && typeof options.notBefore !== "undefined") {
-        return failure(new Error('Bad "options.notBefore" option the payload already has an "nbf" property.'));
-      }
-      try {
-        validateOptions(options);
-      } catch (error) {
-        return failure(error);
-      }
-      if (!options.allowInvalidAsymmetricKeyTypes) {
-        try {
-          validateAsymmetricKey(header.alg, secretOrPrivateKey);
-        } catch (error) {
-          return failure(error);
-        }
-      }
-      const timestamp = payload.iat || Math.floor(Date.now() / 1e3);
-      if (options.noTimestamp) {
-        delete payload.iat;
-      } else if (isObjectPayload) {
-        payload.iat = timestamp;
-      }
-      if (typeof options.notBefore !== "undefined") {
-        try {
-          payload.nbf = timespan(options.notBefore, timestamp);
-        } catch (err) {
-          return failure(err);
-        }
-        if (typeof payload.nbf === "undefined") {
-          return failure(new Error('"notBefore" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
-        }
-      }
-      if (typeof options.expiresIn !== "undefined" && typeof payload === "object") {
-        try {
-          payload.exp = timespan(options.expiresIn, timestamp);
-        } catch (err) {
-          return failure(err);
-        }
-        if (typeof payload.exp === "undefined") {
-          return failure(new Error('"expiresIn" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
-        }
-      }
-      Object.keys(options_to_payload).forEach(function(key) {
-        const claim = options_to_payload[key];
-        if (typeof options[key] !== "undefined") {
-          if (typeof payload[claim] !== "undefined") {
-            return failure(new Error('Bad "options.' + key + '" option. The payload already has an "' + claim + '" property.'));
-          }
-          payload[claim] = options[key];
-        }
-      });
-      const encoding = options.encoding || "utf8";
-      if (typeof callback === "function") {
-        callback = callback && once(callback);
-        jws.createSign({
-          header,
-          privateKey: secretOrPrivateKey,
-          payload,
-          encoding
-        }).once("error", callback).once("done", function(signature) {
-          if (!options.allowInsecureKeySizes && /^(?:RS|PS)/.test(header.alg) && signature.length < 256) {
-            return callback(new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`));
-          }
-          callback(null, signature);
-        });
-      } else {
-        let signature = jws.sign({ header, payload, secret: secretOrPrivateKey, encoding });
-        if (!options.allowInsecureKeySizes && /^(?:RS|PS)/.test(header.alg) && signature.length < 256) {
-          throw new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`);
-        }
-        return signature;
-      }
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/index.js
-var require_jsonwebtoken = __commonJS({
-  "node_modules/jsonwebtoken/index.js"(exports2, module2) {
-    module2.exports = {
-      decode: require_decode(),
-      verify: require_verify(),
-      sign: require_sign2(),
-      JsonWebTokenError: require_JsonWebTokenError(),
-      NotBeforeError: require_NotBeforeError(),
-      TokenExpiredError: require_TokenExpiredError()
-    };
-  }
-});
-
-// node_modules/dotenv/lib/main.js
-var require_main = __commonJS({
-  "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs = require("fs");
-    var path = require("path");
-    var os2 = require("os");
-    var crypto2 = require("crypto");
-    var TIPS = [
-      "\u25C8 encrypted .env [www.dotenvx.com]",
-      "\u25C8 secrets for agents [www.dotenvx.com]",
-      "\u2301 auth for agents [www.vestauth.com]",
-      "\u2318 custom filepath { path: '/custom/path/.env' }",
-      "\u2318 enable debugging { debug: true }",
-      "\u2318 override existing { override: true }",
-      "\u2318 suppress logs { quiet: true }",
-      "\u2318 multiple files { path: ['.env.local', '.env'] }"
-    ];
-    function _getRandomTip() {
-      return TIPS[Math.floor(Math.random() * TIPS.length)];
-    }
-    function parseBoolean(value) {
-      if (typeof value === "string") {
-        return !["false", "0", "no", "off", ""].includes(value.toLowerCase());
-      }
-      return Boolean(value);
-    }
-    function supportsAnsi() {
-      return process.stdout.isTTY;
-    }
-    function dim(text) {
-      return supportsAnsi() ? `\x1B[2m${text}\x1B[0m` : text;
-    }
-    var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
-    function parse(src) {
-      const obj = {};
-      let lines = src.toString();
-      lines = lines.replace(/\r\n?/mg, "\n");
-      let match;
-      while ((match = LINE.exec(lines)) != null) {
-        const key = match[1];
-        let value = match[2] || "";
-        value = value.trim();
-        const maybeQuote = value[0];
-        value = value.replace(/^(['"`])([\s\S]*)\1$/mg, "$2");
-        if (maybeQuote === '"') {
-          value = value.replace(/\\n/g, "\n");
-          value = value.replace(/\\r/g, "\r");
-        }
-        obj[key] = value;
-      }
-      return obj;
-    }
-    function _parseVault(options) {
-      options = options || {};
-      const vaultPath = _vaultPath(options);
-      options.path = vaultPath;
-      const result = DotenvModule.configDotenv(options);
-      if (!result.parsed) {
-        const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`);
-        err.code = "MISSING_DATA";
-        throw err;
-      }
-      const keys = _dotenvKey(options).split(",");
-      const length = keys.length;
-      let decrypted;
-      for (let i = 0; i < length; i++) {
-        try {
-          const key = keys[i].trim();
-          const attrs = _instructions(result, key);
-          decrypted = DotenvModule.decrypt(attrs.ciphertext, attrs.key);
-          break;
-        } catch (error) {
-          if (i + 1 >= length) {
-            throw error;
-          }
-        }
-      }
-      return DotenvModule.parse(decrypted);
-    }
-    function _warn(message) {
-      console.error(`\u26A0 ${message}`);
-    }
-    function _debug(message) {
-      console.log(`\u2506 ${message}`);
-    }
-    function _log(message) {
-      console.log(`\u25C7 ${message}`);
-    }
-    function _dotenvKey(options) {
-      if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
-        return options.DOTENV_KEY;
-      }
-      if (process.env.DOTENV_KEY && process.env.DOTENV_KEY.length > 0) {
-        return process.env.DOTENV_KEY;
-      }
-      return "";
-    }
-    function _instructions(result, dotenvKey) {
-      let uri;
-      try {
-        uri = new URL(dotenvKey);
-      } catch (error) {
-        if (error.code === "ERR_INVALID_URL") {
-          const err = new Error("INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
-        }
-        throw error;
-      }
-      const key = uri.password;
-      if (!key) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing key part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
-      }
-      const environment = uri.searchParams.get("environment");
-      if (!environment) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing environment part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
-      }
-      const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`;
-      const ciphertext = result.parsed[environmentKey];
-      if (!ciphertext) {
-        const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`);
-        err.code = "NOT_FOUND_DOTENV_ENVIRONMENT";
-        throw err;
-      }
-      return { ciphertext, key };
-    }
-    function _vaultPath(options) {
-      let possibleVaultPath = null;
-      if (options && options.path && options.path.length > 0) {
-        if (Array.isArray(options.path)) {
-          for (const filepath of options.path) {
-            if (fs.existsSync(filepath)) {
-              possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
-            }
-          }
-        } else {
-          possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
-        }
-      } else {
-        possibleVaultPath = path.resolve(process.cwd(), ".env.vault");
-      }
-      if (fs.existsSync(possibleVaultPath)) {
-        return possibleVaultPath;
-      }
-      return null;
-    }
-    function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path.join(os2.homedir(), envPath.slice(1)) : envPath;
-    }
-    function _configVault(options) {
-      const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
-      const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET || options && options.quiet);
-      if (debug || !quiet) {
-        _log("loading env from encrypted .env.vault");
-      }
-      const parsed = DotenvModule._parseVault(options);
-      let processEnv = process.env;
-      if (options && options.processEnv != null) {
-        processEnv = options.processEnv;
-      }
-      DotenvModule.populate(processEnv, parsed, options);
-      return { parsed };
-    }
-    function configDotenv(options) {
-      const dotenvPath = path.resolve(process.cwd(), ".env");
-      let encoding = "utf8";
-      let processEnv = process.env;
-      if (options && options.processEnv != null) {
-        processEnv = options.processEnv;
-      }
-      let debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || options && options.debug);
-      let quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || options && options.quiet);
-      if (options && options.encoding) {
-        encoding = options.encoding;
-      } else {
-        if (debug) {
-          _debug("no encoding is specified (UTF-8 is used by default)");
-        }
-      }
-      let optionPaths = [dotenvPath];
-      if (options && options.path) {
-        if (!Array.isArray(options.path)) {
-          optionPaths = [_resolveHome(options.path)];
-        } else {
-          optionPaths = [];
-          for (const filepath of options.path) {
-            optionPaths.push(_resolveHome(filepath));
-          }
-        }
-      }
-      let lastError;
-      const parsedAll = {};
-      for (const path2 of optionPaths) {
-        try {
-          const parsed = DotenvModule.parse(fs.readFileSync(path2, { encoding }));
-          DotenvModule.populate(parsedAll, parsed, options);
-        } catch (e) {
-          if (debug) {
-            _debug(`failed to load ${path2} ${e.message}`);
-          }
-          lastError = e;
-        }
-      }
-      const populated = DotenvModule.populate(processEnv, parsedAll, options);
-      debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || debug);
-      quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || quiet);
-      if (debug || !quiet) {
-        const keysCount = Object.keys(populated).length;
-        const shortPaths = [];
-        for (const filePath of optionPaths) {
-          try {
-            const relative = path.relative(process.cwd(), filePath);
-            shortPaths.push(relative);
-          } catch (e) {
-            if (debug) {
-              _debug(`failed to load ${filePath} ${e.message}`);
-            }
-            lastError = e;
-          }
-        }
-        _log(`injected env (${keysCount}) from ${shortPaths.join(",")} ${dim(`// tip: ${_getRandomTip()}`)}`);
-      }
-      if (lastError) {
-        return { parsed: parsedAll, error: lastError };
-      } else {
-        return { parsed: parsedAll };
-      }
-    }
-    function config(options) {
-      if (_dotenvKey(options).length === 0) {
-        return DotenvModule.configDotenv(options);
-      }
-      const vaultPath = _vaultPath(options);
-      if (!vaultPath) {
-        _warn(`you set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}`);
-        return DotenvModule.configDotenv(options);
-      }
-      return DotenvModule._configVault(options);
-    }
-    function decrypt(encrypted, keyStr) {
-      const key = Buffer.from(keyStr.slice(-64), "hex");
-      let ciphertext = Buffer.from(encrypted, "base64");
-      const nonce = ciphertext.subarray(0, 12);
-      const authTag = ciphertext.subarray(-16);
-      ciphertext = ciphertext.subarray(12, -16);
-      try {
-        const aesgcm = crypto2.createDecipheriv("aes-256-gcm", key, nonce);
-        aesgcm.setAuthTag(authTag);
-        return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
-      } catch (error) {
-        const isRange = error instanceof RangeError;
-        const invalidKeyLength = error.message === "Invalid key length";
-        const decryptionFailed = error.message === "Unsupported state or unable to authenticate data";
-        if (isRange || invalidKeyLength) {
-          const err = new Error("INVALID_DOTENV_KEY: It must be 64 characters long (or more)");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
-        } else if (decryptionFailed) {
-          const err = new Error("DECRYPTION_FAILED: Please check your DOTENV_KEY");
-          err.code = "DECRYPTION_FAILED";
-          throw err;
-        } else {
-          throw error;
-        }
-      }
-    }
-    function populate(processEnv, parsed, options = {}) {
-      const debug = Boolean(options && options.debug);
-      const override = Boolean(options && options.override);
-      const populated = {};
-      if (typeof parsed !== "object") {
-        const err = new Error("OBJECT_REQUIRED: Please check the processEnv argument being passed to populate");
-        err.code = "OBJECT_REQUIRED";
-        throw err;
-      }
-      for (const key of Object.keys(parsed)) {
-        if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
-          if (override === true) {
-            processEnv[key] = parsed[key];
-            populated[key] = parsed[key];
-          }
-          if (debug) {
-            if (override === true) {
-              _debug(`"${key}" is already defined and WAS overwritten`);
-            } else {
-              _debug(`"${key}" is already defined and was NOT overwritten`);
-            }
-          }
-        } else {
-          processEnv[key] = parsed[key];
-          populated[key] = parsed[key];
-        }
-      }
-      return populated;
-    }
-    var DotenvModule = {
-      configDotenv,
-      _configVault,
-      _parseVault,
-      config,
-      decrypt,
-      parse,
-      populate
-    };
-    module2.exports.configDotenv = DotenvModule.configDotenv;
-    module2.exports._configVault = DotenvModule._configVault;
-    module2.exports._parseVault = DotenvModule._parseVault;
-    module2.exports.config = DotenvModule.config;
-    module2.exports.decrypt = DotenvModule.decrypt;
-    module2.exports.parse = DotenvModule.parse;
-    module2.exports.populate = DotenvModule.populate;
-    module2.exports = DotenvModule;
-  }
-});
-
 // node_modules/bson/lib/bson.cjs
 var require_bson = __commonJS({
   "node_modules/bson/lib/bson.cjs"(exports2) {
@@ -32768,7 +28578,7 @@ var require_error = __commonJS({
 });
 
 // node_modules/mongoose/node_modules/mongodb/lib/cmap/wire_protocol/constants.js
-var require_constants2 = __commonJS({
+var require_constants = __commonJS({
   "node_modules/mongoose/node_modules/mongodb/lib/cmap/wire_protocol/constants.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -32792,7 +28602,7 @@ var require_constants2 = __commonJS({
 });
 
 // node_modules/mongoose/node_modules/mongodb/lib/constants.js
-var require_constants3 = __commonJS({
+var require_constants2 = __commonJS({
   "node_modules/mongoose/node_modules/mongodb/lib/constants.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -33350,8 +29160,8 @@ var require_utils3 = __commonJS({
     var url_1 = require("url");
     var util_1 = require("util");
     var bson_1 = require_bson2();
-    var constants_1 = require_constants2();
-    var constants_2 = require_constants3();
+    var constants_1 = require_constants();
+    var constants_2 = require_constants2();
     var error_1 = require_error();
     var read_concern_1 = require_read_concern();
     var read_preference_1 = require_read_preference();
@@ -34825,7 +30635,7 @@ var require_command = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CommandOperation = void 0;
-    var constants_1 = require_constants2();
+    var constants_1 = require_constants();
     var error_1 = require_error();
     var explain_1 = require_explain();
     var read_concern_1 = require_read_concern();
@@ -35787,7 +31597,7 @@ var require_insert = __commonJS({
 });
 
 // node_modules/mongoose/node_modules/mongodb/lib/sort.js
-var require_sort2 = __commonJS({
+var require_sort = __commonJS({
   "node_modules/mongoose/node_modules/mongodb/lib/sort.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -35893,7 +31703,7 @@ var require_update = __commonJS({
     exports2.makeUpdateStatement = makeUpdateStatement;
     var responses_1 = require_responses();
     var error_1 = require_error();
-    var sort_1 = require_sort2();
+    var sort_1 = require_sort();
     var utils_1 = require_utils3();
     var command_1 = require_command();
     var operation_1 = require_operation();
@@ -37439,7 +33249,7 @@ var require_mongo_logger = __commonJS({
     exports2.defaultLogTransform = defaultLogTransform;
     var util_1 = require("util");
     var bson_1 = require_bson2();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var utils_1 = require_utils3();
     exports2.SeverityLevel = Object.freeze({
       EMERGENCY: "emergency",
@@ -42925,7 +38735,7 @@ var require_commands = __commonJS({
     var BSON = require_bson2();
     var error_1 = require_error();
     var compression_1 = require_compression();
-    var constants_1 = require_constants2();
+    var constants_1 = require_constants();
     var _requestId = 0;
     var OPTS_TAILABLE_CURSOR = 2;
     var OPTS_SECONDARY = 4;
@@ -43370,11 +39180,11 @@ var require_compression = __commonJS({
     exports2.decompressResponse = decompressResponse;
     var util_1 = require("util");
     var zlib = require("zlib");
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var deps_1 = require_deps();
     var error_1 = require_error();
     var commands_1 = require_commands();
-    var constants_2 = require_constants2();
+    var constants_2 = require_constants();
     exports2.Compressor = Object.freeze({
       none: 0,
       snappy: 1,
@@ -45008,7 +40818,7 @@ var require_auto_encrypter = __commonJS({
     exports2.AutoEncrypter = exports2.AutoEncryptionLoggerLevel = void 0;
     var net = require("net");
     var bson_1 = require_bson2();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var deps_1 = require_deps();
     var error_1 = require_error();
     var mongo_client_1 = require_mongo_client();
@@ -45251,7 +41061,7 @@ var require_encrypter = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Encrypter = void 0;
     var auto_encrypter_1 = require_auto_encrypter();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var deps_1 = require_deps();
     var error_1 = require_error();
     var mongo_client_1 = require_mongo_client();
@@ -45559,7 +41369,7 @@ var require_sessions = __commonJS({
     exports2.updateSessionFromResponse = updateSessionFromResponse;
     var bson_1 = require_bson2();
     var metrics_1 = require_metrics();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_types_1 = require_mongo_types();
     var execute_operation_1 = require_execute_operation();
@@ -46244,7 +42054,7 @@ var require_command_monitoring_events = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.SENSITIVE_COMMANDS = exports2.CommandFailedEvent = exports2.CommandSucceededEvent = exports2.CommandStartedEvent = void 0;
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var utils_1 = require_utils3();
     var commands_1 = require_commands();
     var CommandStartedEvent = class {
@@ -46740,7 +42550,7 @@ var require_topology_description = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.TopologyDescription = void 0;
     var bson_1 = require_bson2();
-    var WIRE_CONSTANTS = require_constants2();
+    var WIRE_CONSTANTS = require_constants();
     var error_1 = require_error();
     var utils_1 = require_utils3();
     var common_1 = require_common();
@@ -47106,7 +42916,7 @@ var require_connection = __commonJS({
     var stream_1 = require("stream");
     var timers_1 = require("timers");
     var bson_1 = require_bson2();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_logger_1 = require_mongo_logger();
     var mongo_types_1 = require_mongo_types();
@@ -47588,14 +43398,14 @@ var require_connect = __commonJS({
     exports2.makeSocket = makeSocket;
     var net = require("net");
     var tls = require("tls");
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var deps_1 = require_deps();
     var error_1 = require_error();
     var utils_1 = require_utils3();
     var auth_provider_1 = require_auth_provider();
     var providers_1 = require_providers();
     var connection_1 = require_connection();
-    var constants_2 = require_constants2();
+    var constants_2 = require_constants();
     async function connect(options) {
       let connection = null;
       try {
@@ -47909,7 +43719,7 @@ var require_events = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ServerHeartbeatFailedEvent = exports2.ServerHeartbeatSucceededEvent = exports2.ServerHeartbeatStartedEvent = exports2.TopologyClosedEvent = exports2.TopologyOpeningEvent = exports2.TopologyDescriptionChangedEvent = exports2.ServerClosedEvent = exports2.ServerOpeningEvent = exports2.ServerDescriptionChangedEvent = void 0;
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var ServerDescriptionChangedEvent = class {
       /** @internal */
       constructor(topologyId, address, previousDescription, newDescription) {
@@ -48005,7 +43815,7 @@ var require_connection_pool_events = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ConnectionPoolClearedEvent = exports2.ConnectionCheckedInEvent = exports2.ConnectionCheckedOutEvent = exports2.ConnectionCheckOutFailedEvent = exports2.ConnectionCheckOutStartedEvent = exports2.ConnectionClosedEvent = exports2.ConnectionReadyEvent = exports2.ConnectionCreatedEvent = exports2.ConnectionPoolClosedEvent = exports2.ConnectionPoolReadyEvent = exports2.ConnectionPoolCreatedEvent = exports2.ConnectionPoolMonitoringEvent = void 0;
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var utils_1 = require_utils3();
     var ConnectionPoolMonitoringEvent = class {
       /** @internal */
@@ -48225,7 +44035,7 @@ var require_connection_pool = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ConnectionPool = exports2.PoolState = void 0;
     var timers_1 = require("timers");
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_types_1 = require_mongo_types();
     var timeout_1 = require_timeout();
@@ -48718,7 +44528,7 @@ var require_server = __commonJS({
     var connection_1 = require_connection();
     var connection_pool_1 = require_connection_pool();
     var errors_1 = require_errors2();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_types_1 = require_mongo_types();
     var aggregate_1 = require_aggregate();
@@ -49066,7 +44876,7 @@ var require_monitor = __commonJS({
     var bson_1 = require_bson2();
     var connect_1 = require_connect();
     var client_metadata_1 = require_client_metadata();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_logger_1 = require_mongo_logger();
     var mongo_types_1 = require_mongo_types();
@@ -50929,7 +46739,7 @@ var require_create_collection = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CreateCollectionOperation = void 0;
     exports2.createCollections = createCollections;
-    var constants_1 = require_constants2();
+    var constants_1 = require_constants();
     var responses_1 = require_responses();
     var collection_1 = require_collection2();
     var error_1 = require_error();
@@ -51303,7 +47113,7 @@ var require_db2 = __commonJS({
     var bson_1 = require_bson2();
     var change_stream_1 = require_change_stream();
     var collection_1 = require_collection2();
-    var CONSTANTS = require_constants3();
+    var CONSTANTS = require_constants2();
     var aggregation_cursor_1 = require_aggregation_cursor();
     var list_collections_cursor_1 = require_list_collections_cursor();
     var run_command_cursor_1 = require_run_command_cursor();
@@ -53240,7 +49050,7 @@ var require_command_builder = __commonJS({
     var bson_1 = require_bson2();
     var commands_1 = require_commands();
     var error_1 = require_error();
-    var sort_1 = require_sort2();
+    var sort_1 = require_sort();
     var utils_1 = require_utils3();
     var MESSAGE_OVERHEAD_BYTES = 1e3;
     var ClientBulkWriteCommandBuilder = class {
@@ -53780,7 +49590,7 @@ var require_server_selection_events = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.WaitingForSuitableServerEvent = exports2.ServerSelectionSucceededEvent = exports2.ServerSelectionFailedEvent = exports2.ServerSelectionStartedEvent = exports2.ServerSelectionEvent = void 0;
     var utils_1 = require_utils3();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var ServerSelectionEvent = class {
       /** @internal */
       constructor(selector, topologyDescription, operation) {
@@ -53946,7 +49756,7 @@ var require_topology = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ServerCapabilities = exports2.Topology = void 0;
     var connection_string_1 = require_connection_string();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var error_1 = require_error();
     var mongo_logger_1 = require_mongo_logger();
     var mongo_types_1 = require_mongo_types();
@@ -54563,7 +50373,7 @@ var require_mongo_client = __commonJS({
     var client_metadata_1 = require_client_metadata();
     var responses_1 = require_responses();
     var connection_string_1 = require_connection_string();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var db_1 = require_db2();
     var error_1 = require_error();
     var mongo_client_auth_providers_1 = require_mongo_client_auth_providers();
@@ -56142,7 +51952,7 @@ var require_find = __commonJS({
     exports2.FindOperation = void 0;
     var responses_1 = require_responses();
     var error_1 = require_error();
-    var sort_1 = require_sort2();
+    var sort_1 = require_sort();
     var utils_1 = require_utils3();
     var command_1 = require_command();
     var operation_1 = require_operation();
@@ -56287,7 +52097,7 @@ var require_find_cursor = __commonJS({
     var count_1 = require_count();
     var execute_operation_1 = require_execute_operation();
     var find_1 = require_find();
-    var sort_1 = require_sort2();
+    var sort_1 = require_sort();
     var utils_1 = require_utils3();
     var explainable_cursor_1 = require_explainable_cursor();
     exports2.FLAGS = [
@@ -56817,7 +52627,7 @@ var require_find_and_modify = __commonJS({
     var responses_1 = require_responses();
     var error_1 = require_error();
     var read_preference_1 = require_read_preference();
-    var sort_1 = require_sort2();
+    var sort_1 = require_sort();
     var utils_1 = require_utils3();
     var command_1 = require_command();
     var operation_1 = require_operation();
@@ -57794,7 +53604,7 @@ var require_change_stream_cursor = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ChangeStreamCursor = void 0;
     var change_stream_1 = require_change_stream();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var aggregate_1 = require_aggregate();
     var execute_operation_1 = require_execute_operation();
     var utils_1 = require_utils3();
@@ -57896,7 +53706,7 @@ var require_change_stream = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ChangeStream = void 0;
     var collection_1 = require_collection2();
-    var constants_1 = require_constants3();
+    var constants_1 = require_constants2();
     var abstract_cursor_1 = require_abstract_cursor();
     var change_stream_cursor_1 = require_change_stream_cursor();
     var db_1 = require_db2();
@@ -61680,7 +57490,7 @@ var require_isSimpleValidator = __commonJS({
 });
 
 // node_modules/mongoose/node_modules/ms/index.js
-var require_ms4 = __commonJS({
+var require_ms3 = __commonJS({
   "node_modules/mongoose/node_modules/ms/index.js"(exports2, module2) {
     var s = 1e3;
     var m = s * 60;
@@ -68817,7 +64627,7 @@ var require_utils5 = __commonJS({
   "node_modules/mongoose/lib/utils.js"(exports2) {
     "use strict";
     var UUID = require_bson().UUID;
-    var ms = require_ms4();
+    var ms = require_ms3();
     var mpath = require_mpath();
     var ObjectId2 = require_objectid();
     var PopulateOptions = require_populateOptions();
@@ -71049,7 +66859,7 @@ var require_validateRef = __commonJS({
 });
 
 // node_modules/mongoose/lib/constants.js
-var require_constants4 = __commonJS({
+var require_constants3 = __commonJS({
   "node_modules/mongoose/lib/constants.js"(exports2) {
     "use strict";
     var queryOperations = Object.freeze([
@@ -76576,7 +72386,7 @@ var require_schema2 = __commonJS({
     var validateRef = require_validateRef();
     var hasNumericSubpathRegex = /\.\d+(\.|$)/;
     var MongooseTypes;
-    var queryHooks = require_constants4().queryMiddlewareFunctions;
+    var queryHooks = require_constants3().queryMiddlewareFunctions;
     var documentHooks = require_applyHooks().middlewareFunctions;
     var hookNames = queryHooks.concat(documentHooks).reduce((s, hook) => s.add(hook), /* @__PURE__ */ new Set());
     var isPOJO = utils.isPOJO;
@@ -81937,7 +77747,7 @@ var require_utils6 = __commonJS({
 });
 
 // node_modules/mquery/node_modules/ms/index.js
-var require_ms5 = __commonJS({
+var require_ms4 = __commonJS({
   "node_modules/mquery/node_modules/ms/index.js"(exports2, module2) {
     var s = 1e3;
     var m = s * 60;
@@ -82062,7 +77872,7 @@ var require_common4 = __commonJS({
       createDebug.disable = disable;
       createDebug.enable = enable;
       createDebug.enabled = enabled;
-      createDebug.humanize = require_ms5();
+      createDebug.humanize = require_ms4();
       createDebug.destroy = destroy;
       Object.keys(env2).forEach((key) => {
         createDebug[key] = env2[key];
@@ -84381,7 +80191,7 @@ var require_query2 = __commonJS({
     var updateValidators = require_updateValidators();
     var util2 = require("util");
     var utils = require_utils5();
-    var queryMiddlewareFunctions = require_constants4().queryMiddlewareFunctions;
+    var queryMiddlewareFunctions = require_constants3().queryMiddlewareFunctions;
     var queryOptionMethods = /* @__PURE__ */ new Set([
       "allowDiskUse",
       "batchSize",
@@ -87557,7 +83367,7 @@ var require_applyStaticHooks = __commonJS({
   "node_modules/mongoose/lib/helpers/model/applyStaticHooks.js"(exports2, module2) {
     "use strict";
     var promiseOrCallback = require_promiseOrCallback();
-    var { queryMiddlewareFunctions, aggregateMiddlewareFunctions, modelMiddlewareFunctions, documentMiddlewareFunctions } = require_constants4();
+    var { queryMiddlewareFunctions, aggregateMiddlewareFunctions, modelMiddlewareFunctions, documentMiddlewareFunctions } = require_constants3();
     var middlewareFunctions = Array.from(
       /* @__PURE__ */ new Set([
         ...queryMiddlewareFunctions,
@@ -93554,6 +89364,4196 @@ var require_mongoose2 = __commonJS({
   }
 });
 
+// node_modules/dotenv/lib/main.js
+var require_main = __commonJS({
+  "node_modules/dotenv/lib/main.js"(exports2, module2) {
+    var fs = require("fs");
+    var path = require("path");
+    var os2 = require("os");
+    var crypto2 = require("crypto");
+    var TIPS = [
+      "\u25C8 encrypted .env [www.dotenvx.com]",
+      "\u25C8 secrets for agents [www.dotenvx.com]",
+      "\u2301 auth for agents [www.vestauth.com]",
+      "\u2318 custom filepath { path: '/custom/path/.env' }",
+      "\u2318 enable debugging { debug: true }",
+      "\u2318 override existing { override: true }",
+      "\u2318 suppress logs { quiet: true }",
+      "\u2318 multiple files { path: ['.env.local', '.env'] }"
+    ];
+    function _getRandomTip() {
+      return TIPS[Math.floor(Math.random() * TIPS.length)];
+    }
+    function parseBoolean(value) {
+      if (typeof value === "string") {
+        return !["false", "0", "no", "off", ""].includes(value.toLowerCase());
+      }
+      return Boolean(value);
+    }
+    function supportsAnsi() {
+      return process.stdout.isTTY;
+    }
+    function dim(text) {
+      return supportsAnsi() ? `\x1B[2m${text}\x1B[0m` : text;
+    }
+    var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
+    function parse(src) {
+      const obj = {};
+      let lines = src.toString();
+      lines = lines.replace(/\r\n?/mg, "\n");
+      let match;
+      while ((match = LINE.exec(lines)) != null) {
+        const key = match[1];
+        let value = match[2] || "";
+        value = value.trim();
+        const maybeQuote = value[0];
+        value = value.replace(/^(['"`])([\s\S]*)\1$/mg, "$2");
+        if (maybeQuote === '"') {
+          value = value.replace(/\\n/g, "\n");
+          value = value.replace(/\\r/g, "\r");
+        }
+        obj[key] = value;
+      }
+      return obj;
+    }
+    function _parseVault(options) {
+      options = options || {};
+      const vaultPath = _vaultPath(options);
+      options.path = vaultPath;
+      const result = DotenvModule.configDotenv(options);
+      if (!result.parsed) {
+        const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`);
+        err.code = "MISSING_DATA";
+        throw err;
+      }
+      const keys = _dotenvKey(options).split(",");
+      const length = keys.length;
+      let decrypted;
+      for (let i = 0; i < length; i++) {
+        try {
+          const key = keys[i].trim();
+          const attrs = _instructions(result, key);
+          decrypted = DotenvModule.decrypt(attrs.ciphertext, attrs.key);
+          break;
+        } catch (error) {
+          if (i + 1 >= length) {
+            throw error;
+          }
+        }
+      }
+      return DotenvModule.parse(decrypted);
+    }
+    function _warn(message) {
+      console.error(`\u26A0 ${message}`);
+    }
+    function _debug(message) {
+      console.log(`\u2506 ${message}`);
+    }
+    function _log(message) {
+      console.log(`\u25C7 ${message}`);
+    }
+    function _dotenvKey(options) {
+      if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
+        return options.DOTENV_KEY;
+      }
+      if (process.env.DOTENV_KEY && process.env.DOTENV_KEY.length > 0) {
+        return process.env.DOTENV_KEY;
+      }
+      return "";
+    }
+    function _instructions(result, dotenvKey) {
+      let uri;
+      try {
+        uri = new URL(dotenvKey);
+      } catch (error) {
+        if (error.code === "ERR_INVALID_URL") {
+          const err = new Error("INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development");
+          err.code = "INVALID_DOTENV_KEY";
+          throw err;
+        }
+        throw error;
+      }
+      const key = uri.password;
+      if (!key) {
+        const err = new Error("INVALID_DOTENV_KEY: Missing key part");
+        err.code = "INVALID_DOTENV_KEY";
+        throw err;
+      }
+      const environment = uri.searchParams.get("environment");
+      if (!environment) {
+        const err = new Error("INVALID_DOTENV_KEY: Missing environment part");
+        err.code = "INVALID_DOTENV_KEY";
+        throw err;
+      }
+      const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`;
+      const ciphertext = result.parsed[environmentKey];
+      if (!ciphertext) {
+        const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`);
+        err.code = "NOT_FOUND_DOTENV_ENVIRONMENT";
+        throw err;
+      }
+      return { ciphertext, key };
+    }
+    function _vaultPath(options) {
+      let possibleVaultPath = null;
+      if (options && options.path && options.path.length > 0) {
+        if (Array.isArray(options.path)) {
+          for (const filepath of options.path) {
+            if (fs.existsSync(filepath)) {
+              possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
+            }
+          }
+        } else {
+          possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
+        }
+      } else {
+        possibleVaultPath = path.resolve(process.cwd(), ".env.vault");
+      }
+      if (fs.existsSync(possibleVaultPath)) {
+        return possibleVaultPath;
+      }
+      return null;
+    }
+    function _resolveHome(envPath) {
+      return envPath[0] === "~" ? path.join(os2.homedir(), envPath.slice(1)) : envPath;
+    }
+    function _configVault(options) {
+      const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
+      const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET || options && options.quiet);
+      if (debug || !quiet) {
+        _log("loading env from encrypted .env.vault");
+      }
+      const parsed = DotenvModule._parseVault(options);
+      let processEnv = process.env;
+      if (options && options.processEnv != null) {
+        processEnv = options.processEnv;
+      }
+      DotenvModule.populate(processEnv, parsed, options);
+      return { parsed };
+    }
+    function configDotenv(options) {
+      const dotenvPath = path.resolve(process.cwd(), ".env");
+      let encoding = "utf8";
+      let processEnv = process.env;
+      if (options && options.processEnv != null) {
+        processEnv = options.processEnv;
+      }
+      let debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || options && options.debug);
+      let quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || options && options.quiet);
+      if (options && options.encoding) {
+        encoding = options.encoding;
+      } else {
+        if (debug) {
+          _debug("no encoding is specified (UTF-8 is used by default)");
+        }
+      }
+      let optionPaths = [dotenvPath];
+      if (options && options.path) {
+        if (!Array.isArray(options.path)) {
+          optionPaths = [_resolveHome(options.path)];
+        } else {
+          optionPaths = [];
+          for (const filepath of options.path) {
+            optionPaths.push(_resolveHome(filepath));
+          }
+        }
+      }
+      let lastError;
+      const parsedAll = {};
+      for (const path2 of optionPaths) {
+        try {
+          const parsed = DotenvModule.parse(fs.readFileSync(path2, { encoding }));
+          DotenvModule.populate(parsedAll, parsed, options);
+        } catch (e) {
+          if (debug) {
+            _debug(`failed to load ${path2} ${e.message}`);
+          }
+          lastError = e;
+        }
+      }
+      const populated = DotenvModule.populate(processEnv, parsedAll, options);
+      debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || debug);
+      quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || quiet);
+      if (debug || !quiet) {
+        const keysCount = Object.keys(populated).length;
+        const shortPaths = [];
+        for (const filePath of optionPaths) {
+          try {
+            const relative = path.relative(process.cwd(), filePath);
+            shortPaths.push(relative);
+          } catch (e) {
+            if (debug) {
+              _debug(`failed to load ${filePath} ${e.message}`);
+            }
+            lastError = e;
+          }
+        }
+        _log(`injected env (${keysCount}) from ${shortPaths.join(",")} ${dim(`// tip: ${_getRandomTip()}`)}`);
+      }
+      if (lastError) {
+        return { parsed: parsedAll, error: lastError };
+      } else {
+        return { parsed: parsedAll };
+      }
+    }
+    function config(options) {
+      if (_dotenvKey(options).length === 0) {
+        return DotenvModule.configDotenv(options);
+      }
+      const vaultPath = _vaultPath(options);
+      if (!vaultPath) {
+        _warn(`you set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}`);
+        return DotenvModule.configDotenv(options);
+      }
+      return DotenvModule._configVault(options);
+    }
+    function decrypt(encrypted, keyStr) {
+      const key = Buffer.from(keyStr.slice(-64), "hex");
+      let ciphertext = Buffer.from(encrypted, "base64");
+      const nonce = ciphertext.subarray(0, 12);
+      const authTag = ciphertext.subarray(-16);
+      ciphertext = ciphertext.subarray(12, -16);
+      try {
+        const aesgcm = crypto2.createDecipheriv("aes-256-gcm", key, nonce);
+        aesgcm.setAuthTag(authTag);
+        return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
+      } catch (error) {
+        const isRange = error instanceof RangeError;
+        const invalidKeyLength = error.message === "Invalid key length";
+        const decryptionFailed = error.message === "Unsupported state or unable to authenticate data";
+        if (isRange || invalidKeyLength) {
+          const err = new Error("INVALID_DOTENV_KEY: It must be 64 characters long (or more)");
+          err.code = "INVALID_DOTENV_KEY";
+          throw err;
+        } else if (decryptionFailed) {
+          const err = new Error("DECRYPTION_FAILED: Please check your DOTENV_KEY");
+          err.code = "DECRYPTION_FAILED";
+          throw err;
+        } else {
+          throw error;
+        }
+      }
+    }
+    function populate(processEnv, parsed, options = {}) {
+      const debug = Boolean(options && options.debug);
+      const override = Boolean(options && options.override);
+      const populated = {};
+      if (typeof parsed !== "object") {
+        const err = new Error("OBJECT_REQUIRED: Please check the processEnv argument being passed to populate");
+        err.code = "OBJECT_REQUIRED";
+        throw err;
+      }
+      for (const key of Object.keys(parsed)) {
+        if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
+          if (override === true) {
+            processEnv[key] = parsed[key];
+            populated[key] = parsed[key];
+          }
+          if (debug) {
+            if (override === true) {
+              _debug(`"${key}" is already defined and WAS overwritten`);
+            } else {
+              _debug(`"${key}" is already defined and was NOT overwritten`);
+            }
+          }
+        } else {
+          processEnv[key] = parsed[key];
+          populated[key] = parsed[key];
+        }
+      }
+      return populated;
+    }
+    var DotenvModule = {
+      configDotenv,
+      _configVault,
+      _parseVault,
+      config,
+      decrypt,
+      parse,
+      populate
+    };
+    module2.exports.configDotenv = DotenvModule.configDotenv;
+    module2.exports._configVault = DotenvModule._configVault;
+    module2.exports._parseVault = DotenvModule._parseVault;
+    module2.exports.config = DotenvModule.config;
+    module2.exports.decrypt = DotenvModule.decrypt;
+    module2.exports.parse = DotenvModule.parse;
+    module2.exports.populate = DotenvModule.populate;
+    module2.exports = DotenvModule;
+  }
+});
+
+// node_modules/jws/lib/data-stream.js
+var require_data_stream = __commonJS({
+  "node_modules/jws/lib/data-stream.js"(exports2, module2) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var Stream = require("stream");
+    var util2 = require("util");
+    function DataStream(data) {
+      this.buffer = null;
+      this.writable = true;
+      this.readable = true;
+      if (!data) {
+        this.buffer = Buffer3.alloc(0);
+        return this;
+      }
+      if (typeof data.pipe === "function") {
+        this.buffer = Buffer3.alloc(0);
+        data.pipe(this);
+        return this;
+      }
+      if (data.length || typeof data === "object") {
+        this.buffer = data;
+        this.writable = false;
+        process.nextTick(function() {
+          this.emit("end", data);
+          this.readable = false;
+          this.emit("close");
+        }.bind(this));
+        return this;
+      }
+      throw new TypeError("Unexpected data type (" + typeof data + ")");
+    }
+    util2.inherits(DataStream, Stream);
+    DataStream.prototype.write = function write(data) {
+      this.buffer = Buffer3.concat([this.buffer, Buffer3.from(data)]);
+      this.emit("data", data);
+    };
+    DataStream.prototype.end = function end(data) {
+      if (data)
+        this.write(data);
+      this.emit("end", data);
+      this.emit("close");
+      this.writable = false;
+      this.readable = false;
+    };
+    module2.exports = DataStream;
+  }
+});
+
+// node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js
+var require_param_bytes_for_alg = __commonJS({
+  "node_modules/ecdsa-sig-formatter/src/param-bytes-for-alg.js"(exports2, module2) {
+    "use strict";
+    function getParamSize(keySize) {
+      var result = (keySize / 8 | 0) + (keySize % 8 === 0 ? 0 : 1);
+      return result;
+    }
+    var paramBytesForAlg = {
+      ES256: getParamSize(256),
+      ES384: getParamSize(384),
+      ES512: getParamSize(521)
+    };
+    function getParamBytesForAlg(alg) {
+      var paramBytes = paramBytesForAlg[alg];
+      if (paramBytes) {
+        return paramBytes;
+      }
+      throw new Error('Unknown algorithm "' + alg + '"');
+    }
+    module2.exports = getParamBytesForAlg;
+  }
+});
+
+// node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js
+var require_ecdsa_sig_formatter = __commonJS({
+  "node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports2, module2) {
+    "use strict";
+    var Buffer3 = require_safe_buffer().Buffer;
+    var getParamBytesForAlg = require_param_bytes_for_alg();
+    var MAX_OCTET = 128;
+    var CLASS_UNIVERSAL = 0;
+    var PRIMITIVE_BIT = 32;
+    var TAG_SEQ = 16;
+    var TAG_INT = 2;
+    var ENCODED_TAG_SEQ = TAG_SEQ | PRIMITIVE_BIT | CLASS_UNIVERSAL << 6;
+    var ENCODED_TAG_INT = TAG_INT | CLASS_UNIVERSAL << 6;
+    function base64Url(base64) {
+      return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    }
+    function signatureAsBuffer(signature) {
+      if (Buffer3.isBuffer(signature)) {
+        return signature;
+      } else if ("string" === typeof signature) {
+        return Buffer3.from(signature, "base64");
+      }
+      throw new TypeError("ECDSA signature must be a Base64 string or a Buffer");
+    }
+    function derToJose(signature, alg) {
+      signature = signatureAsBuffer(signature);
+      var paramBytes = getParamBytesForAlg(alg);
+      var maxEncodedParamLength = paramBytes + 1;
+      var inputLength = signature.length;
+      var offset = 0;
+      if (signature[offset++] !== ENCODED_TAG_SEQ) {
+        throw new Error('Could not find expected "seq"');
+      }
+      var seqLength = signature[offset++];
+      if (seqLength === (MAX_OCTET | 1)) {
+        seqLength = signature[offset++];
+      }
+      if (inputLength - offset < seqLength) {
+        throw new Error('"seq" specified length of "' + seqLength + '", only "' + (inputLength - offset) + '" remaining');
+      }
+      if (signature[offset++] !== ENCODED_TAG_INT) {
+        throw new Error('Could not find expected "int" for "r"');
+      }
+      var rLength = signature[offset++];
+      if (inputLength - offset - 2 < rLength) {
+        throw new Error('"r" specified length of "' + rLength + '", only "' + (inputLength - offset - 2) + '" available');
+      }
+      if (maxEncodedParamLength < rLength) {
+        throw new Error('"r" specified length of "' + rLength + '", max of "' + maxEncodedParamLength + '" is acceptable');
+      }
+      var rOffset = offset;
+      offset += rLength;
+      if (signature[offset++] !== ENCODED_TAG_INT) {
+        throw new Error('Could not find expected "int" for "s"');
+      }
+      var sLength = signature[offset++];
+      if (inputLength - offset !== sLength) {
+        throw new Error('"s" specified length of "' + sLength + '", expected "' + (inputLength - offset) + '"');
+      }
+      if (maxEncodedParamLength < sLength) {
+        throw new Error('"s" specified length of "' + sLength + '", max of "' + maxEncodedParamLength + '" is acceptable');
+      }
+      var sOffset = offset;
+      offset += sLength;
+      if (offset !== inputLength) {
+        throw new Error('Expected to consume entire buffer, but "' + (inputLength - offset) + '" bytes remain');
+      }
+      var rPadding = paramBytes - rLength, sPadding = paramBytes - sLength;
+      var dst = Buffer3.allocUnsafe(rPadding + rLength + sPadding + sLength);
+      for (offset = 0; offset < rPadding; ++offset) {
+        dst[offset] = 0;
+      }
+      signature.copy(dst, offset, rOffset + Math.max(-rPadding, 0), rOffset + rLength);
+      offset = paramBytes;
+      for (var o = offset; offset < o + sPadding; ++offset) {
+        dst[offset] = 0;
+      }
+      signature.copy(dst, offset, sOffset + Math.max(-sPadding, 0), sOffset + sLength);
+      dst = dst.toString("base64");
+      dst = base64Url(dst);
+      return dst;
+    }
+    function countPadding(buf, start, stop) {
+      var padding = 0;
+      while (start + padding < stop && buf[start + padding] === 0) {
+        ++padding;
+      }
+      var needsSign = buf[start + padding] >= MAX_OCTET;
+      if (needsSign) {
+        --padding;
+      }
+      return padding;
+    }
+    function joseToDer(signature, alg) {
+      signature = signatureAsBuffer(signature);
+      var paramBytes = getParamBytesForAlg(alg);
+      var signatureBytes = signature.length;
+      if (signatureBytes !== paramBytes * 2) {
+        throw new TypeError('"' + alg + '" signatures must be "' + paramBytes * 2 + '" bytes, saw "' + signatureBytes + '"');
+      }
+      var rPadding = countPadding(signature, 0, paramBytes);
+      var sPadding = countPadding(signature, paramBytes, signature.length);
+      var rLength = paramBytes - rPadding;
+      var sLength = paramBytes - sPadding;
+      var rsBytes = 1 + 1 + rLength + 1 + 1 + sLength;
+      var shortLength = rsBytes < MAX_OCTET;
+      var dst = Buffer3.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
+      var offset = 0;
+      dst[offset++] = ENCODED_TAG_SEQ;
+      if (shortLength) {
+        dst[offset++] = rsBytes;
+      } else {
+        dst[offset++] = MAX_OCTET | 1;
+        dst[offset++] = rsBytes & 255;
+      }
+      dst[offset++] = ENCODED_TAG_INT;
+      dst[offset++] = rLength;
+      if (rPadding < 0) {
+        dst[offset++] = 0;
+        offset += signature.copy(dst, offset, 0, paramBytes);
+      } else {
+        offset += signature.copy(dst, offset, rPadding, paramBytes);
+      }
+      dst[offset++] = ENCODED_TAG_INT;
+      dst[offset++] = sLength;
+      if (sPadding < 0) {
+        dst[offset++] = 0;
+        signature.copy(dst, offset, paramBytes);
+      } else {
+        signature.copy(dst, offset, paramBytes + sPadding);
+      }
+      return dst;
+    }
+    module2.exports = {
+      derToJose,
+      joseToDer
+    };
+  }
+});
+
+// node_modules/buffer-equal-constant-time/index.js
+var require_buffer_equal_constant_time = __commonJS({
+  "node_modules/buffer-equal-constant-time/index.js"(exports2, module2) {
+    "use strict";
+    var Buffer3 = require("buffer").Buffer;
+    var SlowBuffer = require("buffer").SlowBuffer;
+    module2.exports = bufferEq;
+    function bufferEq(a, b) {
+      if (!Buffer3.isBuffer(a) || !Buffer3.isBuffer(b)) {
+        return false;
+      }
+      if (a.length !== b.length) {
+        return false;
+      }
+      var c = 0;
+      for (var i = 0; i < a.length; i++) {
+        c |= a[i] ^ b[i];
+      }
+      return c === 0;
+    }
+    bufferEq.install = function() {
+      Buffer3.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
+        return bufferEq(this, that);
+      };
+    };
+    var origBufEqual = Buffer3.prototype.equal;
+    var origSlowBufEqual = SlowBuffer.prototype.equal;
+    bufferEq.restore = function() {
+      Buffer3.prototype.equal = origBufEqual;
+      SlowBuffer.prototype.equal = origSlowBufEqual;
+    };
+  }
+});
+
+// node_modules/jwa/index.js
+var require_jwa = __commonJS({
+  "node_modules/jwa/index.js"(exports2, module2) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var crypto2 = require("crypto");
+    var formatEcdsa = require_ecdsa_sig_formatter();
+    var util2 = require("util");
+    var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
+    var MSG_INVALID_SECRET = "secret must be a string or buffer";
+    var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
+    var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
+    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
+    if (supportsKeyObjects) {
+      MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
+      MSG_INVALID_SECRET += "or a KeyObject";
+    }
+    function checkIsPublicKey(key) {
+      if (Buffer3.isBuffer(key)) {
+        return;
+      }
+      if (typeof key === "string") {
+        return;
+      }
+      if (!supportsKeyObjects) {
+        throw typeError(MSG_INVALID_VERIFIER_KEY);
+      }
+      if (typeof key !== "object") {
+        throw typeError(MSG_INVALID_VERIFIER_KEY);
+      }
+      if (typeof key.type !== "string") {
+        throw typeError(MSG_INVALID_VERIFIER_KEY);
+      }
+      if (typeof key.asymmetricKeyType !== "string") {
+        throw typeError(MSG_INVALID_VERIFIER_KEY);
+      }
+      if (typeof key.export !== "function") {
+        throw typeError(MSG_INVALID_VERIFIER_KEY);
+      }
+    }
+    function checkIsPrivateKey(key) {
+      if (Buffer3.isBuffer(key)) {
+        return;
+      }
+      if (typeof key === "string") {
+        return;
+      }
+      if (typeof key === "object") {
+        return;
+      }
+      throw typeError(MSG_INVALID_SIGNER_KEY);
+    }
+    function checkIsSecretKey(key) {
+      if (Buffer3.isBuffer(key)) {
+        return;
+      }
+      if (typeof key === "string") {
+        return key;
+      }
+      if (!supportsKeyObjects) {
+        throw typeError(MSG_INVALID_SECRET);
+      }
+      if (typeof key !== "object") {
+        throw typeError(MSG_INVALID_SECRET);
+      }
+      if (key.type !== "secret") {
+        throw typeError(MSG_INVALID_SECRET);
+      }
+      if (typeof key.export !== "function") {
+        throw typeError(MSG_INVALID_SECRET);
+      }
+    }
+    function fromBase64(base64) {
+      return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    }
+    function toBase64(base64url) {
+      base64url = base64url.toString();
+      var padding = 4 - base64url.length % 4;
+      if (padding !== 4) {
+        for (var i = 0; i < padding; ++i) {
+          base64url += "=";
+        }
+      }
+      return base64url.replace(/\-/g, "+").replace(/_/g, "/");
+    }
+    function typeError(template) {
+      var args = [].slice.call(arguments, 1);
+      var errMsg = util2.format.bind(util2, template).apply(null, args);
+      return new TypeError(errMsg);
+    }
+    function bufferOrString(obj) {
+      return Buffer3.isBuffer(obj) || typeof obj === "string";
+    }
+    function normalizeInput(thing) {
+      if (!bufferOrString(thing))
+        thing = JSON.stringify(thing);
+      return thing;
+    }
+    function createHmacSigner(bits) {
+      return function sign(thing, secret) {
+        checkIsSecretKey(secret);
+        thing = normalizeInput(thing);
+        var hmac = crypto2.createHmac("sha" + bits, secret);
+        var sig = (hmac.update(thing), hmac.digest("base64"));
+        return fromBase64(sig);
+      };
+    }
+    var bufferEqual;
+    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
+      if (a.byteLength !== b.byteLength) {
+        return false;
+      }
+      return crypto2.timingSafeEqual(a, b);
+    } : function timingSafeEqual2(a, b) {
+      if (!bufferEqual) {
+        bufferEqual = require_buffer_equal_constant_time();
+      }
+      return bufferEqual(a, b);
+    };
+    function createHmacVerifier(bits) {
+      return function verify(thing, signature, secret) {
+        var computedSig = createHmacSigner(bits)(thing, secret);
+        return timingSafeEqual(Buffer3.from(signature), Buffer3.from(computedSig));
+      };
+    }
+    function createKeySigner(bits) {
+      return function sign(thing, privateKey) {
+        checkIsPrivateKey(privateKey);
+        thing = normalizeInput(thing);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
+        return fromBase64(sig);
+      };
+    }
+    function createKeyVerifier(bits) {
+      return function verify(thing, signature, publicKey) {
+        checkIsPublicKey(publicKey);
+        thing = normalizeInput(thing);
+        signature = toBase64(signature);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        verifier.update(thing);
+        return verifier.verify(publicKey, signature, "base64");
+      };
+    }
+    function createPSSKeySigner(bits) {
+      return function sign(thing, privateKey) {
+        checkIsPrivateKey(privateKey);
+        thing = normalizeInput(thing);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var sig = (signer.update(thing), signer.sign({
+          key: privateKey,
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+        }, "base64"));
+        return fromBase64(sig);
+      };
+    }
+    function createPSSKeyVerifier(bits) {
+      return function verify(thing, signature, publicKey) {
+        checkIsPublicKey(publicKey);
+        thing = normalizeInput(thing);
+        signature = toBase64(signature);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        verifier.update(thing);
+        return verifier.verify({
+          key: publicKey,
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+        }, signature, "base64");
+      };
+    }
+    function createECDSASigner(bits) {
+      var inner = createKeySigner(bits);
+      return function sign() {
+        var signature = inner.apply(null, arguments);
+        signature = formatEcdsa.derToJose(signature, "ES" + bits);
+        return signature;
+      };
+    }
+    function createECDSAVerifer(bits) {
+      var inner = createKeyVerifier(bits);
+      return function verify(thing, signature, publicKey) {
+        signature = formatEcdsa.joseToDer(signature, "ES" + bits).toString("base64");
+        var result = inner(thing, signature, publicKey);
+        return result;
+      };
+    }
+    function createNoneSigner() {
+      return function sign() {
+        return "";
+      };
+    }
+    function createNoneVerifier() {
+      return function verify(thing, signature) {
+        return signature === "";
+      };
+    }
+    module2.exports = function jwa(algorithm) {
+      var signerFactories = {
+        hs: createHmacSigner,
+        rs: createKeySigner,
+        ps: createPSSKeySigner,
+        es: createECDSASigner,
+        none: createNoneSigner
+      };
+      var verifierFactories = {
+        hs: createHmacVerifier,
+        rs: createKeyVerifier,
+        ps: createPSSKeyVerifier,
+        es: createECDSAVerifer,
+        none: createNoneVerifier
+      };
+      var match = algorithm.match(/^(RS|PS|ES|HS)(256|384|512)$|^(none)$/);
+      if (!match)
+        throw typeError(MSG_INVALID_ALGORITHM, algorithm);
+      var algo = (match[1] || match[3]).toLowerCase();
+      var bits = match[2];
+      return {
+        sign: signerFactories[algo](bits),
+        verify: verifierFactories[algo](bits)
+      };
+    };
+  }
+});
+
+// node_modules/jws/lib/tostring.js
+var require_tostring = __commonJS({
+  "node_modules/jws/lib/tostring.js"(exports2, module2) {
+    var Buffer3 = require("buffer").Buffer;
+    module2.exports = function toString(obj) {
+      if (typeof obj === "string")
+        return obj;
+      if (typeof obj === "number" || Buffer3.isBuffer(obj))
+        return obj.toString();
+      return JSON.stringify(obj);
+    };
+  }
+});
+
+// node_modules/jws/lib/sign-stream.js
+var require_sign_stream = __commonJS({
+  "node_modules/jws/lib/sign-stream.js"(exports2, module2) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var DataStream = require_data_stream();
+    var jwa = require_jwa();
+    var Stream = require("stream");
+    var toString = require_tostring();
+    var util2 = require("util");
+    function base64url(string, encoding) {
+      return Buffer3.from(string, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    }
+    function jwsSecuredInput(header, payload, encoding) {
+      encoding = encoding || "utf8";
+      var encodedHeader = base64url(toString(header), "binary");
+      var encodedPayload = base64url(toString(payload), encoding);
+      return util2.format("%s.%s", encodedHeader, encodedPayload);
+    }
+    function jwsSign(opts) {
+      var header = opts.header;
+      var payload = opts.payload;
+      var secretOrKey = opts.secret || opts.privateKey;
+      var encoding = opts.encoding;
+      var algo = jwa(header.alg);
+      var securedInput = jwsSecuredInput(header, payload, encoding);
+      var signature = algo.sign(securedInput, secretOrKey);
+      return util2.format("%s.%s", securedInput, signature);
+    }
+    function SignStream(opts) {
+      var secret = opts.secret;
+      secret = secret == null ? opts.privateKey : secret;
+      secret = secret == null ? opts.key : secret;
+      if (/^hs/i.test(opts.header.alg) === true && secret == null) {
+        throw new TypeError("secret must be a string or buffer or a KeyObject");
+      }
+      var secretStream = new DataStream(secret);
+      this.readable = true;
+      this.header = opts.header;
+      this.encoding = opts.encoding;
+      this.secret = this.privateKey = this.key = secretStream;
+      this.payload = new DataStream(opts.payload);
+      this.secret.once("close", function() {
+        if (!this.payload.writable && this.readable)
+          this.sign();
+      }.bind(this));
+      this.payload.once("close", function() {
+        if (!this.secret.writable && this.readable)
+          this.sign();
+      }.bind(this));
+    }
+    util2.inherits(SignStream, Stream);
+    SignStream.prototype.sign = function sign() {
+      try {
+        var signature = jwsSign({
+          header: this.header,
+          payload: this.payload.buffer,
+          secret: this.secret.buffer,
+          encoding: this.encoding
+        });
+        this.emit("done", signature);
+        this.emit("data", signature);
+        this.emit("end");
+        this.readable = false;
+        return signature;
+      } catch (e) {
+        this.readable = false;
+        this.emit("error", e);
+        this.emit("close");
+      }
+    };
+    SignStream.sign = jwsSign;
+    module2.exports = SignStream;
+  }
+});
+
+// node_modules/jws/lib/verify-stream.js
+var require_verify_stream = __commonJS({
+  "node_modules/jws/lib/verify-stream.js"(exports2, module2) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var DataStream = require_data_stream();
+    var jwa = require_jwa();
+    var Stream = require("stream");
+    var toString = require_tostring();
+    var util2 = require("util");
+    var JWS_REGEX = /^[a-zA-Z0-9\-_]+?\.[a-zA-Z0-9\-_]+?\.([a-zA-Z0-9\-_]+)?$/;
+    function isObject(thing) {
+      return Object.prototype.toString.call(thing) === "[object Object]";
+    }
+    function safeJsonParse(thing) {
+      if (isObject(thing))
+        return thing;
+      try {
+        return JSON.parse(thing);
+      } catch (e) {
+        return void 0;
+      }
+    }
+    function headerFromJWS(jwsSig) {
+      var encodedHeader = jwsSig.split(".", 1)[0];
+      return safeJsonParse(Buffer3.from(encodedHeader, "base64").toString("binary"));
+    }
+    function securedInputFromJWS(jwsSig) {
+      return jwsSig.split(".", 2).join(".");
+    }
+    function signatureFromJWS(jwsSig) {
+      return jwsSig.split(".")[2];
+    }
+    function payloadFromJWS(jwsSig, encoding) {
+      encoding = encoding || "utf8";
+      var payload = jwsSig.split(".")[1];
+      return Buffer3.from(payload, "base64").toString(encoding);
+    }
+    function isValidJws(string) {
+      return JWS_REGEX.test(string) && !!headerFromJWS(string);
+    }
+    function jwsVerify(jwsSig, algorithm, secretOrKey) {
+      if (!algorithm) {
+        var err = new Error("Missing algorithm parameter for jws.verify");
+        err.code = "MISSING_ALGORITHM";
+        throw err;
+      }
+      jwsSig = toString(jwsSig);
+      var signature = signatureFromJWS(jwsSig);
+      var securedInput = securedInputFromJWS(jwsSig);
+      var algo = jwa(algorithm);
+      return algo.verify(securedInput, signature, secretOrKey);
+    }
+    function jwsDecode(jwsSig, opts) {
+      opts = opts || {};
+      jwsSig = toString(jwsSig);
+      if (!isValidJws(jwsSig))
+        return null;
+      var header = headerFromJWS(jwsSig);
+      if (!header)
+        return null;
+      var payload = payloadFromJWS(jwsSig);
+      if (header.typ === "JWT" || opts.json)
+        payload = JSON.parse(payload, opts.encoding);
+      return {
+        header,
+        payload,
+        signature: signatureFromJWS(jwsSig)
+      };
+    }
+    function VerifyStream(opts) {
+      opts = opts || {};
+      var secretOrKey = opts.secret;
+      secretOrKey = secretOrKey == null ? opts.publicKey : secretOrKey;
+      secretOrKey = secretOrKey == null ? opts.key : secretOrKey;
+      if (/^hs/i.test(opts.algorithm) === true && secretOrKey == null) {
+        throw new TypeError("secret must be a string or buffer or a KeyObject");
+      }
+      var secretStream = new DataStream(secretOrKey);
+      this.readable = true;
+      this.algorithm = opts.algorithm;
+      this.encoding = opts.encoding;
+      this.secret = this.publicKey = this.key = secretStream;
+      this.signature = new DataStream(opts.signature);
+      this.secret.once("close", function() {
+        if (!this.signature.writable && this.readable)
+          this.verify();
+      }.bind(this));
+      this.signature.once("close", function() {
+        if (!this.secret.writable && this.readable)
+          this.verify();
+      }.bind(this));
+    }
+    util2.inherits(VerifyStream, Stream);
+    VerifyStream.prototype.verify = function verify() {
+      try {
+        var valid = jwsVerify(this.signature.buffer, this.algorithm, this.key.buffer);
+        var obj = jwsDecode(this.signature.buffer, this.encoding);
+        this.emit("done", valid, obj);
+        this.emit("data", valid);
+        this.emit("end");
+        this.readable = false;
+        return valid;
+      } catch (e) {
+        this.readable = false;
+        this.emit("error", e);
+        this.emit("close");
+      }
+    };
+    VerifyStream.decode = jwsDecode;
+    VerifyStream.isValid = isValidJws;
+    VerifyStream.verify = jwsVerify;
+    module2.exports = VerifyStream;
+  }
+});
+
+// node_modules/jws/index.js
+var require_jws = __commonJS({
+  "node_modules/jws/index.js"(exports2) {
+    var SignStream = require_sign_stream();
+    var VerifyStream = require_verify_stream();
+    var ALGORITHMS = [
+      "HS256",
+      "HS384",
+      "HS512",
+      "RS256",
+      "RS384",
+      "RS512",
+      "PS256",
+      "PS384",
+      "PS512",
+      "ES256",
+      "ES384",
+      "ES512"
+    ];
+    exports2.ALGORITHMS = ALGORITHMS;
+    exports2.sign = SignStream.sign;
+    exports2.verify = VerifyStream.verify;
+    exports2.decode = VerifyStream.decode;
+    exports2.isValid = VerifyStream.isValid;
+    exports2.createSign = function createSign(opts) {
+      return new SignStream(opts);
+    };
+    exports2.createVerify = function createVerify(opts) {
+      return new VerifyStream(opts);
+    };
+  }
+});
+
+// node_modules/jsonwebtoken/decode.js
+var require_decode = __commonJS({
+  "node_modules/jsonwebtoken/decode.js"(exports2, module2) {
+    var jws = require_jws();
+    module2.exports = function(jwt3, options) {
+      options = options || {};
+      var decoded = jws.decode(jwt3, options);
+      if (!decoded) {
+        return null;
+      }
+      var payload = decoded.payload;
+      if (typeof payload === "string") {
+        try {
+          var obj = JSON.parse(payload);
+          if (obj !== null && typeof obj === "object") {
+            payload = obj;
+          }
+        } catch (e) {
+        }
+      }
+      if (options.complete === true) {
+        return {
+          header: decoded.header,
+          payload,
+          signature: decoded.signature
+        };
+      }
+      return payload;
+    };
+  }
+});
+
+// node_modules/jsonwebtoken/lib/JsonWebTokenError.js
+var require_JsonWebTokenError = __commonJS({
+  "node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports2, module2) {
+    var JsonWebTokenError = function(message, error) {
+      Error.call(this, message);
+      if (Error.captureStackTrace) {
+        Error.captureStackTrace(this, this.constructor);
+      }
+      this.name = "JsonWebTokenError";
+      this.message = message;
+      if (error) this.inner = error;
+    };
+    JsonWebTokenError.prototype = Object.create(Error.prototype);
+    JsonWebTokenError.prototype.constructor = JsonWebTokenError;
+    module2.exports = JsonWebTokenError;
+  }
+});
+
+// node_modules/jsonwebtoken/lib/NotBeforeError.js
+var require_NotBeforeError = __commonJS({
+  "node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports2, module2) {
+    var JsonWebTokenError = require_JsonWebTokenError();
+    var NotBeforeError = function(message, date) {
+      JsonWebTokenError.call(this, message);
+      this.name = "NotBeforeError";
+      this.date = date;
+    };
+    NotBeforeError.prototype = Object.create(JsonWebTokenError.prototype);
+    NotBeforeError.prototype.constructor = NotBeforeError;
+    module2.exports = NotBeforeError;
+  }
+});
+
+// node_modules/jsonwebtoken/lib/TokenExpiredError.js
+var require_TokenExpiredError = __commonJS({
+  "node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports2, module2) {
+    var JsonWebTokenError = require_JsonWebTokenError();
+    var TokenExpiredError = function(message, expiredAt) {
+      JsonWebTokenError.call(this, message);
+      this.name = "TokenExpiredError";
+      this.expiredAt = expiredAt;
+    };
+    TokenExpiredError.prototype = Object.create(JsonWebTokenError.prototype);
+    TokenExpiredError.prototype.constructor = TokenExpiredError;
+    module2.exports = TokenExpiredError;
+  }
+});
+
+// node_modules/jsonwebtoken/node_modules/ms/index.js
+var require_ms5 = __commonJS({
+  "node_modules/jsonwebtoken/node_modules/ms/index.js"(exports2, module2) {
+    var s = 1e3;
+    var m = s * 60;
+    var h = m * 60;
+    var d = h * 24;
+    var w = d * 7;
+    var y = d * 365.25;
+    module2.exports = function(val, options) {
+      options = options || {};
+      var type = typeof val;
+      if (type === "string" && val.length > 0) {
+        return parse(val);
+      } else if (type === "number" && isFinite(val)) {
+        return options.long ? fmtLong(val) : fmtShort(val);
+      }
+      throw new Error(
+        "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
+      );
+    };
+    function parse(str) {
+      str = String(str);
+      if (str.length > 100) {
+        return;
+      }
+      var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
+        str
+      );
+      if (!match) {
+        return;
+      }
+      var n = parseFloat(match[1]);
+      var type = (match[2] || "ms").toLowerCase();
+      switch (type) {
+        case "years":
+        case "year":
+        case "yrs":
+        case "yr":
+        case "y":
+          return n * y;
+        case "weeks":
+        case "week":
+        case "w":
+          return n * w;
+        case "days":
+        case "day":
+        case "d":
+          return n * d;
+        case "hours":
+        case "hour":
+        case "hrs":
+        case "hr":
+        case "h":
+          return n * h;
+        case "minutes":
+        case "minute":
+        case "mins":
+        case "min":
+        case "m":
+          return n * m;
+        case "seconds":
+        case "second":
+        case "secs":
+        case "sec":
+        case "s":
+          return n * s;
+        case "milliseconds":
+        case "millisecond":
+        case "msecs":
+        case "msec":
+        case "ms":
+          return n;
+        default:
+          return void 0;
+      }
+    }
+    function fmtShort(ms) {
+      var msAbs = Math.abs(ms);
+      if (msAbs >= d) {
+        return Math.round(ms / d) + "d";
+      }
+      if (msAbs >= h) {
+        return Math.round(ms / h) + "h";
+      }
+      if (msAbs >= m) {
+        return Math.round(ms / m) + "m";
+      }
+      if (msAbs >= s) {
+        return Math.round(ms / s) + "s";
+      }
+      return ms + "ms";
+    }
+    function fmtLong(ms) {
+      var msAbs = Math.abs(ms);
+      if (msAbs >= d) {
+        return plural(ms, msAbs, d, "day");
+      }
+      if (msAbs >= h) {
+        return plural(ms, msAbs, h, "hour");
+      }
+      if (msAbs >= m) {
+        return plural(ms, msAbs, m, "minute");
+      }
+      if (msAbs >= s) {
+        return plural(ms, msAbs, s, "second");
+      }
+      return ms + " ms";
+    }
+    function plural(ms, msAbs, n, name) {
+      var isPlural = msAbs >= n * 1.5;
+      return Math.round(ms / n) + " " + name + (isPlural ? "s" : "");
+    }
+  }
+});
+
+// node_modules/jsonwebtoken/lib/timespan.js
+var require_timespan = __commonJS({
+  "node_modules/jsonwebtoken/lib/timespan.js"(exports2, module2) {
+    var ms = require_ms5();
+    module2.exports = function(time, iat) {
+      var timestamp = iat || Math.floor(Date.now() / 1e3);
+      if (typeof time === "string") {
+        var milliseconds = ms(time);
+        if (typeof milliseconds === "undefined") {
+          return;
+        }
+        return Math.floor(timestamp + milliseconds / 1e3);
+      } else if (typeof time === "number") {
+        return timestamp + time;
+      } else {
+        return;
+      }
+    };
+  }
+});
+
+// node_modules/semver/internal/constants.js
+var require_constants4 = __commonJS({
+  "node_modules/semver/internal/constants.js"(exports2, module2) {
+    "use strict";
+    var SEMVER_SPEC_VERSION = "2.0.0";
+    var MAX_LENGTH = 256;
+    var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || /* istanbul ignore next */
+    9007199254740991;
+    var MAX_SAFE_COMPONENT_LENGTH = 16;
+    var MAX_SAFE_BUILD_LENGTH = MAX_LENGTH - 6;
+    var RELEASE_TYPES = [
+      "major",
+      "premajor",
+      "minor",
+      "preminor",
+      "patch",
+      "prepatch",
+      "prerelease"
+    ];
+    module2.exports = {
+      MAX_LENGTH,
+      MAX_SAFE_COMPONENT_LENGTH,
+      MAX_SAFE_BUILD_LENGTH,
+      MAX_SAFE_INTEGER,
+      RELEASE_TYPES,
+      SEMVER_SPEC_VERSION,
+      FLAG_INCLUDE_PRERELEASE: 1,
+      FLAG_LOOSE: 2
+    };
+  }
+});
+
+// node_modules/semver/internal/debug.js
+var require_debug2 = __commonJS({
+  "node_modules/semver/internal/debug.js"(exports2, module2) {
+    "use strict";
+    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args) => console.error("SEMVER", ...args) : () => {
+    };
+    module2.exports = debug;
+  }
+});
+
+// node_modules/semver/internal/re.js
+var require_re = __commonJS({
+  "node_modules/semver/internal/re.js"(exports2, module2) {
+    "use strict";
+    var {
+      MAX_SAFE_COMPONENT_LENGTH,
+      MAX_SAFE_BUILD_LENGTH,
+      MAX_LENGTH
+    } = require_constants4();
+    var debug = require_debug2();
+    exports2 = module2.exports = {};
+    var re = exports2.re = [];
+    var safeRe = exports2.safeRe = [];
+    var src = exports2.src = [];
+    var safeSrc = exports2.safeSrc = [];
+    var t = exports2.t = {};
+    var R = 0;
+    var LETTERDASHNUMBER = "[a-zA-Z0-9-]";
+    var safeRegexReplacements = [
+      ["\\s", 1],
+      ["\\d", MAX_LENGTH],
+      [LETTERDASHNUMBER, MAX_SAFE_BUILD_LENGTH]
+    ];
+    var makeSafeRegex = (value) => {
+      for (const [token, max] of safeRegexReplacements) {
+        value = value.split(`${token}*`).join(`${token}{0,${max}}`).split(`${token}+`).join(`${token}{1,${max}}`);
+      }
+      return value;
+    };
+    var createToken = (name, value, isGlobal) => {
+      const safe = makeSafeRegex(value);
+      const index = R++;
+      debug(name, index, value);
+      t[name] = index;
+      src[index] = value;
+      safeSrc[index] = safe;
+      re[index] = new RegExp(value, isGlobal ? "g" : void 0);
+      safeRe[index] = new RegExp(safe, isGlobal ? "g" : void 0);
+    };
+    createToken("NUMERICIDENTIFIER", "0|[1-9]\\d*");
+    createToken("NUMERICIDENTIFIERLOOSE", "\\d+");
+    createToken("NONNUMERICIDENTIFIER", `\\d*[a-zA-Z-]${LETTERDASHNUMBER}*`);
+    createToken("MAINVERSION", `(${src[t.NUMERICIDENTIFIER]})\\.(${src[t.NUMERICIDENTIFIER]})\\.(${src[t.NUMERICIDENTIFIER]})`);
+    createToken("MAINVERSIONLOOSE", `(${src[t.NUMERICIDENTIFIERLOOSE]})\\.(${src[t.NUMERICIDENTIFIERLOOSE]})\\.(${src[t.NUMERICIDENTIFIERLOOSE]})`);
+    createToken("PRERELEASEIDENTIFIER", `(?:${src[t.NONNUMERICIDENTIFIER]}|${src[t.NUMERICIDENTIFIER]})`);
+    createToken("PRERELEASEIDENTIFIERLOOSE", `(?:${src[t.NONNUMERICIDENTIFIER]}|${src[t.NUMERICIDENTIFIERLOOSE]})`);
+    createToken("PRERELEASE", `(?:-(${src[t.PRERELEASEIDENTIFIER]}(?:\\.${src[t.PRERELEASEIDENTIFIER]})*))`);
+    createToken("PRERELEASELOOSE", `(?:-?(${src[t.PRERELEASEIDENTIFIERLOOSE]}(?:\\.${src[t.PRERELEASEIDENTIFIERLOOSE]})*))`);
+    createToken("BUILDIDENTIFIER", `${LETTERDASHNUMBER}+`);
+    createToken("BUILD", `(?:\\+(${src[t.BUILDIDENTIFIER]}(?:\\.${src[t.BUILDIDENTIFIER]})*))`);
+    createToken("FULLPLAIN", `v?${src[t.MAINVERSION]}${src[t.PRERELEASE]}?${src[t.BUILD]}?`);
+    createToken("FULL", `^${src[t.FULLPLAIN]}$`);
+    createToken("LOOSEPLAIN", `[v=\\s]*${src[t.MAINVERSIONLOOSE]}${src[t.PRERELEASELOOSE]}?${src[t.BUILD]}?`);
+    createToken("LOOSE", `^${src[t.LOOSEPLAIN]}$`);
+    createToken("GTLT", "((?:<|>)?=?)");
+    createToken("XRANGEIDENTIFIERLOOSE", `${src[t.NUMERICIDENTIFIERLOOSE]}|x|X|\\*`);
+    createToken("XRANGEIDENTIFIER", `${src[t.NUMERICIDENTIFIER]}|x|X|\\*`);
+    createToken("XRANGEPLAIN", `[v=\\s]*(${src[t.XRANGEIDENTIFIER]})(?:\\.(${src[t.XRANGEIDENTIFIER]})(?:\\.(${src[t.XRANGEIDENTIFIER]})(?:${src[t.PRERELEASE]})?${src[t.BUILD]}?)?)?`);
+    createToken("XRANGEPLAINLOOSE", `[v=\\s]*(${src[t.XRANGEIDENTIFIERLOOSE]})(?:\\.(${src[t.XRANGEIDENTIFIERLOOSE]})(?:\\.(${src[t.XRANGEIDENTIFIERLOOSE]})(?:${src[t.PRERELEASELOOSE]})?${src[t.BUILD]}?)?)?`);
+    createToken("XRANGE", `^${src[t.GTLT]}\\s*${src[t.XRANGEPLAIN]}$`);
+    createToken("XRANGELOOSE", `^${src[t.GTLT]}\\s*${src[t.XRANGEPLAINLOOSE]}$`);
+    createToken("COERCEPLAIN", `${"(^|[^\\d])(\\d{1,"}${MAX_SAFE_COMPONENT_LENGTH}})(?:\\.(\\d{1,${MAX_SAFE_COMPONENT_LENGTH}}))?(?:\\.(\\d{1,${MAX_SAFE_COMPONENT_LENGTH}}))?`);
+    createToken("COERCE", `${src[t.COERCEPLAIN]}(?:$|[^\\d])`);
+    createToken("COERCEFULL", src[t.COERCEPLAIN] + `(?:${src[t.PRERELEASE]})?(?:${src[t.BUILD]})?(?:$|[^\\d])`);
+    createToken("COERCERTL", src[t.COERCE], true);
+    createToken("COERCERTLFULL", src[t.COERCEFULL], true);
+    createToken("LONETILDE", "(?:~>?)");
+    createToken("TILDETRIM", `(\\s*)${src[t.LONETILDE]}\\s+`, true);
+    exports2.tildeTrimReplace = "$1~";
+    createToken("TILDE", `^${src[t.LONETILDE]}${src[t.XRANGEPLAIN]}$`);
+    createToken("TILDELOOSE", `^${src[t.LONETILDE]}${src[t.XRANGEPLAINLOOSE]}$`);
+    createToken("LONECARET", "(?:\\^)");
+    createToken("CARETTRIM", `(\\s*)${src[t.LONECARET]}\\s+`, true);
+    exports2.caretTrimReplace = "$1^";
+    createToken("CARET", `^${src[t.LONECARET]}${src[t.XRANGEPLAIN]}$`);
+    createToken("CARETLOOSE", `^${src[t.LONECARET]}${src[t.XRANGEPLAINLOOSE]}$`);
+    createToken("COMPARATORLOOSE", `^${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]})$|^$`);
+    createToken("COMPARATOR", `^${src[t.GTLT]}\\s*(${src[t.FULLPLAIN]})$|^$`);
+    createToken("COMPARATORTRIM", `(\\s*)${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]}|${src[t.XRANGEPLAIN]})`, true);
+    exports2.comparatorTrimReplace = "$1$2$3";
+    createToken("HYPHENRANGE", `^\\s*(${src[t.XRANGEPLAIN]})\\s+-\\s+(${src[t.XRANGEPLAIN]})\\s*$`);
+    createToken("HYPHENRANGELOOSE", `^\\s*(${src[t.XRANGEPLAINLOOSE]})\\s+-\\s+(${src[t.XRANGEPLAINLOOSE]})\\s*$`);
+    createToken("STAR", "(<|>)?=?\\s*\\*");
+    createToken("GTE0", "^\\s*>=\\s*0\\.0\\.0\\s*$");
+    createToken("GTE0PRE", "^\\s*>=\\s*0\\.0\\.0-0\\s*$");
+  }
+});
+
+// node_modules/semver/internal/parse-options.js
+var require_parse_options = __commonJS({
+  "node_modules/semver/internal/parse-options.js"(exports2, module2) {
+    "use strict";
+    var looseOption = Object.freeze({ loose: true });
+    var emptyOpts = Object.freeze({});
+    var parseOptions2 = (options) => {
+      if (!options) {
+        return emptyOpts;
+      }
+      if (typeof options !== "object") {
+        return looseOption;
+      }
+      return options;
+    };
+    module2.exports = parseOptions2;
+  }
+});
+
+// node_modules/semver/internal/identifiers.js
+var require_identifiers = __commonJS({
+  "node_modules/semver/internal/identifiers.js"(exports2, module2) {
+    "use strict";
+    var numeric = /^[0-9]+$/;
+    var compareIdentifiers = (a, b) => {
+      if (typeof a === "number" && typeof b === "number") {
+        return a === b ? 0 : a < b ? -1 : 1;
+      }
+      const anum = numeric.test(a);
+      const bnum = numeric.test(b);
+      if (anum && bnum) {
+        a = +a;
+        b = +b;
+      }
+      return a === b ? 0 : anum && !bnum ? -1 : bnum && !anum ? 1 : a < b ? -1 : 1;
+    };
+    var rcompareIdentifiers = (a, b) => compareIdentifiers(b, a);
+    module2.exports = {
+      compareIdentifiers,
+      rcompareIdentifiers
+    };
+  }
+});
+
+// node_modules/semver/classes/semver.js
+var require_semver = __commonJS({
+  "node_modules/semver/classes/semver.js"(exports2, module2) {
+    "use strict";
+    var debug = require_debug2();
+    var { MAX_LENGTH, MAX_SAFE_INTEGER } = require_constants4();
+    var { safeRe: re, t } = require_re();
+    var parseOptions2 = require_parse_options();
+    var { compareIdentifiers } = require_identifiers();
+    var isPrereleaseIdentifier = (prerelease, identifier) => {
+      const identifiers = identifier.split(".");
+      if (identifiers.length > prerelease.length) {
+        return false;
+      }
+      for (let i = 0; i < identifiers.length; i++) {
+        if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
+          return false;
+        }
+      }
+      return true;
+    };
+    var SemVer = class _SemVer {
+      constructor(version, options) {
+        options = parseOptions2(options);
+        if (version instanceof _SemVer) {
+          if (version.loose === !!options.loose && version.includePrerelease === !!options.includePrerelease) {
+            return version;
+          } else {
+            version = version.version;
+          }
+        } else if (typeof version !== "string") {
+          throw new TypeError(`Invalid version. Must be a string. Got type "${typeof version}".`);
+        }
+        if (version.length > MAX_LENGTH) {
+          throw new TypeError(
+            `version is longer than ${MAX_LENGTH} characters`
+          );
+        }
+        debug("SemVer", version, options);
+        this.options = options;
+        this.loose = !!options.loose;
+        this.includePrerelease = !!options.includePrerelease;
+        const m = version.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL]);
+        if (!m) {
+          throw new TypeError(`Invalid Version: ${version}`);
+        }
+        this.raw = version;
+        this.major = +m[1];
+        this.minor = +m[2];
+        this.patch = +m[3];
+        if (this.major > MAX_SAFE_INTEGER || this.major < 0) {
+          throw new TypeError("Invalid major version");
+        }
+        if (this.minor > MAX_SAFE_INTEGER || this.minor < 0) {
+          throw new TypeError("Invalid minor version");
+        }
+        if (this.patch > MAX_SAFE_INTEGER || this.patch < 0) {
+          throw new TypeError("Invalid patch version");
+        }
+        if (!m[4]) {
+          this.prerelease = [];
+        } else {
+          this.prerelease = m[4].split(".").map((id) => {
+            if (/^[0-9]+$/.test(id)) {
+              const num = +id;
+              if (num >= 0 && num < MAX_SAFE_INTEGER) {
+                return num;
+              }
+            }
+            return id;
+          });
+        }
+        this.build = m[5] ? m[5].split(".") : [];
+        this.format();
+      }
+      format() {
+        this.version = `${this.major}.${this.minor}.${this.patch}`;
+        if (this.prerelease.length) {
+          this.version += `-${this.prerelease.join(".")}`;
+        }
+        return this.version;
+      }
+      toString() {
+        return this.version;
+      }
+      compare(other) {
+        debug("SemVer.compare", this.version, this.options, other);
+        if (!(other instanceof _SemVer)) {
+          if (typeof other === "string" && other === this.version) {
+            return 0;
+          }
+          other = new _SemVer(other, this.options);
+        }
+        if (other.version === this.version) {
+          return 0;
+        }
+        return this.compareMain(other) || this.comparePre(other);
+      }
+      compareMain(other) {
+        if (!(other instanceof _SemVer)) {
+          other = new _SemVer(other, this.options);
+        }
+        if (this.major < other.major) {
+          return -1;
+        }
+        if (this.major > other.major) {
+          return 1;
+        }
+        if (this.minor < other.minor) {
+          return -1;
+        }
+        if (this.minor > other.minor) {
+          return 1;
+        }
+        if (this.patch < other.patch) {
+          return -1;
+        }
+        if (this.patch > other.patch) {
+          return 1;
+        }
+        return 0;
+      }
+      comparePre(other) {
+        if (!(other instanceof _SemVer)) {
+          other = new _SemVer(other, this.options);
+        }
+        if (this.prerelease.length && !other.prerelease.length) {
+          return -1;
+        } else if (!this.prerelease.length && other.prerelease.length) {
+          return 1;
+        } else if (!this.prerelease.length && !other.prerelease.length) {
+          return 0;
+        }
+        let i = 0;
+        do {
+          const a = this.prerelease[i];
+          const b = other.prerelease[i];
+          debug("prerelease compare", i, a, b);
+          if (a === void 0 && b === void 0) {
+            return 0;
+          } else if (b === void 0) {
+            return 1;
+          } else if (a === void 0) {
+            return -1;
+          } else if (a === b) {
+            continue;
+          } else {
+            return compareIdentifiers(a, b);
+          }
+        } while (++i);
+      }
+      compareBuild(other) {
+        if (!(other instanceof _SemVer)) {
+          other = new _SemVer(other, this.options);
+        }
+        let i = 0;
+        do {
+          const a = this.build[i];
+          const b = other.build[i];
+          debug("build compare", i, a, b);
+          if (a === void 0 && b === void 0) {
+            return 0;
+          } else if (b === void 0) {
+            return 1;
+          } else if (a === void 0) {
+            return -1;
+          } else if (a === b) {
+            continue;
+          } else {
+            return compareIdentifiers(a, b);
+          }
+        } while (++i);
+      }
+      // preminor will bump the version up to the next minor release, and immediately
+      // down to pre-release. premajor and prepatch work the same way.
+      inc(release, identifier, identifierBase) {
+        if (release.startsWith("pre")) {
+          if (!identifier && identifierBase === false) {
+            throw new Error("invalid increment argument: identifier is empty");
+          }
+          if (identifier) {
+            const match = `-${identifier}`.match(this.options.loose ? re[t.PRERELEASELOOSE] : re[t.PRERELEASE]);
+            if (!match || match[1] !== identifier) {
+              throw new Error(`invalid identifier: ${identifier}`);
+            }
+          }
+        }
+        switch (release) {
+          case "premajor":
+            this.prerelease.length = 0;
+            this.patch = 0;
+            this.minor = 0;
+            this.major++;
+            this.inc("pre", identifier, identifierBase);
+            break;
+          case "preminor":
+            this.prerelease.length = 0;
+            this.patch = 0;
+            this.minor++;
+            this.inc("pre", identifier, identifierBase);
+            break;
+          case "prepatch":
+            this.prerelease.length = 0;
+            this.inc("patch", identifier, identifierBase);
+            this.inc("pre", identifier, identifierBase);
+            break;
+          // If the input is a non-prerelease version, this acts the same as
+          // prepatch.
+          case "prerelease":
+            if (this.prerelease.length === 0) {
+              this.inc("patch", identifier, identifierBase);
+            }
+            this.inc("pre", identifier, identifierBase);
+            break;
+          case "release":
+            if (this.prerelease.length === 0) {
+              throw new Error(`version ${this.raw} is not a prerelease`);
+            }
+            this.prerelease.length = 0;
+            break;
+          case "major":
+            if (this.minor !== 0 || this.patch !== 0 || this.prerelease.length === 0) {
+              this.major++;
+            }
+            this.minor = 0;
+            this.patch = 0;
+            this.prerelease = [];
+            break;
+          case "minor":
+            if (this.patch !== 0 || this.prerelease.length === 0) {
+              this.minor++;
+            }
+            this.patch = 0;
+            this.prerelease = [];
+            break;
+          case "patch":
+            if (this.prerelease.length === 0) {
+              this.patch++;
+            }
+            this.prerelease = [];
+            break;
+          // This probably shouldn't be used publicly.
+          // 1.0.0 'pre' would become 1.0.0-0 which is the wrong direction.
+          case "pre": {
+            const base = Number(identifierBase) ? 1 : 0;
+            if (this.prerelease.length === 0) {
+              this.prerelease = [base];
+            } else {
+              let i = this.prerelease.length;
+              while (--i >= 0) {
+                if (typeof this.prerelease[i] === "number") {
+                  this.prerelease[i]++;
+                  i = -2;
+                }
+              }
+              if (i === -1) {
+                if (identifier === this.prerelease.join(".") && identifierBase === false) {
+                  throw new Error("invalid increment argument: identifier already exists");
+                }
+                this.prerelease.push(base);
+              }
+            }
+            if (identifier) {
+              let prerelease = [identifier, base];
+              if (identifierBase === false) {
+                prerelease = [identifier];
+              }
+              if (isPrereleaseIdentifier(this.prerelease, identifier)) {
+                const prereleaseBase = this.prerelease[identifier.split(".").length];
+                if (isNaN(prereleaseBase)) {
+                  this.prerelease = prerelease;
+                }
+              } else {
+                this.prerelease = prerelease;
+              }
+            }
+            break;
+          }
+          default:
+            throw new Error(`invalid increment argument: ${release}`);
+        }
+        this.raw = this.format();
+        if (this.build.length) {
+          this.raw += `+${this.build.join(".")}`;
+        }
+        return this;
+      }
+    };
+    module2.exports = SemVer;
+  }
+});
+
+// node_modules/semver/functions/parse.js
+var require_parse2 = __commonJS({
+  "node_modules/semver/functions/parse.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var parse = (version, options, throwErrors = false) => {
+      if (version instanceof SemVer) {
+        return version;
+      }
+      try {
+        return new SemVer(version, options);
+      } catch (er) {
+        if (!throwErrors) {
+          return null;
+        }
+        throw er;
+      }
+    };
+    module2.exports = parse;
+  }
+});
+
+// node_modules/semver/functions/valid.js
+var require_valid = __commonJS({
+  "node_modules/semver/functions/valid.js"(exports2, module2) {
+    "use strict";
+    var parse = require_parse2();
+    var valid = (version, options) => {
+      const v = parse(version, options);
+      return v ? v.version : null;
+    };
+    module2.exports = valid;
+  }
+});
+
+// node_modules/semver/functions/clean.js
+var require_clean = __commonJS({
+  "node_modules/semver/functions/clean.js"(exports2, module2) {
+    "use strict";
+    var parse = require_parse2();
+    var clean = (version, options) => {
+      const s = parse(version.trim().replace(/^[=v]+/, ""), options);
+      return s ? s.version : null;
+    };
+    module2.exports = clean;
+  }
+});
+
+// node_modules/semver/functions/inc.js
+var require_inc = __commonJS({
+  "node_modules/semver/functions/inc.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var inc = (version, release, options, identifier, identifierBase) => {
+      if (typeof options === "string") {
+        identifierBase = identifier;
+        identifier = options;
+        options = void 0;
+      }
+      try {
+        return new SemVer(
+          version instanceof SemVer ? version.version : version,
+          options
+        ).inc(release, identifier, identifierBase).version;
+      } catch (er) {
+        return null;
+      }
+    };
+    module2.exports = inc;
+  }
+});
+
+// node_modules/semver/functions/diff.js
+var require_diff = __commonJS({
+  "node_modules/semver/functions/diff.js"(exports2, module2) {
+    "use strict";
+    var parse = require_parse2();
+    var diff = (version1, version2) => {
+      const v1 = parse(version1, null, true);
+      const v2 = parse(version2, null, true);
+      const comparison = v1.compare(v2);
+      if (comparison === 0) {
+        return null;
+      }
+      const v1Higher = comparison > 0;
+      const highVersion = v1Higher ? v1 : v2;
+      const lowVersion = v1Higher ? v2 : v1;
+      const highHasPre = !!highVersion.prerelease.length;
+      const lowHasPre = !!lowVersion.prerelease.length;
+      if (lowHasPre && !highHasPre) {
+        if (!lowVersion.patch && !lowVersion.minor) {
+          return "major";
+        }
+        if (lowVersion.compareMain(highVersion) === 0) {
+          if (lowVersion.minor && !lowVersion.patch) {
+            return "minor";
+          }
+          return "patch";
+        }
+      }
+      const prefix = highHasPre ? "pre" : "";
+      if (v1.major !== v2.major) {
+        return prefix + "major";
+      }
+      if (v1.minor !== v2.minor) {
+        return prefix + "minor";
+      }
+      if (v1.patch !== v2.patch) {
+        return prefix + "patch";
+      }
+      return "prerelease";
+    };
+    module2.exports = diff;
+  }
+});
+
+// node_modules/semver/functions/major.js
+var require_major = __commonJS({
+  "node_modules/semver/functions/major.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var major = (a, loose) => new SemVer(a, loose).major;
+    module2.exports = major;
+  }
+});
+
+// node_modules/semver/functions/minor.js
+var require_minor = __commonJS({
+  "node_modules/semver/functions/minor.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var minor = (a, loose) => new SemVer(a, loose).minor;
+    module2.exports = minor;
+  }
+});
+
+// node_modules/semver/functions/patch.js
+var require_patch = __commonJS({
+  "node_modules/semver/functions/patch.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var patch = (a, loose) => new SemVer(a, loose).patch;
+    module2.exports = patch;
+  }
+});
+
+// node_modules/semver/functions/prerelease.js
+var require_prerelease = __commonJS({
+  "node_modules/semver/functions/prerelease.js"(exports2, module2) {
+    "use strict";
+    var parse = require_parse2();
+    var prerelease = (version, options) => {
+      const parsed = parse(version, options);
+      return parsed && parsed.prerelease.length ? parsed.prerelease : null;
+    };
+    module2.exports = prerelease;
+  }
+});
+
+// node_modules/semver/functions/compare.js
+var require_compare = __commonJS({
+  "node_modules/semver/functions/compare.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var compare2 = (a, b, loose) => new SemVer(a, loose).compare(new SemVer(b, loose));
+    module2.exports = compare2;
+  }
+});
+
+// node_modules/semver/functions/rcompare.js
+var require_rcompare = __commonJS({
+  "node_modules/semver/functions/rcompare.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var rcompare = (a, b, loose) => compare2(b, a, loose);
+    module2.exports = rcompare;
+  }
+});
+
+// node_modules/semver/functions/compare-loose.js
+var require_compare_loose = __commonJS({
+  "node_modules/semver/functions/compare-loose.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var compareLoose = (a, b) => compare2(a, b, true);
+    module2.exports = compareLoose;
+  }
+});
+
+// node_modules/semver/functions/compare-build.js
+var require_compare_build = __commonJS({
+  "node_modules/semver/functions/compare-build.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var compareBuild = (a, b, loose) => {
+      const versionA = new SemVer(a, loose);
+      const versionB = new SemVer(b, loose);
+      return versionA.compare(versionB) || versionA.compareBuild(versionB);
+    };
+    module2.exports = compareBuild;
+  }
+});
+
+// node_modules/semver/functions/sort.js
+var require_sort2 = __commonJS({
+  "node_modules/semver/functions/sort.js"(exports2, module2) {
+    "use strict";
+    var compareBuild = require_compare_build();
+    var sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose));
+    module2.exports = sort;
+  }
+});
+
+// node_modules/semver/functions/rsort.js
+var require_rsort = __commonJS({
+  "node_modules/semver/functions/rsort.js"(exports2, module2) {
+    "use strict";
+    var compareBuild = require_compare_build();
+    var rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose));
+    module2.exports = rsort;
+  }
+});
+
+// node_modules/semver/functions/gt.js
+var require_gt = __commonJS({
+  "node_modules/semver/functions/gt.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var gt = (a, b, loose) => compare2(a, b, loose) > 0;
+    module2.exports = gt;
+  }
+});
+
+// node_modules/semver/functions/lt.js
+var require_lt = __commonJS({
+  "node_modules/semver/functions/lt.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var lt = (a, b, loose) => compare2(a, b, loose) < 0;
+    module2.exports = lt;
+  }
+});
+
+// node_modules/semver/functions/eq.js
+var require_eq = __commonJS({
+  "node_modules/semver/functions/eq.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var eq = (a, b, loose) => compare2(a, b, loose) === 0;
+    module2.exports = eq;
+  }
+});
+
+// node_modules/semver/functions/neq.js
+var require_neq = __commonJS({
+  "node_modules/semver/functions/neq.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var neq = (a, b, loose) => compare2(a, b, loose) !== 0;
+    module2.exports = neq;
+  }
+});
+
+// node_modules/semver/functions/gte.js
+var require_gte = __commonJS({
+  "node_modules/semver/functions/gte.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var gte = (a, b, loose) => compare2(a, b, loose) >= 0;
+    module2.exports = gte;
+  }
+});
+
+// node_modules/semver/functions/lte.js
+var require_lte = __commonJS({
+  "node_modules/semver/functions/lte.js"(exports2, module2) {
+    "use strict";
+    var compare2 = require_compare();
+    var lte = (a, b, loose) => compare2(a, b, loose) <= 0;
+    module2.exports = lte;
+  }
+});
+
+// node_modules/semver/functions/cmp.js
+var require_cmp = __commonJS({
+  "node_modules/semver/functions/cmp.js"(exports2, module2) {
+    "use strict";
+    var eq = require_eq();
+    var neq = require_neq();
+    var gt = require_gt();
+    var gte = require_gte();
+    var lt = require_lt();
+    var lte = require_lte();
+    var cmp = (a, op, b, loose) => {
+      switch (op) {
+        case "===":
+          if (typeof a === "object") {
+            a = a.version;
+          }
+          if (typeof b === "object") {
+            b = b.version;
+          }
+          return a === b;
+        case "!==":
+          if (typeof a === "object") {
+            a = a.version;
+          }
+          if (typeof b === "object") {
+            b = b.version;
+          }
+          return a !== b;
+        case "":
+        case "=":
+        case "==":
+          return eq(a, b, loose);
+        case "!=":
+          return neq(a, b, loose);
+        case ">":
+          return gt(a, b, loose);
+        case ">=":
+          return gte(a, b, loose);
+        case "<":
+          return lt(a, b, loose);
+        case "<=":
+          return lte(a, b, loose);
+        default:
+          throw new TypeError(`Invalid operator: ${op}`);
+      }
+    };
+    module2.exports = cmp;
+  }
+});
+
+// node_modules/semver/functions/coerce.js
+var require_coerce = __commonJS({
+  "node_modules/semver/functions/coerce.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var parse = require_parse2();
+    var { safeRe: re, t } = require_re();
+    var coerce2 = (version, options) => {
+      if (version instanceof SemVer) {
+        return version;
+      }
+      if (typeof version === "number") {
+        version = String(version);
+      }
+      if (typeof version !== "string") {
+        return null;
+      }
+      options = options || {};
+      let match = null;
+      if (!options.rtl) {
+        match = version.match(options.includePrerelease ? re[t.COERCEFULL] : re[t.COERCE]);
+      } else {
+        const coerceRtlRegex = options.includePrerelease ? re[t.COERCERTLFULL] : re[t.COERCERTL];
+        let next;
+        while ((next = coerceRtlRegex.exec(version)) && (!match || match.index + match[0].length !== version.length)) {
+          if (!match || next.index + next[0].length !== match.index + match[0].length) {
+            match = next;
+          }
+          coerceRtlRegex.lastIndex = next.index + next[1].length + next[2].length;
+        }
+        coerceRtlRegex.lastIndex = -1;
+      }
+      if (match === null) {
+        return null;
+      }
+      const major = match[2];
+      const minor = match[3] || "0";
+      const patch = match[4] || "0";
+      const prerelease = options.includePrerelease && match[5] ? `-${match[5]}` : "";
+      const build = options.includePrerelease && match[6] ? `+${match[6]}` : "";
+      return parse(`${major}.${minor}.${patch}${prerelease}${build}`, options);
+    };
+    module2.exports = coerce2;
+  }
+});
+
+// node_modules/semver/functions/truncate.js
+var require_truncate = __commonJS({
+  "node_modules/semver/functions/truncate.js"(exports2, module2) {
+    "use strict";
+    var parse = require_parse2();
+    var constants = require_constants4();
+    var SemVer = require_semver();
+    var truncate = (version, truncation, options) => {
+      if (!constants.RELEASE_TYPES.includes(truncation)) {
+        return null;
+      }
+      const clonedVersion = cloneInputVersion(version, options);
+      return clonedVersion && doTruncation(clonedVersion, truncation);
+    };
+    var cloneInputVersion = (version, options) => {
+      const versionStringToParse = version instanceof SemVer ? version.version : version;
+      return parse(versionStringToParse, options);
+    };
+    var doTruncation = (version, truncation) => {
+      if (isPrerelease(truncation)) {
+        return version.version;
+      }
+      version.prerelease = [];
+      switch (truncation) {
+        case "major":
+          version.minor = 0;
+          version.patch = 0;
+          break;
+        case "minor":
+          version.patch = 0;
+          break;
+      }
+      return version.format();
+    };
+    var isPrerelease = (type) => {
+      return type.startsWith("pre");
+    };
+    module2.exports = truncate;
+  }
+});
+
+// node_modules/semver/internal/lrucache.js
+var require_lrucache = __commonJS({
+  "node_modules/semver/internal/lrucache.js"(exports2, module2) {
+    "use strict";
+    var LRUCache = class {
+      constructor() {
+        this.max = 1e3;
+        this.map = /* @__PURE__ */ new Map();
+      }
+      get(key) {
+        const value = this.map.get(key);
+        if (value === void 0) {
+          return void 0;
+        } else {
+          this.map.delete(key);
+          this.map.set(key, value);
+          return value;
+        }
+      }
+      delete(key) {
+        return this.map.delete(key);
+      }
+      set(key, value) {
+        const deleted = this.delete(key);
+        if (!deleted && value !== void 0) {
+          if (this.map.size >= this.max) {
+            const firstKey = this.map.keys().next().value;
+            this.delete(firstKey);
+          }
+          this.map.set(key, value);
+        }
+        return this;
+      }
+    };
+    module2.exports = LRUCache;
+  }
+});
+
+// node_modules/semver/classes/range.js
+var require_range2 = __commonJS({
+  "node_modules/semver/classes/range.js"(exports2, module2) {
+    "use strict";
+    var SPACE_CHARACTERS = /\s+/g;
+    var Range = class _Range {
+      constructor(range, options) {
+        options = parseOptions2(options);
+        if (range instanceof _Range) {
+          if (range.loose === !!options.loose && range.includePrerelease === !!options.includePrerelease) {
+            return range;
+          } else {
+            return new _Range(range.raw, options);
+          }
+        }
+        if (range instanceof Comparator) {
+          this.raw = range.value;
+          this.set = [[range]];
+          this.formatted = void 0;
+          return this;
+        }
+        this.options = options;
+        this.loose = !!options.loose;
+        this.includePrerelease = !!options.includePrerelease;
+        this.raw = range.trim().replace(SPACE_CHARACTERS, " ");
+        this.set = this.raw.split("||").map((r) => this.parseRange(r.trim())).filter((c) => c.length);
+        if (!this.set.length) {
+          throw new TypeError(`Invalid SemVer Range: ${this.raw}`);
+        }
+        if (this.set.length > 1) {
+          const first = this.set[0];
+          this.set = this.set.filter((c) => !isNullSet(c[0]));
+          if (this.set.length === 0) {
+            this.set = [first];
+          } else if (this.set.length > 1) {
+            for (const c of this.set) {
+              if (c.length === 1 && isAny(c[0])) {
+                this.set = [c];
+                break;
+              }
+            }
+          }
+        }
+        this.formatted = void 0;
+      }
+      get range() {
+        if (this.formatted === void 0) {
+          this.formatted = "";
+          for (let i = 0; i < this.set.length; i++) {
+            if (i > 0) {
+              this.formatted += "||";
+            }
+            const comps = this.set[i];
+            for (let k = 0; k < comps.length; k++) {
+              if (k > 0) {
+                this.formatted += " ";
+              }
+              this.formatted += comps[k].toString().trim();
+            }
+          }
+        }
+        return this.formatted;
+      }
+      format() {
+        return this.range;
+      }
+      toString() {
+        return this.range;
+      }
+      parseRange(range) {
+        range = range.replace(BUILDSTRIPRE, "");
+        const memoOpts = (this.options.includePrerelease && FLAG_INCLUDE_PRERELEASE) | (this.options.loose && FLAG_LOOSE);
+        const memoKey = memoOpts + ":" + range;
+        const cached2 = cache.get(memoKey);
+        if (cached2) {
+          return cached2;
+        }
+        const loose = this.options.loose;
+        const hr = loose ? re[t.HYPHENRANGELOOSE] : re[t.HYPHENRANGE];
+        range = range.replace(hr, hyphenReplace(this.options.includePrerelease));
+        debug("hyphen replace", range);
+        range = range.replace(re[t.COMPARATORTRIM], comparatorTrimReplace);
+        debug("comparator trim", range);
+        range = range.replace(re[t.TILDETRIM], tildeTrimReplace);
+        debug("tilde trim", range);
+        range = range.replace(re[t.CARETTRIM], caretTrimReplace);
+        debug("caret trim", range);
+        let rangeList = range.split(" ").map((comp) => parseComparator(comp, this.options)).join(" ").split(/\s+/).map((comp) => replaceGTE0(comp, this.options));
+        if (loose) {
+          rangeList = rangeList.filter((comp) => {
+            debug("loose invalid filter", comp, this.options);
+            return !!comp.match(re[t.COMPARATORLOOSE]);
+          });
+        }
+        debug("range list", rangeList);
+        const rangeMap = /* @__PURE__ */ new Map();
+        const comparators = rangeList.map((comp) => new Comparator(comp, this.options));
+        for (const comp of comparators) {
+          if (isNullSet(comp)) {
+            return [comp];
+          }
+          rangeMap.set(comp.value, comp);
+        }
+        if (rangeMap.size > 1 && rangeMap.has("")) {
+          rangeMap.delete("");
+        }
+        const result = [...rangeMap.values()];
+        cache.set(memoKey, result);
+        return result;
+      }
+      intersects(range, options) {
+        if (!(range instanceof _Range)) {
+          throw new TypeError("a Range is required");
+        }
+        return this.set.some((thisComparators) => {
+          return isSatisfiable(thisComparators, options) && range.set.some((rangeComparators) => {
+            return isSatisfiable(rangeComparators, options) && thisComparators.every((thisComparator) => {
+              return rangeComparators.every((rangeComparator) => {
+                return thisComparator.intersects(rangeComparator, options);
+              });
+            });
+          });
+        });
+      }
+      // if ANY of the sets match ALL of its comparators, then pass
+      test(version) {
+        if (!version) {
+          return false;
+        }
+        if (typeof version === "string") {
+          try {
+            version = new SemVer(version, this.options);
+          } catch (er) {
+            return false;
+          }
+        }
+        for (let i = 0; i < this.set.length; i++) {
+          if (testSet(this.set[i], version, this.options)) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+    module2.exports = Range;
+    var LRU = require_lrucache();
+    var cache = new LRU();
+    var parseOptions2 = require_parse_options();
+    var Comparator = require_comparator();
+    var debug = require_debug2();
+    var SemVer = require_semver();
+    var {
+      safeRe: re,
+      src,
+      t,
+      comparatorTrimReplace,
+      tildeTrimReplace,
+      caretTrimReplace
+    } = require_re();
+    var { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require_constants4();
+    var BUILDSTRIPRE = new RegExp(src[t.BUILD], "g");
+    var isNullSet = (c) => c.value === "<0.0.0-0";
+    var isAny = (c) => c.value === "";
+    var isSatisfiable = (comparators, options) => {
+      let result = true;
+      const remainingComparators = comparators.slice();
+      let testComparator = remainingComparators.pop();
+      while (result && remainingComparators.length) {
+        result = remainingComparators.every((otherComparator) => {
+          return testComparator.intersects(otherComparator, options);
+        });
+        testComparator = remainingComparators.pop();
+      }
+      return result;
+    };
+    var parseComparator = (comp, options) => {
+      comp = comp.replace(re[t.BUILD], "");
+      debug("comp", comp, options);
+      comp = replaceCarets(comp, options);
+      debug("caret", comp);
+      comp = replaceTildes(comp, options);
+      debug("tildes", comp);
+      comp = replaceXRanges(comp, options);
+      debug("xrange", comp);
+      comp = replaceStars(comp, options);
+      debug("stars", comp);
+      return comp;
+    };
+    var isX = (id) => !id || id.toLowerCase() === "x" || id === "*";
+    var invalidXRangeOrder = (M, m, p) => isX(M) && !isX(m) || isX(m) && p && !isX(p);
+    var replaceTildes = (comp, options) => {
+      return comp.trim().split(/\s+/).map((c) => replaceTilde(c, options)).join(" ");
+    };
+    var replaceTilde = (comp, options) => {
+      const r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE];
+      const z = options.includePrerelease ? "-0" : "";
+      return comp.replace(r, (_, M, m, p, pr) => {
+        debug("tilde", comp, _, M, m, p, pr);
+        let ret;
+        if (isX(M)) {
+          ret = "";
+        } else if (isX(m)) {
+          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
+        } else if (isX(p)) {
+          ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
+        } else if (pr) {
+          debug("replaceTilde pr", pr);
+          ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`;
+        } else {
+          ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`;
+        }
+        debug("tilde return", ret);
+        return ret;
+      });
+    };
+    var replaceCarets = (comp, options) => {
+      return comp.trim().split(/\s+/).map((c) => replaceCaret(c, options)).join(" ");
+    };
+    var replaceCaret = (comp, options) => {
+      debug("caret", comp, options);
+      const r = options.loose ? re[t.CARETLOOSE] : re[t.CARET];
+      const z = options.includePrerelease ? "-0" : "";
+      return comp.replace(r, (_, M, m, p, pr) => {
+        debug("caret", comp, _, M, m, p, pr);
+        let ret;
+        if (isX(M)) {
+          ret = "";
+        } else if (isX(m)) {
+          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
+        } else if (isX(p)) {
+          if (M === "0") {
+            ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
+          } else {
+            ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`;
+          }
+        } else if (pr) {
+          debug("replaceCaret pr", pr);
+          if (M === "0") {
+            if (m === "0") {
+              ret = `>=${M}.${m}.${p}-${pr} <${M}.${m}.${+p + 1}-0`;
+            } else {
+              ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`;
+            }
+          } else {
+            ret = `>=${M}.${m}.${p}-${pr} <${+M + 1}.0.0-0`;
+          }
+        } else {
+          debug("no pr");
+          if (M === "0") {
+            if (m === "0") {
+              ret = `>=${M}.${m}.${p} <${M}.${m}.${+p + 1}-0`;
+            } else {
+              ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`;
+            }
+          } else {
+            ret = `>=${M}.${m}.${p} <${+M + 1}.0.0-0`;
+          }
+        }
+        debug("caret return", ret);
+        return ret;
+      });
+    };
+    var replaceXRanges = (comp, options) => {
+      debug("replaceXRanges", comp, options);
+      return comp.split(/\s+/).map((c) => replaceXRange(c, options)).join(" ");
+    };
+    var replaceXRange = (comp, options) => {
+      comp = comp.trim();
+      const r = options.loose ? re[t.XRANGELOOSE] : re[t.XRANGE];
+      return comp.replace(r, (ret, gtlt, M, m, p, pr) => {
+        debug("xRange", comp, ret, gtlt, M, m, p, pr);
+        if (invalidXRangeOrder(M, m, p)) {
+          return comp;
+        }
+        const xM = isX(M);
+        const xm = xM || isX(m);
+        const xp = xm || isX(p);
+        const anyX = xp;
+        if (gtlt === "=" && anyX) {
+          gtlt = "";
+        }
+        pr = options.includePrerelease ? "-0" : "";
+        if (xM) {
+          if (gtlt === ">" || gtlt === "<") {
+            ret = "<0.0.0-0";
+          } else {
+            ret = "*";
+          }
+        } else if (gtlt && anyX) {
+          if (xm) {
+            m = 0;
+          }
+          p = 0;
+          if (gtlt === ">") {
+            gtlt = ">=";
+            if (xm) {
+              M = +M + 1;
+              m = 0;
+              p = 0;
+            } else {
+              m = +m + 1;
+              p = 0;
+            }
+          } else if (gtlt === "<=") {
+            gtlt = "<";
+            if (xm) {
+              M = +M + 1;
+            } else {
+              m = +m + 1;
+            }
+          }
+          if (gtlt === "<") {
+            pr = "-0";
+          }
+          ret = `${gtlt + M}.${m}.${p}${pr}`;
+        } else if (xm) {
+          ret = `>=${M}.0.0${pr} <${+M + 1}.0.0-0`;
+        } else if (xp) {
+          ret = `>=${M}.${m}.0${pr} <${M}.${+m + 1}.0-0`;
+        }
+        debug("xRange return", ret);
+        return ret;
+      });
+    };
+    var replaceStars = (comp, options) => {
+      debug("replaceStars", comp, options);
+      return comp.trim().replace(re[t.STAR], "");
+    };
+    var replaceGTE0 = (comp, options) => {
+      debug("replaceGTE0", comp, options);
+      return comp.trim().replace(re[options.includePrerelease ? t.GTE0PRE : t.GTE0], "");
+    };
+    var hyphenReplace = (incPr) => ($0, from, fM, fm, fp, fpr, fb, to, tM, tm, tp, tpr) => {
+      if (isX(fM)) {
+        from = "";
+      } else if (isX(fm)) {
+        from = `>=${fM}.0.0${incPr ? "-0" : ""}`;
+      } else if (isX(fp)) {
+        from = `>=${fM}.${fm}.0${incPr ? "-0" : ""}`;
+      } else if (fpr) {
+        from = `>=${from}`;
+      } else {
+        from = `>=${from}${incPr ? "-0" : ""}`;
+      }
+      if (isX(tM)) {
+        to = "";
+      } else if (isX(tm)) {
+        to = `<${+tM + 1}.0.0-0`;
+      } else if (isX(tp)) {
+        to = `<${tM}.${+tm + 1}.0-0`;
+      } else if (tpr) {
+        to = `<=${tM}.${tm}.${tp}-${tpr}`;
+      } else if (incPr) {
+        to = `<${tM}.${tm}.${+tp + 1}-0`;
+      } else {
+        to = `<=${to}`;
+      }
+      return `${from} ${to}`.trim();
+    };
+    var testSet = (set, version, options) => {
+      for (let i = 0; i < set.length; i++) {
+        if (!set[i].test(version)) {
+          return false;
+        }
+      }
+      if (version.prerelease.length && !options.includePrerelease) {
+        for (let i = 0; i < set.length; i++) {
+          debug(set[i].semver);
+          if (set[i].semver === Comparator.ANY) {
+            continue;
+          }
+          if (set[i].semver.prerelease.length > 0) {
+            const allowed = set[i].semver;
+            if (allowed.major === version.major && allowed.minor === version.minor && allowed.patch === version.patch) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+      return true;
+    };
+  }
+});
+
+// node_modules/semver/classes/comparator.js
+var require_comparator = __commonJS({
+  "node_modules/semver/classes/comparator.js"(exports2, module2) {
+    "use strict";
+    var ANY = Symbol("SemVer ANY");
+    var Comparator = class _Comparator {
+      static get ANY() {
+        return ANY;
+      }
+      constructor(comp, options) {
+        options = parseOptions2(options);
+        if (comp instanceof _Comparator) {
+          if (comp.loose === !!options.loose) {
+            return comp;
+          } else {
+            comp = comp.value;
+          }
+        }
+        comp = comp.trim().split(/\s+/).join(" ");
+        debug("comparator", comp, options);
+        this.options = options;
+        this.loose = !!options.loose;
+        this.parse(comp);
+        if (this.semver === ANY) {
+          this.value = "";
+        } else {
+          this.value = this.operator + this.semver.version;
+        }
+        debug("comp", this);
+      }
+      parse(comp) {
+        const r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR];
+        const m = comp.match(r);
+        if (!m) {
+          throw new TypeError(`Invalid comparator: ${comp}`);
+        }
+        this.operator = m[1] !== void 0 ? m[1] : "";
+        if (this.operator === "=") {
+          this.operator = "";
+        }
+        if (!m[2]) {
+          this.semver = ANY;
+        } else {
+          this.semver = new SemVer(m[2], this.options.loose);
+        }
+      }
+      toString() {
+        return this.value;
+      }
+      test(version) {
+        debug("Comparator.test", version, this.options.loose);
+        if (this.semver === ANY || version === ANY) {
+          return true;
+        }
+        if (typeof version === "string") {
+          try {
+            version = new SemVer(version, this.options);
+          } catch (er) {
+            return false;
+          }
+        }
+        return cmp(version, this.operator, this.semver, this.options);
+      }
+      intersects(comp, options) {
+        if (!(comp instanceof _Comparator)) {
+          throw new TypeError("a Comparator is required");
+        }
+        if (this.operator === "") {
+          if (this.value === "") {
+            return true;
+          }
+          return new Range(comp.value, options).test(this.value);
+        } else if (comp.operator === "") {
+          if (comp.value === "") {
+            return true;
+          }
+          return new Range(this.value, options).test(comp.semver);
+        }
+        options = parseOptions2(options);
+        if (options.includePrerelease && (this.value === "<0.0.0-0" || comp.value === "<0.0.0-0")) {
+          return false;
+        }
+        if (!options.includePrerelease && (this.value.startsWith("<0.0.0") || comp.value.startsWith("<0.0.0"))) {
+          return false;
+        }
+        if (this.operator.startsWith(">") && comp.operator.startsWith(">")) {
+          return true;
+        }
+        if (this.operator.startsWith("<") && comp.operator.startsWith("<")) {
+          return true;
+        }
+        if (this.semver.version === comp.semver.version && this.operator.includes("=") && comp.operator.includes("=")) {
+          return true;
+        }
+        if (cmp(this.semver, "<", comp.semver, options) && this.operator.startsWith(">") && comp.operator.startsWith("<")) {
+          return true;
+        }
+        if (cmp(this.semver, ">", comp.semver, options) && this.operator.startsWith("<") && comp.operator.startsWith(">")) {
+          return true;
+        }
+        return false;
+      }
+    };
+    module2.exports = Comparator;
+    var parseOptions2 = require_parse_options();
+    var { safeRe: re, t } = require_re();
+    var cmp = require_cmp();
+    var debug = require_debug2();
+    var SemVer = require_semver();
+    var Range = require_range2();
+  }
+});
+
+// node_modules/semver/functions/satisfies.js
+var require_satisfies = __commonJS({
+  "node_modules/semver/functions/satisfies.js"(exports2, module2) {
+    "use strict";
+    var Range = require_range2();
+    var satisfies = (version, range, options) => {
+      try {
+        range = new Range(range, options);
+      } catch (er) {
+        return false;
+      }
+      return range.test(version);
+    };
+    module2.exports = satisfies;
+  }
+});
+
+// node_modules/semver/ranges/to-comparators.js
+var require_to_comparators = __commonJS({
+  "node_modules/semver/ranges/to-comparators.js"(exports2, module2) {
+    "use strict";
+    var Range = require_range2();
+    var toComparators = (range, options) => new Range(range, options).set.map((comp) => comp.map((c) => c.value).join(" ").trim().split(" "));
+    module2.exports = toComparators;
+  }
+});
+
+// node_modules/semver/ranges/max-satisfying.js
+var require_max_satisfying = __commonJS({
+  "node_modules/semver/ranges/max-satisfying.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var Range = require_range2();
+    var maxSatisfying = (versions, range, options) => {
+      let max = null;
+      let maxSV = null;
+      let rangeObj = null;
+      try {
+        rangeObj = new Range(range, options);
+      } catch (er) {
+        return null;
+      }
+      versions.forEach((v) => {
+        if (rangeObj.test(v)) {
+          if (!max || maxSV.compare(v) === -1) {
+            max = v;
+            maxSV = new SemVer(max, options);
+          }
+        }
+      });
+      return max;
+    };
+    module2.exports = maxSatisfying;
+  }
+});
+
+// node_modules/semver/ranges/min-satisfying.js
+var require_min_satisfying = __commonJS({
+  "node_modules/semver/ranges/min-satisfying.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var Range = require_range2();
+    var minSatisfying = (versions, range, options) => {
+      let min = null;
+      let minSV = null;
+      let rangeObj = null;
+      try {
+        rangeObj = new Range(range, options);
+      } catch (er) {
+        return null;
+      }
+      versions.forEach((v) => {
+        if (rangeObj.test(v)) {
+          if (!min || minSV.compare(v) === 1) {
+            min = v;
+            minSV = new SemVer(min, options);
+          }
+        }
+      });
+      return min;
+    };
+    module2.exports = minSatisfying;
+  }
+});
+
+// node_modules/semver/ranges/min-version.js
+var require_min_version = __commonJS({
+  "node_modules/semver/ranges/min-version.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var Range = require_range2();
+    var gt = require_gt();
+    var minVersion = (range, loose) => {
+      range = new Range(range, loose);
+      let minver = new SemVer("0.0.0");
+      if (range.test(minver)) {
+        return minver;
+      }
+      minver = new SemVer("0.0.0-0");
+      if (range.test(minver)) {
+        return minver;
+      }
+      minver = null;
+      for (let i = 0; i < range.set.length; ++i) {
+        const comparators = range.set[i];
+        let setMin = null;
+        comparators.forEach((comparator) => {
+          const compver = new SemVer(comparator.semver.version);
+          switch (comparator.operator) {
+            case ">":
+              if (compver.prerelease.length === 0) {
+                compver.patch++;
+              } else {
+                compver.prerelease.push(0);
+              }
+              compver.raw = compver.format();
+            /* fallthrough */
+            case "":
+            case ">=":
+              if (!setMin || gt(compver, setMin)) {
+                setMin = compver;
+              }
+              break;
+            case "<":
+            case "<=":
+              break;
+            /* istanbul ignore next */
+            default:
+              throw new Error(`Unexpected operation: ${comparator.operator}`);
+          }
+        });
+        if (setMin && (!minver || gt(minver, setMin))) {
+          minver = setMin;
+        }
+      }
+      if (minver && range.test(minver)) {
+        return minver;
+      }
+      return null;
+    };
+    module2.exports = minVersion;
+  }
+});
+
+// node_modules/semver/ranges/valid.js
+var require_valid2 = __commonJS({
+  "node_modules/semver/ranges/valid.js"(exports2, module2) {
+    "use strict";
+    var Range = require_range2();
+    var validRange = (range, options) => {
+      try {
+        return new Range(range, options).range || "*";
+      } catch (er) {
+        return null;
+      }
+    };
+    module2.exports = validRange;
+  }
+});
+
+// node_modules/semver/ranges/outside.js
+var require_outside = __commonJS({
+  "node_modules/semver/ranges/outside.js"(exports2, module2) {
+    "use strict";
+    var SemVer = require_semver();
+    var Comparator = require_comparator();
+    var { ANY } = Comparator;
+    var Range = require_range2();
+    var satisfies = require_satisfies();
+    var gt = require_gt();
+    var lt = require_lt();
+    var lte = require_lte();
+    var gte = require_gte();
+    var outside = (version, range, hilo, options) => {
+      version = new SemVer(version, options);
+      range = new Range(range, options);
+      let gtfn, ltefn, ltfn, comp, ecomp;
+      switch (hilo) {
+        case ">":
+          gtfn = gt;
+          ltefn = lte;
+          ltfn = lt;
+          comp = ">";
+          ecomp = ">=";
+          break;
+        case "<":
+          gtfn = lt;
+          ltefn = gte;
+          ltfn = gt;
+          comp = "<";
+          ecomp = "<=";
+          break;
+        default:
+          throw new TypeError('Must provide a hilo val of "<" or ">"');
+      }
+      if (satisfies(version, range, options)) {
+        return false;
+      }
+      for (let i = 0; i < range.set.length; ++i) {
+        const comparators = range.set[i];
+        let high = null;
+        let low = null;
+        comparators.forEach((comparator) => {
+          if (comparator.semver === ANY) {
+            comparator = new Comparator(">=0.0.0");
+          }
+          high = high || comparator;
+          low = low || comparator;
+          if (gtfn(comparator.semver, high.semver, options)) {
+            high = comparator;
+          } else if (ltfn(comparator.semver, low.semver, options)) {
+            low = comparator;
+          }
+        });
+        if (high.operator === comp || high.operator === ecomp) {
+          return false;
+        }
+        if ((!low.operator || low.operator === comp) && ltefn(version, low.semver)) {
+          return false;
+        } else if (low.operator === ecomp && ltfn(version, low.semver)) {
+          return false;
+        }
+      }
+      return true;
+    };
+    module2.exports = outside;
+  }
+});
+
+// node_modules/semver/ranges/gtr.js
+var require_gtr = __commonJS({
+  "node_modules/semver/ranges/gtr.js"(exports2, module2) {
+    "use strict";
+    var outside = require_outside();
+    var gtr = (version, range, options) => outside(version, range, ">", options);
+    module2.exports = gtr;
+  }
+});
+
+// node_modules/semver/ranges/ltr.js
+var require_ltr = __commonJS({
+  "node_modules/semver/ranges/ltr.js"(exports2, module2) {
+    "use strict";
+    var outside = require_outside();
+    var ltr = (version, range, options) => outside(version, range, "<", options);
+    module2.exports = ltr;
+  }
+});
+
+// node_modules/semver/ranges/intersects.js
+var require_intersects = __commonJS({
+  "node_modules/semver/ranges/intersects.js"(exports2, module2) {
+    "use strict";
+    var Range = require_range2();
+    var intersects = (r1, r2, options) => {
+      r1 = new Range(r1, options);
+      r2 = new Range(r2, options);
+      return r1.intersects(r2, options);
+    };
+    module2.exports = intersects;
+  }
+});
+
+// node_modules/semver/ranges/simplify.js
+var require_simplify = __commonJS({
+  "node_modules/semver/ranges/simplify.js"(exports2, module2) {
+    "use strict";
+    var satisfies = require_satisfies();
+    var compare2 = require_compare();
+    module2.exports = (versions, range, options) => {
+      const set = [];
+      let first = null;
+      let prev = null;
+      const v = versions.sort((a, b) => compare2(a, b, options));
+      for (const version of v) {
+        const included = satisfies(version, range, options);
+        if (included) {
+          prev = version;
+          if (!first) {
+            first = version;
+          }
+        } else {
+          if (prev) {
+            set.push([first, prev]);
+          }
+          prev = null;
+          first = null;
+        }
+      }
+      if (first) {
+        set.push([first, null]);
+      }
+      const ranges = [];
+      for (const [min, max] of set) {
+        if (min === max) {
+          ranges.push(min);
+        } else if (!max && min === v[0]) {
+          ranges.push("*");
+        } else if (!max) {
+          ranges.push(`>=${min}`);
+        } else if (min === v[0]) {
+          ranges.push(`<=${max}`);
+        } else {
+          ranges.push(`${min} - ${max}`);
+        }
+      }
+      const simplified = ranges.join(" || ");
+      const original = typeof range.raw === "string" ? range.raw : String(range);
+      return simplified.length < original.length ? simplified : range;
+    };
+  }
+});
+
+// node_modules/semver/ranges/subset.js
+var require_subset = __commonJS({
+  "node_modules/semver/ranges/subset.js"(exports2, module2) {
+    "use strict";
+    var Range = require_range2();
+    var Comparator = require_comparator();
+    var { ANY } = Comparator;
+    var satisfies = require_satisfies();
+    var compare2 = require_compare();
+    var subset = (sub, dom, options = {}) => {
+      if (sub === dom) {
+        return true;
+      }
+      sub = new Range(sub, options);
+      dom = new Range(dom, options);
+      let sawNonNull = false;
+      OUTER: for (const simpleSub of sub.set) {
+        for (const simpleDom of dom.set) {
+          const isSub = simpleSubset(simpleSub, simpleDom, options);
+          sawNonNull = sawNonNull || isSub !== null;
+          if (isSub) {
+            continue OUTER;
+          }
+        }
+        if (sawNonNull) {
+          return false;
+        }
+      }
+      return true;
+    };
+    var minimumVersionWithPreRelease = [new Comparator(">=0.0.0-0")];
+    var minimumVersion = [new Comparator(">=0.0.0")];
+    var simpleSubset = (sub, dom, options) => {
+      if (sub === dom) {
+        return true;
+      }
+      if (sub.length === 1 && sub[0].semver === ANY) {
+        if (dom.length === 1 && dom[0].semver === ANY) {
+          return true;
+        } else if (options.includePrerelease) {
+          sub = minimumVersionWithPreRelease;
+        } else {
+          sub = minimumVersion;
+        }
+      }
+      if (dom.length === 1 && dom[0].semver === ANY) {
+        if (options.includePrerelease) {
+          return true;
+        } else {
+          dom = minimumVersion;
+        }
+      }
+      const eqSet = /* @__PURE__ */ new Set();
+      let gt, lt;
+      for (const c of sub) {
+        if (c.operator === ">" || c.operator === ">=") {
+          gt = higherGT(gt, c, options);
+        } else if (c.operator === "<" || c.operator === "<=") {
+          lt = lowerLT(lt, c, options);
+        } else {
+          eqSet.add(c.semver);
+        }
+      }
+      if (eqSet.size > 1) {
+        return null;
+      }
+      let gtltComp;
+      if (gt && lt) {
+        gtltComp = compare2(gt.semver, lt.semver, options);
+        if (gtltComp > 0) {
+          return null;
+        } else if (gtltComp === 0 && (gt.operator !== ">=" || lt.operator !== "<=")) {
+          return null;
+        }
+      }
+      for (const eq of eqSet) {
+        if (gt && !satisfies(eq, String(gt), options)) {
+          return null;
+        }
+        if (lt && !satisfies(eq, String(lt), options)) {
+          return null;
+        }
+        for (const c of dom) {
+          if (!satisfies(eq, String(c), options)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      let higher, lower;
+      let hasDomLT, hasDomGT;
+      let needDomLTPre = lt && !options.includePrerelease && lt.semver.prerelease.length ? lt.semver : false;
+      let needDomGTPre = gt && !options.includePrerelease && gt.semver.prerelease.length ? gt.semver : false;
+      if (needDomLTPre && needDomLTPre.prerelease.length === 1 && lt.operator === "<" && needDomLTPre.prerelease[0] === 0) {
+        needDomLTPre = false;
+      }
+      for (const c of dom) {
+        hasDomGT = hasDomGT || c.operator === ">" || c.operator === ">=";
+        hasDomLT = hasDomLT || c.operator === "<" || c.operator === "<=";
+        if (gt) {
+          if (needDomGTPre) {
+            if (c.semver.prerelease && c.semver.prerelease.length && c.semver.major === needDomGTPre.major && c.semver.minor === needDomGTPre.minor && c.semver.patch === needDomGTPre.patch) {
+              needDomGTPre = false;
+            }
+          }
+          if (c.operator === ">" || c.operator === ">=") {
+            higher = higherGT(gt, c, options);
+            if (higher === c && higher !== gt) {
+              return false;
+            }
+          } else if (gt.operator === ">=" && !c.test(gt.semver)) {
+            return false;
+          }
+        }
+        if (lt) {
+          if (needDomLTPre) {
+            if (c.semver.prerelease && c.semver.prerelease.length && c.semver.major === needDomLTPre.major && c.semver.minor === needDomLTPre.minor && c.semver.patch === needDomLTPre.patch) {
+              needDomLTPre = false;
+            }
+          }
+          if (c.operator === "<" || c.operator === "<=") {
+            lower = lowerLT(lt, c, options);
+            if (lower === c && lower !== lt) {
+              return false;
+            }
+          } else if (lt.operator === "<=" && !c.test(lt.semver)) {
+            return false;
+          }
+        }
+        if (!c.operator && (lt || gt) && gtltComp !== 0) {
+          return false;
+        }
+      }
+      if (gt && hasDomLT && !lt && gtltComp !== 0) {
+        return false;
+      }
+      if (lt && hasDomGT && !gt && gtltComp !== 0) {
+        return false;
+      }
+      if (needDomGTPre || needDomLTPre) {
+        return false;
+      }
+      return true;
+    };
+    var higherGT = (a, b, options) => {
+      if (!a) {
+        return b;
+      }
+      const comp = compare2(a.semver, b.semver, options);
+      return comp > 0 ? a : comp < 0 ? b : b.operator === ">" && a.operator === ">=" ? b : a;
+    };
+    var lowerLT = (a, b, options) => {
+      if (!a) {
+        return b;
+      }
+      const comp = compare2(a.semver, b.semver, options);
+      return comp < 0 ? a : comp > 0 ? b : b.operator === "<" && a.operator === "<=" ? b : a;
+    };
+    module2.exports = subset;
+  }
+});
+
+// node_modules/semver/index.js
+var require_semver2 = __commonJS({
+  "node_modules/semver/index.js"(exports2, module2) {
+    "use strict";
+    var internalRe = require_re();
+    var constants = require_constants4();
+    var SemVer = require_semver();
+    var identifiers = require_identifiers();
+    var parse = require_parse2();
+    var valid = require_valid();
+    var clean = require_clean();
+    var inc = require_inc();
+    var diff = require_diff();
+    var major = require_major();
+    var minor = require_minor();
+    var patch = require_patch();
+    var prerelease = require_prerelease();
+    var compare2 = require_compare();
+    var rcompare = require_rcompare();
+    var compareLoose = require_compare_loose();
+    var compareBuild = require_compare_build();
+    var sort = require_sort2();
+    var rsort = require_rsort();
+    var gt = require_gt();
+    var lt = require_lt();
+    var eq = require_eq();
+    var neq = require_neq();
+    var gte = require_gte();
+    var lte = require_lte();
+    var cmp = require_cmp();
+    var coerce2 = require_coerce();
+    var truncate = require_truncate();
+    var Comparator = require_comparator();
+    var Range = require_range2();
+    var satisfies = require_satisfies();
+    var toComparators = require_to_comparators();
+    var maxSatisfying = require_max_satisfying();
+    var minSatisfying = require_min_satisfying();
+    var minVersion = require_min_version();
+    var validRange = require_valid2();
+    var outside = require_outside();
+    var gtr = require_gtr();
+    var ltr = require_ltr();
+    var intersects = require_intersects();
+    var simplifyRange = require_simplify();
+    var subset = require_subset();
+    module2.exports = {
+      parse,
+      valid,
+      clean,
+      inc,
+      diff,
+      major,
+      minor,
+      patch,
+      prerelease,
+      compare: compare2,
+      rcompare,
+      compareLoose,
+      compareBuild,
+      sort,
+      rsort,
+      gt,
+      lt,
+      eq,
+      neq,
+      gte,
+      lte,
+      cmp,
+      coerce: coerce2,
+      truncate,
+      Comparator,
+      Range,
+      satisfies,
+      toComparators,
+      maxSatisfying,
+      minSatisfying,
+      minVersion,
+      validRange,
+      outside,
+      gtr,
+      ltr,
+      intersects,
+      simplifyRange,
+      subset,
+      SemVer,
+      re: internalRe.re,
+      src: internalRe.src,
+      tokens: internalRe.t,
+      SEMVER_SPEC_VERSION: constants.SEMVER_SPEC_VERSION,
+      RELEASE_TYPES: constants.RELEASE_TYPES,
+      compareIdentifiers: identifiers.compareIdentifiers,
+      rcompareIdentifiers: identifiers.rcompareIdentifiers
+    };
+  }
+});
+
+// node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js
+var require_asymmetricKeyDetailsSupported = __commonJS({
+  "node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js"(exports2, module2) {
+    var semver = require_semver2();
+    module2.exports = semver.satisfies(process.version, ">=15.7.0");
+  }
+});
+
+// node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js
+var require_rsaPssKeyDetailsSupported = __commonJS({
+  "node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js"(exports2, module2) {
+    var semver = require_semver2();
+    module2.exports = semver.satisfies(process.version, ">=16.9.0");
+  }
+});
+
+// node_modules/jsonwebtoken/lib/validateAsymmetricKey.js
+var require_validateAsymmetricKey = __commonJS({
+  "node_modules/jsonwebtoken/lib/validateAsymmetricKey.js"(exports2, module2) {
+    var ASYMMETRIC_KEY_DETAILS_SUPPORTED = require_asymmetricKeyDetailsSupported();
+    var RSA_PSS_KEY_DETAILS_SUPPORTED = require_rsaPssKeyDetailsSupported();
+    var allowedAlgorithmsForKeys = {
+      "ec": ["ES256", "ES384", "ES512"],
+      "rsa": ["RS256", "PS256", "RS384", "PS384", "RS512", "PS512"],
+      "rsa-pss": ["PS256", "PS384", "PS512"]
+    };
+    var allowedCurves = {
+      ES256: "prime256v1",
+      ES384: "secp384r1",
+      ES512: "secp521r1"
+    };
+    module2.exports = function(algorithm, key) {
+      if (!algorithm || !key) return;
+      const keyType = key.asymmetricKeyType;
+      if (!keyType) return;
+      const allowedAlgorithms = allowedAlgorithmsForKeys[keyType];
+      if (!allowedAlgorithms) {
+        throw new Error(`Unknown key type "${keyType}".`);
+      }
+      if (!allowedAlgorithms.includes(algorithm)) {
+        throw new Error(`"alg" parameter for "${keyType}" key type must be one of: ${allowedAlgorithms.join(", ")}.`);
+      }
+      if (ASYMMETRIC_KEY_DETAILS_SUPPORTED) {
+        switch (keyType) {
+          case "ec":
+            const keyCurve = key.asymmetricKeyDetails.namedCurve;
+            const allowedCurve = allowedCurves[algorithm];
+            if (keyCurve !== allowedCurve) {
+              throw new Error(`"alg" parameter "${algorithm}" requires curve "${allowedCurve}".`);
+            }
+            break;
+          case "rsa-pss":
+            if (RSA_PSS_KEY_DETAILS_SUPPORTED) {
+              const length = parseInt(algorithm.slice(-3), 10);
+              const { hashAlgorithm, mgf1HashAlgorithm, saltLength } = key.asymmetricKeyDetails;
+              if (hashAlgorithm !== `sha${length}` || mgf1HashAlgorithm !== hashAlgorithm) {
+                throw new Error(`Invalid key for this operation, its RSA-PSS parameters do not meet the requirements of "alg" ${algorithm}.`);
+              }
+              if (saltLength !== void 0 && saltLength > length >> 3) {
+                throw new Error(`Invalid key for this operation, its RSA-PSS parameter saltLength does not meet the requirements of "alg" ${algorithm}.`);
+              }
+            }
+            break;
+        }
+      }
+    };
+  }
+});
+
+// node_modules/jsonwebtoken/lib/psSupported.js
+var require_psSupported = __commonJS({
+  "node_modules/jsonwebtoken/lib/psSupported.js"(exports2, module2) {
+    var semver = require_semver2();
+    module2.exports = semver.satisfies(process.version, "^6.12.0 || >=8.0.0");
+  }
+});
+
+// node_modules/jsonwebtoken/verify.js
+var require_verify = __commonJS({
+  "node_modules/jsonwebtoken/verify.js"(exports2, module2) {
+    var JsonWebTokenError = require_JsonWebTokenError();
+    var NotBeforeError = require_NotBeforeError();
+    var TokenExpiredError = require_TokenExpiredError();
+    var decode = require_decode();
+    var timespan = require_timespan();
+    var validateAsymmetricKey = require_validateAsymmetricKey();
+    var PS_SUPPORTED = require_psSupported();
+    var jws = require_jws();
+    var { KeyObject, createSecretKey, createPublicKey } = require("crypto");
+    var PUB_KEY_ALGS = ["RS256", "RS384", "RS512"];
+    var EC_KEY_ALGS = ["ES256", "ES384", "ES512"];
+    var RSA_KEY_ALGS = ["RS256", "RS384", "RS512"];
+    var HS_ALGS = ["HS256", "HS384", "HS512"];
+    if (PS_SUPPORTED) {
+      PUB_KEY_ALGS.splice(PUB_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
+      RSA_KEY_ALGS.splice(RSA_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
+    }
+    module2.exports = function(jwtString, secretOrPublicKey, options, callback) {
+      if (typeof options === "function" && !callback) {
+        callback = options;
+        options = {};
+      }
+      if (!options) {
+        options = {};
+      }
+      options = Object.assign({}, options);
+      let done;
+      if (callback) {
+        done = callback;
+      } else {
+        done = function(err, data) {
+          if (err) throw err;
+          return data;
+        };
+      }
+      if (options.clockTimestamp && typeof options.clockTimestamp !== "number") {
+        return done(new JsonWebTokenError("clockTimestamp must be a number"));
+      }
+      if (options.nonce !== void 0 && (typeof options.nonce !== "string" || options.nonce.trim() === "")) {
+        return done(new JsonWebTokenError("nonce must be a non-empty string"));
+      }
+      if (options.allowInvalidAsymmetricKeyTypes !== void 0 && typeof options.allowInvalidAsymmetricKeyTypes !== "boolean") {
+        return done(new JsonWebTokenError("allowInvalidAsymmetricKeyTypes must be a boolean"));
+      }
+      const clockTimestamp = options.clockTimestamp || Math.floor(Date.now() / 1e3);
+      if (!jwtString) {
+        return done(new JsonWebTokenError("jwt must be provided"));
+      }
+      if (typeof jwtString !== "string") {
+        return done(new JsonWebTokenError("jwt must be a string"));
+      }
+      const parts = jwtString.split(".");
+      if (parts.length !== 3) {
+        return done(new JsonWebTokenError("jwt malformed"));
+      }
+      let decodedToken;
+      try {
+        decodedToken = decode(jwtString, { complete: true });
+      } catch (err) {
+        return done(err);
+      }
+      if (!decodedToken) {
+        return done(new JsonWebTokenError("invalid token"));
+      }
+      const header = decodedToken.header;
+      let getSecret;
+      if (typeof secretOrPublicKey === "function") {
+        if (!callback) {
+          return done(new JsonWebTokenError("verify must be called asynchronous if secret or public key is provided as a callback"));
+        }
+        getSecret = secretOrPublicKey;
+      } else {
+        getSecret = function(header2, secretCallback) {
+          return secretCallback(null, secretOrPublicKey);
+        };
+      }
+      return getSecret(header, function(err, secretOrPublicKey2) {
+        if (err) {
+          return done(new JsonWebTokenError("error in secret or public key callback: " + err.message));
+        }
+        const hasSignature = parts[2].trim() !== "";
+        if (!hasSignature && secretOrPublicKey2) {
+          return done(new JsonWebTokenError("jwt signature is required"));
+        }
+        if (hasSignature && !secretOrPublicKey2) {
+          return done(new JsonWebTokenError("secret or public key must be provided"));
+        }
+        if (!hasSignature && !options.algorithms) {
+          return done(new JsonWebTokenError('please specify "none" in "algorithms" to verify unsigned tokens'));
+        }
+        if (secretOrPublicKey2 != null && !(secretOrPublicKey2 instanceof KeyObject)) {
+          try {
+            secretOrPublicKey2 = createPublicKey(secretOrPublicKey2);
+          } catch (_) {
+            try {
+              secretOrPublicKey2 = createSecretKey(typeof secretOrPublicKey2 === "string" ? Buffer.from(secretOrPublicKey2) : secretOrPublicKey2);
+            } catch (_2) {
+              return done(new JsonWebTokenError("secretOrPublicKey is not valid key material"));
+            }
+          }
+        }
+        if (!options.algorithms) {
+          if (secretOrPublicKey2.type === "secret") {
+            options.algorithms = HS_ALGS;
+          } else if (["rsa", "rsa-pss"].includes(secretOrPublicKey2.asymmetricKeyType)) {
+            options.algorithms = RSA_KEY_ALGS;
+          } else if (secretOrPublicKey2.asymmetricKeyType === "ec") {
+            options.algorithms = EC_KEY_ALGS;
+          } else {
+            options.algorithms = PUB_KEY_ALGS;
+          }
+        }
+        if (options.algorithms.indexOf(decodedToken.header.alg) === -1) {
+          return done(new JsonWebTokenError("invalid algorithm"));
+        }
+        if (header.alg.startsWith("HS") && secretOrPublicKey2.type !== "secret") {
+          return done(new JsonWebTokenError(`secretOrPublicKey must be a symmetric key when using ${header.alg}`));
+        } else if (/^(?:RS|PS|ES)/.test(header.alg) && secretOrPublicKey2.type !== "public") {
+          return done(new JsonWebTokenError(`secretOrPublicKey must be an asymmetric key when using ${header.alg}`));
+        }
+        if (!options.allowInvalidAsymmetricKeyTypes) {
+          try {
+            validateAsymmetricKey(header.alg, secretOrPublicKey2);
+          } catch (e) {
+            return done(e);
+          }
+        }
+        let valid;
+        try {
+          valid = jws.verify(jwtString, decodedToken.header.alg, secretOrPublicKey2);
+        } catch (e) {
+          return done(e);
+        }
+        if (!valid) {
+          return done(new JsonWebTokenError("invalid signature"));
+        }
+        const payload = decodedToken.payload;
+        if (typeof payload.nbf !== "undefined" && !options.ignoreNotBefore) {
+          if (typeof payload.nbf !== "number") {
+            return done(new JsonWebTokenError("invalid nbf value"));
+          }
+          if (payload.nbf > clockTimestamp + (options.clockTolerance || 0)) {
+            return done(new NotBeforeError("jwt not active", new Date(payload.nbf * 1e3)));
+          }
+        }
+        if (typeof payload.exp !== "undefined" && !options.ignoreExpiration) {
+          if (typeof payload.exp !== "number") {
+            return done(new JsonWebTokenError("invalid exp value"));
+          }
+          if (clockTimestamp >= payload.exp + (options.clockTolerance || 0)) {
+            return done(new TokenExpiredError("jwt expired", new Date(payload.exp * 1e3)));
+          }
+        }
+        if (options.audience) {
+          const audiences = Array.isArray(options.audience) ? options.audience : [options.audience];
+          const target = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+          const match = target.some(function(targetAudience) {
+            return audiences.some(function(audience) {
+              return audience instanceof RegExp ? audience.test(targetAudience) : audience === targetAudience;
+            });
+          });
+          if (!match) {
+            return done(new JsonWebTokenError("jwt audience invalid. expected: " + audiences.join(" or ")));
+          }
+        }
+        if (options.issuer) {
+          const invalid_issuer = typeof options.issuer === "string" && payload.iss !== options.issuer || Array.isArray(options.issuer) && options.issuer.indexOf(payload.iss) === -1;
+          if (invalid_issuer) {
+            return done(new JsonWebTokenError("jwt issuer invalid. expected: " + options.issuer));
+          }
+        }
+        if (options.subject) {
+          if (payload.sub !== options.subject) {
+            return done(new JsonWebTokenError("jwt subject invalid. expected: " + options.subject));
+          }
+        }
+        if (options.jwtid) {
+          if (payload.jti !== options.jwtid) {
+            return done(new JsonWebTokenError("jwt jwtid invalid. expected: " + options.jwtid));
+          }
+        }
+        if (options.nonce) {
+          if (payload.nonce !== options.nonce) {
+            return done(new JsonWebTokenError("jwt nonce invalid. expected: " + options.nonce));
+          }
+        }
+        if (options.maxAge) {
+          if (typeof payload.iat !== "number") {
+            return done(new JsonWebTokenError("iat required when maxAge is specified"));
+          }
+          const maxAgeTimestamp = timespan(options.maxAge, payload.iat);
+          if (typeof maxAgeTimestamp === "undefined") {
+            return done(new JsonWebTokenError('"maxAge" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
+          }
+          if (clockTimestamp >= maxAgeTimestamp + (options.clockTolerance || 0)) {
+            return done(new TokenExpiredError("maxAge exceeded", new Date(maxAgeTimestamp * 1e3)));
+          }
+        }
+        if (options.complete === true) {
+          const signature = decodedToken.signature;
+          return done(null, {
+            header,
+            payload,
+            signature
+          });
+        }
+        return done(null, payload);
+      });
+    };
+  }
+});
+
+// node_modules/lodash.includes/index.js
+var require_lodash = __commonJS({
+  "node_modules/lodash.includes/index.js"(exports2, module2) {
+    var INFINITY = 1 / 0;
+    var MAX_SAFE_INTEGER = 9007199254740991;
+    var MAX_INTEGER = 17976931348623157e292;
+    var NAN = 0 / 0;
+    var argsTag = "[object Arguments]";
+    var funcTag = "[object Function]";
+    var genTag = "[object GeneratorFunction]";
+    var stringTag = "[object String]";
+    var symbolTag = "[object Symbol]";
+    var reTrim = /^\s+|\s+$/g;
+    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+    var reIsBinary = /^0b[01]+$/i;
+    var reIsOctal = /^0o[0-7]+$/i;
+    var reIsUint = /^(?:0|[1-9]\d*)$/;
+    var freeParseInt = parseInt;
+    function arrayMap(array, iteratee) {
+      var index = -1, length = array ? array.length : 0, result = Array(length);
+      while (++index < length) {
+        result[index] = iteratee(array[index], index, array);
+      }
+      return result;
+    }
+    function baseFindIndex(array, predicate, fromIndex, fromRight) {
+      var length = array.length, index = fromIndex + (fromRight ? 1 : -1);
+      while (fromRight ? index-- : ++index < length) {
+        if (predicate(array[index], index, array)) {
+          return index;
+        }
+      }
+      return -1;
+    }
+    function baseIndexOf(array, value, fromIndex) {
+      if (value !== value) {
+        return baseFindIndex(array, baseIsNaN, fromIndex);
+      }
+      var index = fromIndex - 1, length = array.length;
+      while (++index < length) {
+        if (array[index] === value) {
+          return index;
+        }
+      }
+      return -1;
+    }
+    function baseIsNaN(value) {
+      return value !== value;
+    }
+    function baseTimes(n, iteratee) {
+      var index = -1, result = Array(n);
+      while (++index < n) {
+        result[index] = iteratee(index);
+      }
+      return result;
+    }
+    function baseValues(object, props) {
+      return arrayMap(props, function(key) {
+        return object[key];
+      });
+    }
+    function overArg(func, transform) {
+      return function(arg) {
+        return func(transform(arg));
+      };
+    }
+    var objectProto = Object.prototype;
+    var hasOwnProperty = objectProto.hasOwnProperty;
+    var objectToString = objectProto.toString;
+    var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+    var nativeKeys = overArg(Object.keys, Object);
+    var nativeMax = Math.max;
+    function arrayLikeKeys(value, inherited) {
+      var result = isArray(value) || isArguments(value) ? baseTimes(value.length, String) : [];
+      var length = result.length, skipIndexes = !!length;
+      for (var key in value) {
+        if ((inherited || hasOwnProperty.call(value, key)) && !(skipIndexes && (key == "length" || isIndex(key, length)))) {
+          result.push(key);
+        }
+      }
+      return result;
+    }
+    function baseKeys(object) {
+      if (!isPrototype(object)) {
+        return nativeKeys(object);
+      }
+      var result = [];
+      for (var key in Object(object)) {
+        if (hasOwnProperty.call(object, key) && key != "constructor") {
+          result.push(key);
+        }
+      }
+      return result;
+    }
+    function isIndex(value, length) {
+      length = length == null ? MAX_SAFE_INTEGER : length;
+      return !!length && (typeof value == "number" || reIsUint.test(value)) && (value > -1 && value % 1 == 0 && value < length);
+    }
+    function isPrototype(value) {
+      var Ctor = value && value.constructor, proto = typeof Ctor == "function" && Ctor.prototype || objectProto;
+      return value === proto;
+    }
+    function includes(collection, value, fromIndex, guard) {
+      collection = isArrayLike(collection) ? collection : values(collection);
+      fromIndex = fromIndex && !guard ? toInteger(fromIndex) : 0;
+      var length = collection.length;
+      if (fromIndex < 0) {
+        fromIndex = nativeMax(length + fromIndex, 0);
+      }
+      return isString2(collection) ? fromIndex <= length && collection.indexOf(value, fromIndex) > -1 : !!length && baseIndexOf(collection, value, fromIndex) > -1;
+    }
+    function isArguments(value) {
+      return isArrayLikeObject(value) && hasOwnProperty.call(value, "callee") && (!propertyIsEnumerable.call(value, "callee") || objectToString.call(value) == argsTag);
+    }
+    var isArray = Array.isArray;
+    function isArrayLike(value) {
+      return value != null && isLength(value.length) && !isFunction(value);
+    }
+    function isArrayLikeObject(value) {
+      return isObjectLike(value) && isArrayLike(value);
+    }
+    function isFunction(value) {
+      var tag = isObject(value) ? objectToString.call(value) : "";
+      return tag == funcTag || tag == genTag;
+    }
+    function isLength(value) {
+      return typeof value == "number" && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+    }
+    function isObject(value) {
+      var type = typeof value;
+      return !!value && (type == "object" || type == "function");
+    }
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isString2(value) {
+      return typeof value == "string" || !isArray(value) && isObjectLike(value) && objectToString.call(value) == stringTag;
+    }
+    function isSymbol(value) {
+      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
+    }
+    function toFinite(value) {
+      if (!value) {
+        return value === 0 ? value : 0;
+      }
+      value = toNumber(value);
+      if (value === INFINITY || value === -INFINITY) {
+        var sign = value < 0 ? -1 : 1;
+        return sign * MAX_INTEGER;
+      }
+      return value === value ? value : 0;
+    }
+    function toInteger(value) {
+      var result = toFinite(value), remainder = result % 1;
+      return result === result ? remainder ? result - remainder : result : 0;
+    }
+    function toNumber(value) {
+      if (typeof value == "number") {
+        return value;
+      }
+      if (isSymbol(value)) {
+        return NAN;
+      }
+      if (isObject(value)) {
+        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
+        value = isObject(other) ? other + "" : other;
+      }
+      if (typeof value != "string") {
+        return value === 0 ? value : +value;
+      }
+      value = value.replace(reTrim, "");
+      var isBinary = reIsBinary.test(value);
+      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
+    }
+    function keys(object) {
+      return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+    }
+    function values(object) {
+      return object ? baseValues(object, keys(object)) : [];
+    }
+    module2.exports = includes;
+  }
+});
+
+// node_modules/lodash.isboolean/index.js
+var require_lodash2 = __commonJS({
+  "node_modules/lodash.isboolean/index.js"(exports2, module2) {
+    var boolTag = "[object Boolean]";
+    var objectProto = Object.prototype;
+    var objectToString = objectProto.toString;
+    function isBoolean(value) {
+      return value === true || value === false || isObjectLike(value) && objectToString.call(value) == boolTag;
+    }
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    module2.exports = isBoolean;
+  }
+});
+
+// node_modules/lodash.isinteger/index.js
+var require_lodash3 = __commonJS({
+  "node_modules/lodash.isinteger/index.js"(exports2, module2) {
+    var INFINITY = 1 / 0;
+    var MAX_INTEGER = 17976931348623157e292;
+    var NAN = 0 / 0;
+    var symbolTag = "[object Symbol]";
+    var reTrim = /^\s+|\s+$/g;
+    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+    var reIsBinary = /^0b[01]+$/i;
+    var reIsOctal = /^0o[0-7]+$/i;
+    var freeParseInt = parseInt;
+    var objectProto = Object.prototype;
+    var objectToString = objectProto.toString;
+    function isInteger(value) {
+      return typeof value == "number" && value == toInteger(value);
+    }
+    function isObject(value) {
+      var type = typeof value;
+      return !!value && (type == "object" || type == "function");
+    }
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isSymbol(value) {
+      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
+    }
+    function toFinite(value) {
+      if (!value) {
+        return value === 0 ? value : 0;
+      }
+      value = toNumber(value);
+      if (value === INFINITY || value === -INFINITY) {
+        var sign = value < 0 ? -1 : 1;
+        return sign * MAX_INTEGER;
+      }
+      return value === value ? value : 0;
+    }
+    function toInteger(value) {
+      var result = toFinite(value), remainder = result % 1;
+      return result === result ? remainder ? result - remainder : result : 0;
+    }
+    function toNumber(value) {
+      if (typeof value == "number") {
+        return value;
+      }
+      if (isSymbol(value)) {
+        return NAN;
+      }
+      if (isObject(value)) {
+        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
+        value = isObject(other) ? other + "" : other;
+      }
+      if (typeof value != "string") {
+        return value === 0 ? value : +value;
+      }
+      value = value.replace(reTrim, "");
+      var isBinary = reIsBinary.test(value);
+      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
+    }
+    module2.exports = isInteger;
+  }
+});
+
+// node_modules/lodash.isnumber/index.js
+var require_lodash4 = __commonJS({
+  "node_modules/lodash.isnumber/index.js"(exports2, module2) {
+    var numberTag = "[object Number]";
+    var objectProto = Object.prototype;
+    var objectToString = objectProto.toString;
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isNumber(value) {
+      return typeof value == "number" || isObjectLike(value) && objectToString.call(value) == numberTag;
+    }
+    module2.exports = isNumber;
+  }
+});
+
+// node_modules/lodash.isplainobject/index.js
+var require_lodash5 = __commonJS({
+  "node_modules/lodash.isplainobject/index.js"(exports2, module2) {
+    var objectTag = "[object Object]";
+    function isHostObject(value) {
+      var result = false;
+      if (value != null && typeof value.toString != "function") {
+        try {
+          result = !!(value + "");
+        } catch (e) {
+        }
+      }
+      return result;
+    }
+    function overArg(func, transform) {
+      return function(arg) {
+        return func(transform(arg));
+      };
+    }
+    var funcProto = Function.prototype;
+    var objectProto = Object.prototype;
+    var funcToString = funcProto.toString;
+    var hasOwnProperty = objectProto.hasOwnProperty;
+    var objectCtorString = funcToString.call(Object);
+    var objectToString = objectProto.toString;
+    var getPrototype = overArg(Object.getPrototypeOf, Object);
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isPlainObject(value) {
+      if (!isObjectLike(value) || objectToString.call(value) != objectTag || isHostObject(value)) {
+        return false;
+      }
+      var proto = getPrototype(value);
+      if (proto === null) {
+        return true;
+      }
+      var Ctor = hasOwnProperty.call(proto, "constructor") && proto.constructor;
+      return typeof Ctor == "function" && Ctor instanceof Ctor && funcToString.call(Ctor) == objectCtorString;
+    }
+    module2.exports = isPlainObject;
+  }
+});
+
+// node_modules/lodash.isstring/index.js
+var require_lodash6 = __commonJS({
+  "node_modules/lodash.isstring/index.js"(exports2, module2) {
+    var stringTag = "[object String]";
+    var objectProto = Object.prototype;
+    var objectToString = objectProto.toString;
+    var isArray = Array.isArray;
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isString2(value) {
+      return typeof value == "string" || !isArray(value) && isObjectLike(value) && objectToString.call(value) == stringTag;
+    }
+    module2.exports = isString2;
+  }
+});
+
+// node_modules/lodash.once/index.js
+var require_lodash7 = __commonJS({
+  "node_modules/lodash.once/index.js"(exports2, module2) {
+    var FUNC_ERROR_TEXT = "Expected a function";
+    var INFINITY = 1 / 0;
+    var MAX_INTEGER = 17976931348623157e292;
+    var NAN = 0 / 0;
+    var symbolTag = "[object Symbol]";
+    var reTrim = /^\s+|\s+$/g;
+    var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+    var reIsBinary = /^0b[01]+$/i;
+    var reIsOctal = /^0o[0-7]+$/i;
+    var freeParseInt = parseInt;
+    var objectProto = Object.prototype;
+    var objectToString = objectProto.toString;
+    function before(n, func) {
+      var result;
+      if (typeof func != "function") {
+        throw new TypeError(FUNC_ERROR_TEXT);
+      }
+      n = toInteger(n);
+      return function() {
+        if (--n > 0) {
+          result = func.apply(this, arguments);
+        }
+        if (n <= 1) {
+          func = void 0;
+        }
+        return result;
+      };
+    }
+    function once(func) {
+      return before(2, func);
+    }
+    function isObject(value) {
+      var type = typeof value;
+      return !!value && (type == "object" || type == "function");
+    }
+    function isObjectLike(value) {
+      return !!value && typeof value == "object";
+    }
+    function isSymbol(value) {
+      return typeof value == "symbol" || isObjectLike(value) && objectToString.call(value) == symbolTag;
+    }
+    function toFinite(value) {
+      if (!value) {
+        return value === 0 ? value : 0;
+      }
+      value = toNumber(value);
+      if (value === INFINITY || value === -INFINITY) {
+        var sign = value < 0 ? -1 : 1;
+        return sign * MAX_INTEGER;
+      }
+      return value === value ? value : 0;
+    }
+    function toInteger(value) {
+      var result = toFinite(value), remainder = result % 1;
+      return result === result ? remainder ? result - remainder : result : 0;
+    }
+    function toNumber(value) {
+      if (typeof value == "number") {
+        return value;
+      }
+      if (isSymbol(value)) {
+        return NAN;
+      }
+      if (isObject(value)) {
+        var other = typeof value.valueOf == "function" ? value.valueOf() : value;
+        value = isObject(other) ? other + "" : other;
+      }
+      if (typeof value != "string") {
+        return value === 0 ? value : +value;
+      }
+      value = value.replace(reTrim, "");
+      var isBinary = reIsBinary.test(value);
+      return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
+    }
+    module2.exports = once;
+  }
+});
+
+// node_modules/jsonwebtoken/sign.js
+var require_sign2 = __commonJS({
+  "node_modules/jsonwebtoken/sign.js"(exports2, module2) {
+    var timespan = require_timespan();
+    var PS_SUPPORTED = require_psSupported();
+    var validateAsymmetricKey = require_validateAsymmetricKey();
+    var jws = require_jws();
+    var includes = require_lodash();
+    var isBoolean = require_lodash2();
+    var isInteger = require_lodash3();
+    var isNumber = require_lodash4();
+    var isPlainObject = require_lodash5();
+    var isString2 = require_lodash6();
+    var once = require_lodash7();
+    var { KeyObject, createSecretKey, createPrivateKey } = require("crypto");
+    var SUPPORTED_ALGS = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512", "none"];
+    if (PS_SUPPORTED) {
+      SUPPORTED_ALGS.splice(3, 0, "PS256", "PS384", "PS512");
+    }
+    var sign_options_schema = {
+      expiresIn: { isValid: function(value) {
+        return isInteger(value) || isString2(value) && value;
+      }, message: '"expiresIn" should be a number of seconds or string representing a timespan' },
+      notBefore: { isValid: function(value) {
+        return isInteger(value) || isString2(value) && value;
+      }, message: '"notBefore" should be a number of seconds or string representing a timespan' },
+      audience: { isValid: function(value) {
+        return isString2(value) || Array.isArray(value);
+      }, message: '"audience" must be a string or array' },
+      algorithm: { isValid: includes.bind(null, SUPPORTED_ALGS), message: '"algorithm" must be a valid string enum value' },
+      header: { isValid: isPlainObject, message: '"header" must be an object' },
+      encoding: { isValid: isString2, message: '"encoding" must be a string' },
+      issuer: { isValid: isString2, message: '"issuer" must be a string' },
+      subject: { isValid: isString2, message: '"subject" must be a string' },
+      jwtid: { isValid: isString2, message: '"jwtid" must be a string' },
+      noTimestamp: { isValid: isBoolean, message: '"noTimestamp" must be a boolean' },
+      keyid: { isValid: isString2, message: '"keyid" must be a string' },
+      mutatePayload: { isValid: isBoolean, message: '"mutatePayload" must be a boolean' },
+      allowInsecureKeySizes: { isValid: isBoolean, message: '"allowInsecureKeySizes" must be a boolean' },
+      allowInvalidAsymmetricKeyTypes: { isValid: isBoolean, message: '"allowInvalidAsymmetricKeyTypes" must be a boolean' }
+    };
+    var registered_claims_schema = {
+      iat: { isValid: isNumber, message: '"iat" should be a number of seconds' },
+      exp: { isValid: isNumber, message: '"exp" should be a number of seconds' },
+      nbf: { isValid: isNumber, message: '"nbf" should be a number of seconds' }
+    };
+    function validate(schema, allowUnknown, object, parameterName) {
+      if (!isPlainObject(object)) {
+        throw new Error('Expected "' + parameterName + '" to be a plain object.');
+      }
+      Object.keys(object).forEach(function(key) {
+        const validator = schema[key];
+        if (!validator) {
+          if (!allowUnknown) {
+            throw new Error('"' + key + '" is not allowed in "' + parameterName + '"');
+          }
+          return;
+        }
+        if (!validator.isValid(object[key])) {
+          throw new Error(validator.message);
+        }
+      });
+    }
+    function validateOptions(options) {
+      return validate(sign_options_schema, false, options, "options");
+    }
+    function validatePayload(payload) {
+      return validate(registered_claims_schema, true, payload, "payload");
+    }
+    var options_to_payload = {
+      "audience": "aud",
+      "issuer": "iss",
+      "subject": "sub",
+      "jwtid": "jti"
+    };
+    var options_for_objects = [
+      "expiresIn",
+      "notBefore",
+      "noTimestamp",
+      "audience",
+      "issuer",
+      "subject",
+      "jwtid"
+    ];
+    module2.exports = function(payload, secretOrPrivateKey, options, callback) {
+      if (typeof options === "function") {
+        callback = options;
+        options = {};
+      } else {
+        options = options || {};
+      }
+      const isObjectPayload = typeof payload === "object" && !Buffer.isBuffer(payload);
+      const header = Object.assign({
+        alg: options.algorithm || "HS256",
+        typ: isObjectPayload ? "JWT" : void 0,
+        kid: options.keyid
+      }, options.header);
+      function failure(err) {
+        if (callback) {
+          return callback(err);
+        }
+        throw err;
+      }
+      if (!secretOrPrivateKey && options.algorithm !== "none") {
+        return failure(new Error("secretOrPrivateKey must have a value"));
+      }
+      if (secretOrPrivateKey != null && !(secretOrPrivateKey instanceof KeyObject)) {
+        try {
+          secretOrPrivateKey = createPrivateKey(secretOrPrivateKey);
+        } catch (_) {
+          try {
+            secretOrPrivateKey = createSecretKey(typeof secretOrPrivateKey === "string" ? Buffer.from(secretOrPrivateKey) : secretOrPrivateKey);
+          } catch (_2) {
+            return failure(new Error("secretOrPrivateKey is not valid key material"));
+          }
+        }
+      }
+      if (header.alg.startsWith("HS") && secretOrPrivateKey.type !== "secret") {
+        return failure(new Error(`secretOrPrivateKey must be a symmetric key when using ${header.alg}`));
+      } else if (/^(?:RS|PS|ES)/.test(header.alg)) {
+        if (secretOrPrivateKey.type !== "private") {
+          return failure(new Error(`secretOrPrivateKey must be an asymmetric key when using ${header.alg}`));
+        }
+        if (!options.allowInsecureKeySizes && !header.alg.startsWith("ES") && secretOrPrivateKey.asymmetricKeyDetails !== void 0 && //KeyObject.asymmetricKeyDetails is supported in Node 15+
+        secretOrPrivateKey.asymmetricKeyDetails.modulusLength < 2048) {
+          return failure(new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`));
+        }
+      }
+      if (typeof payload === "undefined") {
+        return failure(new Error("payload is required"));
+      } else if (isObjectPayload) {
+        try {
+          validatePayload(payload);
+        } catch (error) {
+          return failure(error);
+        }
+        if (!options.mutatePayload) {
+          payload = Object.assign({}, payload);
+        }
+      } else {
+        const invalid_options = options_for_objects.filter(function(opt) {
+          return typeof options[opt] !== "undefined";
+        });
+        if (invalid_options.length > 0) {
+          return failure(new Error("invalid " + invalid_options.join(",") + " option for " + typeof payload + " payload"));
+        }
+      }
+      if (typeof payload.exp !== "undefined" && typeof options.expiresIn !== "undefined") {
+        return failure(new Error('Bad "options.expiresIn" option the payload already has an "exp" property.'));
+      }
+      if (typeof payload.nbf !== "undefined" && typeof options.notBefore !== "undefined") {
+        return failure(new Error('Bad "options.notBefore" option the payload already has an "nbf" property.'));
+      }
+      try {
+        validateOptions(options);
+      } catch (error) {
+        return failure(error);
+      }
+      if (!options.allowInvalidAsymmetricKeyTypes) {
+        try {
+          validateAsymmetricKey(header.alg, secretOrPrivateKey);
+        } catch (error) {
+          return failure(error);
+        }
+      }
+      const timestamp = payload.iat || Math.floor(Date.now() / 1e3);
+      if (options.noTimestamp) {
+        delete payload.iat;
+      } else if (isObjectPayload) {
+        payload.iat = timestamp;
+      }
+      if (typeof options.notBefore !== "undefined") {
+        try {
+          payload.nbf = timespan(options.notBefore, timestamp);
+        } catch (err) {
+          return failure(err);
+        }
+        if (typeof payload.nbf === "undefined") {
+          return failure(new Error('"notBefore" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
+        }
+      }
+      if (typeof options.expiresIn !== "undefined" && typeof payload === "object") {
+        try {
+          payload.exp = timespan(options.expiresIn, timestamp);
+        } catch (err) {
+          return failure(err);
+        }
+        if (typeof payload.exp === "undefined") {
+          return failure(new Error('"expiresIn" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
+        }
+      }
+      Object.keys(options_to_payload).forEach(function(key) {
+        const claim = options_to_payload[key];
+        if (typeof options[key] !== "undefined") {
+          if (typeof payload[claim] !== "undefined") {
+            return failure(new Error('Bad "options.' + key + '" option. The payload already has an "' + claim + '" property.'));
+          }
+          payload[claim] = options[key];
+        }
+      });
+      const encoding = options.encoding || "utf8";
+      if (typeof callback === "function") {
+        callback = callback && once(callback);
+        jws.createSign({
+          header,
+          privateKey: secretOrPrivateKey,
+          payload,
+          encoding
+        }).once("error", callback).once("done", function(signature) {
+          if (!options.allowInsecureKeySizes && /^(?:RS|PS)/.test(header.alg) && signature.length < 256) {
+            return callback(new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`));
+          }
+          callback(null, signature);
+        });
+      } else {
+        let signature = jws.sign({ header, payload, secret: secretOrPrivateKey, encoding });
+        if (!options.allowInsecureKeySizes && /^(?:RS|PS)/.test(header.alg) && signature.length < 256) {
+          throw new Error(`secretOrPrivateKey has a minimum key size of 2048 bits for ${header.alg}`);
+        }
+        return signature;
+      }
+    };
+  }
+});
+
+// node_modules/jsonwebtoken/index.js
+var require_jsonwebtoken = __commonJS({
+  "node_modules/jsonwebtoken/index.js"(exports2, module2) {
+    module2.exports = {
+      decode: require_decode(),
+      verify: require_verify(),
+      sign: require_sign2(),
+      JsonWebTokenError: require_JsonWebTokenError(),
+      NotBeforeError: require_NotBeforeError(),
+      TokenExpiredError: require_TokenExpiredError()
+    };
+  }
+});
+
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
@@ -94134,9 +94134,6 @@ var helmet = Object.assign(
 
 // src/routes/index.ts
 var import_express16 = __toESM(require_express2());
-
-// src/routes/authRoutes.ts
-var import_express = __toESM(require_express2());
 
 // node_modules/bcryptjs/index.js
 var import_crypto = __toESM(require("crypto"), 1);
@@ -95860,6 +95857,3698 @@ var bcryptjs_default = {
   encodeBase64,
   decodeBase64
 };
+
+// src/models/User.ts
+var import_mongoose = __toESM(require_mongoose2());
+var UserSchema = new import_mongoose.Schema(
+  {
+    _id: { type: String },
+    name: { type: String, required: true, trim: true },
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true
+    },
+    email: { type: String, trim: true, lowercase: true },
+    passwordHash: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_MODERATOR", "MEMBER", "DONOR", "REQUESTER"],
+      default: "MEMBER",
+      required: true,
+      index: true
+    },
+    accountStatus: {
+      type: String,
+      enum: ["active", "pending_verification", "temporarily_blocked", "suspended", "deactivated"],
+      default: "active",
+      index: true
+    },
+    blockReason: { type: String, trim: true },
+    blockedBy: { type: import_mongoose.Schema.Types.Mixed },
+    blockedAt: { type: Date },
+    gender: {
+      type: String,
+      enum: ["male", "female", "unspecified", "other"],
+      default: "unspecified"
+    },
+    femaleSafetyAcknowledged: { type: Boolean, default: false },
+    femalePublicPhoneConsent: { type: Boolean, default: false },
+    assignedDivision: { type: String, trim: true, index: true },
+    assignedInstitution: { type: import_mongoose.Schema.Types.Mixed, index: true },
+    assignedInstitutions: [{ type: import_mongoose.Schema.Types.Mixed }],
+    requirePasswordChangeAtFirstLogin: { type: Boolean, default: false },
+    createdByModeratorId: { type: import_mongoose.Schema.Types.Mixed },
+    division: { type: String, trim: true },
+    district: { type: String, trim: true },
+    upazila: { type: String, trim: true },
+    isActive: { type: Boolean, default: true, index: true },
+    isPhoneVerified: { type: Boolean, default: false },
+    lastLoginAt: { type: Date }
+  },
+  {
+    timestamps: true
+  }
+);
+var UserModel = import_mongoose.default.model("User", UserSchema);
+
+// src/models/DonorProfile.ts
+var import_mongoose2 = __toESM(require_mongoose2());
+
+// src/data/bangladeshLocations.ts
+var BANGLADESH_DIVISIONS = [
+  {
+    id: "dhaka",
+    nameEn: "Dhaka",
+    nameBn: "\u09A2\u09BE\u0995\u09BE",
+    districts: [
+      {
+        id: "dhaka",
+        nameEn: "Dhaka",
+        nameBn: "\u09A2\u09BE\u0995\u09BE",
+        upazilas: [
+          { id: "dhanmondi", nameEn: "Dhanmondi", nameBn: "\u09A7\u09BE\u09A8\u09AE\u09A8\u09CD\u09A1\u09BF" },
+          { id: "mirpur", nameEn: "Mirpur", nameBn: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0" },
+          { id: "uttara", nameEn: "Uttara", nameBn: "\u0989\u09A4\u09CD\u09A4\u09B0\u09BE" },
+          { id: "gulshan", nameEn: "Gulshan", nameBn: "\u0997\u09C1\u09B2\u09B6\u09BE\u09A8" },
+          { id: "banani", nameEn: "Banani", nameBn: "\u09AC\u09A8\u09BE\u09A8\u09C0" },
+          { id: "mohammadpur", nameEn: "Mohammadpur", nameBn: "\u09AE\u09CB\u09B9\u09BE\u09AE\u09CD\u09AE\u09A6\u09AA\u09C1\u09B0" },
+          { id: "motijheel", nameEn: "Motijheel", nameBn: "\u09AE\u09A4\u09BF\u099D\u09BF\u09B2" },
+          { id: "shahbagh", nameEn: "Shahbagh", nameBn: "\u09B6\u09BE\u09B9\u09AC\u09BE\u0997" },
+          { id: "savar", nameEn: "Savar", nameBn: "\u09B8\u09BE\u09AD\u09BE\u09B0" },
+          { id: "dhamrai", nameEn: "Dhamrai", nameBn: "\u09A7\u09BE\u09AE\u09B0\u09BE\u0987" },
+          { id: "keraniganj", nameEn: "Keraniganj", nameBn: "\u0995\u09C7\u09B0\u09BE\u09A8\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "badda", nameEn: "Badda", nameBn: "\u09AC\u09BE\u09A1\u09CD\u09A1\u09BE" },
+          { id: "khilgaon", nameEn: "Khilgaon", nameBn: "\u0996\u09BF\u09B2\u0997\u09BE\u0981\u0993" },
+          { id: "jatrabari", nameEn: "Jatrabari", nameBn: "\u09AF\u09BE\u09A4\u09CD\u09B0\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
+        ]
+      },
+      {
+        id: "gazipur",
+        nameEn: "Gazipur",
+        nameBn: "\u0997\u09BE\u099C\u09C0\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "gazipur_sadar", nameEn: "Gazipur Sadar", nameBn: "\u0997\u09BE\u099C\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "kaliakair", nameEn: "Kaliakair", nameBn: "\u0995\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u0995\u09C8\u09B0" },
+          { id: "kapasia", nameEn: "Kapasia", nameBn: "\u0995\u09BE\u09AA\u09BE\u09B8\u09BF\u09AF\u09BC\u09BE" },
+          { id: "sreepur", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" },
+          { id: "kaliganj", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "narayanganj",
+        nameEn: "Narayanganj",
+        nameBn: "\u09A8\u09BE\u09B0\u09BE\u09AF\u09BC\u09A3\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "narayanganj_sadar", nameEn: "Narayanganj Sadar", nameBn: "\u09A8\u09BE\u09B0\u09BE\u09AF\u09BC\u09A3\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "bandar", nameEn: "Bandar", nameBn: "\u09AC\u09A8\u09CD\u09A6\u09B0" },
+          { id: "rupganj", nameEn: "Rupganj", nameBn: "\u09B0\u09C2\u09AA\u0997\u099E\u09CD\u099C" },
+          { id: "sonargaon", nameEn: "Sonargaon", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09B0\u0997\u09BE\u0981\u0993" },
+          { id: "araihazar", nameEn: "Araihazar", nameBn: "\u0986\u09A1\u09BC\u09BE\u0987\u09B9\u09BE\u099C\u09BE\u09B0" }
+        ]
+      },
+      {
+        id: "tangail",
+        nameEn: "Tangail",
+        nameBn: "\u099F\u09BE\u0999\u09CD\u0997\u09BE\u0987\u09B2",
+        upazilas: [
+          { id: "tangail_sadar", nameEn: "Tangail Sadar", nameBn: "\u099F\u09BE\u0999\u09CD\u0997\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
+          { id: "mirzapur", nameEn: "Mirzapur", nameBn: "\u09AE\u09BF\u09B0\u09CD\u099C\u09BE\u09AA\u09C1\u09B0" },
+          { id: "ghatail", nameEn: "Ghatail", nameBn: "\u0998\u09BE\u099F\u09BE\u0987\u09B2" },
+          { id: "madhupur", nameEn: "Madhupur", nameBn: "\u09AE\u09A7\u09C1\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "faridpur",
+        nameEn: "Faridpur",
+        nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "faridpur_sadar", nameEn: "Faridpur Sadar", nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "bhanga", nameEn: "Bhanga", nameBn: "\u09AD\u09BE\u0999\u09CD\u0997\u09BE" },
+          { id: "boalmari", nameEn: "Boalmari", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09AE\u09BE\u09B0\u09C0" }
+        ]
+      },
+      {
+        id: "manikganj",
+        nameEn: "Manikganj",
+        nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "manikganj_sadar", nameEn: "Manikganj Sadar", nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "singair", nameEn: "Singair", nameBn: "\u09B8\u09BF\u0982\u0997\u09BE\u0987\u09B0" }
+        ]
+      },
+      {
+        id: "munshiganj",
+        nameEn: "Munshiganj",
+        nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "munshiganj_sadar", nameEn: "Munshiganj Sadar", nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "sreenagar", nameEn: "Sreenagar", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09A8\u0997\u09B0" }
+        ]
+      },
+      {
+        id: "narsingdi",
+        nameEn: "Narsingdi",
+        nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0",
+        upazilas: [
+          { id: "narsingdi_sadar", nameEn: "Narsingdi Sadar", nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "shibpur", nameEn: "Shibpur", nameBn: "\u09B6\u09BF\u09AC\u09AA\u09C1\u09B0" },
+          { id: "raipura", nameEn: "Raipura", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0\u09BE" }
+        ]
+      },
+      {
+        id: "gopalganj",
+        nameEn: "Gopalganj",
+        nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "gopalganj_sadar", nameEn: "Gopalganj Sadar", nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "tungipara", nameEn: "Tungipara", nameBn: "\u099F\u09C1\u0999\u09CD\u0997\u09BF\u09AA\u09BE\u09A1\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "madaripur",
+        nameEn: "Madaripur",
+        nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "madaripur_sadar", nameEn: "Madaripur Sadar", nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "shibchar", nameEn: "Shibchar", nameBn: "\u09B6\u09BF\u09AC\u099A\u09B0" }
+        ]
+      },
+      {
+        id: "rajbari",
+        nameEn: "Rajbari",
+        nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0",
+        upazilas: [
+          { id: "rajbari_sadar", nameEn: "Rajbari Sadar", nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "pangsha", nameEn: "Pangsha", nameBn: "\u09AA\u09BE\u0982\u09B6\u09BE" }
+        ]
+      },
+      {
+        id: "shariatpur",
+        nameEn: "Shariatpur",
+        nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "shariatpur_sadar", nameEn: "Shariatpur Sadar", nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "zajira", nameEn: "Zajira", nameBn: "\u099C\u09BE\u099C\u09BF\u09B0\u09BE" }
+        ]
+      },
+      {
+        id: "kishoreganj",
+        nameEn: "Kishoreganj",
+        nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "kishoreganj_sadar", nameEn: "Kishoreganj Sadar", nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "bhairab", nameEn: "Bhairab", nameBn: "\u09AD\u09C8\u09B0\u09AC" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "chattogram",
+    nameEn: "Chattogram",
+    nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
+    districts: [
+      {
+        id: "chattogram",
+        nameEn: "Chattogram",
+        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
+        upazilas: [
+          { id: "kotwali_ctg", nameEn: "Kotwali", nameBn: "\u0995\u09CB\u09A4\u09CB\u09AF\u09BC\u09BE\u09B2\u09C0" },
+          { id: "panchlaish", nameEn: "Panchlaish", nameBn: "\u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6" },
+          { id: "halishahar", nameEn: "Halishahar", nameBn: "\u09B9\u09BE\u09B2\u09BF\u09B6\u09B9\u09B0" },
+          { id: "agrabad", nameEn: "Agrabad", nameBn: "\u0986\u0997\u09CD\u09B0\u09BE\u09AC\u09BE\u09A6" },
+          { id: "hathazari", nameEn: "Hathazari", nameBn: "\u09B9\u09BE\u099F\u09B9\u09BE\u099C\u09BE\u09B0\u09C0" },
+          { id: "sitakunda", nameEn: "Sitakunda", nameBn: "\u09B8\u09C0\u09A4\u09BE\u0995\u09C1\u09A3\u09CD\u09A1" },
+          { id: "mirsharai", nameEn: "Mirsharai", nameBn: "\u09AE\u09C0\u09B0\u09B8\u09B0\u09BE\u0987" },
+          { id: "patiya", nameEn: "Patiya", nameBn: "\u09AA\u099F\u09BF\u09AF\u09BC\u09BE" },
+          { id: "raozan", nameEn: "Raozan", nameBn: "\u09B0\u09BE\u0989\u099C\u09BE\u09A8" }
+        ]
+      },
+      {
+        id: "coxsbazar",
+        nameEn: "Cox's Bazar",
+        nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0",
+        upazilas: [
+          { id: "coxsbazar_sadar", nameEn: "Cox's Bazar Sadar", nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "ramu", nameEn: "Ramu", nameBn: "\u09B0\u09BE\u09AE\u09C1" },
+          { id: "teknaf", nameEn: "Teknaf", nameBn: "\u099F\u09C7\u0995\u09A8\u09BE\u09AB" },
+          { id: "chakaria", nameEn: "Chakaria", nameBn: "\u099A\u0995\u09CB\u09B0\u09BF\u09AF\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "cumilla",
+        nameEn: "Cumilla",
+        nameBn: "\u0995\u09C1\u09AE\u09BF\u09B2\u09CD\u09B2\u09BE",
+        upazilas: [
+          { id: "cumilla_adarsha_sadar", nameEn: "Adarsha Sadar", nameBn: "\u0986\u09A6\u09B0\u09CD\u09B6 \u09B8\u09A6\u09B0" },
+          { id: "laksham", nameEn: "Laksham", nameBn: "\u09B2\u09BE\u0995\u09B8\u09BE\u09AE" },
+          { id: "chandina", nameEn: "Chandina", nameBn: "\u099A\u09BE\u09A8\u09CD\u09A6\u09BF\u09A8\u09BE" },
+          { id: "debidwar", nameEn: "Debidwar", nameBn: "\u09A6\u09C7\u09AC\u09BF\u09A6\u09CD\u09AC\u09BE\u09B0" }
+        ]
+      },
+      {
+        id: "feni",
+        nameEn: "Feni",
+        nameBn: "\u09AB\u09C7\u09A8\u09C0",
+        upazilas: [
+          { id: "feni_sadar", nameEn: "Feni Sadar", nameBn: "\u09AB\u09C7\u09A8\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "daganbhuiyan", nameEn: "Daganbhuiyan", nameBn: "\u09A6\u09BE\u0997\u09A8\u09AD\u09C2\u099E\u09BE" },
+          { id: "parshuram", nameEn: "Parshuram", nameBn: "\u09AA\u09B0\u09B6\u09C1\u09B0\u09BE\u09AE" }
+        ]
+      },
+      {
+        id: "brahmanbaria",
+        nameEn: "Brahmanbaria",
+        nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE",
+        upazilas: [
+          { id: "brahmanbaria_sadar", nameEn: "Brahmanbaria Sadar", nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
+          { id: "ashuganj", nameEn: "Ashuganj", nameBn: "\u0986\u09B6\u09C1\u0997\u099E\u09CD\u099C" },
+          { id: "sarail", nameEn: "Sarail", nameBn: "\u09B8\u09B0\u09BE\u0987\u09B2" }
+        ]
+      },
+      {
+        id: "chandpur",
+        nameEn: "Chandpur",
+        nameBn: "\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "chandpur_sadar", nameEn: "Chandpur Sadar", nameBn: "\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "hajiganj", nameEn: "Hajiganj", nameBn: "\u09B9\u09BE\u099C\u09C0\u0997\u099E\u09CD\u099C" },
+          { id: "matlab", nameEn: "Matlab", nameBn: "\u09AE\u09A4\u09B2\u09AC" }
+        ]
+      },
+      {
+        id: "noakhali",
+        nameEn: "Noakhali",
+        nameBn: "\u09A8\u09CB\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0",
+        upazilas: [
+          { id: "noakhali_sadar", nameEn: "Noakhali Sadar", nameBn: "\u09A8\u09CB\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "begumganj", nameEn: "Begumganj", nameBn: "\u09AC\u09C7\u0997\u09AE\u0997\u099E\u09CD\u099C" },
+          { id: "senbagh", nameEn: "Senbagh", nameBn: "\u09B8\u09C7\u09A8\u09AC\u09BE\u0997" }
+        ]
+      },
+      {
+        id: "lakshmipur",
+        nameEn: "Lakshmipur",
+        nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "lakshmipur_sadar", nameEn: "Lakshmipur Sadar", nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "ramganj", nameEn: "Ramganj", nameBn: "\u09B0\u09BE\u09AE\u0997\u099E\u09CD\u099C" },
+          { id: "raipur", nameEn: "Raipur", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "rangamati",
+        nameEn: "Rangamati",
+        nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF",
+        upazilas: [
+          { id: "rangamati_sadar", nameEn: "Rangamati Sadar", nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF \u09B8\u09A6\u09B0" },
+          { id: "kaptai", nameEn: "Kaptai", nameBn: "\u0995\u09BE\u09AA\u09CD\u09A4\u09BE\u0987" }
+        ]
+      },
+      {
+        id: "khagrachhari",
+        nameEn: "Khagrachhari",
+        nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF",
+        upazilas: [
+          { id: "khagrachhari_sadar", nameEn: "Khagrachhari Sadar", nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF \u09B8\u09A6\u09B0" },
+          { id: "dighinala", nameEn: "Dighinala", nameBn: "\u09A6\u09C0\u0998\u09BF\u09A8\u09BE\u09B2\u09BE" }
+        ]
+      },
+      {
+        id: "bandarban",
+        nameEn: "Bandarban",
+        nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8",
+        upazilas: [
+          { id: "bandarban_sadar", nameEn: "Bandarban Sadar", nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8 \u09B8\u09A6\u09B0" },
+          { id: "thanchi", nameEn: "Thanchi", nameBn: "\u09A5\u09BE\u09A8\u099A\u09BF" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "rajshahi",
+    nameEn: "Rajshahi",
+    nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
+    districts: [
+      {
+        id: "rajshahi",
+        nameEn: "Rajshahi",
+        nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
+        upazilas: [
+          { id: "boalia", nameEn: "Boalia", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
+          { id: "rajpara", nameEn: "Rajpara", nameBn: "\u09B0\u09BE\u099C\u09AA\u09BE\u09A1\u09BC\u09BE" },
+          { id: "motihar", nameEn: "Motihar", nameBn: "\u09AE\u09A4\u09BF\u09B9\u09BE\u09B0" },
+          { id: "godagari", nameEn: "Godagari", nameBn: "\u0997\u09CB\u09A6\u09BE\u0997\u09BE\u09A1\u09BC\u09C0" },
+          { id: "paba", nameEn: "Paba", nameBn: "\u09AA\u09AC\u09BE" }
+        ]
+      },
+      {
+        id: "bogura",
+        nameEn: "Bogura",
+        nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE",
+        upazilas: [
+          { id: "bogura_sadar", nameEn: "Bogura Sadar", nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE \u09B8\u09A6\u09B0" },
+          { id: "sherpur", nameEn: "Sherpur", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0" },
+          { id: "shibganj", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "pabna",
+        nameEn: "Pabna",
+        nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE",
+        upazilas: [
+          { id: "pabna_sadar", nameEn: "Pabna Sadar", nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE \u09B8\u09A6\u09B0" },
+          { id: "ishwardi", nameEn: "Ishwardi", nameBn: "\u0988\u09B6\u09CD\u09AC\u09B0\u09A6\u09C0" }
+        ]
+      },
+      {
+        id: "sirajganj",
+        nameEn: "Sirajganj",
+        nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "sirajganj_sadar", nameEn: "Sirajganj Sadar", nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "shahjadpur", nameEn: "Shahjadpur", nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09A6\u09AA\u09C1\u09B0" },
+          { id: "ullapara", nameEn: "Ullapara", nameBn: "\u0989\u09B2\u09CD\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "naogaon",
+        nameEn: "Naogaon",
+        nameBn: "\u09A8\u0993\u0997\u09BE\u0981",
+        upazilas: [
+          { id: "naogaon_sadar", nameEn: "Naogaon Sadar", nameBn: "\u09A8\u0993\u0997\u09BE\u0981 \u09B8\u09A6\u09B0" },
+          { id: "patnitala", nameEn: "Patnitala", nameBn: "\u09AA\u09A4\u09CD\u09A8\u09C0\u09A4\u09B2\u09BE" }
+        ]
+      },
+      {
+        id: "natore",
+        nameEn: "Natore",
+        nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0",
+        upazilas: [
+          { id: "natore_sadar", nameEn: "Natore Sadar", nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "singra", nameEn: "Singra", nameBn: "\u09B8\u09BF\u0982\u09A1\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "chapainawabganj",
+        nameEn: "Chapainawabganj",
+        nameBn: "\u099A\u09BE\u0981\u09AA\u09BE\u0987\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "nawabganj_sadar", nameEn: "Nawabganj Sadar", nameBn: "\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "shibganj_c", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "joypurhat",
+        nameEn: "Joypurhat",
+        nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F",
+        upazilas: [
+          { id: "joypurhat_sadar", nameEn: "Joypurhat Sadar", nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
+          { id: "panchbibi", nameEn: "Panchbibi", nameBn: "\u09AA\u09BE\u0981\u099A\u09AC\u09BF\u09AC\u09BF" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "khulna",
+    nameEn: "Khulna",
+    nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE",
+    districts: [
+      {
+        id: "khulna",
+        nameEn: "Khulna",
+        nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE",
+        upazilas: [
+          { id: "khulna_sadar", nameEn: "Khulna Sadar", nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE \u09B8\u09A6\u09B0" },
+          { id: "sonadanga", nameEn: "Sonadanga", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE" },
+          { id: "khalishpur", nameEn: "Khalishpur", nameBn: "\u0996\u09BE\u09B2\u09BF\u09B6\u09AA\u09C1\u09B0" },
+          { id: "daulatpur", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" },
+          { id: "dumuria", nameEn: "Dumuria", nameBn: "\u09A1\u09C1\u09AE\u09C1\u09B0\u09BF\u09AF\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "jashore",
+        nameEn: "Jashore",
+        nameBn: "\u09AF\u09B6\u09CB\u09B0",
+        upazilas: [
+          { id: "jashore_sadar", nameEn: "Jashore Sadar", nameBn: "\u09AF\u09B6\u09CB\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "jhikargachha", nameEn: "Jhikargachha", nameBn: "\u099D\u09BF\u0995\u09B0\u0997\u09BE\u099B\u09BE" },
+          { id: "keshabpur", nameEn: "Keshabpur", nameBn: "\u0995\u09C7\u09B6\u09AC\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "kushtia",
+        nameEn: "Kushtia",
+        nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE",
+        upazilas: [
+          { id: "kushtia_sadar", nameEn: "Kushtia Sadar", nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
+          { id: "kumarkhali", nameEn: "Kumarkhali", nameBn: "\u0995\u09C1\u09AE\u09BE\u09B0\u0996\u09BE\u09B2\u09C0" }
+        ]
+      },
+      {
+        id: "satkhira",
+        nameEn: "Satkhira",
+        nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE",
+        upazilas: [
+          { id: "satkhira_sadar", nameEn: "Satkhira Sadar", nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE \u09B8\u09A6\u09B0" },
+          { id: "kaliganj_sat", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "bagerhat",
+        nameEn: "Bagerhat",
+        nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F",
+        upazilas: [
+          { id: "bagerhat_sadar", nameEn: "Bagerhat Sadar", nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
+          { id: "mongla", nameEn: "Mongla", nameBn: "\u09AE\u09CB\u0982\u09B2\u09BE" }
+        ]
+      },
+      {
+        id: "jhenaidah",
+        nameEn: "Jhenaidah",
+        nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9",
+        upazilas: [
+          { id: "jhenaidah_sadar", nameEn: "Jhenaidah Sadar", nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9 \u09B8\u09A6\u09B0" },
+          { id: "kaliganj_jhen", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "chuadanga",
+        nameEn: "Chuadanga",
+        nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE",
+        upazilas: [
+          { id: "chuadanga_sadar", nameEn: "Chuadanga Sadar", nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE \u09B8\u09A6\u09B0" },
+          { id: "damurhuda", nameEn: "Damurhuda", nameBn: "\u09A6\u09BE\u09AE\u09C1\u09A1\u09BC\u09B9\u09C1\u09A6\u09BE" }
+        ]
+      },
+      {
+        id: "magura",
+        nameEn: "Magura",
+        nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE",
+        upazilas: [
+          { id: "magura_sadar", nameEn: "Magura Sadar", nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE \u09B8\u09A6\u09B0" },
+          { id: "sreepur_mag", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "meherpur",
+        nameEn: "Meherpur",
+        nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "meherpur_sadar", nameEn: "Meherpur Sadar", nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "gangni", nameEn: "Gangni", nameBn: "\u0997\u09BE\u0982\u09A8\u09C0" }
+        ]
+      },
+      {
+        id: "narail",
+        nameEn: "Narail",
+        nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2",
+        upazilas: [
+          { id: "narail_sadar", nameEn: "Narail Sadar", nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
+          { id: "lohagagara", nameEn: "Lohagara", nameBn: "\u09B2\u09CB\u09B9\u09BE\u0997\u09A1\u09BC\u09BE" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "barishal",
+    nameEn: "Barishal",
+    nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2",
+    districts: [
+      {
+        id: "barishal",
+        nameEn: "Barishal",
+        nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2",
+        upazilas: [
+          { id: "barishal_sadar", nameEn: "Barishal Sadar", nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2 \u09B8\u09A6\u09B0" },
+          { id: "bakerganj", nameEn: "Bakerganj", nameBn: "\u09AC\u09BE\u0995\u09C7\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "babuganj", nameEn: "Babuganj", nameBn: "\u09AC\u09BE\u09AC\u09C1\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "patuakhali",
+        nameEn: "Patuakhali",
+        nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0",
+        upazilas: [
+          { id: "patuakhali_sadar", nameEn: "Patuakhali Sadar", nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "kalapara", nameEn: "Kalapara", nameBn: "\u0995\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "bhola",
+        nameEn: "Bhola",
+        nameBn: "\u09AD\u09CB\u09B2\u09BE",
+        upazilas: [
+          { id: "bhola_sadar", nameEn: "Bhola Sadar", nameBn: "\u09AD\u09CB\u09B2\u09BE \u09B8\u09A6\u09B0" },
+          { id: "charfasson", nameEn: "Charfasson", nameBn: "\u099A\u09B0\u09AB\u09CD\u09AF\u09BE\u09B6\u09A8" }
+        ]
+      },
+      {
+        id: "pirojpur",
+        nameEn: "Pirojpur",
+        nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "pirojpur_sadar", nameEn: "Pirojpur Sadar", nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "mathbaria", nameEn: "Mathbaria", nameBn: "\u09AE\u09A0\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "barguna",
+        nameEn: "Barguna",
+        nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE",
+        upazilas: [
+          { id: "barguna_sadar", nameEn: "Barguna Sadar", nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE \u09B8\u09A6\u09B0" },
+          { id: "amtali", nameEn: "Amtali", nameBn: "\u0986\u09AE\u09A4\u09B2\u09C0" }
+        ]
+      },
+      {
+        id: "jhalokati",
+        nameEn: "Jhalokati",
+        nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF",
+        upazilas: [
+          { id: "jhalokati_sadar", nameEn: "Jhalokati Sadar", nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF \u09B8\u09A6\u09B0" },
+          { id: "nalchity", nameEn: "Nalchity", nameBn: "\u09A8\u09B2\u099B\u09BF\u099F\u09BF" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "sylhet",
+    nameEn: "Sylhet",
+    nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F",
+    districts: [
+      {
+        id: "sylhet",
+        nameEn: "Sylhet",
+        nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F",
+        upazilas: [
+          { id: "sylhet_sadar", nameEn: "Sylhet Sadar", nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F \u09B8\u09A6\u09B0" },
+          { id: "beanibazar", nameEn: "Beanibazar", nameBn: "\u09AC\u09BF\u09AF\u09BC\u09BE\u09A8\u09C0\u09AC\u09BE\u099C\u09BE\u09B0" },
+          { id: "golapganj", nameEn: "Golapganj", nameBn: "\u0997\u09CB\u09B2\u09BE\u09AA\u0997\u099E\u09CD\u099C" },
+          { id: "bishwanath", nameEn: "Bishwanath", nameBn: "\u09AC\u09BF\u09B6\u09CD\u09AC\u09A8\u09BE\u09A5" }
+        ]
+      },
+      {
+        id: "moulvibazar",
+        nameEn: "Moulvibazar",
+        nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0",
+        upazilas: [
+          { id: "moulvibazar_sadar", nameEn: "Moulvibazar Sadar", nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "sreemangal", nameEn: "Sreemangal", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AE\u0999\u09CD\u0997\u09B2" },
+          { id: "kulaura", nameEn: "Kulaura", nameBn: "\u0995\u09C1\u09B2\u09BE\u0989\u09A1\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "habiganj",
+        nameEn: "Habiganj",
+        nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "habiganj_sadar", nameEn: "Habiganj Sadar", nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "madhabpur", nameEn: "Madhabpur", nameBn: "\u09AE\u09BE\u09A7\u09AC\u09AA\u09C1\u09B0" },
+          { id: "nabiganj", nameEn: "Nabiganj", nameBn: "\u09A8\u09AC\u09C0\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "sunamganj",
+        nameEn: "Sunamganj",
+        nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C",
+        upazilas: [
+          { id: "sunamganj_sadar", nameEn: "Sunamganj Sadar", nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
+          { id: "chhatak", nameEn: "Chhatak", nameBn: "\u099B\u09BE\u09A4\u0995" },
+          { id: "tahirpur", nameEn: "Tahirpur", nameBn: "\u09A4\u09BE\u09B9\u09BF\u09B0\u09AA\u09C1\u09B0" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "rangpur",
+    nameEn: "Rangpur",
+    nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0",
+    districts: [
+      {
+        id: "rangpur",
+        nameEn: "Rangpur",
+        nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "rangpur_sadar", nameEn: "Rangpur Sadar", nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "badarganj", nameEn: "Badarganj", nameBn: "\u09AC\u09A6\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "pirganj", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "dinajpur",
+        nameEn: "Dinajpur",
+        nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "dinajpur_sadar", nameEn: "Dinajpur Sadar", nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "birganj", nameEn: "Birganj", nameBn: "\u09AC\u09C0\u09B0\u0997\u099E\u09CD\u099C" },
+          { id: "parbatipur", nameEn: "Parbatipur", nameBn: "\u09AA\u09BE\u09B0\u09CD\u09AC\u09A4\u09C0\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "gaibandha",
+        nameEn: "Gaibandha",
+        nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE",
+        upazilas: [
+          { id: "gaibandha_sadar", nameEn: "Gaibandha Sadar", nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE \u09B8\u09A6\u09B0" },
+          { id: "gobindaganj", nameEn: "Gobindaganj", nameBn: "\u0997\u09CB\u09AC\u09BF\u09A8\u09CD\u09A6\u0997\u099E\u09CD\u099C" }
+        ]
+      },
+      {
+        id: "kurigram",
+        nameEn: "Kurigram",
+        nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE",
+        upazilas: [
+          { id: "kurigram_sadar", nameEn: "Kurigram Sadar", nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09A6\u09B0" },
+          { id: "ulipur", nameEn: "Ulipur", nameBn: "\u0989\u09B2\u09BF\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "lalmonirhat",
+        nameEn: "Lalmonirhat",
+        nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F",
+        upazilas: [
+          { id: "lalmonirhat_sadar", nameEn: "Lalmonirhat Sadar", nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
+          { id: "patgram", nameEn: "Patgram", nameBn: "\u09AA\u09BE\u099F\u0997\u09CD\u09B0\u09BE\u09AE" }
+        ]
+      },
+      {
+        id: "nilphamari",
+        nameEn: "Nilphamari",
+        nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0",
+        upazilas: [
+          { id: "nilphamari_sadar", nameEn: "Nilphamari Sadar", nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0 \u09B8\u09A6\u09B0" },
+          { id: "saidpur", nameEn: "Saidpur", nameBn: "\u09B8\u09C8\u09AF\u09BC\u09A6\u09AA\u09C1\u09B0" }
+        ]
+      },
+      {
+        id: "panchagarh",
+        nameEn: "Panchagarh",
+        nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC",
+        upazilas: [
+          { id: "panchagarh_sadar", nameEn: "Panchagarh Sadar", nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC \u09B8\u09A6\u09B0" },
+          { id: "tetulia", nameEn: "Tetulia", nameBn: "\u09A4\u09C7\u0981\u09A4\u09C1\u09B2\u09BF\u09AF\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "thakurgaon",
+        nameEn: "Thakurgaon",
+        nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993",
+        upazilas: [
+          { id: "thakurgaon_sadar", nameEn: "Thakurgaon Sadar", nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993 \u09B8\u09A6\u09B0" },
+          { id: "pirganj_thak", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "mymensingh",
+    nameEn: "Mymensingh",
+    nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9",
+    districts: [
+      {
+        id: "mymensingh",
+        nameEn: "Mymensingh",
+        nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9",
+        upazilas: [
+          { id: "mymensingh_sadar", nameEn: "Mymensingh Sadar", nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9 \u09B8\u09A6\u09B0" },
+          { id: "trishal", nameEn: "Trishal", nameBn: "\u09A4\u09CD\u09B0\u09BF\u09B6\u09BE\u09B2" },
+          { id: "muktagachha", nameEn: "Muktagachha", nameBn: "\u09AE\u09C1\u0995\u09CD\u09A4\u09BE\u0997\u09BE\u099B\u09BE" },
+          { id: "bhaluka", nameEn: "Bhaluka", nameBn: "\u09AD\u09BE\u09B2\u09C1\u0995\u09BE" },
+          { id: "gafargaon", nameEn: "Gafargaon", nameBn: "\u0997\u09AB\u09B0\u0997\u09BE\u0981\u0993" }
+        ]
+      },
+      {
+        id: "jamalpur",
+        nameEn: "Jamalpur",
+        nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "jamalpur_sadar", nameEn: "Jamalpur Sadar", nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "sarishabari", nameEn: "Sarishabari", nameBn: "\u09B8\u09B0\u09BF\u09B7\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
+        ]
+      },
+      {
+        id: "netrokona",
+        nameEn: "Netrokona",
+        nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE",
+        upazilas: [
+          { id: "netrokona_sadar", nameEn: "Netrokona Sadar", nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE \u09B8\u09A6\u09B0" },
+          { id: "kendua", nameEn: "Kendua", nameBn: "\u0995\u09C7\u09A8\u09CD\u09A6\u09C1\u09AF\u09BC\u09BE" }
+        ]
+      },
+      {
+        id: "sherpur",
+        nameEn: "Sherpur",
+        nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0",
+        upazilas: [
+          { id: "sherpur_sadar", nameEn: "Sherpur Sadar", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
+          { id: "nakla", nameEn: "Nakla", nameBn: "\u09A8\u0995\u09B2\u09BE" }
+        ]
+      }
+    ]
+  }
+];
+var BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+// src/models/DonorProfile.ts
+var DonorProfileSchema = new import_mongoose2.Schema(
+  {
+    _id: { type: String },
+    userId: {
+      type: import_mongoose2.Schema.Types.Mixed,
+      required: true,
+      unique: true,
+      index: true
+    },
+    displayName: { type: String, required: true, trim: true },
+    bloodGroup: {
+      type: String,
+      enum: BLOOD_GROUPS,
+      required: true,
+      index: true
+    },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true, index: true },
+    upazila: { type: String, required: true, index: true },
+    addressDetails: { type: String, trim: true },
+    dateOfBirth: { type: Date, required: true },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "unspecified"],
+      default: "unspecified"
+    },
+    availabilityStatus: {
+      type: String,
+      enum: ["available", "recently_donated", "temporarily_unavailable"],
+      default: "available",
+      index: true
+    },
+    lastDonationDate: { type: Date },
+    totalDonations: { type: Number, default: 0 },
+    institutionId: { type: import_mongoose2.Schema.Types.Mixed, index: true },
+    institutionMembershipVerified: { type: Boolean, default: false },
+    consentToShareContact: { type: Boolean, default: true },
+    preferredContactMethod: {
+      type: String,
+      enum: ["phone", "sms", "platform"],
+      default: "phone"
+    },
+    bio: { type: String, trim: true, maxlength: 500 },
+    isPubliclyListed: { type: Boolean, default: true, index: true },
+    emergencyAvailable: { type: Boolean, default: true }
+  },
+  {
+    timestamps: true
+  }
+);
+DonorProfileSchema.index({ bloodGroup: 1, division: 1, district: 1, availabilityStatus: 1 });
+DonorProfileSchema.index({ division: 1, district: 1, upazila: 1 });
+var DonorProfileModel = import_mongoose2.default.model("DonorProfile", DonorProfileSchema);
+
+// src/models/BloodRequest.ts
+var import_mongoose3 = __toESM(require_mongoose2());
+var BloodRequestSchema = new import_mongoose3.Schema(
+  {
+    _id: { type: String },
+    requesterId: {
+      type: import_mongoose3.Schema.Types.Mixed,
+      required: true,
+      index: true
+    },
+    patientName: { type: String, required: true, trim: true },
+    bloodGroup: {
+      type: String,
+      enum: BLOOD_GROUPS,
+      required: true,
+      index: true
+    },
+    unitsRequired: { type: Number, required: true, min: 1, default: 1 },
+    unitsFulfilled: { type: Number, default: 0, min: 0 },
+    hospitalName: { type: String, required: true, trim: true },
+    hospitalAddress: { type: String, required: true, trim: true },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true, index: true },
+    upazila: { type: String, required: true, index: true },
+    requiredDate: { type: Date, required: true, index: true },
+    requiredWithin: { type: String },
+    urgencyLevel: {
+      type: String,
+      enum: ["emergency", "urgent", "standard"],
+      default: "emergency",
+      index: true
+    },
+    reason: { type: String, required: true, trim: true },
+    contactNumber: { type: String, required: true, trim: true },
+    alternativeContactNumber: { type: String, trim: true },
+    status: {
+      type: String,
+      enum: [
+        "pending_verification",
+        "open",
+        "partially_fulfilled",
+        "fulfilled",
+        "cancelled",
+        "expired",
+        "rejected"
+      ],
+      default: "open",
+      index: true
+    },
+    moderationNotes: { type: String, trim: true },
+    institutionId: { type: import_mongoose3.Schema.Types.Mixed, index: true },
+    expiresAt: { type: Date, required: true, index: true }
+  },
+  {
+    timestamps: true
+  }
+);
+BloodRequestSchema.index({ status: 1, requiredDate: -1 });
+BloodRequestSchema.index({ division: 1, status: 1 });
+var BloodRequestModel = import_mongoose3.default.model("BloodRequest", BloodRequestSchema);
+
+// src/models/ModeratorActivity.ts
+var import_mongoose4 = __toESM(require_mongoose2());
+var ModeratorActivitySchema = new import_mongoose4.Schema(
+  {
+    _id: { type: String },
+    actorId: { type: import_mongoose4.Schema.Types.Mixed, required: true, index: true },
+    actorName: { type: String, required: true },
+    actorRole: { type: String, required: true },
+    action: {
+      type: String,
+      enum: [
+        "MEMBER_CREATED",
+        "MEMBER_EDITED",
+        "MEMBER_BLOCKED",
+        "MEMBER_UNBLOCKED",
+        "INSTITUTION_UPDATED",
+        "BLOOD_REQUEST_REVIEWED",
+        "CONTACT_REQUEST_HANDLED",
+        "COMPLAINT_REVIEWED",
+        "PASSWORD_RESET_ASSISTED"
+      ],
+      required: true,
+      index: true
+    },
+    targetRecordId: { type: String, required: true },
+    targetRecordType: { type: String, required: true },
+    divisionScope: { type: String, index: true },
+    institutionScope: { type: import_mongoose4.Schema.Types.Mixed, index: true },
+    reason: { type: String, trim: true },
+    result: { type: String, trim: true },
+    details: { type: import_mongoose4.Schema.Types.Mixed }
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false }
+  }
+);
+ModeratorActivitySchema.index({ actorId: 1, createdAt: -1 });
+ModeratorActivitySchema.index({ institutionScope: 1, createdAt: -1 });
+ModeratorActivitySchema.index({ divisionScope: 1, createdAt: -1 });
+var ModeratorActivityModel = import_mongoose4.default.model(
+  "ModeratorActivity",
+  ModeratorActivitySchema
+);
+
+// src/models/InstitutionRequest.ts
+var import_mongoose5 = __toESM(require_mongoose2());
+var InstitutionRequestSchema = new import_mongoose5.Schema(
+  {
+    _id: { type: String },
+    name: { type: String, required: true, trim: true },
+    nameBn: { type: String, required: true, trim: true },
+    code: { type: String, required: true, uppercase: true, trim: true },
+    type: {
+      type: String,
+      enum: ["university", "college", "school", "medical_college", "polytechnic", "other"],
+      default: "university"
+    },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true, index: true },
+    upazila: { type: String, required: true },
+    address: { type: String, required: true, trim: true },
+    applicantName: { type: String, required: true, trim: true },
+    applicantPhone: { type: String, required: true, trim: true },
+    applicantEmail: { type: String, trim: true },
+    applicantRole: { type: String, trim: true },
+    supportingDetails: { type: String, trim: true },
+    status: {
+      type: String,
+      enum: ["pending_review", "under_review", "approved", "rejected", "suspended"],
+      default: "pending_review",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose5.Schema.Types.Mixed },
+    decisionReason: { type: String, trim: true },
+    reviewedAt: { type: Date },
+    createdInstitutionId: { type: import_mongoose5.Schema.Types.Mixed }
+  },
+  {
+    timestamps: true
+  }
+);
+InstitutionRequestSchema.index({ division: 1, status: 1 });
+var InstitutionRequestModel = import_mongoose5.default.model(
+  "InstitutionRequest",
+  InstitutionRequestSchema
+);
+
+// src/models/ContactRequest.ts
+var import_mongoose6 = __toESM(require_mongoose2());
+var ContactRequestSchema = new import_mongoose6.Schema(
+  {
+    _id: { type: String },
+    requesterId: { type: import_mongoose6.Schema.Types.Mixed, required: true, index: true },
+    requesterName: { type: String, required: true },
+    requesterPhone: { type: String, required: true },
+    institutionId: { type: import_mongoose6.Schema.Types.Mixed, required: true, index: true },
+    targetBloodGroup: { type: String, enum: BLOOD_GROUPS, required: true },
+    patientName: { type: String, required: true },
+    hospitalName: { type: String, required: true },
+    unitsRequired: { type: Number, default: 1, min: 1 },
+    urgency: { type: String, enum: ["emergency", "urgent", "standard"], default: "emergency" },
+    reason: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["pending", "in_progress", "fulfilled", "cancelled"],
+      default: "pending",
+      index: true
+    },
+    assignedModeratorId: { type: import_mongoose6.Schema.Types.Mixed },
+    moderatorNotes: { type: String, trim: true },
+    handledAt: { type: Date }
+  },
+  {
+    timestamps: true
+  }
+);
+ContactRequestSchema.index({ institutionId: 1, status: 1 });
+var ContactRequestModel = import_mongoose6.default.model(
+  "ContactRequest",
+  ContactRequestSchema
+);
+
+// src/models/Institution.ts
+var import_mongoose7 = __toESM(require_mongoose2());
+var InstitutionSchema = new import_mongoose7.Schema(
+  {
+    _id: { type: String },
+    name: { type: String, required: true, trim: true },
+    nameBn: { type: String, required: true, trim: true },
+    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    type: {
+      type: String,
+      enum: ["university", "college", "school", "medical_college", "polytechnic", "other"],
+      default: "university"
+    },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true, index: true },
+    upazila: { type: String, required: true },
+    address: { type: String, required: true, trim: true },
+    website: { type: String, trim: true },
+    email: { type: String, trim: true },
+    phone: { type: String, trim: true },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "suspended"],
+      default: "pending",
+      index: true
+    },
+    assignedModeratorId: { type: import_mongoose7.Schema.Types.Mixed, index: true },
+    assignedModeratorIds: [{ type: import_mongoose7.Schema.Types.Mixed }],
+    totalRegisteredDonors: { type: Number, default: 0 },
+    description: { type: String, trim: true },
+    verificationNotes: { type: String, trim: true }
+  },
+  {
+    timestamps: true
+  }
+);
+var InstitutionModel = import_mongoose7.default.model("Institution", InstitutionSchema);
+
+// src/models/AccountStatusHistory.ts
+var import_mongoose8 = __toESM(require_mongoose2());
+var AccountStatusHistorySchema = new import_mongoose8.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose8.Schema.Types.Mixed, required: true, index: true },
+    targetUserName: { type: String, required: true },
+    targetUserPhone: { type: String, required: true },
+    oldStatus: { type: String, required: true },
+    newStatus: { type: String, required: true, index: true },
+    actorId: { type: import_mongoose8.Schema.Types.Mixed, required: true },
+    actorName: { type: String, required: true },
+    actorRole: { type: String, required: true },
+    reason: { type: String, required: true, trim: true },
+    expiryDate: { type: Date }
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false }
+  }
+);
+AccountStatusHistorySchema.index({ userId: 1, createdAt: -1 });
+var AccountStatusHistoryModel = import_mongoose8.default.model(
+  "AccountStatusHistory",
+  AccountStatusHistorySchema
+);
+
+// src/models/Report.ts
+var import_mongoose9 = __toESM(require_mongoose2());
+var ReportSchema = new import_mongoose9.Schema(
+  {
+    _id: { type: String },
+    reportedBy: {
+      type: import_mongoose9.Schema.Types.Mixed,
+      required: true,
+      index: true
+    },
+    targetType: {
+      type: String,
+      enum: ["donor_profile", "blood_request", "institution", "user"],
+      required: true,
+      index: true
+    },
+    targetId: { type: String, required: true, index: true },
+    reason: {
+      type: String,
+      enum: [
+        "false_information",
+        "fake_request",
+        "harassment",
+        "commercial_solicitation",
+        "impersonation",
+        "spam",
+        "other"
+      ],
+      required: true
+    },
+    description: { type: String, required: true, trim: true },
+    status: {
+      type: String,
+      enum: ["pending", "under_review", "resolved", "dismissed"],
+      default: "pending",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose9.Schema.Types.ObjectId, ref: "User" },
+    resolutionNotes: { type: String, trim: true }
+  },
+  {
+    timestamps: true
+  }
+);
+var ReportModel = import_mongoose9.default.model("Report", ReportSchema);
+
+// src/models/Notification.ts
+var import_mongoose10 = __toESM(require_mongoose2());
+var NotificationSchema = new import_mongoose10.Schema(
+  {
+    _id: { type: String },
+    userId: {
+      type: import_mongoose10.Schema.Types.Mixed,
+      required: true,
+      index: true
+    },
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["request_match", "contact_revealed", "status_update", "institution_update", "system"],
+      default: "system"
+    },
+    link: { type: String },
+    isRead: { type: Boolean, default: false, index: true }
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false }
+  }
+);
+NotificationSchema.index({ userId: 1, createdAt: -1 });
+var NotificationModel = import_mongoose10.default.model("Notification", NotificationSchema);
+
+// src/models/ContactAccessLog.ts
+var import_mongoose11 = __toESM(require_mongoose2());
+var ContactAccessLogSchema = new import_mongoose11.Schema(
+  {
+    _id: { type: String },
+    viewerId: {
+      type: import_mongoose11.Schema.Types.Mixed,
+      required: true,
+      index: true
+    },
+    donorUserId: {
+      type: import_mongoose11.Schema.Types.Mixed,
+      required: true,
+      index: true
+    },
+    donorProfileId: {
+      type: import_mongoose11.Schema.Types.Mixed,
+      required: true
+    },
+    purpose: {
+      type: String,
+      enum: ["blood_request", "emergency_search", "direct_request"],
+      default: "emergency_search"
+    },
+    relatedBloodRequestId: { type: import_mongoose11.Schema.Types.Mixed },
+    ipAddress: { type: String },
+    userAgent: { type: String }
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false }
+  }
+);
+ContactAccessLogSchema.index({ viewerId: 1, createdAt: -1 });
+var ContactAccessLogModel = import_mongoose11.default.model(
+  "ContactAccessLog",
+  ContactAccessLogSchema
+);
+
+// src/models/PhoneChangeRequest.ts
+var import_mongoose12 = __toESM(require_mongoose2());
+var PhoneChangeRequestSchema = new import_mongoose12.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose12.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    userRole: { type: String, required: true },
+    currentPhone: { type: String, required: true },
+    newPhone: { type: String, required: true },
+    reason: { type: String, required: true, trim: true },
+    division: { type: String },
+    district: { type: String },
+    institutionId: { type: String },
+    institutionName: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose12.Schema.Types.Mixed },
+    reviewedByName: { type: String },
+    reviewedAt: { type: Date },
+    reviewNotes: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+PhoneChangeRequestSchema.index({ status: 1, createdAt: -1 });
+PhoneChangeRequestSchema.index({ division: 1, status: 1 });
+PhoneChangeRequestSchema.index({ institutionId: 1, status: 1 });
+var PhoneChangeRequestModel = import_mongoose12.default.model(
+  "PhoneChangeRequest",
+  PhoneChangeRequestSchema
+);
+
+// src/models/PasswordRecoveryRequest.ts
+var import_mongoose13 = __toESM(require_mongoose2());
+var PasswordRecoveryRequestSchema = new import_mongoose13.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose13.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    phone: { type: String, required: true, index: true },
+    userRole: { type: String, required: true },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true },
+    institutionId: { type: import_mongoose13.Schema.Types.Mixed, index: true },
+    institutionName: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "used", "expired"],
+      default: "pending",
+      index: true
+    },
+    reason: { type: String },
+    temporaryPasswordHash: { type: String },
+    expiresAt: { type: Date },
+    isUsed: { type: Boolean, default: false },
+    approvedBy: { type: import_mongoose13.Schema.Types.Mixed },
+    approvedByName: { type: String },
+    approvedByRole: { type: String },
+    approvedAt: { type: Date },
+    rejectionReason: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+var PasswordRecoveryRequestModel = import_mongoose13.default.model(
+  "PasswordRecoveryRequest",
+  PasswordRecoveryRequestSchema
+);
+
+// src/models/InstitutionChangeRequest.ts
+var import_mongoose14 = __toESM(require_mongoose2());
+var InstitutionChangeRequestSchema = new import_mongoose14.Schema(
+  {
+    _id: { type: String },
+    userId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
+    userName: { type: String, required: true },
+    phone: { type: String, required: true },
+    userRole: { type: String, required: true },
+    currentInstitutionId: { type: import_mongoose14.Schema.Types.Mixed },
+    currentInstitutionName: { type: String },
+    targetInstitutionId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
+    targetInstitutionName: { type: String, required: true },
+    division: { type: String, required: true, index: true },
+    district: { type: String, required: true },
+    studentOrStaffId: { type: String },
+    department: { type: String },
+    reason: { type: String },
+    status: {
+      type: String,
+      enum: ["pending", "under_review", "approved", "rejected"],
+      default: "pending",
+      index: true
+    },
+    reviewedBy: { type: import_mongoose14.Schema.Types.Mixed },
+    reviewedByName: { type: String },
+    decisionReason: { type: String }
+  },
+  {
+    timestamps: true
+  }
+);
+var InstitutionChangeRequestModel = import_mongoose14.default.model(
+  "InstitutionChangeRequest",
+  InstitutionChangeRequestSchema
+);
+
+// src/config/db.ts
+var import_mongoose15 = __toESM(require_mongoose2());
+
+// src/config/env.ts
+var import_dotenv = __toESM(require_main());
+import_dotenv.default.config();
+var ENV = {
+  PORT: process.env.PORT || "5000",
+  NODE_ENV: process.env.NODE_ENV || "development",
+  MONGO_URI: process.env.MONGO_URI || "",
+  JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev_bangladesh_blood_platform_key_2026"),
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+  SMS_PROVIDER: process.env.SMS_PROVIDER || "mock",
+  // 'mock' | 'bulksmsbd' | 'greenweb' | 'twilio'
+  SMS_API_KEY: process.env.SMS_API_KEY || "",
+  CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : [],
+  DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10)
+};
+
+// src/config/db.ts
+var cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+var isConnected = false;
+async function connectDB() {
+  if (cached.conn && import_mongoose15.default.connection.readyState === 1) {
+    isConnected = true;
+    return true;
+  }
+  const uri = ENV.MONGO_URI;
+  if (!uri) {
+    if (ENV.NODE_ENV === "production") {
+      console.error("[Security Critical] MONGO_URI is missing from environment variables in production!");
+    } else {
+      console.warn("[Database] No MONGO_URI configured in environment variables.");
+    }
+    isConnected = false;
+    return false;
+  }
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      // Disables Mongoose buffering so requests never hang
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 8e3,
+      // Adequate window for serverless cold-starts
+      connectTimeoutMS: 8e3
+    };
+    console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
+    cached.promise = import_mongoose15.default.connect(uri, opts).then((m) => {
+      console.log("[Database] Successfully connected to MongoDB Atlas database.");
+      isConnected = true;
+      return m;
+    });
+  }
+  try {
+    cached.conn = await cached.promise;
+    isConnected = true;
+    return true;
+  } catch (error) {
+    cached.promise = null;
+    isConnected = false;
+    console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
+    console.warn("[Database] Running in Fallback In-Memory Datastore mode with full seed data.");
+    return false;
+  }
+}
+function isDatabaseConnected() {
+  return isConnected && import_mongoose15.default.connection.readyState === 1;
+}
+
+// src/services/dataStore.ts
+var DataStore = class {
+  users = [];
+  donorProfiles = [];
+  bloodRequests = [];
+  institutions = [];
+  institutionRequests = [];
+  moderatorActivities = [];
+  contactRequests = [];
+  accountStatusHistories = [];
+  reports = [];
+  contactAccessLogs = [];
+  otps = [];
+  notifications = [];
+  phoneChangeRequests = [];
+  passwordRecoveryRequests = [];
+  passwordRecoveryAudits = [];
+  institutionChangeRequests = [];
+  constructor() {
+    this.seedInitialData();
+  }
+  seedInitialData() {
+    const defaultPasswordHash = bcryptjs_default.hashSync("password123", 10);
+    const now = /* @__PURE__ */ new Date();
+    this.users = [
+      {
+        _id: "usr_superadmin",
+        name: "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
+        phone: "01700000001",
+        email: "superadmin@bloodbd.org",
+        passwordHash: defaultPasswordHash,
+        role: "SUPER_ADMIN",
+        accountStatus: "active",
+        gender: "male",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_admin",
+        name: "\u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Admin)",
+        phone: "01700000007",
+        email: "admin@bloodbd.org",
+        passwordHash: defaultPasswordHash,
+        role: "ADMIN",
+        accountStatus: "active",
+        gender: "male",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_coordinator_dhaka",
+        name: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8 (\u09A2\u09BE\u0995\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
+        phone: "01700000002",
+        email: "dhaka.coordinator@bloodbd.org",
+        passwordHash: defaultPasswordHash,
+        role: "DIVISION_COORDINATOR",
+        accountStatus: "active",
+        gender: "male",
+        assignedDivision: "dhaka",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_coordinator_ctg",
+        name: "\u09AB\u09BE\u09B0\u09B9\u09BE\u09A8\u09BE \u0986\u09B9\u09AE\u09C7\u09A6 (\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
+        phone: "01700000003",
+        email: "ctg.coordinator@bloodbd.org",
+        passwordHash: defaultPasswordHash,
+        role: "DIVISION_COORDINATOR",
+        accountStatus: "active",
+        gender: "female",
+        assignedDivision: "chattogram",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_moderator_du",
+        name: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8 (\u09A2\u09BE\u09AC\u09BF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0)",
+        phone: "01700000004",
+        email: "mamun.du@bloodbd.org",
+        passwordHash: defaultPasswordHash,
+        role: "INSTITUTION_MODERATOR",
+        accountStatus: "active",
+        gender: "male",
+        assignedInstitution: "inst_du",
+        assignedInstitutions: ["inst_du"],
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_head",
+        name: "\u0985\u09A7\u09CD\u09AF\u09BE\u09AA\u0995 \u09A1. \u09AB\u099C\u09B2\u09C1\u09B2 \u09B9\u0995 (\u09A2\u09BE\u09AC\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8)",
+        phone: "01700000008",
+        email: "head@du.ac.bd",
+        passwordHash: defaultPasswordHash,
+        role: "INSTITUTION_HEAD",
+        accountStatus: "active",
+        gender: "male",
+        assignedInstitution: "inst_du",
+        assignedInstitutions: ["inst_du"],
+        division: "dhaka",
+        district: "dhaka",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_donor_1",
+        name: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        phone: "01711111111",
+        email: "rafiqul@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "active",
+        gender: "male",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "mirpur",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_donor_2",
+        name: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
+        phone: "01722222222",
+        email: "tanveer@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "active",
+        gender: "male",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "dhanmondi",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_donor_3",
+        name: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
+        phone: "01733333333",
+        email: "nusrat@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "active",
+        gender: "female",
+        femaleSafetyAcknowledged: true,
+        femalePublicPhoneConsent: false,
+        division: "chattogram",
+        district: "chattogram",
+        upazila: "panchlaish",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_donor_4",
+        name: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
+        phone: "01744444444",
+        email: "sakib@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "active",
+        gender: "male",
+        division: "rajshahi",
+        district: "rajshahi",
+        upazila: "boalia",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_requester_1",
+        name: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
+        phone: "01755555555",
+        email: "mahbub@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "active",
+        gender: "male",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "shahbagh",
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "usr_blocked_demo",
+        name: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
+        phone: "01799999999",
+        email: "faruk@example.com",
+        passwordHash: defaultPasswordHash,
+        role: "MEMBER",
+        accountStatus: "temporarily_blocked",
+        blockReason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+        blockedBy: "usr_coordinator_dhaka",
+        blockedAt: new Date(Date.now() - 864e5 * 2),
+        gender: "male",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "savar",
+        isActive: false,
+        isPhoneVerified: true,
+        createdAt: new Date(Date.now() - 864e5 * 10),
+        updatedAt: now
+      }
+    ];
+    this.institutions = [
+      {
+        _id: "inst_du",
+        name: "University of Dhaka",
+        nameBn: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        code: "DU-BD",
+        type: "university",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "shahbagh",
+        address: "Nilkhet Rd, Dhaka 1000",
+        website: "https://www.du.ac.bd",
+        email: "bloodclub@du.ac.bd",
+        phone: "01811112233",
+        status: "approved",
+        assignedModeratorId: "usr_moderator_du",
+        assignedModeratorIds: ["usr_moderator_du"],
+        totalRegisteredDonors: 142,
+        description: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u098F\u09AC\u0982 \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "inst_buet",
+        name: "Bangladesh University of Engineering and Technology",
+        nameBn: "\u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6 \u09AA\u09CD\u09B0\u0995\u09CC\u09B6\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09C1\u09AF\u09BC\u09C7\u099F)",
+        code: "BUET-BD",
+        type: "university",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "shahbagh",
+        address: "Palashi, Dhaka 1000",
+        website: "https://www.buet.ac.bd",
+        email: "blooddonor@buet.ac.bd",
+        phone: "01822223344",
+        status: "approved",
+        totalRegisteredDonors: 85,
+        description: "\u09AC\u09C1\u09AF\u09BC\u09C7\u099F \u09AC\u09CD\u09B2\u09BE\u09A1 \u09A1\u09CB\u09A8\u09BE\u09B0\u09CD\u09B8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7 \u09B8\u09A6\u09BE \u099C\u09BE\u0997\u09CD\u09B0\u09A4\u0964",
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "inst_cmc",
+        name: "Chittagong Medical College",
+        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C",
+        code: "CMC-BD",
+        type: "medical_college",
+        division: "chattogram",
+        district: "chattogram",
+        upazila: "panchlaish",
+        address: "57 K.B. Fazlul Kader Rd, Chattogram 4203",
+        website: "https://www.cmc.edu.bd",
+        email: "bloodbank@cmc.edu.bd",
+        phone: "01833334455",
+        status: "approved",
+        totalRegisteredDonors: 96,
+        description: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C0 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B8\u0982\u09B8\u09CD\u09A5\u09BE \u0987\u0989\u09A8\u09BF\u099F\u0964",
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "inst_ru",
+        name: "Rajshahi University",
+        nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        code: "RU-BD",
+        type: "university",
+        division: "rajshahi",
+        district: "rajshahi",
+        upazila: "motihar",
+        address: "Motihar, Rajshahi 6205",
+        website: "https://www.ru.ac.bd",
+        email: "bloodclub@ru.ac.bd",
+        phone: "01844445566",
+        status: "approved",
+        totalRegisteredDonors: 64,
+        description: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B6\u09BE\u0996\u09BE \u0993 \u09B2\u09BE\u09B2 \u0997\u09CB\u09B2\u09BE\u09AA \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "inst_sust",
+        name: "Shahjalal University of Science and Technology",
+        nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09B2\u09BE\u09B2 \u09AC\u09BF\u099C\u09CD\u099E\u09BE\u09A8 \u0993 \u09AA\u09CD\u09B0\u09AF\u09C1\u0995\u09CD\u09A4\u09BF \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        code: "SUST-BD",
+        type: "university",
+        division: "sylhet",
+        district: "sylhet",
+        upazila: "sylhet_sadar",
+        address: "Kumargaon, Sylhet 3114",
+        website: "https://www.sust.edu",
+        email: "blood@sust.edu",
+        phone: "01855556677",
+        status: "pending",
+        totalRegisteredDonors: 12,
+        description: "\u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u0993 \u09B8\u09BF\u09B2\u09C7\u099F \u0985\u099E\u09CD\u099A\u09B2\u09C7\u09B0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u09B8\u09AE\u09CD\u09AA\u09CD\u09B0\u09B8\u09BE\u09B0\u09A3 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+    this.donorProfiles = [
+      {
+        _id: "donor_prof_1",
+        userId: "usr_donor_1",
+        displayName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        bloodGroup: "O+",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "mirpur",
+        addressDetails: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0 \u09E7\u09E6, \u09A2\u09BE\u0995\u09BE",
+        dateOfBirth: /* @__PURE__ */ new Date("1998-05-14"),
+        gender: "male",
+        availabilityStatus: "available",
+        lastDonationDate: /* @__PURE__ */ new Date("2026-05-10"),
+        totalDonations: 6,
+        institutionId: "inst_du",
+        institutionMembershipVerified: true,
+        consentToShareContact: true,
+        preferredContactMethod: "phone",
+        bio: "\u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09B0\u09BF\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
+        isPubliclyListed: true,
+        emergencyAvailable: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "donor_prof_2",
+        userId: "usr_donor_2",
+        displayName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
+        bloodGroup: "A+",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "dhanmondi",
+        addressDetails: "\u09A7\u09BE\u09A8\u09AE\u09A8\u09CD\u09A1\u09BF \u09E8\u09ED, \u09A2\u09BE\u0995\u09BE",
+        dateOfBirth: /* @__PURE__ */ new Date("2000-08-20"),
+        gender: "male",
+        availabilityStatus: "available",
+        lastDonationDate: /* @__PURE__ */ new Date("2026-06-01"),
+        totalDonations: 4,
+        institutionId: "inst_buet",
+        institutionMembershipVerified: true,
+        consentToShareContact: true,
+        preferredContactMethod: "phone",
+        bio: "\u09B8\u099A\u09C7\u09A4\u09A8 \u09A5\u09BE\u0995\u09C1\u09A8, \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4 \u09A6\u09BF\u09A8\u0964 \u09B0\u09CB\u0997\u09C0\u09B0 \u09B8\u09C7\u09AC\u09BE\u09AF\u09BC \u09B8\u09B0\u09CD\u09AC\u09A6\u09BE \u09A8\u09BF\u09AF\u09BC\u09CB\u099C\u09BF\u09A4\u0964",
+        isPubliclyListed: true,
+        emergencyAvailable: true,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "donor_prof_3",
+        userId: "usr_donor_3",
+        displayName: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
+        bloodGroup: "B+",
+        division: "chattogram",
+        district: "chattogram",
+        upazila: "panchlaish",
+        addressDetails: "\u09AA\u09CD\u09B0\u09AC\u09B0\u09CD\u09A4\u0995 \u09AE\u09CB\u09A1\u09BC, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
+        dateOfBirth: /* @__PURE__ */ new Date("1999-11-12"),
+        gender: "female",
+        availabilityStatus: "recently_donated",
+        lastDonationDate: /* @__PURE__ */ new Date("2026-09-25"),
+        totalDonations: 3,
+        institutionId: "inst_cmc",
+        institutionMembershipVerified: true,
+        consentToShareContact: false,
+        // Default private for female safety
+        preferredContactMethod: "platform",
+        bio: "\u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0\u0964 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u098F\u0995\u099F\u09BF \u09AA\u09AC\u09BF\u09A4\u09CD\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u0964",
+        isPubliclyListed: true,
+        emergencyAvailable: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        _id: "donor_prof_4",
+        userId: "usr_donor_4",
+        displayName: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
+        bloodGroup: "AB+",
+        division: "rajshahi",
+        district: "rajshahi",
+        upazila: "boalia",
+        addressDetails: "\u09B8\u09BE\u09B9\u09C7\u09AC \u09AC\u09BE\u099C\u09BE\u09B0, \u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
+        dateOfBirth: /* @__PURE__ */ new Date("1997-03-05"),
+        gender: "male",
+        availabilityStatus: "available",
+        lastDonationDate: /* @__PURE__ */ new Date("2026-04-12"),
+        totalDonations: 5,
+        institutionId: "inst_ru",
+        institutionMembershipVerified: true,
+        consentToShareContact: true,
+        preferredContactMethod: "phone",
+        bio: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09B6\u09B9\u09B0\u09C7\u09B0 \u09AF\u09C7\u0995\u09CB\u09A8\u09CB \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
+        isPubliclyListed: true,
+        emergencyAvailable: true,
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+    this.bloodRequests = [
+      {
+        _id: "req_1",
+        requesterId: "usr_requester_1",
+        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE (\u09EC\u09EB)",
+        bloodGroup: "O+",
+        unitsRequired: 2,
+        unitsFulfilled: 1,
+        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
+        hospitalAddress: "\u099C\u09B0\u09C1\u09B0\u09BF \u09AC\u09BF\u09AD\u09BE\u0997, \u0993\u099F\u09BF \u09AD\u09AC\u09A8, \u09E9\u09AF\u09BC \u09A4\u09B2\u09BE, \u09A2\u09BE\u0995\u09BE",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "shahbagh",
+        requiredDate: new Date(Date.now() + 864e5 * 2),
+        urgencyLevel: "emergency",
+        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8 \u0993 \u09B9\u09BF\u09AE\u09CB\u0997\u09CD\u09B2\u09CB\u09AC\u09BF\u09A8 \u09B8\u09CD\u09AC\u09B2\u09CD\u09AA\u09A4\u09BE\u09B0 \u0995\u09BE\u09B0\u09A3\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
+        contactNumber: "01755555555",
+        alternativeContactNumber: "01855555555",
+        status: "partially_fulfilled",
+        expiresAt: new Date(Date.now() + 864e5 * 4),
+        createdAt: new Date(Date.now() - 36e5 * 5),
+        updatedAt: now
+      },
+      {
+        _id: "req_2",
+        requesterId: "usr_requester_1",
+        patientName: "\u0986\u09B0\u09BF\u09AB\u09C1\u09B2 \u09B9\u0995 (\u09E8\u09EE)",
+        bloodGroup: "A+",
+        unitsRequired: 1,
+        unitsFulfilled: 0,
+        hospitalName: "\u09AC\u0999\u09CD\u0997\u09AC\u09A8\u09CD\u09A7\u09C1 \u09B6\u09C7\u0996 \u09AE\u09C1\u099C\u09BF\u09AC \u09AE\u09C7\u09A1\u09BF\u0995\u09CD\u09AF\u09BE\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09BF\u098F\u09B8\u098F\u09AE\u098F\u09AE\u0987\u0989)",
+        hospitalAddress: "\u0995\u09C7\u09AC\u09BF\u09A8 \u09AC\u09CD\u09B2\u0995, \u09B6\u09BE\u09B9\u09AC\u09BE\u0997, \u09A2\u09BE\u0995\u09BE",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "shahbagh",
+        requiredDate: new Date(Date.now() + 864e5),
+        urgencyLevel: "emergency",
+        reason: "\u09A5\u09CD\u09AF\u09BE\u09B2\u09BE\u09B8\u09C7\u09AE\u09BF\u09AF\u09BC\u09BE \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09AC\u09CD\u09B2\u09BE\u09A1 \u099F\u09CD\u09B0\u09BE\u09A8\u09CD\u09B8\u09AB\u09BF\u0989\u09B6\u09A8\u0964 \u09A6\u09CD\u09B0\u09C1\u09A4 \u09E7 \u09AC\u09CD\u09AF\u09BE\u0997 \u098F \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
+        contactNumber: "01755555555",
+        status: "open",
+        expiresAt: new Date(Date.now() + 864e5 * 3),
+        createdAt: new Date(Date.now() - 36e5 * 12),
+        updatedAt: now
+      },
+      {
+        _id: "req_3",
+        requesterId: "usr_donor_1",
+        patientName: "\u09B6\u09BE\u09AE\u09B8\u09C1\u09B2 \u0986\u09B2\u09AE (\u09EB\u09E6)",
+        bloodGroup: "B+",
+        unitsRequired: 2,
+        unitsFulfilled: 0,
+        hospitalName: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
+        hospitalAddress: "\u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF \u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u0982 \u09E7\u09E8, \u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
+        division: "chattogram",
+        district: "chattogram",
+        upazila: "panchlaish",
+        requiredDate: new Date(Date.now() + 864e5 * 3),
+        urgencyLevel: "urgent",
+        reason: "\u09AA\u09BE\u0995\u09B8\u09CD\u09A5\u09B2\u09C0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
+        contactNumber: "01711111111",
+        status: "open",
+        expiresAt: new Date(Date.now() + 864e5 * 5),
+        createdAt: new Date(Date.now() - 36e5 * 24),
+        updatedAt: now
+      }
+    ];
+    this.institutionRequests = [
+      {
+        _id: "inst_req_1",
+        name: "Jahangirnagar University",
+        nameBn: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        code: "JU-BD",
+        type: "university",
+        division: "dhaka",
+        district: "dhaka",
+        upazila: "savar",
+        address: "Savar, Dhaka 1342",
+        applicantName: "\u09AE\u09CB: \u09B9\u09BE\u09B8\u09BF\u09AC\u09C1\u09B0 \u09B0\u09B9\u09AE\u09BE\u09A8",
+        applicantPhone: "01788881111",
+        applicantEmail: "hasib.ju@example.com",
+        applicantRole: "\u09B8\u09BE\u09A7\u09BE\u09B0\u09A3 \u09B8\u09AE\u09CD\u09AA\u09BE\u09A6\u0995, \u09AC\u09BE\u0981\u09A7\u09A8 \u099C\u09BE\u09AC\u09BF \u0987\u0989\u09A8\u09BF\u099F",
+        supportingDetails: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B6\u09BE\u0996\u09BE\u09B0 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09BE\u09B0\u09CD\u09AF\u0995\u09CD\u09B0\u09AE \u09AA\u09B0\u09BF\u099A\u09BE\u09B2\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u0964",
+        status: "pending_review",
+        createdAt: new Date(Date.now() - 864e5 * 2),
+        updatedAt: new Date(Date.now() - 864e5 * 2)
+      },
+      {
+        _id: "inst_req_2",
+        name: "University of Chittagong",
+        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        code: "CU-BD",
+        type: "university",
+        division: "chattogram",
+        district: "chattogram",
+        upazila: "hathazari",
+        address: "Fatehpur, Hathazari, Chattogram 4331",
+        applicantName: "\u09A8\u09BE\u09B8\u09B0\u09BF\u09A8 \u09B8\u09C1\u09B2\u09A4\u09BE\u09A8\u09BE",
+        applicantPhone: "01788882222",
+        applicantEmail: "nasrin.cu@example.com",
+        applicantRole: "\u09B8\u09AD\u09BE\u09AA\u09A4\u09BF, \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u099A\u09AC\u09BF",
+        supportingDetails: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0 \u0993 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC\u09A4\u09BE\u09AF\u09BC \u09A4\u09BE\u09CE\u0995\u09CD\u09B7\u09A3\u09BF\u0995 \u09B8\u09BE\u09A1\u09BC\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
+        status: "pending_review",
+        createdAt: new Date(Date.now() - 864e5 * 3),
+        updatedAt: new Date(Date.now() - 864e5 * 3)
+      }
+    ];
+    this.moderatorActivities = [
+      {
+        _id: "act_1",
+        actorId: "usr_moderator_du",
+        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
+        actorRole: "INSTITUTION_MODERATOR",
+        action: "MEMBER_CREATED",
+        targetRecordId: "usr_donor_1",
+        targetRecordType: "User",
+        institutionScope: "inst_du",
+        divisionScope: "dhaka",
+        reason: "\u09A2\u09BE\u09AC\u09BF \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09C7\u0987\u09A8 \u09A5\u09C7\u0995\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
+        result: "\u09B8\u09AB\u09B2",
+        createdAt: new Date(Date.now() - 864e5 * 5)
+      },
+      {
+        _id: "act_2",
+        actorId: "usr_moderator_du",
+        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
+        actorRole: "INSTITUTION_MODERATOR",
+        action: "MEMBER_EDITED",
+        targetRecordId: "donor_prof_1",
+        targetRecordType: "DonorProfile",
+        institutionScope: "inst_du",
+        divisionScope: "dhaka",
+        reason: "\u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u09B8\u09B0\u09CD\u09AC\u09B6\u09C7\u09B7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u09A4\u09BE\u09B0\u09BF\u0996 \u0993 \u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6\u0964",
+        result: "\u09B8\u09AB\u09B2",
+        createdAt: new Date(Date.now() - 864e5 * 3)
+      },
+      {
+        _id: "act_3",
+        actorId: "usr_coordinator_dhaka",
+        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
+        actorRole: "DIVISION_COORDINATOR",
+        action: "MEMBER_BLOCKED",
+        targetRecordId: "usr_blocked_demo",
+        targetRecordType: "User",
+        divisionScope: "dhaka",
+        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+        result: "\u09B8\u09CD\u09A5\u0997\u09BF\u09A4",
+        createdAt: new Date(Date.now() - 864e5 * 2)
+      }
+    ];
+    this.contactRequests = [
+      {
+        _id: "cr_1",
+        requesterId: "usr_requester_1",
+        requesterName: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
+        requesterPhone: "01755555555",
+        institutionId: "inst_du",
+        targetBloodGroup: "O+",
+        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE",
+        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
+        unitsRequired: 2,
+        urgency: "emergency",
+        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF\u09B0 \u099C\u09A8\u09CD\u09AF \u099C\u09B0\u09C1\u09B0\u09BF \u09AD\u09BF\u09A4\u09CD\u09A4\u09BF\u09A4\u09C7 \u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u0993 \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
+        status: "pending",
+        assignedModeratorId: "usr_moderator_du",
+        createdAt: new Date(Date.now() - 36e5 * 3),
+        updatedAt: new Date(Date.now() - 36e5 * 3)
+      }
+    ];
+    this.accountStatusHistories = [
+      {
+        _id: "ash_1",
+        userId: "usr_blocked_demo",
+        targetUserName: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
+        targetUserPhone: "01799999999",
+        oldStatus: "active",
+        newStatus: "temporarily_blocked",
+        actorId: "usr_coordinator_dhaka",
+        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
+        actorRole: "DIVISION_COORDINATOR",
+        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+        createdAt: new Date(Date.now() - 864e5 * 2)
+      }
+    ];
+    this.reports = [
+      {
+        _id: "rep_1",
+        reportedBy: "usr_donor_1",
+        targetType: "blood_request",
+        targetId: "req_3",
+        targetTitle: "\u09B0\u09CB\u0997\u09C0: \u09B8\u09BE\u09B2\u09AE\u09BE \u09AC\u09C7\u0997\u09AE (\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2)",
+        division: "dhaka",
+        institutionId: "inst_du",
+        reason: "false_information",
+        description: "\u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0\u09C7 \u09AB\u09CB\u09A8 \u09A6\u09BF\u09B2\u09C7 \u09A4\u09BE\u09B0\u09BE \u09AC\u09B2\u09C7 \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8 \u09AE\u09BF\u099F\u09C7 \u0997\u09C7\u099B\u09C7 \u0995\u09BF\u09A8\u09CD\u09A4\u09C1 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u0996\u09A8\u09CB \u0993\u09AA\u09C7\u09A8 \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964",
+        status: "pending",
+        createdAt: new Date(Date.now() - 36e5 * 4),
+        updatedAt: now
+      }
+    ];
+    this.notifications = [
+      {
+        _id: "notif_1",
+        userId: "usr_moderator_du",
+        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
+        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF O+ \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09E7\u099F\u09BF \u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u098F\u09B8\u09C7\u099B\u09C7\u0964",
+        type: "contact_request",
+        link: "/moderator/dashboard",
+        isRead: false,
+        createdAt: new Date(Date.now() - 36e5 * 3)
+      },
+      {
+        _id: "notif_2",
+        userId: "usr_coordinator_dhaka",
+        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (JU-BD) \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+        type: "institution_update",
+        link: "/coordinator/dashboard",
+        isRead: false,
+        createdAt: new Date(Date.now() - 864e5 * 2)
+      }
+    ];
+    this.phoneChangeRequests = [
+      {
+        _id: "pcr_1",
+        userId: "usr_donor_1",
+        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        userRole: "DONOR",
+        currentPhone: "01711111111",
+        newPhone: "01711999888",
+        reason: "\u0986\u09AE\u09BE\u09B0 \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7\u09B0 \u09B8\u09BF\u09AE\u099F\u09BF \u09B9\u09BE\u09B0\u09BF\u09AF\u09BC\u09C7 \u09AF\u09BE\u0993\u09AF\u09BC\u09BE\u09AF\u09BC \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09B2 \u09AA\u09C7\u09A4\u09C7 \u098F\u0987 \u09A8\u09A4\u09C1\u09A8 \u09B8\u099A\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u099B\u09BF\u0964",
+        division: "dhaka",
+        district: "dhaka",
+        institutionId: "inst_du",
+        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        status: "pending",
+        createdAt: new Date(Date.now() - 36e5 * 2),
+        updatedAt: now
+      }
+    ];
+    this.passwordRecoveryRequests = [
+      {
+        _id: "prr_1",
+        userId: "usr_donor_2",
+        userName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
+        phone: "01722222222",
+        userRole: "DONOR",
+        division: "dhaka",
+        district: "dhaka",
+        institutionId: "inst_du",
+        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        status: "pending",
+        reason: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C7 \u09B8\u09BE\u09B9\u09BE\u09AF\u09CD\u09AF \u0995\u09B0\u09C1\u09A8\u0964",
+        isUsed: false,
+        createdAt: new Date(Date.now() - 36e5 * 4),
+        updatedAt: now
+      }
+    ];
+    this.institutionChangeRequests = [
+      {
+        _id: "icr_1",
+        userId: "usr_donor_1",
+        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
+        phone: "01711111111",
+        userRole: "DONOR",
+        currentInstitutionId: void 0,
+        currentInstitutionName: void 0,
+        targetInstitutionId: "inst_du",
+        targetInstitutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
+        division: "dhaka",
+        district: "dhaka",
+        studentOrStaffId: "DU-CSE-2022-019",
+        department: "\u0995\u09AE\u09CD\u09AA\u09BF\u0989\u099F\u09BE\u09B0 \u09B8\u09BE\u09AF\u09BC\u09C7\u09A8\u09CD\u09B8",
+        reason: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC\u09C7 \u0985\u09A7\u09CD\u09AF\u09AF\u09BC\u09A8\u09B0\u09A4 \u09A5\u09BE\u0995\u09BE\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09C1\u09B2\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u099A\u09BE\u0987\u0964",
+        status: "pending",
+        createdAt: new Date(Date.now() - 36e5 * 5),
+        updatedAt: now
+      }
+    ];
+  }
+  // --- MongoDB Atlas Synchronization & Persistence ---
+  async syncWithMongoDB() {
+    try {
+      if (!isDatabaseConnected()) return;
+      const userCount = await UserModel.countDocuments();
+      if (userCount === 0) {
+        console.log("[Database] Fresh MongoDB Atlas cluster detected. Auto-seeding initial data...");
+        for (const u of this.users) await UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true });
+        for (const i of this.institutions) await InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true });
+        for (const d of this.donorProfiles) await DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true });
+        for (const r of this.bloodRequests) await BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true });
+        for (const ir of this.institutionRequests) await InstitutionRequestModel.findOneAndUpdate({ _id: ir._id }, ir, { upsert: true });
+        for (const cr of this.contactRequests) await ContactRequestModel.findOneAndUpdate({ _id: cr._id }, cr, { upsert: true });
+        for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
+        for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
+        for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
+        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
+        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
+        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
+        console.log("[Database] Auto-seeding completed successfully in MongoDB Atlas!");
+      } else {
+        console.log("[Database] Loading existing data from MongoDB Atlas...");
+        const dbUsers = await UserModel.find().lean();
+        if (dbUsers.length > 0) this.users = dbUsers;
+        const dbDonors = await DonorProfileModel.find().lean();
+        if (dbDonors.length > 0) this.donorProfiles = dbDonors;
+        const dbInsts = await InstitutionModel.find().lean();
+        if (dbInsts.length > 0) this.institutions = dbInsts;
+        const dbRequests = await BloodRequestModel.find().lean();
+        if (dbRequests.length > 0) this.bloodRequests = dbRequests;
+        const dbInstReqs = await InstitutionRequestModel.find().lean();
+        if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs;
+        const dbContactReqs = await ContactRequestModel.find().lean();
+        if (dbContactReqs.length > 0) this.contactRequests = dbContactReqs;
+        const dbActivities = await ModeratorActivityModel.find().lean();
+        if (dbActivities.length > 0) this.moderatorActivities = dbActivities;
+        const dbHistories = await AccountStatusHistoryModel.find().lean();
+        if (dbHistories.length > 0) this.accountStatusHistories = dbHistories;
+        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
+        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs;
+        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
+        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs;
+        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
+        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs;
+        console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
+      }
+    } catch (err) {
+      console.warn("[Database Sync Warning]:", err.message);
+    }
+  }
+  assertWritable() {
+    if (!isDatabaseConnected()) {
+      console.warn("[Database Notice] MongoDB Atlas is disconnected; proceeding with in-memory store.");
+    }
+  }
+  persistUser(user) {
+    if (isDatabaseConnected()) {
+      UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistDonorProfile(profile) {
+    if (isDatabaseConnected()) {
+      DonorProfileModel.findOneAndUpdate({ _id: profile._id }, profile, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistInstitution(inst) {
+    if (isDatabaseConnected()) {
+      InstitutionModel.findOneAndUpdate({ _id: inst._id }, inst, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistBloodRequest(req) {
+    if (isDatabaseConnected()) {
+      BloodRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistInstitutionRequest(req) {
+    if (isDatabaseConnected()) {
+      InstitutionRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistContactRequest(req) {
+    if (isDatabaseConnected()) {
+      ContactRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistModeratorActivity(act) {
+    if (isDatabaseConnected()) {
+      ModeratorActivityModel.create(act).catch(() => {
+      });
+    }
+  }
+  persistAccountStatusHistory(hist) {
+    if (isDatabaseConnected()) {
+      AccountStatusHistoryModel.create(hist).catch(() => {
+      });
+    }
+  }
+  persistReport(rep) {
+    if (isDatabaseConnected()) {
+      ReportModel.findOneAndUpdate({ _id: rep._id }, rep, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistContactAccessLog(cal) {
+    if (isDatabaseConnected()) {
+      ContactAccessLogModel.create(cal).catch(() => {
+      });
+    }
+  }
+  persistNotification(n) {
+    if (isDatabaseConnected()) {
+      NotificationModel.create(n).catch(() => {
+      });
+    }
+  }
+  persistPhoneChangeRequest(pcr) {
+    if (isDatabaseConnected()) {
+      PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistPasswordRecoveryRequest(prr) {
+    if (isDatabaseConnected()) {
+      PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  persistInstitutionChangeRequest(icr) {
+    if (isDatabaseConnected()) {
+      InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true }).catch(() => {
+      });
+    }
+  }
+  // --- User Methods ---
+  findUserById(id) {
+    return this.users.find((u) => String(u._id) === String(id));
+  }
+  findUserByPhone(phone) {
+    return this.users.find((u) => u.phone === phone);
+  }
+  createUser(userData) {
+    this.assertWritable();
+    const newUser = {
+      _id: "usr_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      name: userData.name || "",
+      phone: userData.phone || "",
+      email: userData.email,
+      passwordHash: userData.passwordHash || "",
+      role: userData.role || "MEMBER",
+      accountStatus: userData.accountStatus || "active",
+      blockReason: userData.blockReason,
+      blockedBy: userData.blockedBy,
+      blockedAt: userData.blockedAt,
+      gender: userData.gender || "unspecified",
+      femaleSafetyAcknowledged: userData.femaleSafetyAcknowledged || false,
+      femalePublicPhoneConsent: userData.femalePublicPhoneConsent || false,
+      assignedDivision: userData.assignedDivision,
+      assignedInstitution: userData.assignedInstitution,
+      assignedInstitutions: userData.assignedInstitutions || (userData.assignedInstitution ? [userData.assignedInstitution] : []),
+      requirePasswordChangeAtFirstLogin: userData.requirePasswordChangeAtFirstLogin || false,
+      createdByModeratorId: userData.createdByModeratorId,
+      division: userData.division,
+      district: userData.district,
+      upazila: userData.upazila,
+      isActive: userData.accountStatus ? userData.accountStatus === "active" : true,
+      isPhoneVerified: userData.isPhoneVerified || false,
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.users.push(newUser);
+    this.persistUser(newUser);
+    return newUser;
+  }
+  updateUser(id, update) {
+    const user = this.findUserById(id);
+    if (!user) return null;
+    Object.assign(user, update, { updatedAt: /* @__PURE__ */ new Date() });
+    this.persistUser(user);
+    return user;
+  }
+  // --- Manual Member Creation with Temporary Password ---
+  createMemberWithTemporaryPassword(params) {
+    const temporaryPassword = "Temp#" + Math.floor(1e5 + Math.random() * 9e5);
+    const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
+    const newUser = this.createUser({
+      name: params.name,
+      phone: params.phone,
+      passwordHash,
+      role: "MEMBER",
+      accountStatus: "active",
+      gender: params.gender,
+      division: params.division,
+      district: params.district,
+      upazila: params.upazila,
+      assignedInstitution: params.institutionId,
+      createdByModeratorId: params.moderatorId,
+      requirePasswordChangeAtFirstLogin: true,
+      isActive: true,
+      isPhoneVerified: true
+    });
+    const newProfile = this.createDonorProfile({
+      userId: newUser._id,
+      displayName: params.name,
+      bloodGroup: params.bloodGroup,
+      division: params.division,
+      district: params.district,
+      upazila: params.upazila,
+      dateOfBirth: params.dateOfBirth || /* @__PURE__ */ new Date("2002-01-01"),
+      gender: params.gender,
+      availabilityStatus: "available",
+      institutionId: params.institutionId,
+      institutionMembershipVerified: true,
+      consentToShareContact: params.consentToShareContact !== false,
+      isPubliclyListed: true,
+      emergencyAvailable: true
+    });
+    const inst = this.findInstitutionById(params.institutionId);
+    if (inst) {
+      inst.totalRegisteredDonors = (inst.totalRegisteredDonors || 0) + 1;
+    }
+    this.logModeratorActivity({
+      actorId: params.moderatorId,
+      actorName: params.moderatorName,
+      actorRole: "INSTITUTION_MODERATOR",
+      action: "MEMBER_CREATED",
+      targetRecordId: newUser._id,
+      targetRecordType: "User",
+      institutionScope: params.institutionId,
+      divisionScope: params.division,
+      reason: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u09AE\u09CD\u09AF\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09B2 \u09B8\u09A6\u09B8\u09CD\u09AF \u09A4\u09C8\u09B0\u09BF\u0964"
+    });
+    return { user: newUser, donorProfile: newProfile, temporaryPassword };
+  }
+  changeFirstLoginPassword(userId, newPassword) {
+    const user = this.findUserById(userId);
+    if (!user) return false;
+    user.passwordHash = bcryptjs_default.hashSync(newPassword, 10);
+    user.requirePasswordChangeAtFirstLogin = false;
+    user.updatedAt = /* @__PURE__ */ new Date();
+    this.persistUser(user);
+    return true;
+  }
+  // --- Centralized Account Blocking & Unblocking ---
+  blockUser(params) {
+    const targetUser = this.findUserById(params.userId);
+    if (!targetUser) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (targetUser.role === "SUPER_ADMIN") {
+      const activeSuperAdmins = this.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
+      if (activeSuperAdmins.length <= 1) {
+        return { success: false, message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u098F\u0995\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8\u0995\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u0995\u09B0\u09BE \u0985\u09B8\u09AE\u09CD\u09AD\u09AC\u0964" };
+      }
+    }
+    const oldStatus = targetUser.accountStatus || (targetUser.isActive ? "active" : "suspended");
+    const newStatus = params.newStatus || "temporarily_blocked";
+    targetUser.accountStatus = newStatus;
+    targetUser.isActive = false;
+    targetUser.blockReason = params.reason;
+    targetUser.blockedBy = params.actorId;
+    targetUser.blockedAt = /* @__PURE__ */ new Date();
+    targetUser.updatedAt = /* @__PURE__ */ new Date();
+    this.persistUser(targetUser);
+    const histEntry = {
+      _id: "ash_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      userId: targetUser._id,
+      targetUserName: targetUser.name,
+      targetUserPhone: targetUser.phone,
+      oldStatus,
+      newStatus,
+      actorId: params.actorId,
+      actorName: params.actorName,
+      actorRole: params.actorRole,
+      reason: params.reason,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.accountStatusHistories.unshift(histEntry);
+    this.persistAccountStatusHistory(histEntry);
+    this.logModeratorActivity({
+      actorId: params.actorId,
+      actorName: params.actorName,
+      actorRole: params.actorRole,
+      action: "MEMBER_BLOCKED",
+      targetRecordId: targetUser._id,
+      targetRecordType: "User",
+      divisionScope: targetUser.division,
+      institutionScope: targetUser.assignedInstitution,
+      reason: params.reason,
+      result: newStatus
+    });
+    return { success: true, message: `\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 (${newStatus}) \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964` };
+  }
+  unblockUser(params) {
+    const targetUser = this.findUserById(params.userId);
+    if (!targetUser) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const oldStatus = targetUser.accountStatus || "temporarily_blocked";
+    targetUser.accountStatus = "active";
+    targetUser.isActive = true;
+    targetUser.blockReason = void 0;
+    targetUser.blockedBy = void 0;
+    targetUser.blockedAt = void 0;
+    targetUser.updatedAt = /* @__PURE__ */ new Date();
+    this.persistUser(targetUser);
+    const histEntry = {
+      _id: "ash_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      userId: targetUser._id,
+      targetUserName: targetUser.name,
+      targetUserPhone: targetUser.phone,
+      oldStatus,
+      newStatus: "active",
+      actorId: params.actorId,
+      actorName: params.actorName,
+      actorRole: params.actorRole,
+      reason: params.reason,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.accountStatusHistories.unshift(histEntry);
+    this.persistAccountStatusHistory(histEntry);
+    this.logModeratorActivity({
+      actorId: params.actorId,
+      actorName: params.actorName,
+      actorRole: params.actorRole,
+      action: "MEMBER_UNBLOCKED",
+      targetRecordId: targetUser._id,
+      targetRecordType: "User",
+      divisionScope: targetUser.division,
+      institutionScope: targetUser.assignedInstitution,
+      reason: params.reason,
+      result: "active"
+    });
+    return { success: true, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09C1\u09A8\u09B0\u09C1\u09A6\u09CD\u09A7\u09BE\u09B0 \u0993 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+  }
+  getBlockedUsers(division) {
+    let list = this.users.filter(
+      (u) => u.accountStatus === "temporarily_blocked" || u.accountStatus === "suspended" || u.accountStatus === "deactivated" || !u.isActive
+    );
+    if (division) {
+      list = list.filter((u) => u.division?.toLowerCase() === division.toLowerCase() || u.assignedDivision?.toLowerCase() === division.toLowerCase());
+    }
+    return list;
+  }
+  // --- Donor Profile Methods ---
+  findDonorProfileByUserId(userId) {
+    return this.donorProfiles.find((d) => d.userId === userId);
+  }
+  findDonorProfileById(id) {
+    return this.donorProfiles.find((d) => d._id === id);
+  }
+  createDonorProfile(data) {
+    const newProfile = {
+      _id: "donor_prof_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      userId: data.userId || "",
+      displayName: data.displayName || "",
+      bloodGroup: data.bloodGroup || "A+",
+      division: data.division || "dhaka",
+      district: data.district || "dhaka",
+      upazila: data.upazila || "",
+      addressDetails: data.addressDetails,
+      dateOfBirth: data.dateOfBirth || /* @__PURE__ */ new Date("2000-01-01"),
+      gender: data.gender || "unspecified",
+      availabilityStatus: data.availabilityStatus || "available",
+      lastDonationDate: data.lastDonationDate,
+      totalDonations: data.totalDonations || 0,
+      institutionId: data.institutionId,
+      institutionMembershipVerified: data.institutionMembershipVerified || false,
+      consentToShareContact: data.consentToShareContact !== false,
+      preferredContactMethod: data.preferredContactMethod || "phone",
+      bio: data.bio,
+      isPubliclyListed: data.isPubliclyListed !== false,
+      emergencyAvailable: data.emergencyAvailable !== false,
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.donorProfiles.push(newProfile);
+    this.persistDonorProfile(newProfile);
+    return newProfile;
+  }
+  updateDonorProfile(userId, update) {
+    const profile = this.findDonorProfileByUserId(userId);
+    if (!profile) return null;
+    Object.assign(profile, update, { updatedAt: /* @__PURE__ */ new Date() });
+    this.persistDonorProfile(profile);
+    return profile;
+  }
+  searchDonors(filters) {
+    let result = this.donorProfiles.filter((d) => {
+      const user = this.findUserById(d.userId);
+      return d.isPubliclyListed && user && user.accountStatus === "active" && user.isActive;
+    });
+    if (filters.bloodGroup) {
+      result = result.filter((d) => d.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
+    }
+    if (filters.division) {
+      result = result.filter((d) => d.division.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.district) {
+      result = result.filter((d) => d.district.toLowerCase() === filters.district?.toLowerCase());
+    }
+    if (filters.upazila) {
+      result = result.filter((d) => d.upazila.toLowerCase() === filters.upazila?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      result = result.filter((d) => d.institutionId === filters.institutionId);
+    }
+    if (filters.availabilityStatus) {
+      result = result.filter((d) => d.availabilityStatus === filters.availabilityStatus);
+    }
+    const total = result.length;
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const paginated = result.slice(startIndex, startIndex + limit);
+    const safeDonors = paginated.map((p) => {
+      const institution = p.institutionId ? this.findInstitutionById(p.institutionId) : void 0;
+      const donorUser = this.findUserById(p.userId);
+      const isPublicContactAllowed = Boolean(p.consentToShareContact);
+      return {
+        _id: p._id,
+        displayName: p.displayName,
+        bloodGroup: p.bloodGroup,
+        division: p.division,
+        district: p.district,
+        upazila: p.upazila,
+        availabilityStatus: p.availabilityStatus,
+        lastDonationDate: p.lastDonationDate,
+        totalDonations: p.totalDonations,
+        institutionName: institution?.nameBn || institution?.name,
+        institutionId: p.institutionId,
+        institutionMembershipVerified: p.institutionMembershipVerified,
+        emergencyAvailable: p.emergencyAvailable,
+        consentToShareContact: isPublicContactAllowed,
+        // Strictly return phone only if donor gave explicit public consent
+        phone: isPublicContactAllowed ? donorUser?.phone : void 0,
+        bio: p.bio,
+        createdAt: p.createdAt
+      };
+    });
+    return {
+      donors: safeDonors,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+  // --- Blood Request Methods ---
+  findBloodRequestById(id) {
+    return this.bloodRequests.find((r) => String(r._id) === String(id));
+  }
+  createBloodRequest(data) {
+    this.assertWritable();
+    const newReq = {
+      _id: "req_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      requesterId: data.requesterId || "",
+      patientName: data.patientName || "",
+      bloodGroup: data.bloodGroup || "A+",
+      unitsRequired: data.unitsRequired || 1,
+      unitsFulfilled: data.unitsFulfilled || 0,
+      hospitalName: data.hospitalName || "",
+      hospitalAddress: data.hospitalAddress || "",
+      division: data.division || "dhaka",
+      district: data.district || "dhaka",
+      upazila: data.upazila || "",
+      requiredDate: data.requiredDate || /* @__PURE__ */ new Date(),
+      requiredWithin: data.requiredWithin,
+      urgencyLevel: data.urgencyLevel || "emergency",
+      reason: data.reason || "",
+      contactNumber: data.contactNumber || "",
+      alternativeContactNumber: data.alternativeContactNumber,
+      status: data.status || "open",
+      moderationNotes: data.moderationNotes,
+      institutionId: data.institutionId,
+      expiresAt: data.expiresAt || new Date(Date.now() + 864e5 * 3),
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.bloodRequests.unshift(newReq);
+    this.persistBloodRequest(newReq);
+    return newReq;
+  }
+  updateBloodRequest(id, update) {
+    const req = this.findBloodRequestById(id);
+    if (!req) return null;
+    Object.assign(req, update, { updatedAt: /* @__PURE__ */ new Date() });
+    this.persistBloodRequest(req);
+    return req;
+  }
+  searchBloodRequests(filters) {
+    let result = [...this.bloodRequests];
+    const now = /* @__PURE__ */ new Date();
+    result.forEach((r) => {
+      if ((r.status === "open" || r.status === "partially_fulfilled") && new Date(r.expiresAt) < now) {
+        r.status = "expired";
+      }
+    });
+    if (filters.status) {
+      result = result.filter((r) => r.status === filters.status);
+    } else {
+      result = result.filter((r) => r.status === "open" || r.status === "partially_fulfilled");
+    }
+    if (filters.bloodGroup) {
+      result = result.filter((r) => r.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
+    }
+    if (filters.division) {
+      result = result.filter((r) => r.division.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.district) {
+      result = result.filter((r) => r.district.toLowerCase() === filters.district?.toLowerCase());
+    }
+    if (filters.upazila) {
+      result = result.filter((r) => r.upazila.toLowerCase() === filters.upazila?.toLowerCase());
+    }
+    if (filters.urgencyLevel) {
+      result = result.filter((r) => r.urgencyLevel === filters.urgencyLevel);
+    }
+    if (filters.institutionId) {
+      result = result.filter((r) => r.institutionId === filters.institutionId);
+    }
+    result.sort((a, b) => {
+      if (a.urgencyLevel === "emergency" && b.urgencyLevel !== "emergency") return -1;
+      if (b.urgencyLevel === "emergency" && a.urgencyLevel !== "emergency") return 1;
+      return new Date(a.requiredDate).getTime() - new Date(b.requiredDate).getTime();
+    });
+    const total = result.length;
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const paginated = result.slice(startIndex, startIndex + limit);
+    return {
+      requests: paginated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+  // --- Institution Methods ---
+  findInstitutionById(id) {
+    return this.institutions.find((i) => String(i._id) === String(id));
+  }
+  getInstitutions(filters) {
+    let result = [...this.institutions];
+    if (filters.status) {
+      result = result.filter((i) => i.status === filters.status);
+    }
+    if (filters.division) {
+      result = result.filter((i) => i.division.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter(
+        (i) => i.name.toLowerCase().includes(q) || i.nameBn.includes(q) || i.code.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }
+  createInstitution(data) {
+    const newInst = {
+      _id: "inst_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      name: data.name || "",
+      nameBn: data.nameBn || data.name || "",
+      code: data.code?.toUpperCase() || "INST-" + Date.now(),
+      type: data.type || "university",
+      division: data.division || "dhaka",
+      district: data.district || "dhaka",
+      upazila: data.upazila || "",
+      address: data.address || "",
+      website: data.website,
+      email: data.email,
+      phone: data.phone,
+      status: data.status || "pending",
+      assignedModeratorId: data.assignedModeratorId,
+      assignedModeratorIds: data.assignedModeratorId ? [data.assignedModeratorId] : [],
+      totalRegisteredDonors: 0,
+      description: data.description,
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.institutions.push(newInst);
+    this.persistInstitution(newInst);
+    return newInst;
+  }
+  updateInstitution(id, update) {
+    const inst = this.findInstitutionById(id);
+    if (!inst) return null;
+    Object.assign(inst, update, { updatedAt: /* @__PURE__ */ new Date() });
+    this.persistInstitution(inst);
+    return inst;
+  }
+  // --- Institution Applications / Requests ---
+  createInstitutionRequest(data) {
+    const newReq = {
+      _id: "inst_req_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      name: data.name || "",
+      nameBn: data.nameBn || data.name || "",
+      code: data.code?.toUpperCase() || "REQ-" + Date.now(),
+      type: data.type || "university",
+      division: data.division || "dhaka",
+      district: data.district || "dhaka",
+      upazila: data.upazila || "",
+      address: data.address || "",
+      applicantName: data.applicantName || "",
+      applicantPhone: data.applicantPhone || "",
+      applicantEmail: data.applicantEmail,
+      applicantRole: data.applicantRole,
+      supportingDetails: data.supportingDetails,
+      status: "pending_review",
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.institutionRequests.unshift(newReq);
+    this.persistInstitutionRequest(newReq);
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === newReq.division.toLowerCase()
+    );
+    coordinators.forEach((coord) => {
+      this.createNotification({
+        userId: coord._id,
+        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${newReq.division} \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 '${newReq.nameBn}' \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        type: "institution_update"
+      });
+    });
+    return newReq;
+  }
+  getInstitutionRequests(filters) {
+    let list = [...this.institutionRequests];
+    if (filters.division) {
+      list = list.filter((r) => r.division.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    return list;
+  }
+  reviewInstitutionRequest(params) {
+    const req = this.institutionRequests.find((r) => String(r._id) === String(params.requestId));
+    if (!req) {
+      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const allowedRoles = ["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"];
+    if (!allowedRoles.includes(params.reviewerRole)) {
+      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE\u09B0 \u0995\u09CD\u09B7\u09AE\u09A4\u09BE\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09A8\u0964" };
+    }
+    if (params.reviewerRole === "DIVISION_COORDINATOR" && params.reviewerDivision?.toLowerCase() !== req.division.toLowerCase()) {
+      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2\u09AE\u09BE\u09A4\u09CD\u09B0 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    req.status = params.status;
+    req.reviewedBy = params.reviewerId;
+    req.decisionReason = params.decisionReason;
+    req.reviewedAt = /* @__PURE__ */ new Date();
+    req.updatedAt = /* @__PURE__ */ new Date();
+    let createdInst;
+    if (params.status === "approved") {
+      createdInst = this.createInstitution({
+        name: req.name,
+        nameBn: req.nameBn,
+        code: req.code,
+        type: req.type,
+        division: req.division,
+        district: req.district,
+        upazila: req.upazila,
+        address: req.address,
+        status: "approved",
+        description: req.supportingDetails
+      });
+      req.createdInstitutionId = createdInst._id;
+    }
+    this.persistInstitutionRequest(req);
+    return {
+      success: true,
+      message: params.status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u0993 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+      institution: createdInst
+    };
+  }
+  // --- Moderator Activity Tracking ---
+  logModeratorActivity(params) {
+    const entry = {
+      _id: "mact_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      actorId: params.actorId,
+      actorName: params.actorName,
+      actorRole: params.actorRole,
+      action: params.action,
+      targetRecordId: params.targetRecordId,
+      targetRecordType: params.targetRecordType,
+      divisionScope: params.divisionScope,
+      institutionScope: params.institutionScope,
+      reason: params.reason,
+      result: params.result || "\u09B8\u09AB\u09B2",
+      details: params.details,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.moderatorActivities.unshift(entry);
+    this.persistModeratorActivity(entry);
+    return entry;
+  }
+  getModeratorActivities(filters) {
+    let list = [...this.moderatorActivities];
+    if (filters.actorId) {
+      list = list.filter((a) => a.actorId === filters.actorId);
+    }
+    if (filters.divisionScope) {
+      list = list.filter((a) => a.divisionScope?.toLowerCase() === filters.divisionScope?.toLowerCase());
+    }
+    if (filters.institutionScope) {
+      list = list.filter((a) => a.institutionScope === filters.institutionScope);
+    }
+    if (filters.action) {
+      list = list.filter((a) => a.action === filters.action);
+    }
+    return list;
+  }
+  getModeratorsUnderDivision(division) {
+    const moderators = this.users.filter((u) => u.role === "INSTITUTION_MODERATOR");
+    return moderators.filter((m) => {
+      if (!m.assignedInstitution) return false;
+      const inst = this.findInstitutionById(m.assignedInstitution);
+      return inst && inst.division.toLowerCase() === division.toLowerCase();
+    }).map((m) => {
+      const inst = m.assignedInstitution ? this.findInstitutionById(m.assignedInstitution) : void 0;
+      const membersAdded = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_CREATED").length;
+      const profilesEdited = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_EDITED").length;
+      const membersBlocked = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_BLOCKED").length;
+      return {
+        _id: m._id,
+        name: m.name,
+        phone: m.phone,
+        email: m.email,
+        accountStatus: m.accountStatus,
+        assignedInstitutionId: m.assignedInstitution,
+        institutionName: inst?.nameBn || inst?.name || "\u0985\u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4",
+        membersAdded,
+        profilesEdited,
+        membersBlocked,
+        createdAt: m.createdAt
+      };
+    });
+  }
+  // --- Institutional Contact Requests ---
+  createContactRequest(data) {
+    const inst = this.findInstitutionById(data.institutionId);
+    const newContactReq = {
+      _id: "cr_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      ...data,
+      status: "pending",
+      assignedModeratorId: inst?.assignedModeratorId,
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.contactRequests.unshift(newContactReq);
+    this.persistContactRequest(newContactReq);
+    if (inst?.assignedModeratorId) {
+      this.createNotification({
+        userId: inst.assignedModeratorId,
+        title: "\u09A8\u09A4\u09C1\u09A8 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
+        message: `${inst.nameBn} \u0987\u0989\u09A8\u09BF\u099F\u09C7 ${data.targetBloodGroup} \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u098F\u0995\u099F\u09BF \u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u098F\u09B8\u09C7\u099B\u09C7 (${data.patientName})\u0964`,
+        type: "contact_request"
+      });
+    }
+    if (inst) {
+      const coordinators = this.users.filter(
+        (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === inst.division.toLowerCase()
+      );
+      coordinators.forEach((coord) => {
+        this.createNotification({
+          userId: coord._id,
+          title: "\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
+          message: `${inst.nameBn} \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 ${data.targetBloodGroup} \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+          type: "contact_request"
+        });
+      });
+    }
+    return newContactReq;
+  }
+  getContactRequests(filters) {
+    let list = [...this.contactRequests];
+    if (filters.institutionId) {
+      list = list.filter((r) => r.institutionId === filters.institutionId);
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    return list;
+  }
+  updateContactRequest(id, update) {
+    const req = this.contactRequests.find((r) => r._id === id);
+    if (!req) return null;
+    Object.assign(req, update, { updatedAt: /* @__PURE__ */ new Date() });
+    this.persistContactRequest(req);
+    return req;
+  }
+  // --- Contact Access & Privacy Flow ---
+  getViewerDailyContactAccessCount(viewerId) {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1e3);
+    return this.contactAccessLogs.filter(
+      (log) => log.viewerId === viewerId && log.createdAt >= twentyFourHoursAgo
+    ).length;
+  }
+  recordContactAccess(logData) {
+    const newLog = {
+      _id: "cal_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      viewerId: logData.viewerId,
+      donorUserId: logData.donorUserId,
+      donorProfileId: logData.donorProfileId,
+      purpose: logData.purpose,
+      relatedBloodRequestId: logData.relatedBloodRequestId,
+      ipAddress: logData.ipAddress,
+      userAgent: logData.userAgent,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.contactAccessLogs.push(newLog);
+    const viewer = this.findUserById(logData.viewerId);
+    this.createNotification({
+      userId: logData.donorUserId,
+      title: "\u099C\u09B0\u09C1\u09B0\u09BF \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
+      message: `${viewer?.name || "\u098F\u0995\u099C\u09A8 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0"} \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0986\u09AA\u09A8\u09BE\u09B0 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09C7\u0996\u09C7\u099B\u09C7\u09A8\u0964`,
+      type: "contact_revealed"
+    });
+    return newLog;
+  }
+  // --- OTP Methods ---
+  saveOtp(phone, otp, purpose) {
+    const otpHash = bcryptjs_default.hashSync(otp, 6);
+    const otpRecord = {
+      phone,
+      otpHash,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1e3),
+      attempts: 0,
+      isUsed: false,
+      purpose,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.otps = this.otps.filter((o) => o.phone !== phone);
+    this.otps.push(otpRecord);
+    return otpRecord;
+  }
+  verifyOtp(phone, rawOtp, purpose) {
+    const record = this.otps.find((o) => o.phone === phone && o.purpose === purpose && !o.isUsed);
+    if (!record) {
+      return { success: false, message: "\u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF \u09AC\u09BE \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09A8\u09A4\u09C1\u09A8 \u0995\u09CB\u09A1 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u09C1\u09A8\u0964" };
+    }
+    if (/* @__PURE__ */ new Date() > record.expiresAt) {
+      return { success: false, message: "\u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1\u09C7\u09B0 \u09AE\u09C7\u09AF\u09BC\u09BE\u09A6 \u09B6\u09C7\u09B7 \u09B9\u09AF\u09BC\u09C7 \u0997\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964" };
+    }
+    if (record.attempts >= 5) {
+      return { success: false, message: "\u09B8\u09B0\u09CD\u09AC\u09CB\u099A\u09CD\u099A \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u09B8\u0982\u0996\u09CD\u09AF\u09BE \u0985\u09A4\u09BF\u0995\u09CD\u09B0\u09AE \u0995\u09B0\u09C7\u099B\u09C7\u0964 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964" };
+    }
+    record.attempts += 1;
+    const isValid2 = bcryptjs_default.compareSync(rawOtp, record.otpHash);
+    if (!isValid2) {
+      return { success: false, message: "\u09AD\u09C1\u09B2 \u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09B8\u09A0\u09BF\u0995 \u09EC \u09A1\u09BF\u099C\u09BF\u099F\u09C7\u09B0 \u0995\u09CB\u09A1\u099F\u09BF \u09A6\u09BF\u09A8\u0964" };
+    }
+    record.isUsed = true;
+    return { success: true, message: "\u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AF\u09BE\u099A\u09BE\u0987 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+  }
+  // --- Report Methods with Scoping ---
+  createReport(data) {
+    let division = data.division;
+    let institutionId = data.institutionId;
+    let targetTitle = data.targetTitle;
+    if (data.targetType === "blood_request") {
+      const req = this.bloodRequests.find((r) => r._id === data.targetId);
+      if (req) {
+        division = division || req.division;
+        institutionId = institutionId || req.institutionId;
+        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 (${req.patientName} - ${req.hospitalName})`;
+      }
+    } else if (data.targetType === "donor_profile") {
+      const donor = this.donorProfiles.find((d) => d._id === data.targetId);
+      if (donor) {
+        division = division || donor.division;
+        institutionId = institutionId || donor.institutionId;
+        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 (${donor.displayName})`;
+      }
+    } else if (data.targetType === "institution") {
+      const inst = this.institutions.find((i) => i._id === data.targetId);
+      if (inst) {
+        division = division || inst.division;
+        institutionId = institutionId || inst._id;
+        targetTitle = targetTitle || `\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 (${inst.nameBn})`;
+      }
+    } else if (data.targetType === "user") {
+      const u = this.users.find((usr) => usr._id === data.targetId);
+      if (u) {
+        division = division || u.division || u.assignedDivision;
+        institutionId = institutionId || u.assignedInstitution;
+        targetTitle = targetTitle || `\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 (${u.name})`;
+      }
+    }
+    const newReport = {
+      _id: "rep_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      reportedBy: data.reportedBy || "",
+      targetType: data.targetType || "blood_request",
+      targetId: data.targetId || "",
+      targetTitle,
+      division,
+      institutionId,
+      reason: data.reason || "other",
+      description: data.description || "",
+      status: "pending",
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.reports.unshift(newReport);
+    return newReport;
+  }
+  getReports(filters) {
+    let list = [...this.reports];
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.targetType) {
+      list = list.filter((r) => r.targetType === filters.targetType);
+    }
+    if (filters.division) {
+      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter((r) => r.institutionId === filters.institutionId);
+    }
+    return list;
+  }
+  // --- Phone Change Request Methods ---
+  createPhoneChangeRequest(params) {
+    const user = this.findUserById(params.userId);
+    if (!user) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const existingPending = this.phoneChangeRequests.find(
+      (r) => r.userId === params.userId && r.status === "pending"
+    );
+    if (existingPending) {
+      return {
+        success: false,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09AE\u09BE\u09A3 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+      };
+    }
+    const phoneOwner = this.findUserByPhone(params.newPhone);
+    if (phoneOwner && phoneOwner._id !== params.userId) {
+      return {
+        success: false,
+        message: "\u098F\u0987 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09C3\u09A4 \u09B9\u099A\u09CD\u099B\u09C7\u0964"
+      };
+    }
+    let institutionName = void 0;
+    if (user.assignedInstitution) {
+      const inst = this.findInstitutionById(user.assignedInstitution);
+      institutionName = inst?.nameBn;
+    }
+    const newReq = {
+      _id: "pcr_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      currentPhone: user.phone,
+      newPhone: params.newPhone,
+      reason: params.reason,
+      division: user.division || user.assignedDivision,
+      district: user.district,
+      institutionId: user.assignedInstitution,
+      institutionName,
+      status: "pending",
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    };
+    this.phoneChangeRequests.unshift(newReq);
+    this.persistPhoneChangeRequest(newReq);
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === (user.division || "").toLowerCase()
+    );
+    coordinators.forEach((c) => {
+      this.createNotification({
+        userId: c._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u09A8\u09A4\u09C1\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u09A4\u09BE\u09B0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "phone_change",
+        link: "/coordinator/dashboard"
+      });
+    });
+    return {
+      success: true,
+      message: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09AC\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u09AA\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u09B9\u09AC\u09C7\u0964",
+      request: newReq
+    };
+  }
+  getPhoneChangeRequests(filters) {
+    let list = [...this.phoneChangeRequests];
+    if (filters.userId) {
+      list = list.filter((r) => r.userId === filters.userId);
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.division) {
+      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
+    }
+    if (filters.institutionId) {
+      list = list.filter((r) => r.institutionId === filters.institutionId);
+    }
+    return list;
+  }
+  getPendingPhoneChangeRequestForUser(userId) {
+    return this.phoneChangeRequests.find((r) => r.userId === userId && r.status === "pending") || null;
+  }
+  updatePhoneChangeRequest(requestId, status, reviewer, reviewNotes) {
+    const req = this.phoneChangeRequests.find((r) => String(r._id) === String(requestId));
+    if (!req) {
+      return { success: false, message: "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (req.status !== "pending") {
+      return { success: false, message: "\u098F\u0987 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AE\u09C0\u09AE\u09BE\u0982\u09B8\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    req.status = status;
+    req.reviewedBy = reviewer.userId;
+    req.reviewedByName = reviewer.name;
+    req.reviewedAt = /* @__PURE__ */ new Date();
+    req.reviewNotes = reviewNotes || (status === "approved" ? "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4" : "\u09AC\u09BE\u09A4\u09BF\u09B2\u0995\u09C3\u09A4");
+    req.updatedAt = /* @__PURE__ */ new Date();
+    const targetUser = this.findUserById(req.userId);
+    if (status === "approved" && targetUser) {
+      targetUser.phone = req.newPhone;
+      targetUser.updatedAt = /* @__PURE__ */ new Date();
+      this.persistUser(targetUser);
+      const donor = this.donorProfiles.find((d) => String(d.userId) === String(targetUser._id));
+      if (donor) {
+        donor.updatedAt = /* @__PURE__ */ new Date();
+        this.persistDonorProfile(donor);
+      }
+      this.createNotification({
+        userId: targetUser._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u0995\u09C3\u09A4 \u09A8\u09A4\u09C1\u09A8 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 (${req.newPhone}) \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u098F\u0996\u09A8 \u09A5\u09C7\u0995\u09C7 \u098F\u0987 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C1\u09A8\u0964`,
+        type: "phone_change",
+        link: "/profile"
+      });
+    } else if (status === "rejected" && targetUser) {
+      this.createNotification({
+        userId: targetUser._id,
+        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0995\u09BE\u09B0\u09A3: ${reviewNotes || "\u09AF\u09BE\u099A\u09BE\u0987\u0995\u09B0\u09A3 \u09B8\u09A8\u09CD\u09A4\u09CB\u09B7\u099C\u09A8\u0995 \u09A8\u09AF\u09BC"}`,
+        type: "phone_change",
+        link: "/profile"
+      });
+    }
+    this.persistPhoneChangeRequest(req);
+    return {
+      success: true,
+      message: status === "approved" ? "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7 \u098F\u09AC\u0982 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+      request: req
+    };
+  }
+  // --- Coordinator Moderator Appointment ---
+  appointModeratorByCoordinator(params) {
+    const institution = this.findInstitutionById(params.institutionId);
+    if (!institution) {
+      return { success: false, message: "\u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (params.coordinatorUser.role === "DIVISION_COORDINATOR") {
+      if (institution.division.toLowerCase() !== params.coordinatorUser.assignedDivision?.toLowerCase()) {
+        return {
+          success: false,
+          message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
+        };
+      }
+    }
+    const existingUser = this.findUserByPhone(params.phone);
+    if (existingUser) {
+      existingUser.role = "INSTITUTION_MODERATOR";
+      existingUser.assignedInstitution = params.institutionId;
+      existingUser.assignedInstitutions = [params.institutionId];
+      existingUser.updatedAt = /* @__PURE__ */ new Date();
+      this.createNotification({
+        userId: existingUser._id,
+        title: "\u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC \u09A6\u09C7\u0993\u09AF\u09BC\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        message: `${institution.nameBn} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        type: "account_status",
+        link: "/moderator/dashboard"
+      });
+      return {
+        success: true,
+        message: `\u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F (${existingUser.name})-\u0995\u09C7 ${institution.nameBn}-\u098F\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        moderator: existingUser
+      };
+    }
+    const temporaryPassword = "Mod@" + Math.floor(1e5 + Math.random() * 9e5);
+    const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
+    const newMod = this.createUser({
+      name: params.name,
+      phone: params.phone,
+      email: params.email,
+      passwordHash,
+      role: "INSTITUTION_MODERATOR",
+      accountStatus: "active",
+      gender: params.gender || "unspecified",
+      division: institution.division,
+      district: institution.district,
+      upazila: institution.upazila,
+      assignedInstitution: params.institutionId,
+      assignedInstitutions: [params.institutionId],
+      requirePasswordChangeAtFirstLogin: true,
+      isActive: true,
+      isPhoneVerified: true
+    });
+    return {
+      success: true,
+      message: `${institution.nameBn}-\u098F\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09A4\u09C1\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+      moderator: newMod,
+      temporaryPassword
+    };
+  }
+  // --- Institution Drill-Down Members ---
+  getInstitutionMembers(institutionId) {
+    const institution = this.findInstitutionById(institutionId);
+    if (!institution) return [];
+    const donorList = this.donorProfiles.filter((d) => d.institutionId === institutionId);
+    const userMap = new Map(this.users.map((u) => [u._id, u]));
+    return donorList.map((d) => {
+      const u = userMap.get(d.userId);
+      return {
+        _id: d._id,
+        userId: d.userId,
+        name: d.displayName,
+        phone: u?.phone || "",
+        bloodGroup: d.bloodGroup,
+        gender: d.gender,
+        division: d.division,
+        district: d.district,
+        upazila: d.upazila,
+        availabilityStatus: d.availabilityStatus,
+        lastDonationDate: d.lastDonationDate,
+        totalDonations: d.totalDonations,
+        isPubliclyListed: d.isPubliclyListed,
+        accountStatus: u?.accountStatus || "active",
+        createdAt: d.createdAt
+      };
+    });
+  }
+  // --- Notifications ---
+  createNotification(data) {
+    const notif = {
+      _id: "notif_" + Date.now() + Math.random().toString(36).substring(2, 7),
+      userId: data.userId || "",
+      title: data.title || "",
+      message: data.message || "",
+      type: data.type || "system",
+      link: data.link,
+      isRead: false,
+      createdAt: /* @__PURE__ */ new Date()
+    };
+    this.notifications.unshift(notif);
+    return notif;
+  }
+  getUserNotifications(userId) {
+    return this.notifications.filter((n) => n.userId === userId);
+  }
+  markNotificationAsRead(id, userId) {
+    const notif = this.notifications.find((n) => n._id === id && n.userId === userId);
+    if (notif) {
+      notif.isRead = true;
+      return true;
+    }
+    return false;
+  }
+  // --- PART 03: Password Recovery & One-Time Password System ---
+  createPasswordRecoveryRequest(phoneOrUserId, reason) {
+    const cleanInput = phoneOrUserId.trim().replace(/^(\+880|880)/, "0");
+    const user = this.users.find((u) => u._id === cleanInput || u.phone === cleanInput);
+    if (!user) {
+      return {
+        success: false,
+        message: "\u09AA\u09CD\u09B0\u09A6\u09A4\u09CD\u09A4 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AC\u09BE \u0986\u0987\u09A1\u09BF \u09A6\u09BF\u09AF\u09BC\u09C7 \u0995\u09CB\u09A8\u09CB \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
+      };
+    }
+    if (user.accountStatus && user.accountStatus !== "active") {
+      return {
+        success: false,
+        message: "\u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u099F\u09BF \u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09AC\u09BE \u09A4\u09A6\u09A8\u09CD\u09A4\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B8\u09B9\u09BE\u09AF\u09BC\u09A4\u09BE \u09A1\u09C7\u09B8\u09CD\u0995\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+      };
+    }
+    const existing = this.passwordRecoveryRequests.find(
+      (r) => r.userId === user._id && r.status === "pending"
+    );
+    if (existing) {
+      return {
+        success: false,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09C1\u09A8\u09B0\u09C1\u09A6\u09CD\u09A7\u09BE\u09B0\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09CD\u09B0\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
+      };
+    }
+    const institution = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
+    const now = /* @__PURE__ */ new Date();
+    const requestId = "prr_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newRequest = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      division: user.division || "dhaka",
+      district: user.district || "dhaka",
+      institutionId: user.assignedInstitution,
+      institutionName: institution?.nameBn || institution?.name,
+      status: "pending",
+      reason: reason || "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09B2\u0997\u0987\u09A8 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE",
+      isUsed: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.passwordRecoveryRequests.unshift(newRequest);
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: newRequest._id,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      issuedBy: user._id,
+      issuedByName: user.name,
+      issuerRole: user.role,
+      action: "REQUEST_SUBMITTED",
+      reason: reason || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8",
+      createdAt: now
+    });
+    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN" || u.role === "ADMIN");
+    for (const admin of admins) {
+      this.createNotification({
+        userId: admin._id,
+        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} (${user.phone}) \u098F\u0995\u099F\u09BF \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "system",
+        link: "/admin/dashboard"
+      });
+    }
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === user.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
+        message: `${user.name} (${user.district}, ${user.division}) \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "system",
+        link: "/coordinator/dashboard"
+      });
+    }
+    if (user.assignedInstitution) {
+      const instOfficials = this.users.filter(
+        (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === user.assignedInstitution
+      );
+      for (const official of instOfficials) {
+        this.createNotification({
+          userId: official._id,
+          title: "\u{1F511} \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B8\u09A6\u09B8\u09CD\u09AF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF",
+          message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
+          type: "system",
+          link: "/moderator/dashboard"
+        });
+      }
+    }
+    return {
+      success: true,
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u09AF\u09BE\u099A\u09BE\u0987 \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09AC\u09C7\u09A8\u0964"
+    };
+  }
+  getPasswordRecoveryRequests(filter) {
+    let list = this.passwordRecoveryRequests;
+    if (filter.status) {
+      list = list.filter((r) => r.status === filter.status);
+    }
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+    } else if (filter.role === "DIVISION_COORDINATOR") {
+      list = list.filter((r) => r.division === filter.division);
+    } else if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
+      list = list.filter((r) => r.institutionId === filter.institutionId);
+    } else {
+      return [];
+    }
+    return list.map((r) => ({
+      _id: r._id,
+      userId: r.userId,
+      userName: r.userName,
+      phone: r.phone,
+      userRole: r.userRole,
+      division: r.division,
+      district: r.district,
+      institutionId: r.institutionId,
+      institutionName: r.institutionName,
+      status: r.status,
+      reason: r.reason,
+      isUsed: r.isUsed,
+      expiresAt: r.expiresAt,
+      approvedBy: r.approvedBy,
+      approvedByName: r.approvedByName,
+      approvedByRole: r.approvedByRole,
+      approvedAt: r.approvedAt,
+      rejectionReason: r.rejectionReason,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }));
+  }
+  approvePasswordRecoveryRequest(requestId, approverUser) {
+    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
+    if (!req) {
+      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    if (req.status !== "pending") {
+      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    if (approverUser.role === "DIVISION_COORDINATOR" && approverUser.assignedDivision !== req.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if ((approverUser.role === "INSTITUTION_MODERATOR" || approverUser.role === "INSTITUTION_HEAD") && approverUser.assignedInstitution !== req.institutionId) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const targetUser = this.findUserById(req.userId);
+    if (!targetUser) {
+      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u09B0 \u09AE\u09C2\u09B2 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    }
+    const tempPass = "BD" + Math.floor(1e5 + Math.random() * 9e5);
+    const hash2 = bcryptjs_default.hashSync(tempPass, 10);
+    const now = /* @__PURE__ */ new Date();
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1e3);
+    req.status = "approved";
+    req.temporaryPasswordHash = hash2;
+    req.expiresAt = expiresAt;
+    req.approvedBy = approverUser._id;
+    req.approvedByName = approverUser.name;
+    req.approvedByRole = approverUser.role;
+    req.approvedAt = now;
+    req.updatedAt = now;
+    targetUser.passwordHash = hash2;
+    targetUser.requirePasswordChangeAtFirstLogin = true;
+    targetUser.updatedAt = now;
+    this.persistUser(targetUser);
+    this.persistPasswordRecoveryRequest(req);
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: targetUser._id,
+      userName: targetUser.name,
+      phone: targetUser.phone,
+      issuedBy: approverUser._id,
+      issuedByName: approverUser.name,
+      issuerRole: approverUser.role,
+      action: "OTP_GENERATED",
+      reason: "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+      notes: `\u0987\u09B8\u09CD\u09AF\u09C1 \u0995\u09B0\u09C7\u099B\u09C7\u09A8: ${approverUser.name} (${approverUser.role})`,
+      createdAt: now
+    });
+    this.createNotification({
+      userId: targetUser._id,
+      title: "\u2705 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C7 \u0985\u09AC\u09BF\u09B2\u09AE\u09CD\u09AC\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8\u0964",
+      type: "account_status"
+    });
+    return {
+      success: true,
+      temporaryPassword: tempPass,
+      warning: "\u098F\u0987 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1\u099F\u09BF \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u0995\u09C7 \u09A8\u09BF\u09B0\u09BE\u09AA\u09A6 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u09A6\u09BF\u09A8\u0964 \u098F\u099F\u09BF \u09E8\u09EA \u0998\u09A3\u09CD\u099F\u09BE\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u09AC\u09BE\u09B0\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u09AF\u09CB\u0997\u09CD\u09AF\u0964"
+    };
+  }
+  rejectPasswordRecoveryRequest(requestId, rejecterUser, reason) {
+    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
+    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const now = /* @__PURE__ */ new Date();
+    req.status = "rejected";
+    req.rejectionReason = reason;
+    req.updatedAt = now;
+    this.persistPasswordRecoveryRequest(req);
+    this.passwordRecoveryAudits.unshift({
+      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
+      requestId: req._id,
+      userId: req.userId,
+      userName: req.userName,
+      phone: req.phone,
+      issuedBy: rejecterUser._id,
+      issuedByName: rejecterUser.name,
+      issuerRole: rejecterUser.role,
+      action: "REQUEST_REJECTED",
+      reason,
+      createdAt: now
+    });
+    return { success: true, message: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+  }
+  getPasswordRecoveryHistory(filter) {
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+      return this.passwordRecoveryAudits;
+    }
+    if (filter.role === "DIVISION_COORDINATOR") {
+      const validReqIds = new Set(
+        this.passwordRecoveryRequests.filter((r) => r.division === filter.division).map((r) => r._id)
+      );
+      return this.passwordRecoveryAudits.filter((a) => validReqIds.has(a.requestId));
+    }
+    return [];
+  }
+  // --- PART 04: Scoped Member Profile Search ---
+  scopedUserSearch(query, searcherUser) {
+    const clean = query.trim().toLowerCase();
+    const cleanPhone = clean.replace(/^(\+880|880)/, "0");
+    const targetUser = this.users.find(
+      (u) => u._id.toLowerCase() === clean || u.phone === cleanPhone || u.name.toLowerCase().includes(clean)
+    );
+    if (!targetUser) {
+      return {
+        success: false,
+        notFound: true,
+        message: "\u0995\u09CB\u09A8\u09CB \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
+      };
+    }
+    if (searcherUser.role === "SUPER_ADMIN" || searcherUser.role === "ADMIN") {
+    } else if (searcherUser.role === "DIVISION_COORDINATOR") {
+      if (targetUser.division !== searcherUser.assignedDivision) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0986\u09AA\u09A8\u09BE\u09B0 Assigned Division-\u098F\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09A8\u09C7\u0987\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F Division Coordinator \u0985\u09A5\u09AC\u09BE Authorized Administrator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+        };
+      }
+    } else if (searcherUser.role === "INSTITUTION_HEAD" || searcherUser.role === "INSTITUTION_MODERATOR") {
+      if (targetUser.assignedInstitution !== searcherUser.assignedInstitution) {
+        return {
+          success: false,
+          outOfScope: true,
+          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964 \u09AC\u09BF\u09B8\u09CD\u09A4\u09BE\u09B0\u09BF\u09A4 \u09A4\u09A5\u09CD\u09AF\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 Moderator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
+        };
+      }
+    } else {
+      return { success: false, outOfScope: true, message: "\u0985\u09A8\u09C1\u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC \u0985\u09A8\u09C1\u09AE\u09A4\u09BF \u09A8\u09C7\u0987\u0964" };
+    }
+    const inst = targetUser.assignedInstitution ? this.findInstitutionById(targetUser.assignedInstitution) : void 0;
+    const donor = this.donorProfiles.find((d) => d.userId === targetUser._id);
+    return {
+      success: true,
+      user: {
+        _id: targetUser._id,
+        name: targetUser.name,
+        phone: targetUser.phone,
+        role: targetUser.role,
+        accountStatus: targetUser.accountStatus,
+        division: targetUser.division,
+        district: targetUser.district,
+        upazila: targetUser.upazila,
+        gender: targetUser.gender,
+        assignedInstitution: targetUser.assignedInstitution,
+        institutionName: inst?.nameBn || inst?.name,
+        bloodGroup: donor?.bloodGroup,
+        totalDonations: donor?.totalDonations || 0,
+        createdAt: targetUser.createdAt
+      }
+    };
+  }
+  // --- PART 05 & 06: Institution Change Request & Membership Management ---
+  createInstitutionChangeRequest(data) {
+    const user = this.findUserById(data.userId);
+    if (!user) return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const targetInst = this.findInstitutionById(data.targetInstitutionId);
+    if (!targetInst) return { success: false, message: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    const currentInst = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
+    const now = /* @__PURE__ */ new Date();
+    const requestId = "icr_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newReq = {
+      _id: requestId,
+      userId: user._id,
+      userName: user.name,
+      phone: user.phone,
+      userRole: user.role,
+      currentInstitutionId: user.assignedInstitution,
+      currentInstitutionName: currentInst?.nameBn || currentInst?.name,
+      targetInstitutionId: targetInst._id,
+      targetInstitutionName: targetInst.nameBn || targetInst.name,
+      division: targetInst.division,
+      district: targetInst.district,
+      studentOrStaffId: data.studentOrStaffId,
+      department: data.department,
+      reason: data.reason,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now
+    };
+    this.institutionChangeRequests.unshift(newReq);
+    this.persistInstitutionChangeRequest(newReq);
+    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN");
+    for (const a of admins) {
+      this.createNotification({
+        userId: a._id,
+        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 "${targetInst.nameBn}" \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/admin/dashboard"
+      });
+    }
+    const coordinators = this.users.filter(
+      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === targetInst.division
+    );
+    for (const c of coordinators) {
+      this.createNotification({
+        userId: c._id,
+        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
+        message: `${user.name} "${targetInst.nameBn}" \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/coordinator/dashboard"
+      });
+    }
+    const targetOfficials = this.users.filter(
+      (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === targetInst._id
+    );
+    for (const o of targetOfficials) {
+      this.createNotification({
+        userId: o._id,
+        title: "\u{1F3EB} \u09A8\u09A4\u09C1\u09A8 \u09B8\u09A6\u09B8\u09CD\u09AF \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
+        message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
+        type: "institution_update",
+        link: "/moderator/dashboard"
+      });
+    }
+    return {
+      success: true,
+      message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09B2\u09C7 \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AC\u09C7\u0964",
+      request: newReq
+    };
+  }
+  getInstitutionChangeRequests(filter) {
+    let list = this.institutionChangeRequests;
+    if (filter.status) {
+      list = list.filter((r) => r.status === filter.status);
+    }
+    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
+      return list;
+    }
+    if (filter.role === "DIVISION_COORDINATOR") {
+      return list.filter((r) => r.division === filter.division);
+    }
+    if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
+      return list.filter((r) => r.targetInstitutionId === filter.institutionId || r.currentInstitutionId === filter.institutionId);
+    }
+    return [];
+  }
+  reviewInstitutionChangeRequest(requestId, reviewerUser, status, decisionReason) {
+    const req = this.institutionChangeRequests.find((r) => String(r._id) === String(requestId));
+    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
+    if (reviewerUser.role !== "SUPER_ADMIN" && reviewerUser.role !== "ADMIN" && reviewerUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099A\u09C2\u09A1\u09BC\u09BE\u09A8\u09CD\u09A4 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09C7\u09AC\u09B2 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AC\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09A6\u09BF\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if (reviewerUser.role === "DIVISION_COORDINATOR" && reviewerUser.assignedDivision !== req.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const now = /* @__PURE__ */ new Date();
+    req.status = status;
+    req.reviewedBy = reviewerUser._id;
+    req.reviewedByName = reviewerUser.name;
+    req.decisionReason = decisionReason;
+    req.updatedAt = now;
+    if (status === "approved") {
+      const targetUser = this.findUserById(req.userId);
+      if (targetUser) {
+        targetUser.assignedInstitution = req.targetInstitutionId;
+        targetUser.updatedAt = now;
+        this.persistUser(targetUser);
+      }
+      const donor = this.donorProfiles.find((d) => String(d.userId) === String(req.userId));
+      if (donor) {
+        donor.institutionId = req.targetInstitutionId;
+        donor.institutionMembershipVerified = true;
+        donor.updatedAt = now;
+        this.persistDonorProfile(donor);
+      }
+      this.createNotification({
+        userId: req.userId,
+        title: "\u{1F389} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4!",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${req.targetInstitutionName}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
+        type: "institution_update"
+      });
+    } else {
+      this.createNotification({
+        userId: req.userId,
+        title: "\u274C \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09A8\u09BE\u0995\u099A",
+        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BF\u09AC\u09C7\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u09AF\u09BC\u09A8\u09BF\u0964 \u0995\u09BE\u09B0\u09A3: ${decisionReason || "\u09AF\u09BE\u099A\u09BE\u0987\u09AF\u09BC\u09C7 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF"}`,
+        type: "institution_update"
+      });
+    }
+    this.persistInstitutionChangeRequest(req);
+    return {
+      success: true,
+      message: status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    };
+  }
+  // Manual Institution Creation by SUPER_ADMIN or DIVISION_COORDINATOR
+  manualCreateInstitution(data, creatorUser) {
+    if (creatorUser.role !== "SUPER_ADMIN" && creatorUser.role !== "ADMIN" && creatorUser.role !== "DIVISION_COORDINATOR") {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u098F\u09AC\u0982 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    if (creatorUser.role === "DIVISION_COORDINATOR" && creatorUser.assignedDivision !== data.division) {
+      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
+    }
+    const existing = this.institutions.find((i) => i.code.toUpperCase() === data.code.toUpperCase() || i.name.toLowerCase() === data.name.toLowerCase());
+    if (existing) {
+      return { success: false, message: "\u098F\u0987 \u0995\u09CB\u09A1 \u09AC\u09BE \u09A8\u09BE\u09AE\u09C7\u09B0 \u098F\u0995\u099F\u09BF \u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
+    }
+    const now = /* @__PURE__ */ new Date();
+    const instId = "inst_" + Date.now() + Math.random().toString(36).substring(2, 6);
+    const newInst = {
+      _id: instId,
+      name: data.name,
+      nameBn: data.nameBn,
+      code: data.code.toUpperCase(),
+      type: data.type || "university",
+      division: data.division,
+      district: data.district,
+      upazila: data.upazila,
+      address: data.address,
+      email: data.email,
+      phone: data.phone,
+      description: data.description,
+      status: "approved",
+      totalRegisteredDonors: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.institutions.unshift(newInst);
+    this.persistInstitution(newInst);
+    return {
+      success: true,
+      institution: newInst,
+      message: `\u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${newInst.nameBn}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`
+    };
+  }
+};
+var dataStore = new DataStore();
+
+// src/routes/authRoutes.ts
+var import_express = __toESM(require_express2());
 
 // src/controllers/authController.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken());
@@ -99905,3693 +103594,6 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// src/config/env.ts
-var import_dotenv = __toESM(require_main());
-import_dotenv.default.config();
-var ENV = {
-  PORT: process.env.PORT || "5000",
-  NODE_ENV: process.env.NODE_ENV || "development",
-  MONGO_URI: process.env.MONGO_URI || "",
-  JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev_bangladesh_blood_platform_key_2026"),
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
-  SMS_PROVIDER: process.env.SMS_PROVIDER || "mock",
-  // 'mock' | 'bulksmsbd' | 'greenweb' | 'twilio'
-  SMS_API_KEY: process.env.SMS_API_KEY || "",
-  CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
-  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : [],
-  DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10)
-};
-
-// src/models/User.ts
-var import_mongoose = __toESM(require_mongoose2());
-var UserSchema = new import_mongoose.Schema(
-  {
-    _id: { type: String },
-    name: { type: String, required: true, trim: true },
-    phone: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      index: true
-    },
-    email: { type: String, trim: true, lowercase: true },
-    passwordHash: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_MODERATOR", "MEMBER", "DONOR", "REQUESTER"],
-      default: "MEMBER",
-      required: true,
-      index: true
-    },
-    accountStatus: {
-      type: String,
-      enum: ["active", "pending_verification", "temporarily_blocked", "suspended", "deactivated"],
-      default: "active",
-      index: true
-    },
-    blockReason: { type: String, trim: true },
-    blockedBy: { type: import_mongoose.Schema.Types.Mixed },
-    blockedAt: { type: Date },
-    gender: {
-      type: String,
-      enum: ["male", "female", "unspecified", "other"],
-      default: "unspecified"
-    },
-    femaleSafetyAcknowledged: { type: Boolean, default: false },
-    femalePublicPhoneConsent: { type: Boolean, default: false },
-    assignedDivision: { type: String, trim: true, index: true },
-    assignedInstitution: { type: import_mongoose.Schema.Types.Mixed, index: true },
-    assignedInstitutions: [{ type: import_mongoose.Schema.Types.Mixed }],
-    requirePasswordChangeAtFirstLogin: { type: Boolean, default: false },
-    createdByModeratorId: { type: import_mongoose.Schema.Types.Mixed },
-    division: { type: String, trim: true },
-    district: { type: String, trim: true },
-    upazila: { type: String, trim: true },
-    isActive: { type: Boolean, default: true, index: true },
-    isPhoneVerified: { type: Boolean, default: false },
-    lastLoginAt: { type: Date }
-  },
-  {
-    timestamps: true
-  }
-);
-var UserModel = import_mongoose.default.model("User", UserSchema);
-
-// src/models/DonorProfile.ts
-var import_mongoose2 = __toESM(require_mongoose2());
-
-// src/data/bangladeshLocations.ts
-var BANGLADESH_DIVISIONS = [
-  {
-    id: "dhaka",
-    nameEn: "Dhaka",
-    nameBn: "\u09A2\u09BE\u0995\u09BE",
-    districts: [
-      {
-        id: "dhaka",
-        nameEn: "Dhaka",
-        nameBn: "\u09A2\u09BE\u0995\u09BE",
-        upazilas: [
-          { id: "dhanmondi", nameEn: "Dhanmondi", nameBn: "\u09A7\u09BE\u09A8\u09AE\u09A8\u09CD\u09A1\u09BF" },
-          { id: "mirpur", nameEn: "Mirpur", nameBn: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0" },
-          { id: "uttara", nameEn: "Uttara", nameBn: "\u0989\u09A4\u09CD\u09A4\u09B0\u09BE" },
-          { id: "gulshan", nameEn: "Gulshan", nameBn: "\u0997\u09C1\u09B2\u09B6\u09BE\u09A8" },
-          { id: "banani", nameEn: "Banani", nameBn: "\u09AC\u09A8\u09BE\u09A8\u09C0" },
-          { id: "mohammadpur", nameEn: "Mohammadpur", nameBn: "\u09AE\u09CB\u09B9\u09BE\u09AE\u09CD\u09AE\u09A6\u09AA\u09C1\u09B0" },
-          { id: "motijheel", nameEn: "Motijheel", nameBn: "\u09AE\u09A4\u09BF\u099D\u09BF\u09B2" },
-          { id: "shahbagh", nameEn: "Shahbagh", nameBn: "\u09B6\u09BE\u09B9\u09AC\u09BE\u0997" },
-          { id: "savar", nameEn: "Savar", nameBn: "\u09B8\u09BE\u09AD\u09BE\u09B0" },
-          { id: "dhamrai", nameEn: "Dhamrai", nameBn: "\u09A7\u09BE\u09AE\u09B0\u09BE\u0987" },
-          { id: "keraniganj", nameEn: "Keraniganj", nameBn: "\u0995\u09C7\u09B0\u09BE\u09A8\u09C0\u0997\u099E\u09CD\u099C" },
-          { id: "badda", nameEn: "Badda", nameBn: "\u09AC\u09BE\u09A1\u09CD\u09A1\u09BE" },
-          { id: "khilgaon", nameEn: "Khilgaon", nameBn: "\u0996\u09BF\u09B2\u0997\u09BE\u0981\u0993" },
-          { id: "jatrabari", nameEn: "Jatrabari", nameBn: "\u09AF\u09BE\u09A4\u09CD\u09B0\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
-        ]
-      },
-      {
-        id: "gazipur",
-        nameEn: "Gazipur",
-        nameBn: "\u0997\u09BE\u099C\u09C0\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "gazipur_sadar", nameEn: "Gazipur Sadar", nameBn: "\u0997\u09BE\u099C\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "kaliakair", nameEn: "Kaliakair", nameBn: "\u0995\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE\u0995\u09C8\u09B0" },
-          { id: "kapasia", nameEn: "Kapasia", nameBn: "\u0995\u09BE\u09AA\u09BE\u09B8\u09BF\u09AF\u09BC\u09BE" },
-          { id: "sreepur", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" },
-          { id: "kaliganj", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "narayanganj",
-        nameEn: "Narayanganj",
-        nameBn: "\u09A8\u09BE\u09B0\u09BE\u09AF\u09BC\u09A3\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "narayanganj_sadar", nameEn: "Narayanganj Sadar", nameBn: "\u09A8\u09BE\u09B0\u09BE\u09AF\u09BC\u09A3\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "bandar", nameEn: "Bandar", nameBn: "\u09AC\u09A8\u09CD\u09A6\u09B0" },
-          { id: "rupganj", nameEn: "Rupganj", nameBn: "\u09B0\u09C2\u09AA\u0997\u099E\u09CD\u099C" },
-          { id: "sonargaon", nameEn: "Sonargaon", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09B0\u0997\u09BE\u0981\u0993" },
-          { id: "araihazar", nameEn: "Araihazar", nameBn: "\u0986\u09A1\u09BC\u09BE\u0987\u09B9\u09BE\u099C\u09BE\u09B0" }
-        ]
-      },
-      {
-        id: "tangail",
-        nameEn: "Tangail",
-        nameBn: "\u099F\u09BE\u0999\u09CD\u0997\u09BE\u0987\u09B2",
-        upazilas: [
-          { id: "tangail_sadar", nameEn: "Tangail Sadar", nameBn: "\u099F\u09BE\u0999\u09CD\u0997\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
-          { id: "mirzapur", nameEn: "Mirzapur", nameBn: "\u09AE\u09BF\u09B0\u09CD\u099C\u09BE\u09AA\u09C1\u09B0" },
-          { id: "ghatail", nameEn: "Ghatail", nameBn: "\u0998\u09BE\u099F\u09BE\u0987\u09B2" },
-          { id: "madhupur", nameEn: "Madhupur", nameBn: "\u09AE\u09A7\u09C1\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "faridpur",
-        nameEn: "Faridpur",
-        nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "faridpur_sadar", nameEn: "Faridpur Sadar", nameBn: "\u09AB\u09B0\u09BF\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "bhanga", nameEn: "Bhanga", nameBn: "\u09AD\u09BE\u0999\u09CD\u0997\u09BE" },
-          { id: "boalmari", nameEn: "Boalmari", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09AE\u09BE\u09B0\u09C0" }
-        ]
-      },
-      {
-        id: "manikganj",
-        nameEn: "Manikganj",
-        nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "manikganj_sadar", nameEn: "Manikganj Sadar", nameBn: "\u09AE\u09BE\u09A8\u09BF\u0995\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "singair", nameEn: "Singair", nameBn: "\u09B8\u09BF\u0982\u0997\u09BE\u0987\u09B0" }
-        ]
-      },
-      {
-        id: "munshiganj",
-        nameEn: "Munshiganj",
-        nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "munshiganj_sadar", nameEn: "Munshiganj Sadar", nameBn: "\u09AE\u09C1\u09A8\u09CD\u09B8\u09C0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "sreenagar", nameEn: "Sreenagar", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09A8\u0997\u09B0" }
-        ]
-      },
-      {
-        id: "narsingdi",
-        nameEn: "Narsingdi",
-        nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0",
-        upazilas: [
-          { id: "narsingdi_sadar", nameEn: "Narsingdi Sadar", nameBn: "\u09A8\u09B0\u09B8\u09BF\u0982\u09A6\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "shibpur", nameEn: "Shibpur", nameBn: "\u09B6\u09BF\u09AC\u09AA\u09C1\u09B0" },
-          { id: "raipura", nameEn: "Raipura", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0\u09BE" }
-        ]
-      },
-      {
-        id: "gopalganj",
-        nameEn: "Gopalganj",
-        nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "gopalganj_sadar", nameEn: "Gopalganj Sadar", nameBn: "\u0997\u09CB\u09AA\u09BE\u09B2\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "tungipara", nameEn: "Tungipara", nameBn: "\u099F\u09C1\u0999\u09CD\u0997\u09BF\u09AA\u09BE\u09A1\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "madaripur",
-        nameEn: "Madaripur",
-        nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "madaripur_sadar", nameEn: "Madaripur Sadar", nameBn: "\u09AE\u09BE\u09A6\u09BE\u09B0\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "shibchar", nameEn: "Shibchar", nameBn: "\u09B6\u09BF\u09AC\u099A\u09B0" }
-        ]
-      },
-      {
-        id: "rajbari",
-        nameEn: "Rajbari",
-        nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0",
-        upazilas: [
-          { id: "rajbari_sadar", nameEn: "Rajbari Sadar", nameBn: "\u09B0\u09BE\u099C\u09AC\u09BE\u09A1\u09BC\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "pangsha", nameEn: "Pangsha", nameBn: "\u09AA\u09BE\u0982\u09B6\u09BE" }
-        ]
-      },
-      {
-        id: "shariatpur",
-        nameEn: "Shariatpur",
-        nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "shariatpur_sadar", nameEn: "Shariatpur Sadar", nameBn: "\u09B6\u09B0\u09C0\u09AF\u09BC\u09A4\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "zajira", nameEn: "Zajira", nameBn: "\u099C\u09BE\u099C\u09BF\u09B0\u09BE" }
-        ]
-      },
-      {
-        id: "kishoreganj",
-        nameEn: "Kishoreganj",
-        nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "kishoreganj_sadar", nameEn: "Kishoreganj Sadar", nameBn: "\u0995\u09BF\u09B6\u09CB\u09B0\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "bhairab", nameEn: "Bhairab", nameBn: "\u09AD\u09C8\u09B0\u09AC" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "chattogram",
-    nameEn: "Chattogram",
-    nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-    districts: [
-      {
-        id: "chattogram",
-        nameEn: "Chattogram",
-        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-        upazilas: [
-          { id: "kotwali_ctg", nameEn: "Kotwali", nameBn: "\u0995\u09CB\u09A4\u09CB\u09AF\u09BC\u09BE\u09B2\u09C0" },
-          { id: "panchlaish", nameEn: "Panchlaish", nameBn: "\u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6" },
-          { id: "halishahar", nameEn: "Halishahar", nameBn: "\u09B9\u09BE\u09B2\u09BF\u09B6\u09B9\u09B0" },
-          { id: "agrabad", nameEn: "Agrabad", nameBn: "\u0986\u0997\u09CD\u09B0\u09BE\u09AC\u09BE\u09A6" },
-          { id: "hathazari", nameEn: "Hathazari", nameBn: "\u09B9\u09BE\u099F\u09B9\u09BE\u099C\u09BE\u09B0\u09C0" },
-          { id: "sitakunda", nameEn: "Sitakunda", nameBn: "\u09B8\u09C0\u09A4\u09BE\u0995\u09C1\u09A3\u09CD\u09A1" },
-          { id: "mirsharai", nameEn: "Mirsharai", nameBn: "\u09AE\u09C0\u09B0\u09B8\u09B0\u09BE\u0987" },
-          { id: "patiya", nameEn: "Patiya", nameBn: "\u09AA\u099F\u09BF\u09AF\u09BC\u09BE" },
-          { id: "raozan", nameEn: "Raozan", nameBn: "\u09B0\u09BE\u0989\u099C\u09BE\u09A8" }
-        ]
-      },
-      {
-        id: "coxsbazar",
-        nameEn: "Cox's Bazar",
-        nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0",
-        upazilas: [
-          { id: "coxsbazar_sadar", nameEn: "Cox's Bazar Sadar", nameBn: "\u0995\u0995\u09CD\u09B8\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "ramu", nameEn: "Ramu", nameBn: "\u09B0\u09BE\u09AE\u09C1" },
-          { id: "teknaf", nameEn: "Teknaf", nameBn: "\u099F\u09C7\u0995\u09A8\u09BE\u09AB" },
-          { id: "chakaria", nameEn: "Chakaria", nameBn: "\u099A\u0995\u09CB\u09B0\u09BF\u09AF\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "cumilla",
-        nameEn: "Cumilla",
-        nameBn: "\u0995\u09C1\u09AE\u09BF\u09B2\u09CD\u09B2\u09BE",
-        upazilas: [
-          { id: "cumilla_adarsha_sadar", nameEn: "Adarsha Sadar", nameBn: "\u0986\u09A6\u09B0\u09CD\u09B6 \u09B8\u09A6\u09B0" },
-          { id: "laksham", nameEn: "Laksham", nameBn: "\u09B2\u09BE\u0995\u09B8\u09BE\u09AE" },
-          { id: "chandina", nameEn: "Chandina", nameBn: "\u099A\u09BE\u09A8\u09CD\u09A6\u09BF\u09A8\u09BE" },
-          { id: "debidwar", nameEn: "Debidwar", nameBn: "\u09A6\u09C7\u09AC\u09BF\u09A6\u09CD\u09AC\u09BE\u09B0" }
-        ]
-      },
-      {
-        id: "feni",
-        nameEn: "Feni",
-        nameBn: "\u09AB\u09C7\u09A8\u09C0",
-        upazilas: [
-          { id: "feni_sadar", nameEn: "Feni Sadar", nameBn: "\u09AB\u09C7\u09A8\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "daganbhuiyan", nameEn: "Daganbhuiyan", nameBn: "\u09A6\u09BE\u0997\u09A8\u09AD\u09C2\u099E\u09BE" },
-          { id: "parshuram", nameEn: "Parshuram", nameBn: "\u09AA\u09B0\u09B6\u09C1\u09B0\u09BE\u09AE" }
-        ]
-      },
-      {
-        id: "brahmanbaria",
-        nameEn: "Brahmanbaria",
-        nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE",
-        upazilas: [
-          { id: "brahmanbaria_sadar", nameEn: "Brahmanbaria Sadar", nameBn: "\u09AC\u09CD\u09B0\u09BE\u09B9\u09CD\u09AE\u09A3\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
-          { id: "ashuganj", nameEn: "Ashuganj", nameBn: "\u0986\u09B6\u09C1\u0997\u099E\u09CD\u099C" },
-          { id: "sarail", nameEn: "Sarail", nameBn: "\u09B8\u09B0\u09BE\u0987\u09B2" }
-        ]
-      },
-      {
-        id: "chandpur",
-        nameEn: "Chandpur",
-        nameBn: "\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "chandpur_sadar", nameEn: "Chandpur Sadar", nameBn: "\u099A\u09BE\u0981\u09A6\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "hajiganj", nameEn: "Hajiganj", nameBn: "\u09B9\u09BE\u099C\u09C0\u0997\u099E\u09CD\u099C" },
-          { id: "matlab", nameEn: "Matlab", nameBn: "\u09AE\u09A4\u09B2\u09AC" }
-        ]
-      },
-      {
-        id: "noakhali",
-        nameEn: "Noakhali",
-        nameBn: "\u09A8\u09CB\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0",
-        upazilas: [
-          { id: "noakhali_sadar", nameEn: "Noakhali Sadar", nameBn: "\u09A8\u09CB\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "begumganj", nameEn: "Begumganj", nameBn: "\u09AC\u09C7\u0997\u09AE\u0997\u099E\u09CD\u099C" },
-          { id: "senbagh", nameEn: "Senbagh", nameBn: "\u09B8\u09C7\u09A8\u09AC\u09BE\u0997" }
-        ]
-      },
-      {
-        id: "lakshmipur",
-        nameEn: "Lakshmipur",
-        nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "lakshmipur_sadar", nameEn: "Lakshmipur Sadar", nameBn: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AE\u09C0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "ramganj", nameEn: "Ramganj", nameBn: "\u09B0\u09BE\u09AE\u0997\u099E\u09CD\u099C" },
-          { id: "raipur", nameEn: "Raipur", nameBn: "\u09B0\u09BE\u09AF\u09BC\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "rangamati",
-        nameEn: "Rangamati",
-        nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF",
-        upazilas: [
-          { id: "rangamati_sadar", nameEn: "Rangamati Sadar", nameBn: "\u09B0\u09BE\u0999\u09CD\u0997\u09BE\u09AE\u09BE\u099F\u09BF \u09B8\u09A6\u09B0" },
-          { id: "kaptai", nameEn: "Kaptai", nameBn: "\u0995\u09BE\u09AA\u09CD\u09A4\u09BE\u0987" }
-        ]
-      },
-      {
-        id: "khagrachhari",
-        nameEn: "Khagrachhari",
-        nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF",
-        upazilas: [
-          { id: "khagrachhari_sadar", nameEn: "Khagrachhari Sadar", nameBn: "\u0996\u09BE\u0997\u09A1\u09BC\u09BE\u099B\u09A1\u09BC\u09BF \u09B8\u09A6\u09B0" },
-          { id: "dighinala", nameEn: "Dighinala", nameBn: "\u09A6\u09C0\u0998\u09BF\u09A8\u09BE\u09B2\u09BE" }
-        ]
-      },
-      {
-        id: "bandarban",
-        nameEn: "Bandarban",
-        nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8",
-        upazilas: [
-          { id: "bandarban_sadar", nameEn: "Bandarban Sadar", nameBn: "\u09AC\u09BE\u09A8\u09CD\u09A6\u09B0\u09AC\u09BE\u09A8 \u09B8\u09A6\u09B0" },
-          { id: "thanchi", nameEn: "Thanchi", nameBn: "\u09A5\u09BE\u09A8\u099A\u09BF" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "rajshahi",
-    nameEn: "Rajshahi",
-    nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
-    districts: [
-      {
-        id: "rajshahi",
-        nameEn: "Rajshahi",
-        nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
-        upazilas: [
-          { id: "boalia", nameEn: "Boalia", nameBn: "\u09AC\u09CB\u09AF\u09BC\u09BE\u09B2\u09BF\u09AF\u09BC\u09BE" },
-          { id: "rajpara", nameEn: "Rajpara", nameBn: "\u09B0\u09BE\u099C\u09AA\u09BE\u09A1\u09BC\u09BE" },
-          { id: "motihar", nameEn: "Motihar", nameBn: "\u09AE\u09A4\u09BF\u09B9\u09BE\u09B0" },
-          { id: "godagari", nameEn: "Godagari", nameBn: "\u0997\u09CB\u09A6\u09BE\u0997\u09BE\u09A1\u09BC\u09C0" },
-          { id: "paba", nameEn: "Paba", nameBn: "\u09AA\u09AC\u09BE" }
-        ]
-      },
-      {
-        id: "bogura",
-        nameEn: "Bogura",
-        nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE",
-        upazilas: [
-          { id: "bogura_sadar", nameEn: "Bogura Sadar", nameBn: "\u09AC\u0997\u09C1\u09A1\u09BC\u09BE \u09B8\u09A6\u09B0" },
-          { id: "sherpur", nameEn: "Sherpur", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0" },
-          { id: "shibganj", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "pabna",
-        nameEn: "Pabna",
-        nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE",
-        upazilas: [
-          { id: "pabna_sadar", nameEn: "Pabna Sadar", nameBn: "\u09AA\u09BE\u09AC\u09A8\u09BE \u09B8\u09A6\u09B0" },
-          { id: "ishwardi", nameEn: "Ishwardi", nameBn: "\u0988\u09B6\u09CD\u09AC\u09B0\u09A6\u09C0" }
-        ]
-      },
-      {
-        id: "sirajganj",
-        nameEn: "Sirajganj",
-        nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "sirajganj_sadar", nameEn: "Sirajganj Sadar", nameBn: "\u09B8\u09BF\u09B0\u09BE\u099C\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "shahjadpur", nameEn: "Shahjadpur", nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09A6\u09AA\u09C1\u09B0" },
-          { id: "ullapara", nameEn: "Ullapara", nameBn: "\u0989\u09B2\u09CD\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "naogaon",
-        nameEn: "Naogaon",
-        nameBn: "\u09A8\u0993\u0997\u09BE\u0981",
-        upazilas: [
-          { id: "naogaon_sadar", nameEn: "Naogaon Sadar", nameBn: "\u09A8\u0993\u0997\u09BE\u0981 \u09B8\u09A6\u09B0" },
-          { id: "patnitala", nameEn: "Patnitala", nameBn: "\u09AA\u09A4\u09CD\u09A8\u09C0\u09A4\u09B2\u09BE" }
-        ]
-      },
-      {
-        id: "natore",
-        nameEn: "Natore",
-        nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0",
-        upazilas: [
-          { id: "natore_sadar", nameEn: "Natore Sadar", nameBn: "\u09A8\u09BE\u099F\u09CB\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "singra", nameEn: "Singra", nameBn: "\u09B8\u09BF\u0982\u09A1\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "chapainawabganj",
-        nameEn: "Chapainawabganj",
-        nameBn: "\u099A\u09BE\u0981\u09AA\u09BE\u0987\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "nawabganj_sadar", nameEn: "Nawabganj Sadar", nameBn: "\u09A8\u09AC\u09BE\u09AC\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "shibganj_c", nameEn: "Shibganj", nameBn: "\u09B6\u09BF\u09AC\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "joypurhat",
-        nameEn: "Joypurhat",
-        nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F",
-        upazilas: [
-          { id: "joypurhat_sadar", nameEn: "Joypurhat Sadar", nameBn: "\u099C\u09AF\u09BC\u09AA\u09C1\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
-          { id: "panchbibi", nameEn: "Panchbibi", nameBn: "\u09AA\u09BE\u0981\u099A\u09AC\u09BF\u09AC\u09BF" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "khulna",
-    nameEn: "Khulna",
-    nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE",
-    districts: [
-      {
-        id: "khulna",
-        nameEn: "Khulna",
-        nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE",
-        upazilas: [
-          { id: "khulna_sadar", nameEn: "Khulna Sadar", nameBn: "\u0996\u09C1\u09B2\u09A8\u09BE \u09B8\u09A6\u09B0" },
-          { id: "sonadanga", nameEn: "Sonadanga", nameBn: "\u09B8\u09CB\u09A8\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE" },
-          { id: "khalishpur", nameEn: "Khalishpur", nameBn: "\u0996\u09BE\u09B2\u09BF\u09B6\u09AA\u09C1\u09B0" },
-          { id: "daulatpur", nameEn: "Daulatpur", nameBn: "\u09A6\u09CC\u09B2\u09A4\u09AA\u09C1\u09B0" },
-          { id: "dumuria", nameEn: "Dumuria", nameBn: "\u09A1\u09C1\u09AE\u09C1\u09B0\u09BF\u09AF\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "jashore",
-        nameEn: "Jashore",
-        nameBn: "\u09AF\u09B6\u09CB\u09B0",
-        upazilas: [
-          { id: "jashore_sadar", nameEn: "Jashore Sadar", nameBn: "\u09AF\u09B6\u09CB\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "jhikargachha", nameEn: "Jhikargachha", nameBn: "\u099D\u09BF\u0995\u09B0\u0997\u09BE\u099B\u09BE" },
-          { id: "keshabpur", nameEn: "Keshabpur", nameBn: "\u0995\u09C7\u09B6\u09AC\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "kushtia",
-        nameEn: "Kushtia",
-        nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE",
-        upazilas: [
-          { id: "kushtia_sadar", nameEn: "Kushtia Sadar", nameBn: "\u0995\u09C1\u09B7\u09CD\u099F\u09BF\u09AF\u09BC\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kumarkhali", nameEn: "Kumarkhali", nameBn: "\u0995\u09C1\u09AE\u09BE\u09B0\u0996\u09BE\u09B2\u09C0" }
-        ]
-      },
-      {
-        id: "satkhira",
-        nameEn: "Satkhira",
-        nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE",
-        upazilas: [
-          { id: "satkhira_sadar", nameEn: "Satkhira Sadar", nameBn: "\u09B8\u09BE\u09A4\u0995\u09CD\u09B7\u09C0\u09B0\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kaliganj_sat", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "bagerhat",
-        nameEn: "Bagerhat",
-        nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F",
-        upazilas: [
-          { id: "bagerhat_sadar", nameEn: "Bagerhat Sadar", nameBn: "\u09AC\u09BE\u0997\u09C7\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
-          { id: "mongla", nameEn: "Mongla", nameBn: "\u09AE\u09CB\u0982\u09B2\u09BE" }
-        ]
-      },
-      {
-        id: "jhenaidah",
-        nameEn: "Jhenaidah",
-        nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9",
-        upazilas: [
-          { id: "jhenaidah_sadar", nameEn: "Jhenaidah Sadar", nameBn: "\u099D\u09BF\u09A8\u09BE\u0987\u09A6\u09B9 \u09B8\u09A6\u09B0" },
-          { id: "kaliganj_jhen", nameEn: "Kaliganj", nameBn: "\u0995\u09BE\u09B2\u09C0\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "chuadanga",
-        nameEn: "Chuadanga",
-        nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE",
-        upazilas: [
-          { id: "chuadanga_sadar", nameEn: "Chuadanga Sadar", nameBn: "\u099A\u09C1\u09AF\u09BC\u09BE\u09A1\u09BE\u0999\u09CD\u0997\u09BE \u09B8\u09A6\u09B0" },
-          { id: "damurhuda", nameEn: "Damurhuda", nameBn: "\u09A6\u09BE\u09AE\u09C1\u09A1\u09BC\u09B9\u09C1\u09A6\u09BE" }
-        ]
-      },
-      {
-        id: "magura",
-        nameEn: "Magura",
-        nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE",
-        upazilas: [
-          { id: "magura_sadar", nameEn: "Magura Sadar", nameBn: "\u09AE\u09BE\u0997\u09C1\u09B0\u09BE \u09B8\u09A6\u09B0" },
-          { id: "sreepur_mag", nameEn: "Sreepur", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "meherpur",
-        nameEn: "Meherpur",
-        nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "meherpur_sadar", nameEn: "Meherpur Sadar", nameBn: "\u09AE\u09C7\u09B9\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "gangni", nameEn: "Gangni", nameBn: "\u0997\u09BE\u0982\u09A8\u09C0" }
-        ]
-      },
-      {
-        id: "narail",
-        nameEn: "Narail",
-        nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2",
-        upazilas: [
-          { id: "narail_sadar", nameEn: "Narail Sadar", nameBn: "\u09A8\u09A1\u09BC\u09BE\u0987\u09B2 \u09B8\u09A6\u09B0" },
-          { id: "lohagagara", nameEn: "Lohagara", nameBn: "\u09B2\u09CB\u09B9\u09BE\u0997\u09A1\u09BC\u09BE" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "barishal",
-    nameEn: "Barishal",
-    nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2",
-    districts: [
-      {
-        id: "barishal",
-        nameEn: "Barishal",
-        nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2",
-        upazilas: [
-          { id: "barishal_sadar", nameEn: "Barishal Sadar", nameBn: "\u09AC\u09B0\u09BF\u09B6\u09BE\u09B2 \u09B8\u09A6\u09B0" },
-          { id: "bakerganj", nameEn: "Bakerganj", nameBn: "\u09AC\u09BE\u0995\u09C7\u09B0\u0997\u099E\u09CD\u099C" },
-          { id: "babuganj", nameEn: "Babuganj", nameBn: "\u09AC\u09BE\u09AC\u09C1\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "patuakhali",
-        nameEn: "Patuakhali",
-        nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0",
-        upazilas: [
-          { id: "patuakhali_sadar", nameEn: "Patuakhali Sadar", nameBn: "\u09AA\u099F\u09C1\u09AF\u09BC\u09BE\u0996\u09BE\u09B2\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "kalapara", nameEn: "Kalapara", nameBn: "\u0995\u09B2\u09BE\u09AA\u09BE\u09A1\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "bhola",
-        nameEn: "Bhola",
-        nameBn: "\u09AD\u09CB\u09B2\u09BE",
-        upazilas: [
-          { id: "bhola_sadar", nameEn: "Bhola Sadar", nameBn: "\u09AD\u09CB\u09B2\u09BE \u09B8\u09A6\u09B0" },
-          { id: "charfasson", nameEn: "Charfasson", nameBn: "\u099A\u09B0\u09AB\u09CD\u09AF\u09BE\u09B6\u09A8" }
-        ]
-      },
-      {
-        id: "pirojpur",
-        nameEn: "Pirojpur",
-        nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "pirojpur_sadar", nameEn: "Pirojpur Sadar", nameBn: "\u09AA\u09BF\u09B0\u09CB\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "mathbaria", nameEn: "Mathbaria", nameBn: "\u09AE\u09A0\u09AC\u09BE\u09A1\u09BC\u09BF\u09AF\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "barguna",
-        nameEn: "Barguna",
-        nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE",
-        upazilas: [
-          { id: "barguna_sadar", nameEn: "Barguna Sadar", nameBn: "\u09AC\u09B0\u0997\u09C1\u09A8\u09BE \u09B8\u09A6\u09B0" },
-          { id: "amtali", nameEn: "Amtali", nameBn: "\u0986\u09AE\u09A4\u09B2\u09C0" }
-        ]
-      },
-      {
-        id: "jhalokati",
-        nameEn: "Jhalokati",
-        nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF",
-        upazilas: [
-          { id: "jhalokati_sadar", nameEn: "Jhalokati Sadar", nameBn: "\u099D\u09BE\u09B2\u0995\u09BE\u09A0\u09BF \u09B8\u09A6\u09B0" },
-          { id: "nalchity", nameEn: "Nalchity", nameBn: "\u09A8\u09B2\u099B\u09BF\u099F\u09BF" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "sylhet",
-    nameEn: "Sylhet",
-    nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F",
-    districts: [
-      {
-        id: "sylhet",
-        nameEn: "Sylhet",
-        nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F",
-        upazilas: [
-          { id: "sylhet_sadar", nameEn: "Sylhet Sadar", nameBn: "\u09B8\u09BF\u09B2\u09C7\u099F \u09B8\u09A6\u09B0" },
-          { id: "beanibazar", nameEn: "Beanibazar", nameBn: "\u09AC\u09BF\u09AF\u09BC\u09BE\u09A8\u09C0\u09AC\u09BE\u099C\u09BE\u09B0" },
-          { id: "golapganj", nameEn: "Golapganj", nameBn: "\u0997\u09CB\u09B2\u09BE\u09AA\u0997\u099E\u09CD\u099C" },
-          { id: "bishwanath", nameEn: "Bishwanath", nameBn: "\u09AC\u09BF\u09B6\u09CD\u09AC\u09A8\u09BE\u09A5" }
-        ]
-      },
-      {
-        id: "moulvibazar",
-        nameEn: "Moulvibazar",
-        nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0",
-        upazilas: [
-          { id: "moulvibazar_sadar", nameEn: "Moulvibazar Sadar", nameBn: "\u09AE\u09CC\u09B2\u09AD\u09C0\u09AC\u09BE\u099C\u09BE\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "sreemangal", nameEn: "Sreemangal", nameBn: "\u09B6\u09CD\u09B0\u09C0\u09AE\u0999\u09CD\u0997\u09B2" },
-          { id: "kulaura", nameEn: "Kulaura", nameBn: "\u0995\u09C1\u09B2\u09BE\u0989\u09A1\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "habiganj",
-        nameEn: "Habiganj",
-        nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "habiganj_sadar", nameEn: "Habiganj Sadar", nameBn: "\u09B9\u09AC\u09BF\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "madhabpur", nameEn: "Madhabpur", nameBn: "\u09AE\u09BE\u09A7\u09AC\u09AA\u09C1\u09B0" },
-          { id: "nabiganj", nameEn: "Nabiganj", nameBn: "\u09A8\u09AC\u09C0\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "sunamganj",
-        nameEn: "Sunamganj",
-        nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C",
-        upazilas: [
-          { id: "sunamganj_sadar", nameEn: "Sunamganj Sadar", nameBn: "\u09B8\u09C1\u09A8\u09BE\u09AE\u0997\u099E\u09CD\u099C \u09B8\u09A6\u09B0" },
-          { id: "chhatak", nameEn: "Chhatak", nameBn: "\u099B\u09BE\u09A4\u0995" },
-          { id: "tahirpur", nameEn: "Tahirpur", nameBn: "\u09A4\u09BE\u09B9\u09BF\u09B0\u09AA\u09C1\u09B0" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "rangpur",
-    nameEn: "Rangpur",
-    nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0",
-    districts: [
-      {
-        id: "rangpur",
-        nameEn: "Rangpur",
-        nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "rangpur_sadar", nameEn: "Rangpur Sadar", nameBn: "\u09B0\u0982\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "badarganj", nameEn: "Badarganj", nameBn: "\u09AC\u09A6\u09B0\u0997\u099E\u09CD\u099C" },
-          { id: "pirganj", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "dinajpur",
-        nameEn: "Dinajpur",
-        nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "dinajpur_sadar", nameEn: "Dinajpur Sadar", nameBn: "\u09A6\u09BF\u09A8\u09BE\u099C\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "birganj", nameEn: "Birganj", nameBn: "\u09AC\u09C0\u09B0\u0997\u099E\u09CD\u099C" },
-          { id: "parbatipur", nameEn: "Parbatipur", nameBn: "\u09AA\u09BE\u09B0\u09CD\u09AC\u09A4\u09C0\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "gaibandha",
-        nameEn: "Gaibandha",
-        nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE",
-        upazilas: [
-          { id: "gaibandha_sadar", nameEn: "Gaibandha Sadar", nameBn: "\u0997\u09BE\u0987\u09AC\u09BE\u09A8\u09CD\u09A7\u09BE \u09B8\u09A6\u09B0" },
-          { id: "gobindaganj", nameEn: "Gobindaganj", nameBn: "\u0997\u09CB\u09AC\u09BF\u09A8\u09CD\u09A6\u0997\u099E\u09CD\u099C" }
-        ]
-      },
-      {
-        id: "kurigram",
-        nameEn: "Kurigram",
-        nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE",
-        upazilas: [
-          { id: "kurigram_sadar", nameEn: "Kurigram Sadar", nameBn: "\u0995\u09C1\u09A1\u09BC\u09BF\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09A6\u09B0" },
-          { id: "ulipur", nameEn: "Ulipur", nameBn: "\u0989\u09B2\u09BF\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "lalmonirhat",
-        nameEn: "Lalmonirhat",
-        nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F",
-        upazilas: [
-          { id: "lalmonirhat_sadar", nameEn: "Lalmonirhat Sadar", nameBn: "\u09B2\u09BE\u09B2\u09AE\u09A8\u09BF\u09B0\u09B9\u09BE\u099F \u09B8\u09A6\u09B0" },
-          { id: "patgram", nameEn: "Patgram", nameBn: "\u09AA\u09BE\u099F\u0997\u09CD\u09B0\u09BE\u09AE" }
-        ]
-      },
-      {
-        id: "nilphamari",
-        nameEn: "Nilphamari",
-        nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0",
-        upazilas: [
-          { id: "nilphamari_sadar", nameEn: "Nilphamari Sadar", nameBn: "\u09A8\u09C0\u09B2\u09AB\u09BE\u09AE\u09BE\u09B0\u09C0 \u09B8\u09A6\u09B0" },
-          { id: "saidpur", nameEn: "Saidpur", nameBn: "\u09B8\u09C8\u09AF\u09BC\u09A6\u09AA\u09C1\u09B0" }
-        ]
-      },
-      {
-        id: "panchagarh",
-        nameEn: "Panchagarh",
-        nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC",
-        upazilas: [
-          { id: "panchagarh_sadar", nameEn: "Panchagarh Sadar", nameBn: "\u09AA\u099E\u09CD\u099A\u0997\u09A1\u09BC \u09B8\u09A6\u09B0" },
-          { id: "tetulia", nameEn: "Tetulia", nameBn: "\u09A4\u09C7\u0981\u09A4\u09C1\u09B2\u09BF\u09AF\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "thakurgaon",
-        nameEn: "Thakurgaon",
-        nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993",
-        upazilas: [
-          { id: "thakurgaon_sadar", nameEn: "Thakurgaon Sadar", nameBn: "\u09A0\u09BE\u0995\u09C1\u09B0\u0997\u09BE\u0981\u0993 \u09B8\u09A6\u09B0" },
-          { id: "pirganj_thak", nameEn: "Pirganj", nameBn: "\u09AA\u09C0\u09B0\u0997\u099E\u09CD\u099C" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "mymensingh",
-    nameEn: "Mymensingh",
-    nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9",
-    districts: [
-      {
-        id: "mymensingh",
-        nameEn: "Mymensingh",
-        nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9",
-        upazilas: [
-          { id: "mymensingh_sadar", nameEn: "Mymensingh Sadar", nameBn: "\u09AE\u09AF\u09BC\u09AE\u09A8\u09B8\u09BF\u0982\u09B9 \u09B8\u09A6\u09B0" },
-          { id: "trishal", nameEn: "Trishal", nameBn: "\u09A4\u09CD\u09B0\u09BF\u09B6\u09BE\u09B2" },
-          { id: "muktagachha", nameEn: "Muktagachha", nameBn: "\u09AE\u09C1\u0995\u09CD\u09A4\u09BE\u0997\u09BE\u099B\u09BE" },
-          { id: "bhaluka", nameEn: "Bhaluka", nameBn: "\u09AD\u09BE\u09B2\u09C1\u0995\u09BE" },
-          { id: "gafargaon", nameEn: "Gafargaon", nameBn: "\u0997\u09AB\u09B0\u0997\u09BE\u0981\u0993" }
-        ]
-      },
-      {
-        id: "jamalpur",
-        nameEn: "Jamalpur",
-        nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "jamalpur_sadar", nameEn: "Jamalpur Sadar", nameBn: "\u099C\u09BE\u09AE\u09BE\u09B2\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "sarishabari", nameEn: "Sarishabari", nameBn: "\u09B8\u09B0\u09BF\u09B7\u09BE\u09AC\u09BE\u09A1\u09BC\u09C0" }
-        ]
-      },
-      {
-        id: "netrokona",
-        nameEn: "Netrokona",
-        nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE",
-        upazilas: [
-          { id: "netrokona_sadar", nameEn: "Netrokona Sadar", nameBn: "\u09A8\u09C7\u09A4\u09CD\u09B0\u0995\u09CB\u09A3\u09BE \u09B8\u09A6\u09B0" },
-          { id: "kendua", nameEn: "Kendua", nameBn: "\u0995\u09C7\u09A8\u09CD\u09A6\u09C1\u09AF\u09BC\u09BE" }
-        ]
-      },
-      {
-        id: "sherpur",
-        nameEn: "Sherpur",
-        nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0",
-        upazilas: [
-          { id: "sherpur_sadar", nameEn: "Sherpur Sadar", nameBn: "\u09B6\u09C7\u09B0\u09AA\u09C1\u09B0 \u09B8\u09A6\u09B0" },
-          { id: "nakla", nameEn: "Nakla", nameBn: "\u09A8\u0995\u09B2\u09BE" }
-        ]
-      }
-    ]
-  }
-];
-var BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
-// src/models/DonorProfile.ts
-var DonorProfileSchema = new import_mongoose2.Schema(
-  {
-    _id: { type: String },
-    userId: {
-      type: import_mongoose2.Schema.Types.Mixed,
-      required: true,
-      unique: true,
-      index: true
-    },
-    displayName: { type: String, required: true, trim: true },
-    bloodGroup: {
-      type: String,
-      enum: BLOOD_GROUPS,
-      required: true,
-      index: true
-    },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true, index: true },
-    upazila: { type: String, required: true, index: true },
-    addressDetails: { type: String, trim: true },
-    dateOfBirth: { type: Date, required: true },
-    gender: {
-      type: String,
-      enum: ["male", "female", "other", "unspecified"],
-      default: "unspecified"
-    },
-    availabilityStatus: {
-      type: String,
-      enum: ["available", "recently_donated", "temporarily_unavailable"],
-      default: "available",
-      index: true
-    },
-    lastDonationDate: { type: Date },
-    totalDonations: { type: Number, default: 0 },
-    institutionId: { type: import_mongoose2.Schema.Types.Mixed, index: true },
-    institutionMembershipVerified: { type: Boolean, default: false },
-    consentToShareContact: { type: Boolean, default: true },
-    preferredContactMethod: {
-      type: String,
-      enum: ["phone", "sms", "platform"],
-      default: "phone"
-    },
-    bio: { type: String, trim: true, maxlength: 500 },
-    isPubliclyListed: { type: Boolean, default: true, index: true },
-    emergencyAvailable: { type: Boolean, default: true }
-  },
-  {
-    timestamps: true
-  }
-);
-DonorProfileSchema.index({ bloodGroup: 1, division: 1, district: 1, availabilityStatus: 1 });
-DonorProfileSchema.index({ division: 1, district: 1, upazila: 1 });
-var DonorProfileModel = import_mongoose2.default.model("DonorProfile", DonorProfileSchema);
-
-// src/models/BloodRequest.ts
-var import_mongoose3 = __toESM(require_mongoose2());
-var BloodRequestSchema = new import_mongoose3.Schema(
-  {
-    _id: { type: String },
-    requesterId: {
-      type: import_mongoose3.Schema.Types.Mixed,
-      required: true,
-      index: true
-    },
-    patientName: { type: String, required: true, trim: true },
-    bloodGroup: {
-      type: String,
-      enum: BLOOD_GROUPS,
-      required: true,
-      index: true
-    },
-    unitsRequired: { type: Number, required: true, min: 1, default: 1 },
-    unitsFulfilled: { type: Number, default: 0, min: 0 },
-    hospitalName: { type: String, required: true, trim: true },
-    hospitalAddress: { type: String, required: true, trim: true },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true, index: true },
-    upazila: { type: String, required: true, index: true },
-    requiredDate: { type: Date, required: true, index: true },
-    requiredWithin: { type: String },
-    urgencyLevel: {
-      type: String,
-      enum: ["emergency", "urgent", "standard"],
-      default: "emergency",
-      index: true
-    },
-    reason: { type: String, required: true, trim: true },
-    contactNumber: { type: String, required: true, trim: true },
-    alternativeContactNumber: { type: String, trim: true },
-    status: {
-      type: String,
-      enum: [
-        "pending_verification",
-        "open",
-        "partially_fulfilled",
-        "fulfilled",
-        "cancelled",
-        "expired",
-        "rejected"
-      ],
-      default: "open",
-      index: true
-    },
-    moderationNotes: { type: String, trim: true },
-    institutionId: { type: import_mongoose3.Schema.Types.Mixed, index: true },
-    expiresAt: { type: Date, required: true, index: true }
-  },
-  {
-    timestamps: true
-  }
-);
-BloodRequestSchema.index({ status: 1, requiredDate: -1 });
-BloodRequestSchema.index({ division: 1, status: 1 });
-var BloodRequestModel = import_mongoose3.default.model("BloodRequest", BloodRequestSchema);
-
-// src/models/ModeratorActivity.ts
-var import_mongoose4 = __toESM(require_mongoose2());
-var ModeratorActivitySchema = new import_mongoose4.Schema(
-  {
-    _id: { type: String },
-    actorId: { type: import_mongoose4.Schema.Types.Mixed, required: true, index: true },
-    actorName: { type: String, required: true },
-    actorRole: { type: String, required: true },
-    action: {
-      type: String,
-      enum: [
-        "MEMBER_CREATED",
-        "MEMBER_EDITED",
-        "MEMBER_BLOCKED",
-        "MEMBER_UNBLOCKED",
-        "INSTITUTION_UPDATED",
-        "BLOOD_REQUEST_REVIEWED",
-        "CONTACT_REQUEST_HANDLED",
-        "COMPLAINT_REVIEWED",
-        "PASSWORD_RESET_ASSISTED"
-      ],
-      required: true,
-      index: true
-    },
-    targetRecordId: { type: String, required: true },
-    targetRecordType: { type: String, required: true },
-    divisionScope: { type: String, index: true },
-    institutionScope: { type: import_mongoose4.Schema.Types.Mixed, index: true },
-    reason: { type: String, trim: true },
-    result: { type: String, trim: true },
-    details: { type: import_mongoose4.Schema.Types.Mixed }
-  },
-  {
-    timestamps: { createdAt: true, updatedAt: false }
-  }
-);
-ModeratorActivitySchema.index({ actorId: 1, createdAt: -1 });
-ModeratorActivitySchema.index({ institutionScope: 1, createdAt: -1 });
-ModeratorActivitySchema.index({ divisionScope: 1, createdAt: -1 });
-var ModeratorActivityModel = import_mongoose4.default.model(
-  "ModeratorActivity",
-  ModeratorActivitySchema
-);
-
-// src/models/InstitutionRequest.ts
-var import_mongoose5 = __toESM(require_mongoose2());
-var InstitutionRequestSchema = new import_mongoose5.Schema(
-  {
-    _id: { type: String },
-    name: { type: String, required: true, trim: true },
-    nameBn: { type: String, required: true, trim: true },
-    code: { type: String, required: true, uppercase: true, trim: true },
-    type: {
-      type: String,
-      enum: ["university", "college", "school", "medical_college", "polytechnic", "other"],
-      default: "university"
-    },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true, index: true },
-    upazila: { type: String, required: true },
-    address: { type: String, required: true, trim: true },
-    applicantName: { type: String, required: true, trim: true },
-    applicantPhone: { type: String, required: true, trim: true },
-    applicantEmail: { type: String, trim: true },
-    applicantRole: { type: String, trim: true },
-    supportingDetails: { type: String, trim: true },
-    status: {
-      type: String,
-      enum: ["pending_review", "under_review", "approved", "rejected", "suspended"],
-      default: "pending_review",
-      index: true
-    },
-    reviewedBy: { type: import_mongoose5.Schema.Types.Mixed },
-    decisionReason: { type: String, trim: true },
-    reviewedAt: { type: Date },
-    createdInstitutionId: { type: import_mongoose5.Schema.Types.Mixed }
-  },
-  {
-    timestamps: true
-  }
-);
-InstitutionRequestSchema.index({ division: 1, status: 1 });
-var InstitutionRequestModel = import_mongoose5.default.model(
-  "InstitutionRequest",
-  InstitutionRequestSchema
-);
-
-// src/models/ContactRequest.ts
-var import_mongoose6 = __toESM(require_mongoose2());
-var ContactRequestSchema = new import_mongoose6.Schema(
-  {
-    _id: { type: String },
-    requesterId: { type: import_mongoose6.Schema.Types.Mixed, required: true, index: true },
-    requesterName: { type: String, required: true },
-    requesterPhone: { type: String, required: true },
-    institutionId: { type: import_mongoose6.Schema.Types.Mixed, required: true, index: true },
-    targetBloodGroup: { type: String, enum: BLOOD_GROUPS, required: true },
-    patientName: { type: String, required: true },
-    hospitalName: { type: String, required: true },
-    unitsRequired: { type: Number, default: 1, min: 1 },
-    urgency: { type: String, enum: ["emergency", "urgent", "standard"], default: "emergency" },
-    reason: { type: String, required: true },
-    status: {
-      type: String,
-      enum: ["pending", "in_progress", "fulfilled", "cancelled"],
-      default: "pending",
-      index: true
-    },
-    assignedModeratorId: { type: import_mongoose6.Schema.Types.Mixed },
-    moderatorNotes: { type: String, trim: true },
-    handledAt: { type: Date }
-  },
-  {
-    timestamps: true
-  }
-);
-ContactRequestSchema.index({ institutionId: 1, status: 1 });
-var ContactRequestModel = import_mongoose6.default.model(
-  "ContactRequest",
-  ContactRequestSchema
-);
-
-// src/models/Institution.ts
-var import_mongoose7 = __toESM(require_mongoose2());
-var InstitutionSchema = new import_mongoose7.Schema(
-  {
-    _id: { type: String },
-    name: { type: String, required: true, trim: true },
-    nameBn: { type: String, required: true, trim: true },
-    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
-    type: {
-      type: String,
-      enum: ["university", "college", "school", "medical_college", "polytechnic", "other"],
-      default: "university"
-    },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true, index: true },
-    upazila: { type: String, required: true },
-    address: { type: String, required: true, trim: true },
-    website: { type: String, trim: true },
-    email: { type: String, trim: true },
-    phone: { type: String, trim: true },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected", "suspended"],
-      default: "pending",
-      index: true
-    },
-    assignedModeratorId: { type: import_mongoose7.Schema.Types.Mixed, index: true },
-    assignedModeratorIds: [{ type: import_mongoose7.Schema.Types.Mixed }],
-    totalRegisteredDonors: { type: Number, default: 0 },
-    description: { type: String, trim: true },
-    verificationNotes: { type: String, trim: true }
-  },
-  {
-    timestamps: true
-  }
-);
-var InstitutionModel = import_mongoose7.default.model("Institution", InstitutionSchema);
-
-// src/models/AccountStatusHistory.ts
-var import_mongoose8 = __toESM(require_mongoose2());
-var AccountStatusHistorySchema = new import_mongoose8.Schema(
-  {
-    _id: { type: String },
-    userId: { type: import_mongoose8.Schema.Types.Mixed, required: true, index: true },
-    targetUserName: { type: String, required: true },
-    targetUserPhone: { type: String, required: true },
-    oldStatus: { type: String, required: true },
-    newStatus: { type: String, required: true, index: true },
-    actorId: { type: import_mongoose8.Schema.Types.Mixed, required: true },
-    actorName: { type: String, required: true },
-    actorRole: { type: String, required: true },
-    reason: { type: String, required: true, trim: true },
-    expiryDate: { type: Date }
-  },
-  {
-    timestamps: { createdAt: true, updatedAt: false }
-  }
-);
-AccountStatusHistorySchema.index({ userId: 1, createdAt: -1 });
-var AccountStatusHistoryModel = import_mongoose8.default.model(
-  "AccountStatusHistory",
-  AccountStatusHistorySchema
-);
-
-// src/models/Report.ts
-var import_mongoose9 = __toESM(require_mongoose2());
-var ReportSchema = new import_mongoose9.Schema(
-  {
-    _id: { type: String },
-    reportedBy: {
-      type: import_mongoose9.Schema.Types.Mixed,
-      required: true,
-      index: true
-    },
-    targetType: {
-      type: String,
-      enum: ["donor_profile", "blood_request", "institution", "user"],
-      required: true,
-      index: true
-    },
-    targetId: { type: String, required: true, index: true },
-    reason: {
-      type: String,
-      enum: [
-        "false_information",
-        "fake_request",
-        "harassment",
-        "commercial_solicitation",
-        "impersonation",
-        "spam",
-        "other"
-      ],
-      required: true
-    },
-    description: { type: String, required: true, trim: true },
-    status: {
-      type: String,
-      enum: ["pending", "under_review", "resolved", "dismissed"],
-      default: "pending",
-      index: true
-    },
-    reviewedBy: { type: import_mongoose9.Schema.Types.ObjectId, ref: "User" },
-    resolutionNotes: { type: String, trim: true }
-  },
-  {
-    timestamps: true
-  }
-);
-var ReportModel = import_mongoose9.default.model("Report", ReportSchema);
-
-// src/models/Notification.ts
-var import_mongoose10 = __toESM(require_mongoose2());
-var NotificationSchema = new import_mongoose10.Schema(
-  {
-    _id: { type: String },
-    userId: {
-      type: import_mongoose10.Schema.Types.Mixed,
-      required: true,
-      index: true
-    },
-    title: { type: String, required: true },
-    message: { type: String, required: true },
-    type: {
-      type: String,
-      enum: ["request_match", "contact_revealed", "status_update", "institution_update", "system"],
-      default: "system"
-    },
-    link: { type: String },
-    isRead: { type: Boolean, default: false, index: true }
-  },
-  {
-    timestamps: { createdAt: true, updatedAt: false }
-  }
-);
-NotificationSchema.index({ userId: 1, createdAt: -1 });
-var NotificationModel = import_mongoose10.default.model("Notification", NotificationSchema);
-
-// src/models/ContactAccessLog.ts
-var import_mongoose11 = __toESM(require_mongoose2());
-var ContactAccessLogSchema = new import_mongoose11.Schema(
-  {
-    _id: { type: String },
-    viewerId: {
-      type: import_mongoose11.Schema.Types.Mixed,
-      required: true,
-      index: true
-    },
-    donorUserId: {
-      type: import_mongoose11.Schema.Types.Mixed,
-      required: true,
-      index: true
-    },
-    donorProfileId: {
-      type: import_mongoose11.Schema.Types.Mixed,
-      required: true
-    },
-    purpose: {
-      type: String,
-      enum: ["blood_request", "emergency_search", "direct_request"],
-      default: "emergency_search"
-    },
-    relatedBloodRequestId: { type: import_mongoose11.Schema.Types.Mixed },
-    ipAddress: { type: String },
-    userAgent: { type: String }
-  },
-  {
-    timestamps: { createdAt: true, updatedAt: false }
-  }
-);
-ContactAccessLogSchema.index({ viewerId: 1, createdAt: -1 });
-var ContactAccessLogModel = import_mongoose11.default.model(
-  "ContactAccessLog",
-  ContactAccessLogSchema
-);
-
-// src/models/PhoneChangeRequest.ts
-var import_mongoose12 = __toESM(require_mongoose2());
-var PhoneChangeRequestSchema = new import_mongoose12.Schema(
-  {
-    _id: { type: String },
-    userId: { type: import_mongoose12.Schema.Types.Mixed, required: true, index: true },
-    userName: { type: String, required: true },
-    userRole: { type: String, required: true },
-    currentPhone: { type: String, required: true },
-    newPhone: { type: String, required: true },
-    reason: { type: String, required: true, trim: true },
-    division: { type: String },
-    district: { type: String },
-    institutionId: { type: String },
-    institutionName: { type: String },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
-      index: true
-    },
-    reviewedBy: { type: import_mongoose12.Schema.Types.Mixed },
-    reviewedByName: { type: String },
-    reviewedAt: { type: Date },
-    reviewNotes: { type: String }
-  },
-  {
-    timestamps: true
-  }
-);
-PhoneChangeRequestSchema.index({ status: 1, createdAt: -1 });
-PhoneChangeRequestSchema.index({ division: 1, status: 1 });
-PhoneChangeRequestSchema.index({ institutionId: 1, status: 1 });
-var PhoneChangeRequestModel = import_mongoose12.default.model(
-  "PhoneChangeRequest",
-  PhoneChangeRequestSchema
-);
-
-// src/models/PasswordRecoveryRequest.ts
-var import_mongoose13 = __toESM(require_mongoose2());
-var PasswordRecoveryRequestSchema = new import_mongoose13.Schema(
-  {
-    _id: { type: String },
-    userId: { type: import_mongoose13.Schema.Types.Mixed, required: true, index: true },
-    userName: { type: String, required: true },
-    phone: { type: String, required: true, index: true },
-    userRole: { type: String, required: true },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true },
-    institutionId: { type: import_mongoose13.Schema.Types.Mixed, index: true },
-    institutionName: { type: String },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected", "used", "expired"],
-      default: "pending",
-      index: true
-    },
-    reason: { type: String },
-    temporaryPasswordHash: { type: String },
-    expiresAt: { type: Date },
-    isUsed: { type: Boolean, default: false },
-    approvedBy: { type: import_mongoose13.Schema.Types.Mixed },
-    approvedByName: { type: String },
-    approvedByRole: { type: String },
-    approvedAt: { type: Date },
-    rejectionReason: { type: String }
-  },
-  {
-    timestamps: true
-  }
-);
-var PasswordRecoveryRequestModel = import_mongoose13.default.model(
-  "PasswordRecoveryRequest",
-  PasswordRecoveryRequestSchema
-);
-
-// src/models/InstitutionChangeRequest.ts
-var import_mongoose14 = __toESM(require_mongoose2());
-var InstitutionChangeRequestSchema = new import_mongoose14.Schema(
-  {
-    _id: { type: String },
-    userId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
-    userName: { type: String, required: true },
-    phone: { type: String, required: true },
-    userRole: { type: String, required: true },
-    currentInstitutionId: { type: import_mongoose14.Schema.Types.Mixed },
-    currentInstitutionName: { type: String },
-    targetInstitutionId: { type: import_mongoose14.Schema.Types.Mixed, required: true, index: true },
-    targetInstitutionName: { type: String, required: true },
-    division: { type: String, required: true, index: true },
-    district: { type: String, required: true },
-    studentOrStaffId: { type: String },
-    department: { type: String },
-    reason: { type: String },
-    status: {
-      type: String,
-      enum: ["pending", "under_review", "approved", "rejected"],
-      default: "pending",
-      index: true
-    },
-    reviewedBy: { type: import_mongoose14.Schema.Types.Mixed },
-    reviewedByName: { type: String },
-    decisionReason: { type: String }
-  },
-  {
-    timestamps: true
-  }
-);
-var InstitutionChangeRequestModel = import_mongoose14.default.model(
-  "InstitutionChangeRequest",
-  InstitutionChangeRequestSchema
-);
-
-// src/config/db.ts
-var import_mongoose15 = __toESM(require_mongoose2());
-var cached = global.mongoose;
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-var isConnected = false;
-async function connectDB() {
-  if (cached.conn && import_mongoose15.default.connection.readyState === 1) {
-    isConnected = true;
-    return true;
-  }
-  const uri = ENV.MONGO_URI;
-  if (!uri) {
-    if (ENV.NODE_ENV === "production") {
-      console.error("[Security Critical] MONGO_URI is missing from environment variables in production!");
-    } else {
-      console.warn("[Database] No MONGO_URI configured in environment variables.");
-    }
-    isConnected = false;
-    return false;
-  }
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      // Disables Mongoose buffering so requests never hang
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 8e3,
-      // Adequate window for serverless cold-starts
-      connectTimeoutMS: 8e3
-    };
-    console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
-    cached.promise = import_mongoose15.default.connect(uri, opts).then((m) => {
-      console.log("[Database] Successfully connected to MongoDB Atlas database.");
-      isConnected = true;
-      return m;
-    });
-  }
-  try {
-    cached.conn = await cached.promise;
-    isConnected = true;
-    return true;
-  } catch (error) {
-    cached.promise = null;
-    isConnected = false;
-    console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
-    console.warn("[Database] Running in Fallback In-Memory Datastore mode with full seed data.");
-    return false;
-  }
-}
-function isDatabaseConnected() {
-  return isConnected && import_mongoose15.default.connection.readyState === 1;
-}
-
-// src/services/dataStore.ts
-var DataStore = class {
-  users = [];
-  donorProfiles = [];
-  bloodRequests = [];
-  institutions = [];
-  institutionRequests = [];
-  moderatorActivities = [];
-  contactRequests = [];
-  accountStatusHistories = [];
-  reports = [];
-  contactAccessLogs = [];
-  otps = [];
-  notifications = [];
-  phoneChangeRequests = [];
-  passwordRecoveryRequests = [];
-  passwordRecoveryAudits = [];
-  institutionChangeRequests = [];
-  constructor() {
-    this.seedInitialData();
-  }
-  seedInitialData() {
-    const defaultPasswordHash = bcryptjs_default.hashSync("password123", 10);
-    const now = /* @__PURE__ */ new Date();
-    this.users = [
-      {
-        _id: "usr_superadmin",
-        name: "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-        phone: "01700000001",
-        email: "superadmin@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "SUPER_ADMIN",
-        accountStatus: "active",
-        gender: "male",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_admin",
-        name: "\u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Admin)",
-        phone: "01700000007",
-        email: "admin@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "ADMIN",
-        accountStatus: "active",
-        gender: "male",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_coordinator_dhaka",
-        name: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8 (\u09A2\u09BE\u0995\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
-        phone: "01700000002",
-        email: "dhaka.coordinator@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "DIVISION_COORDINATOR",
-        accountStatus: "active",
-        gender: "male",
-        assignedDivision: "dhaka",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_coordinator_ctg",
-        name: "\u09AB\u09BE\u09B0\u09B9\u09BE\u09A8\u09BE \u0986\u09B9\u09AE\u09C7\u09A6 (\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
-        phone: "01700000003",
-        email: "ctg.coordinator@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "DIVISION_COORDINATOR",
-        accountStatus: "active",
-        gender: "female",
-        assignedDivision: "chattogram",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_moderator_du",
-        name: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8 (\u09A2\u09BE\u09AC\u09BF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0)",
-        phone: "01700000004",
-        email: "mamun.du@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "INSTITUTION_MODERATOR",
-        accountStatus: "active",
-        gender: "male",
-        assignedInstitution: "inst_du",
-        assignedInstitutions: ["inst_du"],
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_head",
-        name: "\u0985\u09A7\u09CD\u09AF\u09BE\u09AA\u0995 \u09A1. \u09AB\u099C\u09B2\u09C1\u09B2 \u09B9\u0995 (\u09A2\u09BE\u09AC\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8)",
-        phone: "01700000008",
-        email: "head@du.ac.bd",
-        passwordHash: defaultPasswordHash,
-        role: "INSTITUTION_HEAD",
-        accountStatus: "active",
-        gender: "male",
-        assignedInstitution: "inst_du",
-        assignedInstitutions: ["inst_du"],
-        division: "dhaka",
-        district: "dhaka",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_1",
-        name: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        phone: "01711111111",
-        email: "rafiqul@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "mirpur",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_2",
-        name: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        phone: "01722222222",
-        email: "tanveer@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "dhanmondi",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_3",
-        name: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
-        phone: "01733333333",
-        email: "nusrat@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "female",
-        femaleSafetyAcknowledged: true,
-        femalePublicPhoneConsent: false,
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_4",
-        name: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
-        phone: "01744444444",
-        email: "sakib@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "boalia",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_requester_1",
-        name: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
-        phone: "01755555555",
-        email: "mahbub@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_blocked_demo",
-        name: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
-        phone: "01799999999",
-        email: "faruk@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "temporarily_blocked",
-        blockReason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        blockedBy: "usr_coordinator_dhaka",
-        blockedAt: new Date(Date.now() - 864e5 * 2),
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "savar",
-        isActive: false,
-        isPhoneVerified: true,
-        createdAt: new Date(Date.now() - 864e5 * 10),
-        updatedAt: now
-      }
-    ];
-    this.institutions = [
-      {
-        _id: "inst_du",
-        name: "University of Dhaka",
-        nameBn: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "DU-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        address: "Nilkhet Rd, Dhaka 1000",
-        website: "https://www.du.ac.bd",
-        email: "bloodclub@du.ac.bd",
-        phone: "01811112233",
-        status: "approved",
-        assignedModeratorId: "usr_moderator_du",
-        assignedModeratorIds: ["usr_moderator_du"],
-        totalRegisteredDonors: 142,
-        description: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u098F\u09AC\u0982 \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_buet",
-        name: "Bangladesh University of Engineering and Technology",
-        nameBn: "\u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6 \u09AA\u09CD\u09B0\u0995\u09CC\u09B6\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09C1\u09AF\u09BC\u09C7\u099F)",
-        code: "BUET-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        address: "Palashi, Dhaka 1000",
-        website: "https://www.buet.ac.bd",
-        email: "blooddonor@buet.ac.bd",
-        phone: "01822223344",
-        status: "approved",
-        totalRegisteredDonors: 85,
-        description: "\u09AC\u09C1\u09AF\u09BC\u09C7\u099F \u09AC\u09CD\u09B2\u09BE\u09A1 \u09A1\u09CB\u09A8\u09BE\u09B0\u09CD\u09B8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7 \u09B8\u09A6\u09BE \u099C\u09BE\u0997\u09CD\u09B0\u09A4\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_cmc",
-        name: "Chittagong Medical College",
-        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C",
-        code: "CMC-BD",
-        type: "medical_college",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        address: "57 K.B. Fazlul Kader Rd, Chattogram 4203",
-        website: "https://www.cmc.edu.bd",
-        email: "bloodbank@cmc.edu.bd",
-        phone: "01833334455",
-        status: "approved",
-        totalRegisteredDonors: 96,
-        description: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C0 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B8\u0982\u09B8\u09CD\u09A5\u09BE \u0987\u0989\u09A8\u09BF\u099F\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_ru",
-        name: "Rajshahi University",
-        nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "RU-BD",
-        type: "university",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "motihar",
-        address: "Motihar, Rajshahi 6205",
-        website: "https://www.ru.ac.bd",
-        email: "bloodclub@ru.ac.bd",
-        phone: "01844445566",
-        status: "approved",
-        totalRegisteredDonors: 64,
-        description: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B6\u09BE\u0996\u09BE \u0993 \u09B2\u09BE\u09B2 \u0997\u09CB\u09B2\u09BE\u09AA \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_sust",
-        name: "Shahjalal University of Science and Technology",
-        nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09B2\u09BE\u09B2 \u09AC\u09BF\u099C\u09CD\u099E\u09BE\u09A8 \u0993 \u09AA\u09CD\u09B0\u09AF\u09C1\u0995\u09CD\u09A4\u09BF \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "SUST-BD",
-        type: "university",
-        division: "sylhet",
-        district: "sylhet",
-        upazila: "sylhet_sadar",
-        address: "Kumargaon, Sylhet 3114",
-        website: "https://www.sust.edu",
-        email: "blood@sust.edu",
-        phone: "01855556677",
-        status: "pending",
-        totalRegisteredDonors: 12,
-        description: "\u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u0993 \u09B8\u09BF\u09B2\u09C7\u099F \u0985\u099E\u09CD\u099A\u09B2\u09C7\u09B0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u09B8\u09AE\u09CD\u09AA\u09CD\u09B0\u09B8\u09BE\u09B0\u09A3 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-    this.donorProfiles = [
-      {
-        _id: "donor_prof_1",
-        userId: "usr_donor_1",
-        displayName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        bloodGroup: "O+",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "mirpur",
-        addressDetails: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0 \u09E7\u09E6, \u09A2\u09BE\u0995\u09BE",
-        dateOfBirth: /* @__PURE__ */ new Date("1998-05-14"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-05-10"),
-        totalDonations: 6,
-        institutionId: "inst_du",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09B0\u09BF\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_2",
-        userId: "usr_donor_2",
-        displayName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        bloodGroup: "A+",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "dhanmondi",
-        addressDetails: "\u09A7\u09BE\u09A8\u09AE\u09A8\u09CD\u09A1\u09BF \u09E8\u09ED, \u09A2\u09BE\u0995\u09BE",
-        dateOfBirth: /* @__PURE__ */ new Date("2000-08-20"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-06-01"),
-        totalDonations: 4,
-        institutionId: "inst_buet",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09B8\u099A\u09C7\u09A4\u09A8 \u09A5\u09BE\u0995\u09C1\u09A8, \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4 \u09A6\u09BF\u09A8\u0964 \u09B0\u09CB\u0997\u09C0\u09B0 \u09B8\u09C7\u09AC\u09BE\u09AF\u09BC \u09B8\u09B0\u09CD\u09AC\u09A6\u09BE \u09A8\u09BF\u09AF\u09BC\u09CB\u099C\u09BF\u09A4\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_3",
-        userId: "usr_donor_3",
-        displayName: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
-        bloodGroup: "B+",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        addressDetails: "\u09AA\u09CD\u09B0\u09AC\u09B0\u09CD\u09A4\u0995 \u09AE\u09CB\u09A1\u09BC, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-        dateOfBirth: /* @__PURE__ */ new Date("1999-11-12"),
-        gender: "female",
-        availabilityStatus: "recently_donated",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-09-25"),
-        totalDonations: 3,
-        institutionId: "inst_cmc",
-        institutionMembershipVerified: true,
-        consentToShareContact: false,
-        // Default private for female safety
-        preferredContactMethod: "platform",
-        bio: "\u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0\u0964 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u098F\u0995\u099F\u09BF \u09AA\u09AC\u09BF\u09A4\u09CD\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: false,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_4",
-        userId: "usr_donor_4",
-        displayName: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
-        bloodGroup: "AB+",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "boalia",
-        addressDetails: "\u09B8\u09BE\u09B9\u09C7\u09AC \u09AC\u09BE\u099C\u09BE\u09B0, \u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
-        dateOfBirth: /* @__PURE__ */ new Date("1997-03-05"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-04-12"),
-        totalDonations: 5,
-        institutionId: "inst_ru",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09B6\u09B9\u09B0\u09C7\u09B0 \u09AF\u09C7\u0995\u09CB\u09A8\u09CB \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-    this.bloodRequests = [
-      {
-        _id: "req_1",
-        requesterId: "usr_requester_1",
-        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE (\u09EC\u09EB)",
-        bloodGroup: "O+",
-        unitsRequired: 2,
-        unitsFulfilled: 1,
-        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        hospitalAddress: "\u099C\u09B0\u09C1\u09B0\u09BF \u09AC\u09BF\u09AD\u09BE\u0997, \u0993\u099F\u09BF \u09AD\u09AC\u09A8, \u09E9\u09AF\u09BC \u09A4\u09B2\u09BE, \u09A2\u09BE\u0995\u09BE",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        requiredDate: new Date(Date.now() + 864e5 * 2),
-        urgencyLevel: "emergency",
-        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8 \u0993 \u09B9\u09BF\u09AE\u09CB\u0997\u09CD\u09B2\u09CB\u09AC\u09BF\u09A8 \u09B8\u09CD\u09AC\u09B2\u09CD\u09AA\u09A4\u09BE\u09B0 \u0995\u09BE\u09B0\u09A3\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01755555555",
-        alternativeContactNumber: "01855555555",
-        status: "partially_fulfilled",
-        expiresAt: new Date(Date.now() + 864e5 * 4),
-        createdAt: new Date(Date.now() - 36e5 * 5),
-        updatedAt: now
-      },
-      {
-        _id: "req_2",
-        requesterId: "usr_requester_1",
-        patientName: "\u0986\u09B0\u09BF\u09AB\u09C1\u09B2 \u09B9\u0995 (\u09E8\u09EE)",
-        bloodGroup: "A+",
-        unitsRequired: 1,
-        unitsFulfilled: 0,
-        hospitalName: "\u09AC\u0999\u09CD\u0997\u09AC\u09A8\u09CD\u09A7\u09C1 \u09B6\u09C7\u0996 \u09AE\u09C1\u099C\u09BF\u09AC \u09AE\u09C7\u09A1\u09BF\u0995\u09CD\u09AF\u09BE\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09BF\u098F\u09B8\u098F\u09AE\u098F\u09AE\u0987\u0989)",
-        hospitalAddress: "\u0995\u09C7\u09AC\u09BF\u09A8 \u09AC\u09CD\u09B2\u0995, \u09B6\u09BE\u09B9\u09AC\u09BE\u0997, \u09A2\u09BE\u0995\u09BE",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        requiredDate: new Date(Date.now() + 864e5),
-        urgencyLevel: "emergency",
-        reason: "\u09A5\u09CD\u09AF\u09BE\u09B2\u09BE\u09B8\u09C7\u09AE\u09BF\u09AF\u09BC\u09BE \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09AC\u09CD\u09B2\u09BE\u09A1 \u099F\u09CD\u09B0\u09BE\u09A8\u09CD\u09B8\u09AB\u09BF\u0989\u09B6\u09A8\u0964 \u09A6\u09CD\u09B0\u09C1\u09A4 \u09E7 \u09AC\u09CD\u09AF\u09BE\u0997 \u098F \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01755555555",
-        status: "open",
-        expiresAt: new Date(Date.now() + 864e5 * 3),
-        createdAt: new Date(Date.now() - 36e5 * 12),
-        updatedAt: now
-      },
-      {
-        _id: "req_3",
-        requesterId: "usr_donor_1",
-        patientName: "\u09B6\u09BE\u09AE\u09B8\u09C1\u09B2 \u0986\u09B2\u09AE (\u09EB\u09E6)",
-        bloodGroup: "B+",
-        unitsRequired: 2,
-        unitsFulfilled: 0,
-        hospitalName: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        hospitalAddress: "\u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF \u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u0982 \u09E7\u09E8, \u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        requiredDate: new Date(Date.now() + 864e5 * 3),
-        urgencyLevel: "urgent",
-        reason: "\u09AA\u09BE\u0995\u09B8\u09CD\u09A5\u09B2\u09C0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01711111111",
-        status: "open",
-        expiresAt: new Date(Date.now() + 864e5 * 5),
-        createdAt: new Date(Date.now() - 36e5 * 24),
-        updatedAt: now
-      }
-    ];
-    this.institutionRequests = [
-      {
-        _id: "inst_req_1",
-        name: "Jahangirnagar University",
-        nameBn: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "JU-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "savar",
-        address: "Savar, Dhaka 1342",
-        applicantName: "\u09AE\u09CB: \u09B9\u09BE\u09B8\u09BF\u09AC\u09C1\u09B0 \u09B0\u09B9\u09AE\u09BE\u09A8",
-        applicantPhone: "01788881111",
-        applicantEmail: "hasib.ju@example.com",
-        applicantRole: "\u09B8\u09BE\u09A7\u09BE\u09B0\u09A3 \u09B8\u09AE\u09CD\u09AA\u09BE\u09A6\u0995, \u09AC\u09BE\u0981\u09A7\u09A8 \u099C\u09BE\u09AC\u09BF \u0987\u0989\u09A8\u09BF\u099F",
-        supportingDetails: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B6\u09BE\u0996\u09BE\u09B0 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09BE\u09B0\u09CD\u09AF\u0995\u09CD\u09B0\u09AE \u09AA\u09B0\u09BF\u099A\u09BE\u09B2\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u0964",
-        status: "pending_review",
-        createdAt: new Date(Date.now() - 864e5 * 2),
-        updatedAt: new Date(Date.now() - 864e5 * 2)
-      },
-      {
-        _id: "inst_req_2",
-        name: "University of Chittagong",
-        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "CU-BD",
-        type: "university",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "hathazari",
-        address: "Fatehpur, Hathazari, Chattogram 4331",
-        applicantName: "\u09A8\u09BE\u09B8\u09B0\u09BF\u09A8 \u09B8\u09C1\u09B2\u09A4\u09BE\u09A8\u09BE",
-        applicantPhone: "01788882222",
-        applicantEmail: "nasrin.cu@example.com",
-        applicantRole: "\u09B8\u09AD\u09BE\u09AA\u09A4\u09BF, \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u099A\u09AC\u09BF",
-        supportingDetails: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0 \u0993 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC\u09A4\u09BE\u09AF\u09BC \u09A4\u09BE\u09CE\u0995\u09CD\u09B7\u09A3\u09BF\u0995 \u09B8\u09BE\u09A1\u09BC\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
-        status: "pending_review",
-        createdAt: new Date(Date.now() - 864e5 * 3),
-        updatedAt: new Date(Date.now() - 864e5 * 3)
-      }
-    ];
-    this.moderatorActivities = [
-      {
-        _id: "act_1",
-        actorId: "usr_moderator_du",
-        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
-        actorRole: "INSTITUTION_MODERATOR",
-        action: "MEMBER_CREATED",
-        targetRecordId: "usr_donor_1",
-        targetRecordType: "User",
-        institutionScope: "inst_du",
-        divisionScope: "dhaka",
-        reason: "\u09A2\u09BE\u09AC\u09BF \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09C7\u0987\u09A8 \u09A5\u09C7\u0995\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
-        result: "\u09B8\u09AB\u09B2",
-        createdAt: new Date(Date.now() - 864e5 * 5)
-      },
-      {
-        _id: "act_2",
-        actorId: "usr_moderator_du",
-        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
-        actorRole: "INSTITUTION_MODERATOR",
-        action: "MEMBER_EDITED",
-        targetRecordId: "donor_prof_1",
-        targetRecordType: "DonorProfile",
-        institutionScope: "inst_du",
-        divisionScope: "dhaka",
-        reason: "\u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u09B8\u09B0\u09CD\u09AC\u09B6\u09C7\u09B7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u09A4\u09BE\u09B0\u09BF\u0996 \u0993 \u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6\u0964",
-        result: "\u09B8\u09AB\u09B2",
-        createdAt: new Date(Date.now() - 864e5 * 3)
-      },
-      {
-        _id: "act_3",
-        actorId: "usr_coordinator_dhaka",
-        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
-        actorRole: "DIVISION_COORDINATOR",
-        action: "MEMBER_BLOCKED",
-        targetRecordId: "usr_blocked_demo",
-        targetRecordType: "User",
-        divisionScope: "dhaka",
-        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        result: "\u09B8\u09CD\u09A5\u0997\u09BF\u09A4",
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.contactRequests = [
-      {
-        _id: "cr_1",
-        requesterId: "usr_requester_1",
-        requesterName: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
-        requesterPhone: "01755555555",
-        institutionId: "inst_du",
-        targetBloodGroup: "O+",
-        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE",
-        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        unitsRequired: 2,
-        urgency: "emergency",
-        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF\u09B0 \u099C\u09A8\u09CD\u09AF \u099C\u09B0\u09C1\u09B0\u09BF \u09AD\u09BF\u09A4\u09CD\u09A4\u09BF\u09A4\u09C7 \u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u0993 \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        status: "pending",
-        assignedModeratorId: "usr_moderator_du",
-        createdAt: new Date(Date.now() - 36e5 * 3),
-        updatedAt: new Date(Date.now() - 36e5 * 3)
-      }
-    ];
-    this.accountStatusHistories = [
-      {
-        _id: "ash_1",
-        userId: "usr_blocked_demo",
-        targetUserName: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
-        targetUserPhone: "01799999999",
-        oldStatus: "active",
-        newStatus: "temporarily_blocked",
-        actorId: "usr_coordinator_dhaka",
-        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
-        actorRole: "DIVISION_COORDINATOR",
-        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.reports = [
-      {
-        _id: "rep_1",
-        reportedBy: "usr_donor_1",
-        targetType: "blood_request",
-        targetId: "req_3",
-        targetTitle: "\u09B0\u09CB\u0997\u09C0: \u09B8\u09BE\u09B2\u09AE\u09BE \u09AC\u09C7\u0997\u09AE (\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2)",
-        division: "dhaka",
-        institutionId: "inst_du",
-        reason: "false_information",
-        description: "\u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0\u09C7 \u09AB\u09CB\u09A8 \u09A6\u09BF\u09B2\u09C7 \u09A4\u09BE\u09B0\u09BE \u09AC\u09B2\u09C7 \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8 \u09AE\u09BF\u099F\u09C7 \u0997\u09C7\u099B\u09C7 \u0995\u09BF\u09A8\u09CD\u09A4\u09C1 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u0996\u09A8\u09CB \u0993\u09AA\u09C7\u09A8 \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 4),
-        updatedAt: now
-      }
-    ];
-    this.notifications = [
-      {
-        _id: "notif_1",
-        userId: "usr_moderator_du",
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
-        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF O+ \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09E7\u099F\u09BF \u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u098F\u09B8\u09C7\u099B\u09C7\u0964",
-        type: "contact_request",
-        link: "/moderator/dashboard",
-        isRead: false,
-        createdAt: new Date(Date.now() - 36e5 * 3)
-      },
-      {
-        _id: "notif_2",
-        userId: "usr_coordinator_dhaka",
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (JU-BD) \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        type: "institution_update",
-        link: "/coordinator/dashboard",
-        isRead: false,
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.phoneChangeRequests = [
-      {
-        _id: "pcr_1",
-        userId: "usr_donor_1",
-        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        userRole: "DONOR",
-        currentPhone: "01711111111",
-        newPhone: "01711999888",
-        reason: "\u0986\u09AE\u09BE\u09B0 \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7\u09B0 \u09B8\u09BF\u09AE\u099F\u09BF \u09B9\u09BE\u09B0\u09BF\u09AF\u09BC\u09C7 \u09AF\u09BE\u0993\u09AF\u09BC\u09BE\u09AF\u09BC \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09B2 \u09AA\u09C7\u09A4\u09C7 \u098F\u0987 \u09A8\u09A4\u09C1\u09A8 \u09B8\u099A\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u099B\u09BF\u0964",
-        division: "dhaka",
-        district: "dhaka",
-        institutionId: "inst_du",
-        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 2),
-        updatedAt: now
-      }
-    ];
-    this.passwordRecoveryRequests = [
-      {
-        _id: "prr_1",
-        userId: "usr_donor_2",
-        userName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        phone: "01722222222",
-        userRole: "DONOR",
-        division: "dhaka",
-        district: "dhaka",
-        institutionId: "inst_du",
-        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        status: "pending",
-        reason: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C7 \u09B8\u09BE\u09B9\u09BE\u09AF\u09CD\u09AF \u0995\u09B0\u09C1\u09A8\u0964",
-        isUsed: false,
-        createdAt: new Date(Date.now() - 36e5 * 4),
-        updatedAt: now
-      }
-    ];
-    this.institutionChangeRequests = [
-      {
-        _id: "icr_1",
-        userId: "usr_donor_1",
-        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        phone: "01711111111",
-        userRole: "DONOR",
-        currentInstitutionId: void 0,
-        currentInstitutionName: void 0,
-        targetInstitutionId: "inst_du",
-        targetInstitutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        division: "dhaka",
-        district: "dhaka",
-        studentOrStaffId: "DU-CSE-2022-019",
-        department: "\u0995\u09AE\u09CD\u09AA\u09BF\u0989\u099F\u09BE\u09B0 \u09B8\u09BE\u09AF\u09BC\u09C7\u09A8\u09CD\u09B8",
-        reason: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC\u09C7 \u0985\u09A7\u09CD\u09AF\u09AF\u09BC\u09A8\u09B0\u09A4 \u09A5\u09BE\u0995\u09BE\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09C1\u09B2\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u099A\u09BE\u0987\u0964",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 5),
-        updatedAt: now
-      }
-    ];
-  }
-  // --- MongoDB Atlas Synchronization & Persistence ---
-  async syncWithMongoDB() {
-    try {
-      if (!isDatabaseConnected()) return;
-      const userCount = await UserModel.countDocuments();
-      if (userCount === 0) {
-        console.log("[Database] Fresh MongoDB Atlas cluster detected. Auto-seeding initial data...");
-        for (const u of this.users) await UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true });
-        for (const i of this.institutions) await InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true });
-        for (const d of this.donorProfiles) await DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true });
-        for (const r of this.bloodRequests) await BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true });
-        for (const ir of this.institutionRequests) await InstitutionRequestModel.findOneAndUpdate({ _id: ir._id }, ir, { upsert: true });
-        for (const cr of this.contactRequests) await ContactRequestModel.findOneAndUpdate({ _id: cr._id }, cr, { upsert: true });
-        for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
-        for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
-        for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
-        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
-        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
-        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
-        console.log("[Database] Auto-seeding completed successfully in MongoDB Atlas!");
-      } else {
-        console.log("[Database] Loading existing data from MongoDB Atlas...");
-        const dbUsers = await UserModel.find().lean();
-        if (dbUsers.length > 0) this.users = dbUsers;
-        const dbDonors = await DonorProfileModel.find().lean();
-        if (dbDonors.length > 0) this.donorProfiles = dbDonors;
-        const dbInsts = await InstitutionModel.find().lean();
-        if (dbInsts.length > 0) this.institutions = dbInsts;
-        const dbRequests = await BloodRequestModel.find().lean();
-        if (dbRequests.length > 0) this.bloodRequests = dbRequests;
-        const dbInstReqs = await InstitutionRequestModel.find().lean();
-        if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs;
-        const dbContactReqs = await ContactRequestModel.find().lean();
-        if (dbContactReqs.length > 0) this.contactRequests = dbContactReqs;
-        const dbActivities = await ModeratorActivityModel.find().lean();
-        if (dbActivities.length > 0) this.moderatorActivities = dbActivities;
-        const dbHistories = await AccountStatusHistoryModel.find().lean();
-        if (dbHistories.length > 0) this.accountStatusHistories = dbHistories;
-        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
-        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs;
-        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
-        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs;
-        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
-        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs;
-        console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
-      }
-    } catch (err) {
-      console.warn("[Database Sync Warning]:", err.message);
-    }
-  }
-  assertWritable() {
-    if (!isDatabaseConnected()) {
-      console.warn("[Database Notice] MongoDB Atlas is disconnected; proceeding with in-memory store.");
-    }
-  }
-  persistUser(user) {
-    if (isDatabaseConnected()) {
-      UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistDonorProfile(profile) {
-    if (isDatabaseConnected()) {
-      DonorProfileModel.findOneAndUpdate({ _id: profile._id }, profile, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistInstitution(inst) {
-    if (isDatabaseConnected()) {
-      InstitutionModel.findOneAndUpdate({ _id: inst._id }, inst, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistBloodRequest(req) {
-    if (isDatabaseConnected()) {
-      BloodRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistInstitutionRequest(req) {
-    if (isDatabaseConnected()) {
-      InstitutionRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistContactRequest(req) {
-    if (isDatabaseConnected()) {
-      ContactRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistModeratorActivity(act) {
-    if (isDatabaseConnected()) {
-      ModeratorActivityModel.create(act).catch(() => {
-      });
-    }
-  }
-  persistAccountStatusHistory(hist) {
-    if (isDatabaseConnected()) {
-      AccountStatusHistoryModel.create(hist).catch(() => {
-      });
-    }
-  }
-  persistReport(rep) {
-    if (isDatabaseConnected()) {
-      ReportModel.findOneAndUpdate({ _id: rep._id }, rep, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistContactAccessLog(cal) {
-    if (isDatabaseConnected()) {
-      ContactAccessLogModel.create(cal).catch(() => {
-      });
-    }
-  }
-  persistNotification(n) {
-    if (isDatabaseConnected()) {
-      NotificationModel.create(n).catch(() => {
-      });
-    }
-  }
-  persistPhoneChangeRequest(pcr) {
-    if (isDatabaseConnected()) {
-      PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistPasswordRecoveryRequest(prr) {
-    if (isDatabaseConnected()) {
-      PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  persistInstitutionChangeRequest(icr) {
-    if (isDatabaseConnected()) {
-      InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true }).catch(() => {
-      });
-    }
-  }
-  // --- User Methods ---
-  findUserById(id) {
-    return this.users.find((u) => String(u._id) === String(id));
-  }
-  findUserByPhone(phone) {
-    return this.users.find((u) => u.phone === phone);
-  }
-  createUser(userData) {
-    this.assertWritable();
-    const newUser = {
-      _id: "usr_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      name: userData.name || "",
-      phone: userData.phone || "",
-      email: userData.email,
-      passwordHash: userData.passwordHash || "",
-      role: userData.role || "MEMBER",
-      accountStatus: userData.accountStatus || "active",
-      blockReason: userData.blockReason,
-      blockedBy: userData.blockedBy,
-      blockedAt: userData.blockedAt,
-      gender: userData.gender || "unspecified",
-      femaleSafetyAcknowledged: userData.femaleSafetyAcknowledged || false,
-      femalePublicPhoneConsent: userData.femalePublicPhoneConsent || false,
-      assignedDivision: userData.assignedDivision,
-      assignedInstitution: userData.assignedInstitution,
-      assignedInstitutions: userData.assignedInstitutions || (userData.assignedInstitution ? [userData.assignedInstitution] : []),
-      requirePasswordChangeAtFirstLogin: userData.requirePasswordChangeAtFirstLogin || false,
-      createdByModeratorId: userData.createdByModeratorId,
-      division: userData.division,
-      district: userData.district,
-      upazila: userData.upazila,
-      isActive: userData.accountStatus ? userData.accountStatus === "active" : true,
-      isPhoneVerified: userData.isPhoneVerified || false,
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.users.push(newUser);
-    this.persistUser(newUser);
-    return newUser;
-  }
-  updateUser(id, update) {
-    const user = this.findUserById(id);
-    if (!user) return null;
-    Object.assign(user, update, { updatedAt: /* @__PURE__ */ new Date() });
-    this.persistUser(user);
-    return user;
-  }
-  // --- Manual Member Creation with Temporary Password ---
-  createMemberWithTemporaryPassword(params) {
-    const temporaryPassword = "Temp#" + Math.floor(1e5 + Math.random() * 9e5);
-    const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
-    const newUser = this.createUser({
-      name: params.name,
-      phone: params.phone,
-      passwordHash,
-      role: "MEMBER",
-      accountStatus: "active",
-      gender: params.gender,
-      division: params.division,
-      district: params.district,
-      upazila: params.upazila,
-      assignedInstitution: params.institutionId,
-      createdByModeratorId: params.moderatorId,
-      requirePasswordChangeAtFirstLogin: true,
-      isActive: true,
-      isPhoneVerified: true
-    });
-    const newProfile = this.createDonorProfile({
-      userId: newUser._id,
-      displayName: params.name,
-      bloodGroup: params.bloodGroup,
-      division: params.division,
-      district: params.district,
-      upazila: params.upazila,
-      dateOfBirth: params.dateOfBirth || /* @__PURE__ */ new Date("2002-01-01"),
-      gender: params.gender,
-      availabilityStatus: "available",
-      institutionId: params.institutionId,
-      institutionMembershipVerified: true,
-      consentToShareContact: params.consentToShareContact !== false,
-      isPubliclyListed: true,
-      emergencyAvailable: true
-    });
-    const inst = this.findInstitutionById(params.institutionId);
-    if (inst) {
-      inst.totalRegisteredDonors = (inst.totalRegisteredDonors || 0) + 1;
-    }
-    this.logModeratorActivity({
-      actorId: params.moderatorId,
-      actorName: params.moderatorName,
-      actorRole: "INSTITUTION_MODERATOR",
-      action: "MEMBER_CREATED",
-      targetRecordId: newUser._id,
-      targetRecordType: "User",
-      institutionScope: params.institutionId,
-      divisionScope: params.division,
-      reason: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u09AE\u09CD\u09AF\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09B2 \u09B8\u09A6\u09B8\u09CD\u09AF \u09A4\u09C8\u09B0\u09BF\u0964"
-    });
-    return { user: newUser, donorProfile: newProfile, temporaryPassword };
-  }
-  changeFirstLoginPassword(userId, newPassword) {
-    const user = this.findUserById(userId);
-    if (!user) return false;
-    user.passwordHash = bcryptjs_default.hashSync(newPassword, 10);
-    user.requirePasswordChangeAtFirstLogin = false;
-    user.updatedAt = /* @__PURE__ */ new Date();
-    this.persistUser(user);
-    return true;
-  }
-  // --- Centralized Account Blocking & Unblocking ---
-  blockUser(params) {
-    const targetUser = this.findUserById(params.userId);
-    if (!targetUser) {
-      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    if (targetUser.role === "SUPER_ADMIN") {
-      const activeSuperAdmins = this.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
-      if (activeSuperAdmins.length <= 1) {
-        return { success: false, message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u098F\u0995\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8\u0995\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u0995\u09B0\u09BE \u0985\u09B8\u09AE\u09CD\u09AD\u09AC\u0964" };
-      }
-    }
-    const oldStatus = targetUser.accountStatus || (targetUser.isActive ? "active" : "suspended");
-    const newStatus = params.newStatus || "temporarily_blocked";
-    targetUser.accountStatus = newStatus;
-    targetUser.isActive = false;
-    targetUser.blockReason = params.reason;
-    targetUser.blockedBy = params.actorId;
-    targetUser.blockedAt = /* @__PURE__ */ new Date();
-    targetUser.updatedAt = /* @__PURE__ */ new Date();
-    this.persistUser(targetUser);
-    const histEntry = {
-      _id: "ash_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      userId: targetUser._id,
-      targetUserName: targetUser.name,
-      targetUserPhone: targetUser.phone,
-      oldStatus,
-      newStatus,
-      actorId: params.actorId,
-      actorName: params.actorName,
-      actorRole: params.actorRole,
-      reason: params.reason,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.accountStatusHistories.unshift(histEntry);
-    this.persistAccountStatusHistory(histEntry);
-    this.logModeratorActivity({
-      actorId: params.actorId,
-      actorName: params.actorName,
-      actorRole: params.actorRole,
-      action: "MEMBER_BLOCKED",
-      targetRecordId: targetUser._id,
-      targetRecordType: "User",
-      divisionScope: targetUser.division,
-      institutionScope: targetUser.assignedInstitution,
-      reason: params.reason,
-      result: newStatus
-    });
-    return { success: true, message: `\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 (${newStatus}) \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964` };
-  }
-  unblockUser(params) {
-    const targetUser = this.findUserById(params.userId);
-    if (!targetUser) {
-      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    const oldStatus = targetUser.accountStatus || "temporarily_blocked";
-    targetUser.accountStatus = "active";
-    targetUser.isActive = true;
-    targetUser.blockReason = void 0;
-    targetUser.blockedBy = void 0;
-    targetUser.blockedAt = void 0;
-    targetUser.updatedAt = /* @__PURE__ */ new Date();
-    this.persistUser(targetUser);
-    const histEntry = {
-      _id: "ash_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      userId: targetUser._id,
-      targetUserName: targetUser.name,
-      targetUserPhone: targetUser.phone,
-      oldStatus,
-      newStatus: "active",
-      actorId: params.actorId,
-      actorName: params.actorName,
-      actorRole: params.actorRole,
-      reason: params.reason,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.accountStatusHistories.unshift(histEntry);
-    this.persistAccountStatusHistory(histEntry);
-    this.logModeratorActivity({
-      actorId: params.actorId,
-      actorName: params.actorName,
-      actorRole: params.actorRole,
-      action: "MEMBER_UNBLOCKED",
-      targetRecordId: targetUser._id,
-      targetRecordType: "User",
-      divisionScope: targetUser.division,
-      institutionScope: targetUser.assignedInstitution,
-      reason: params.reason,
-      result: "active"
-    });
-    return { success: true, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09C1\u09A8\u09B0\u09C1\u09A6\u09CD\u09A7\u09BE\u09B0 \u0993 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-  }
-  getBlockedUsers(division) {
-    let list = this.users.filter(
-      (u) => u.accountStatus === "temporarily_blocked" || u.accountStatus === "suspended" || u.accountStatus === "deactivated" || !u.isActive
-    );
-    if (division) {
-      list = list.filter((u) => u.division?.toLowerCase() === division.toLowerCase() || u.assignedDivision?.toLowerCase() === division.toLowerCase());
-    }
-    return list;
-  }
-  // --- Donor Profile Methods ---
-  findDonorProfileByUserId(userId) {
-    return this.donorProfiles.find((d) => d.userId === userId);
-  }
-  findDonorProfileById(id) {
-    return this.donorProfiles.find((d) => d._id === id);
-  }
-  createDonorProfile(data) {
-    const newProfile = {
-      _id: "donor_prof_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      userId: data.userId || "",
-      displayName: data.displayName || "",
-      bloodGroup: data.bloodGroup || "A+",
-      division: data.division || "dhaka",
-      district: data.district || "dhaka",
-      upazila: data.upazila || "",
-      addressDetails: data.addressDetails,
-      dateOfBirth: data.dateOfBirth || /* @__PURE__ */ new Date("2000-01-01"),
-      gender: data.gender || "unspecified",
-      availabilityStatus: data.availabilityStatus || "available",
-      lastDonationDate: data.lastDonationDate,
-      totalDonations: data.totalDonations || 0,
-      institutionId: data.institutionId,
-      institutionMembershipVerified: data.institutionMembershipVerified || false,
-      consentToShareContact: data.consentToShareContact !== false,
-      preferredContactMethod: data.preferredContactMethod || "phone",
-      bio: data.bio,
-      isPubliclyListed: data.isPubliclyListed !== false,
-      emergencyAvailable: data.emergencyAvailable !== false,
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.donorProfiles.push(newProfile);
-    this.persistDonorProfile(newProfile);
-    return newProfile;
-  }
-  updateDonorProfile(userId, update) {
-    const profile = this.findDonorProfileByUserId(userId);
-    if (!profile) return null;
-    Object.assign(profile, update, { updatedAt: /* @__PURE__ */ new Date() });
-    this.persistDonorProfile(profile);
-    return profile;
-  }
-  searchDonors(filters) {
-    let result = this.donorProfiles.filter((d) => {
-      const user = this.findUserById(d.userId);
-      return d.isPubliclyListed && user && user.accountStatus === "active" && user.isActive;
-    });
-    if (filters.bloodGroup) {
-      result = result.filter((d) => d.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
-    }
-    if (filters.division) {
-      result = result.filter((d) => d.division.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.district) {
-      result = result.filter((d) => d.district.toLowerCase() === filters.district?.toLowerCase());
-    }
-    if (filters.upazila) {
-      result = result.filter((d) => d.upazila.toLowerCase() === filters.upazila?.toLowerCase());
-    }
-    if (filters.institutionId) {
-      result = result.filter((d) => d.institutionId === filters.institutionId);
-    }
-    if (filters.availabilityStatus) {
-      result = result.filter((d) => d.availabilityStatus === filters.availabilityStatus);
-    }
-    const total = result.length;
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const startIndex = (page - 1) * limit;
-    const paginated = result.slice(startIndex, startIndex + limit);
-    const safeDonors = paginated.map((p) => {
-      const institution = p.institutionId ? this.findInstitutionById(p.institutionId) : void 0;
-      const donorUser = this.findUserById(p.userId);
-      const isPublicContactAllowed = Boolean(p.consentToShareContact);
-      return {
-        _id: p._id,
-        displayName: p.displayName,
-        bloodGroup: p.bloodGroup,
-        division: p.division,
-        district: p.district,
-        upazila: p.upazila,
-        availabilityStatus: p.availabilityStatus,
-        lastDonationDate: p.lastDonationDate,
-        totalDonations: p.totalDonations,
-        institutionName: institution?.nameBn || institution?.name,
-        institutionId: p.institutionId,
-        institutionMembershipVerified: p.institutionMembershipVerified,
-        emergencyAvailable: p.emergencyAvailable,
-        consentToShareContact: isPublicContactAllowed,
-        // Strictly return phone only if donor gave explicit public consent
-        phone: isPublicContactAllowed ? donorUser?.phone : void 0,
-        bio: p.bio,
-        createdAt: p.createdAt
-      };
-    });
-    return {
-      donors: safeDonors,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
-  }
-  // --- Blood Request Methods ---
-  findBloodRequestById(id) {
-    return this.bloodRequests.find((r) => String(r._id) === String(id));
-  }
-  createBloodRequest(data) {
-    this.assertWritable();
-    const newReq = {
-      _id: "req_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      requesterId: data.requesterId || "",
-      patientName: data.patientName || "",
-      bloodGroup: data.bloodGroup || "A+",
-      unitsRequired: data.unitsRequired || 1,
-      unitsFulfilled: data.unitsFulfilled || 0,
-      hospitalName: data.hospitalName || "",
-      hospitalAddress: data.hospitalAddress || "",
-      division: data.division || "dhaka",
-      district: data.district || "dhaka",
-      upazila: data.upazila || "",
-      requiredDate: data.requiredDate || /* @__PURE__ */ new Date(),
-      requiredWithin: data.requiredWithin,
-      urgencyLevel: data.urgencyLevel || "emergency",
-      reason: data.reason || "",
-      contactNumber: data.contactNumber || "",
-      alternativeContactNumber: data.alternativeContactNumber,
-      status: data.status || "open",
-      moderationNotes: data.moderationNotes,
-      institutionId: data.institutionId,
-      expiresAt: data.expiresAt || new Date(Date.now() + 864e5 * 3),
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.bloodRequests.unshift(newReq);
-    this.persistBloodRequest(newReq);
-    return newReq;
-  }
-  updateBloodRequest(id, update) {
-    const req = this.findBloodRequestById(id);
-    if (!req) return null;
-    Object.assign(req, update, { updatedAt: /* @__PURE__ */ new Date() });
-    this.persistBloodRequest(req);
-    return req;
-  }
-  searchBloodRequests(filters) {
-    let result = [...this.bloodRequests];
-    const now = /* @__PURE__ */ new Date();
-    result.forEach((r) => {
-      if ((r.status === "open" || r.status === "partially_fulfilled") && new Date(r.expiresAt) < now) {
-        r.status = "expired";
-      }
-    });
-    if (filters.status) {
-      result = result.filter((r) => r.status === filters.status);
-    } else {
-      result = result.filter((r) => r.status === "open" || r.status === "partially_fulfilled");
-    }
-    if (filters.bloodGroup) {
-      result = result.filter((r) => r.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
-    }
-    if (filters.division) {
-      result = result.filter((r) => r.division.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.district) {
-      result = result.filter((r) => r.district.toLowerCase() === filters.district?.toLowerCase());
-    }
-    if (filters.upazila) {
-      result = result.filter((r) => r.upazila.toLowerCase() === filters.upazila?.toLowerCase());
-    }
-    if (filters.urgencyLevel) {
-      result = result.filter((r) => r.urgencyLevel === filters.urgencyLevel);
-    }
-    if (filters.institutionId) {
-      result = result.filter((r) => r.institutionId === filters.institutionId);
-    }
-    result.sort((a, b) => {
-      if (a.urgencyLevel === "emergency" && b.urgencyLevel !== "emergency") return -1;
-      if (b.urgencyLevel === "emergency" && a.urgencyLevel !== "emergency") return 1;
-      return new Date(a.requiredDate).getTime() - new Date(b.requiredDate).getTime();
-    });
-    const total = result.length;
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const startIndex = (page - 1) * limit;
-    const paginated = result.slice(startIndex, startIndex + limit);
-    return {
-      requests: paginated,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
-  }
-  // --- Institution Methods ---
-  findInstitutionById(id) {
-    return this.institutions.find((i) => String(i._id) === String(id));
-  }
-  getInstitutions(filters) {
-    let result = [...this.institutions];
-    if (filters.status) {
-      result = result.filter((i) => i.status === filters.status);
-    }
-    if (filters.division) {
-      result = result.filter((i) => i.division.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(
-        (i) => i.name.toLowerCase().includes(q) || i.nameBn.includes(q) || i.code.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }
-  createInstitution(data) {
-    const newInst = {
-      _id: "inst_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      name: data.name || "",
-      nameBn: data.nameBn || data.name || "",
-      code: data.code?.toUpperCase() || "INST-" + Date.now(),
-      type: data.type || "university",
-      division: data.division || "dhaka",
-      district: data.district || "dhaka",
-      upazila: data.upazila || "",
-      address: data.address || "",
-      website: data.website,
-      email: data.email,
-      phone: data.phone,
-      status: data.status || "pending",
-      assignedModeratorId: data.assignedModeratorId,
-      assignedModeratorIds: data.assignedModeratorId ? [data.assignedModeratorId] : [],
-      totalRegisteredDonors: 0,
-      description: data.description,
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.institutions.push(newInst);
-    this.persistInstitution(newInst);
-    return newInst;
-  }
-  updateInstitution(id, update) {
-    const inst = this.findInstitutionById(id);
-    if (!inst) return null;
-    Object.assign(inst, update, { updatedAt: /* @__PURE__ */ new Date() });
-    this.persistInstitution(inst);
-    return inst;
-  }
-  // --- Institution Applications / Requests ---
-  createInstitutionRequest(data) {
-    const newReq = {
-      _id: "inst_req_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      name: data.name || "",
-      nameBn: data.nameBn || data.name || "",
-      code: data.code?.toUpperCase() || "REQ-" + Date.now(),
-      type: data.type || "university",
-      division: data.division || "dhaka",
-      district: data.district || "dhaka",
-      upazila: data.upazila || "",
-      address: data.address || "",
-      applicantName: data.applicantName || "",
-      applicantPhone: data.applicantPhone || "",
-      applicantEmail: data.applicantEmail,
-      applicantRole: data.applicantRole,
-      supportingDetails: data.supportingDetails,
-      status: "pending_review",
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.institutionRequests.unshift(newReq);
-    this.persistInstitutionRequest(newReq);
-    const coordinators = this.users.filter(
-      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === newReq.division.toLowerCase()
-    );
-    coordinators.forEach((coord) => {
-      this.createNotification({
-        userId: coord._id,
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: `${newReq.division} \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 '${newReq.nameBn}' \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-        type: "institution_update"
-      });
-    });
-    return newReq;
-  }
-  getInstitutionRequests(filters) {
-    let list = [...this.institutionRequests];
-    if (filters.division) {
-      list = list.filter((r) => r.division.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.status) {
-      list = list.filter((r) => r.status === filters.status);
-    }
-    return list;
-  }
-  reviewInstitutionRequest(params) {
-    const req = this.institutionRequests.find((r) => String(r._id) === String(params.requestId));
-    if (!req) {
-      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    const allowedRoles = ["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"];
-    if (!allowedRoles.includes(params.reviewerRole)) {
-      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE\u09B0 \u0995\u09CD\u09B7\u09AE\u09A4\u09BE\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09A8\u0964" };
-    }
-    if (params.reviewerRole === "DIVISION_COORDINATOR" && params.reviewerDivision?.toLowerCase() !== req.division.toLowerCase()) {
-      return { success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2\u09AE\u09BE\u09A4\u09CD\u09B0 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    req.status = params.status;
-    req.reviewedBy = params.reviewerId;
-    req.decisionReason = params.decisionReason;
-    req.reviewedAt = /* @__PURE__ */ new Date();
-    req.updatedAt = /* @__PURE__ */ new Date();
-    let createdInst;
-    if (params.status === "approved") {
-      createdInst = this.createInstitution({
-        name: req.name,
-        nameBn: req.nameBn,
-        code: req.code,
-        type: req.type,
-        division: req.division,
-        district: req.district,
-        upazila: req.upazila,
-        address: req.address,
-        status: "approved",
-        description: req.supportingDetails
-      });
-      req.createdInstitutionId = createdInst._id;
-    }
-    this.persistInstitutionRequest(req);
-    return {
-      success: true,
-      message: params.status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u0993 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-      institution: createdInst
-    };
-  }
-  // --- Moderator Activity Tracking ---
-  logModeratorActivity(params) {
-    const entry = {
-      _id: "mact_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      actorId: params.actorId,
-      actorName: params.actorName,
-      actorRole: params.actorRole,
-      action: params.action,
-      targetRecordId: params.targetRecordId,
-      targetRecordType: params.targetRecordType,
-      divisionScope: params.divisionScope,
-      institutionScope: params.institutionScope,
-      reason: params.reason,
-      result: params.result || "\u09B8\u09AB\u09B2",
-      details: params.details,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.moderatorActivities.unshift(entry);
-    this.persistModeratorActivity(entry);
-    return entry;
-  }
-  getModeratorActivities(filters) {
-    let list = [...this.moderatorActivities];
-    if (filters.actorId) {
-      list = list.filter((a) => a.actorId === filters.actorId);
-    }
-    if (filters.divisionScope) {
-      list = list.filter((a) => a.divisionScope?.toLowerCase() === filters.divisionScope?.toLowerCase());
-    }
-    if (filters.institutionScope) {
-      list = list.filter((a) => a.institutionScope === filters.institutionScope);
-    }
-    if (filters.action) {
-      list = list.filter((a) => a.action === filters.action);
-    }
-    return list;
-  }
-  getModeratorsUnderDivision(division) {
-    const moderators = this.users.filter((u) => u.role === "INSTITUTION_MODERATOR");
-    return moderators.filter((m) => {
-      if (!m.assignedInstitution) return false;
-      const inst = this.findInstitutionById(m.assignedInstitution);
-      return inst && inst.division.toLowerCase() === division.toLowerCase();
-    }).map((m) => {
-      const inst = m.assignedInstitution ? this.findInstitutionById(m.assignedInstitution) : void 0;
-      const membersAdded = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_CREATED").length;
-      const profilesEdited = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_EDITED").length;
-      const membersBlocked = this.moderatorActivities.filter((a) => a.actorId === m._id && a.action === "MEMBER_BLOCKED").length;
-      return {
-        _id: m._id,
-        name: m.name,
-        phone: m.phone,
-        email: m.email,
-        accountStatus: m.accountStatus,
-        assignedInstitutionId: m.assignedInstitution,
-        institutionName: inst?.nameBn || inst?.name || "\u0985\u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4",
-        membersAdded,
-        profilesEdited,
-        membersBlocked,
-        createdAt: m.createdAt
-      };
-    });
-  }
-  // --- Institutional Contact Requests ---
-  createContactRequest(data) {
-    const inst = this.findInstitutionById(data.institutionId);
-    const newContactReq = {
-      _id: "cr_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      ...data,
-      status: "pending",
-      assignedModeratorId: inst?.assignedModeratorId,
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.contactRequests.unshift(newContactReq);
-    this.persistContactRequest(newContactReq);
-    if (inst?.assignedModeratorId) {
-      this.createNotification({
-        userId: inst.assignedModeratorId,
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
-        message: `${inst.nameBn} \u0987\u0989\u09A8\u09BF\u099F\u09C7 ${data.targetBloodGroup} \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u098F\u0995\u099F\u09BF \u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u098F\u09B8\u09C7\u099B\u09C7 (${data.patientName})\u0964`,
-        type: "contact_request"
-      });
-    }
-    if (inst) {
-      const coordinators = this.users.filter(
-        (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === inst.division.toLowerCase()
-      );
-      coordinators.forEach((coord) => {
-        this.createNotification({
-          userId: coord._id,
-          title: "\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
-          message: `${inst.nameBn} \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 ${data.targetBloodGroup} \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-          type: "contact_request"
-        });
-      });
-    }
-    return newContactReq;
-  }
-  getContactRequests(filters) {
-    let list = [...this.contactRequests];
-    if (filters.institutionId) {
-      list = list.filter((r) => r.institutionId === filters.institutionId);
-    }
-    if (filters.status) {
-      list = list.filter((r) => r.status === filters.status);
-    }
-    return list;
-  }
-  updateContactRequest(id, update) {
-    const req = this.contactRequests.find((r) => r._id === id);
-    if (!req) return null;
-    Object.assign(req, update, { updatedAt: /* @__PURE__ */ new Date() });
-    this.persistContactRequest(req);
-    return req;
-  }
-  // --- Contact Access & Privacy Flow ---
-  getViewerDailyContactAccessCount(viewerId) {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1e3);
-    return this.contactAccessLogs.filter(
-      (log) => log.viewerId === viewerId && log.createdAt >= twentyFourHoursAgo
-    ).length;
-  }
-  recordContactAccess(logData) {
-    const newLog = {
-      _id: "cal_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      viewerId: logData.viewerId,
-      donorUserId: logData.donorUserId,
-      donorProfileId: logData.donorProfileId,
-      purpose: logData.purpose,
-      relatedBloodRequestId: logData.relatedBloodRequestId,
-      ipAddress: logData.ipAddress,
-      userAgent: logData.userAgent,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.contactAccessLogs.push(newLog);
-    const viewer = this.findUserById(logData.viewerId);
-    this.createNotification({
-      userId: logData.donorUserId,
-      title: "\u099C\u09B0\u09C1\u09B0\u09BF \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
-      message: `${viewer?.name || "\u098F\u0995\u099C\u09A8 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0"} \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0986\u09AA\u09A8\u09BE\u09B0 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09C7\u0996\u09C7\u099B\u09C7\u09A8\u0964`,
-      type: "contact_revealed"
-    });
-    return newLog;
-  }
-  // --- OTP Methods ---
-  saveOtp(phone, otp, purpose) {
-    const otpHash = bcryptjs_default.hashSync(otp, 6);
-    const otpRecord = {
-      phone,
-      otpHash,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1e3),
-      attempts: 0,
-      isUsed: false,
-      purpose,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.otps = this.otps.filter((o) => o.phone !== phone);
-    this.otps.push(otpRecord);
-    return otpRecord;
-  }
-  verifyOtp(phone, rawOtp, purpose) {
-    const record = this.otps.find((o) => o.phone === phone && o.purpose === purpose && !o.isUsed);
-    if (!record) {
-      return { success: false, message: "\u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF \u09AC\u09BE \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09A8\u09A4\u09C1\u09A8 \u0995\u09CB\u09A1 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u09C1\u09A8\u0964" };
-    }
-    if (/* @__PURE__ */ new Date() > record.expiresAt) {
-      return { success: false, message: "\u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1\u09C7\u09B0 \u09AE\u09C7\u09AF\u09BC\u09BE\u09A6 \u09B6\u09C7\u09B7 \u09B9\u09AF\u09BC\u09C7 \u0997\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964" };
-    }
-    if (record.attempts >= 5) {
-      return { success: false, message: "\u09B8\u09B0\u09CD\u09AC\u09CB\u099A\u09CD\u099A \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u09B8\u0982\u0996\u09CD\u09AF\u09BE \u0985\u09A4\u09BF\u0995\u09CD\u09B0\u09AE \u0995\u09B0\u09C7\u099B\u09C7\u0964 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964" };
-    }
-    record.attempts += 1;
-    const isValid2 = bcryptjs_default.compareSync(rawOtp, record.otpHash);
-    if (!isValid2) {
-      return { success: false, message: "\u09AD\u09C1\u09B2 \u0993\u099F\u09BF\u09AA\u09BF \u0995\u09CB\u09A1\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09B8\u09A0\u09BF\u0995 \u09EC \u09A1\u09BF\u099C\u09BF\u099F\u09C7\u09B0 \u0995\u09CB\u09A1\u099F\u09BF \u09A6\u09BF\u09A8\u0964" };
-    }
-    record.isUsed = true;
-    return { success: true, message: "\u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AF\u09BE\u099A\u09BE\u0987 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-  }
-  // --- Report Methods with Scoping ---
-  createReport(data) {
-    let division = data.division;
-    let institutionId = data.institutionId;
-    let targetTitle = data.targetTitle;
-    if (data.targetType === "blood_request") {
-      const req = this.bloodRequests.find((r) => r._id === data.targetId);
-      if (req) {
-        division = division || req.division;
-        institutionId = institutionId || req.institutionId;
-        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 (${req.patientName} - ${req.hospitalName})`;
-      }
-    } else if (data.targetType === "donor_profile") {
-      const donor = this.donorProfiles.find((d) => d._id === data.targetId);
-      if (donor) {
-        division = division || donor.division;
-        institutionId = institutionId || donor.institutionId;
-        targetTitle = targetTitle || `\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 (${donor.displayName})`;
-      }
-    } else if (data.targetType === "institution") {
-      const inst = this.institutions.find((i) => i._id === data.targetId);
-      if (inst) {
-        division = division || inst.division;
-        institutionId = institutionId || inst._id;
-        targetTitle = targetTitle || `\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 (${inst.nameBn})`;
-      }
-    } else if (data.targetType === "user") {
-      const u = this.users.find((usr) => usr._id === data.targetId);
-      if (u) {
-        division = division || u.division || u.assignedDivision;
-        institutionId = institutionId || u.assignedInstitution;
-        targetTitle = targetTitle || `\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 (${u.name})`;
-      }
-    }
-    const newReport = {
-      _id: "rep_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      reportedBy: data.reportedBy || "",
-      targetType: data.targetType || "blood_request",
-      targetId: data.targetId || "",
-      targetTitle,
-      division,
-      institutionId,
-      reason: data.reason || "other",
-      description: data.description || "",
-      status: "pending",
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.reports.unshift(newReport);
-    return newReport;
-  }
-  getReports(filters) {
-    let list = [...this.reports];
-    if (filters.status) {
-      list = list.filter((r) => r.status === filters.status);
-    }
-    if (filters.targetType) {
-      list = list.filter((r) => r.targetType === filters.targetType);
-    }
-    if (filters.division) {
-      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.institutionId) {
-      list = list.filter((r) => r.institutionId === filters.institutionId);
-    }
-    return list;
-  }
-  // --- Phone Change Request Methods ---
-  createPhoneChangeRequest(params) {
-    const user = this.findUserById(params.userId);
-    if (!user) {
-      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    const existingPending = this.phoneChangeRequests.find(
-      (r) => r.userId === params.userId && r.status === "pending"
-    );
-    if (existingPending) {
-      return {
-        success: false,
-        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09AE\u09BE\u09A3 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
-      };
-    }
-    const phoneOwner = this.findUserByPhone(params.newPhone);
-    if (phoneOwner && phoneOwner._id !== params.userId) {
-      return {
-        success: false,
-        message: "\u098F\u0987 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u09C7 \u09AC\u09CD\u09AF\u09AC\u09B9\u09C3\u09A4 \u09B9\u099A\u09CD\u099B\u09C7\u0964"
-      };
-    }
-    let institutionName = void 0;
-    if (user.assignedInstitution) {
-      const inst = this.findInstitutionById(user.assignedInstitution);
-      institutionName = inst?.nameBn;
-    }
-    const newReq = {
-      _id: "pcr_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      userId: user._id,
-      userName: user.name,
-      userRole: user.role,
-      currentPhone: user.phone,
-      newPhone: params.newPhone,
-      reason: params.reason,
-      division: user.division || user.assignedDivision,
-      district: user.district,
-      institutionId: user.assignedInstitution,
-      institutionName,
-      status: "pending",
-      createdAt: /* @__PURE__ */ new Date(),
-      updatedAt: /* @__PURE__ */ new Date()
-    };
-    this.phoneChangeRequests.unshift(newReq);
-    this.persistPhoneChangeRequest(newReq);
-    const coordinators = this.users.filter(
-      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision?.toLowerCase() === (user.division || "").toLowerCase()
-    );
-    coordinators.forEach((c) => {
-      this.createNotification({
-        userId: c._id,
-        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u09A8\u09A4\u09C1\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: `${user.name} \u09A4\u09BE\u09B0 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "phone_change",
-        link: "/coordinator/dashboard"
-      });
-    });
-    return {
-      success: true,
-      message: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09AC\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE\u09B0 \u09AA\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u09B9\u09AC\u09C7\u0964",
-      request: newReq
-    };
-  }
-  getPhoneChangeRequests(filters) {
-    let list = [...this.phoneChangeRequests];
-    if (filters.userId) {
-      list = list.filter((r) => r.userId === filters.userId);
-    }
-    if (filters.status) {
-      list = list.filter((r) => r.status === filters.status);
-    }
-    if (filters.division) {
-      list = list.filter((r) => r.division?.toLowerCase() === filters.division?.toLowerCase());
-    }
-    if (filters.institutionId) {
-      list = list.filter((r) => r.institutionId === filters.institutionId);
-    }
-    return list;
-  }
-  getPendingPhoneChangeRequestForUser(userId) {
-    return this.phoneChangeRequests.find((r) => r.userId === userId && r.status === "pending") || null;
-  }
-  updatePhoneChangeRequest(requestId, status, reviewer, reviewNotes) {
-    const req = this.phoneChangeRequests.find((r) => String(r._id) === String(requestId));
-    if (!req) {
-      return { success: false, message: "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    if (req.status !== "pending") {
-      return { success: false, message: "\u098F\u0987 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AE\u09C0\u09AE\u09BE\u0982\u09B8\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-    }
-    req.status = status;
-    req.reviewedBy = reviewer.userId;
-    req.reviewedByName = reviewer.name;
-    req.reviewedAt = /* @__PURE__ */ new Date();
-    req.reviewNotes = reviewNotes || (status === "approved" ? "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4" : "\u09AC\u09BE\u09A4\u09BF\u09B2\u0995\u09C3\u09A4");
-    req.updatedAt = /* @__PURE__ */ new Date();
-    const targetUser = this.findUserById(req.userId);
-    if (status === "approved" && targetUser) {
-      targetUser.phone = req.newPhone;
-      targetUser.updatedAt = /* @__PURE__ */ new Date();
-      this.persistUser(targetUser);
-      const donor = this.donorProfiles.find((d) => String(d.userId) === String(targetUser._id));
-      if (donor) {
-        donor.updatedAt = /* @__PURE__ */ new Date();
-        this.persistDonorProfile(donor);
-      }
-      this.createNotification({
-        userId: targetUser._id,
-        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
-        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u0995\u09C3\u09A4 \u09A8\u09A4\u09C1\u09A8 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 (${req.newPhone}) \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u098F\u0996\u09A8 \u09A5\u09C7\u0995\u09C7 \u098F\u0987 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C1\u09A8\u0964`,
-        type: "phone_change",
-        link: "/profile"
-      });
-    } else if (status === "rejected" && targetUser) {
-      this.createNotification({
-        userId: targetUser._id,
-        title: "\u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
-        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0995\u09BE\u09B0\u09A3: ${reviewNotes || "\u09AF\u09BE\u099A\u09BE\u0987\u0995\u09B0\u09A3 \u09B8\u09A8\u09CD\u09A4\u09CB\u09B7\u099C\u09A8\u0995 \u09A8\u09AF\u09BC"}`,
-        type: "phone_change",
-        link: "/profile"
-      });
-    }
-    this.persistPhoneChangeRequest(req);
-    return {
-      success: true,
-      message: status === "approved" ? "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7 \u098F\u09AC\u0982 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-      request: req
-    };
-  }
-  // --- Coordinator Moderator Appointment ---
-  appointModeratorByCoordinator(params) {
-    const institution = this.findInstitutionById(params.institutionId);
-    if (!institution) {
-      return { success: false, message: "\u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    if (params.coordinatorUser.role === "DIVISION_COORDINATOR") {
-      if (institution.division.toLowerCase() !== params.coordinatorUser.assignedDivision?.toLowerCase()) {
-        return {
-          success: false,
-          message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
-        };
-      }
-    }
-    const existingUser = this.findUserByPhone(params.phone);
-    if (existingUser) {
-      existingUser.role = "INSTITUTION_MODERATOR";
-      existingUser.assignedInstitution = params.institutionId;
-      existingUser.assignedInstitutions = [params.institutionId];
-      existingUser.updatedAt = /* @__PURE__ */ new Date();
-      this.createNotification({
-        userId: existingUser._id,
-        title: "\u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC \u09A6\u09C7\u0993\u09AF\u09BC\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
-        message: `${institution.nameBn} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u0995\u09B0\u09CD\u09A4\u09C3\u0995 \u0986\u09AA\u09A8\u09BE\u0995\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-        type: "account_status",
-        link: "/moderator/dashboard"
-      });
-      return {
-        success: true,
-        message: `\u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F (${existingUser.name})-\u0995\u09C7 ${institution.nameBn}-\u098F\u09B0 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09A8\u09BF\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-        moderator: existingUser
-      };
-    }
-    const temporaryPassword = "Mod@" + Math.floor(1e5 + Math.random() * 9e5);
-    const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
-    const newMod = this.createUser({
-      name: params.name,
-      phone: params.phone,
-      email: params.email,
-      passwordHash,
-      role: "INSTITUTION_MODERATOR",
-      accountStatus: "active",
-      gender: params.gender || "unspecified",
-      division: institution.division,
-      district: institution.district,
-      upazila: institution.upazila,
-      assignedInstitution: params.institutionId,
-      assignedInstitutions: [params.institutionId],
-      requirePasswordChangeAtFirstLogin: true,
-      isActive: true,
-      isPhoneVerified: true
-    });
-    return {
-      success: true,
-      message: `${institution.nameBn}-\u098F\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09A4\u09C1\u09A8 \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A8\u09BF\u09AF\u09BC\u09CB\u0997 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-      moderator: newMod,
-      temporaryPassword
-    };
-  }
-  // --- Institution Drill-Down Members ---
-  getInstitutionMembers(institutionId) {
-    const institution = this.findInstitutionById(institutionId);
-    if (!institution) return [];
-    const donorList = this.donorProfiles.filter((d) => d.institutionId === institutionId);
-    const userMap = new Map(this.users.map((u) => [u._id, u]));
-    return donorList.map((d) => {
-      const u = userMap.get(d.userId);
-      return {
-        _id: d._id,
-        userId: d.userId,
-        name: d.displayName,
-        phone: u?.phone || "",
-        bloodGroup: d.bloodGroup,
-        gender: d.gender,
-        division: d.division,
-        district: d.district,
-        upazila: d.upazila,
-        availabilityStatus: d.availabilityStatus,
-        lastDonationDate: d.lastDonationDate,
-        totalDonations: d.totalDonations,
-        isPubliclyListed: d.isPubliclyListed,
-        accountStatus: u?.accountStatus || "active",
-        createdAt: d.createdAt
-      };
-    });
-  }
-  // --- Notifications ---
-  createNotification(data) {
-    const notif = {
-      _id: "notif_" + Date.now() + Math.random().toString(36).substring(2, 7),
-      userId: data.userId || "",
-      title: data.title || "",
-      message: data.message || "",
-      type: data.type || "system",
-      link: data.link,
-      isRead: false,
-      createdAt: /* @__PURE__ */ new Date()
-    };
-    this.notifications.unshift(notif);
-    return notif;
-  }
-  getUserNotifications(userId) {
-    return this.notifications.filter((n) => n.userId === userId);
-  }
-  markNotificationAsRead(id, userId) {
-    const notif = this.notifications.find((n) => n._id === id && n.userId === userId);
-    if (notif) {
-      notif.isRead = true;
-      return true;
-    }
-    return false;
-  }
-  // --- PART 03: Password Recovery & One-Time Password System ---
-  createPasswordRecoveryRequest(phoneOrUserId, reason) {
-    const cleanInput = phoneOrUserId.trim().replace(/^(\+880|880)/, "0");
-    const user = this.users.find((u) => u._id === cleanInput || u.phone === cleanInput);
-    if (!user) {
-      return {
-        success: false,
-        message: "\u09AA\u09CD\u09B0\u09A6\u09A4\u09CD\u09A4 \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09AC\u09BE \u0986\u0987\u09A1\u09BF \u09A6\u09BF\u09AF\u09BC\u09C7 \u0995\u09CB\u09A8\u09CB \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
-      };
-    }
-    if (user.accountStatus && user.accountStatus !== "active") {
-      return {
-        success: false,
-        message: "\u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u099F\u09BF \u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09AC\u09BE \u09A4\u09A6\u09A8\u09CD\u09A4\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09B8\u09B9\u09BE\u09AF\u09BC\u09A4\u09BE \u09A1\u09C7\u09B8\u09CD\u0995\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
-      };
-    }
-    const existing = this.passwordRecoveryRequests.find(
-      (r) => r.userId === user._id && r.status === "pending"
-    );
-    if (existing) {
-      return {
-        success: false,
-        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u098F\u0995\u099F\u09BF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09C1\u09A8\u09B0\u09C1\u09A6\u09CD\u09A7\u09BE\u09B0\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09CD\u09B0\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u09BE\u09A7\u09C0\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0985\u09AA\u09C7\u0995\u09CD\u09B7\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
-      };
-    }
-    const institution = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
-    const now = /* @__PURE__ */ new Date();
-    const requestId = "prr_" + Date.now() + Math.random().toString(36).substring(2, 6);
-    const newRequest = {
-      _id: requestId,
-      userId: user._id,
-      userName: user.name,
-      phone: user.phone,
-      userRole: user.role,
-      division: user.division || "dhaka",
-      district: user.district || "dhaka",
-      institutionId: user.assignedInstitution,
-      institutionName: institution?.nameBn || institution?.name,
-      status: "pending",
-      reason: reason || "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09B2\u0997\u0987\u09A8 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE",
-      isUsed: false,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.passwordRecoveryRequests.unshift(newRequest);
-    this.passwordRecoveryAudits.unshift({
-      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      requestId: newRequest._id,
-      userId: user._id,
-      userName: user.name,
-      phone: user.phone,
-      issuedBy: user._id,
-      issuedByName: user.name,
-      issuerRole: user.role,
-      action: "REQUEST_SUBMITTED",
-      reason: reason || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8",
-      createdAt: now
-    });
-    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN" || u.role === "ADMIN");
-    for (const admin of admins) {
-      this.createNotification({
-        userId: admin._id,
-        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: `${user.name} (${user.phone}) \u098F\u0995\u099F\u09BF \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "system",
-        link: "/admin/dashboard"
-      });
-    }
-    const coordinators = this.users.filter(
-      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === user.division
-    );
-    for (const c of coordinators) {
-      this.createNotification({
-        userId: c._id,
-        title: "\u{1F511} \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
-        message: `${user.name} (${user.district}, ${user.division}) \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "system",
-        link: "/coordinator/dashboard"
-      });
-    }
-    if (user.assignedInstitution) {
-      const instOfficials = this.users.filter(
-        (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === user.assignedInstitution
-      );
-      for (const official of instOfficials) {
-        this.createNotification({
-          userId: official._id,
-          title: "\u{1F511} \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B8\u09A6\u09B8\u09CD\u09AF \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF",
-          message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964`,
-          type: "system",
-          link: "/moderator/dashboard"
-        });
-      }
-    }
-    return {
-      success: true,
-      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u09AF\u09BE\u099A\u09BE\u0987 \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09AC\u09C7\u09A8\u0964"
-    };
-  }
-  getPasswordRecoveryRequests(filter) {
-    let list = this.passwordRecoveryRequests;
-    if (filter.status) {
-      list = list.filter((r) => r.status === filter.status);
-    }
-    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
-    } else if (filter.role === "DIVISION_COORDINATOR") {
-      list = list.filter((r) => r.division === filter.division);
-    } else if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
-      list = list.filter((r) => r.institutionId === filter.institutionId);
-    } else {
-      return [];
-    }
-    return list.map((r) => ({
-      _id: r._id,
-      userId: r.userId,
-      userName: r.userName,
-      phone: r.phone,
-      userRole: r.userRole,
-      division: r.division,
-      district: r.district,
-      institutionId: r.institutionId,
-      institutionName: r.institutionName,
-      status: r.status,
-      reason: r.reason,
-      isUsed: r.isUsed,
-      expiresAt: r.expiresAt,
-      approvedBy: r.approvedBy,
-      approvedByName: r.approvedByName,
-      approvedByRole: r.approvedByRole,
-      approvedAt: r.approvedAt,
-      rejectionReason: r.rejectionReason,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt
-    }));
-  }
-  approvePasswordRecoveryRequest(requestId, approverUser) {
-    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
-    if (!req) {
-      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    if (req.status !== "pending") {
-      return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-    }
-    if (approverUser.role === "DIVISION_COORDINATOR" && approverUser.assignedDivision !== req.division) {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    if ((approverUser.role === "INSTITUTION_MODERATOR" || approverUser.role === "INSTITUTION_HEAD") && approverUser.assignedInstitution !== req.institutionId) {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    const targetUser = this.findUserById(req.userId);
-    if (!targetUser) {
-      return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u09B0 \u09AE\u09C2\u09B2 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    }
-    const tempPass = "BD" + Math.floor(1e5 + Math.random() * 9e5);
-    const hash2 = bcryptjs_default.hashSync(tempPass, 10);
-    const now = /* @__PURE__ */ new Date();
-    const expiresAt = new Date(Date.now() + 24 * 3600 * 1e3);
-    req.status = "approved";
-    req.temporaryPasswordHash = hash2;
-    req.expiresAt = expiresAt;
-    req.approvedBy = approverUser._id;
-    req.approvedByName = approverUser.name;
-    req.approvedByRole = approverUser.role;
-    req.approvedAt = now;
-    req.updatedAt = now;
-    targetUser.passwordHash = hash2;
-    targetUser.requirePasswordChangeAtFirstLogin = true;
-    targetUser.updatedAt = now;
-    this.persistUser(targetUser);
-    this.persistPasswordRecoveryRequest(req);
-    this.passwordRecoveryAudits.unshift({
-      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      requestId: req._id,
-      userId: targetUser._id,
-      userName: targetUser.name,
-      phone: targetUser.phone,
-      issuedBy: approverUser._id,
-      issuedByName: approverUser.name,
-      issuerRole: approverUser.role,
-      action: "OTP_GENERATED",
-      reason: "\u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
-      notes: `\u0987\u09B8\u09CD\u09AF\u09C1 \u0995\u09B0\u09C7\u099B\u09C7\u09A8: ${approverUser.name} (${approverUser.role})`,
-      createdAt: now
-    });
-    this.createNotification({
-      userId: targetUser._id,
-      title: "\u2705 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
-      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A6\u09BF\u09AF\u09BC\u09C7 \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C7 \u0985\u09AC\u09BF\u09B2\u09AE\u09CD\u09AC\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8\u0964",
-      type: "account_status"
-    });
-    return {
-      success: true,
-      temporaryPassword: tempPass,
-      warning: "\u098F\u0987 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1\u099F\u09BF \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u0995\u09C7 \u09A8\u09BF\u09B0\u09BE\u09AA\u09A6 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u09A6\u09BF\u09A8\u0964 \u098F\u099F\u09BF \u09E8\u09EA \u0998\u09A3\u09CD\u099F\u09BE\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u09AC\u09BE\u09B0\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u09AF\u09CB\u0997\u09CD\u09AF\u0964"
-    };
-  }
-  rejectPasswordRecoveryRequest(requestId, rejecterUser, reason) {
-    const req = this.passwordRecoveryRequests.find((r) => String(r._id) === String(requestId));
-    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    const now = /* @__PURE__ */ new Date();
-    req.status = "rejected";
-    req.rejectionReason = reason;
-    req.updatedAt = now;
-    this.persistPasswordRecoveryRequest(req);
-    this.passwordRecoveryAudits.unshift({
-      _id: "pra_" + Date.now() + Math.random().toString(36).substring(2, 6),
-      requestId: req._id,
-      userId: req.userId,
-      userName: req.userName,
-      phone: req.phone,
-      issuedBy: rejecterUser._id,
-      issuedByName: rejecterUser.name,
-      issuerRole: rejecterUser.role,
-      action: "REQUEST_REJECTED",
-      reason,
-      createdAt: now
-    });
-    return { success: true, message: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B0\u09BF\u0995\u09AD\u09BE\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-  }
-  getPasswordRecoveryHistory(filter) {
-    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
-      return this.passwordRecoveryAudits;
-    }
-    if (filter.role === "DIVISION_COORDINATOR") {
-      const validReqIds = new Set(
-        this.passwordRecoveryRequests.filter((r) => r.division === filter.division).map((r) => r._id)
-      );
-      return this.passwordRecoveryAudits.filter((a) => validReqIds.has(a.requestId));
-    }
-    return [];
-  }
-  // --- PART 04: Scoped Member Profile Search ---
-  scopedUserSearch(query, searcherUser) {
-    const clean = query.trim().toLowerCase();
-    const cleanPhone = clean.replace(/^(\+880|880)/, "0");
-    const targetUser = this.users.find(
-      (u) => u._id.toLowerCase() === clean || u.phone === cleanPhone || u.name.toLowerCase().includes(clean)
-    );
-    if (!targetUser) {
-      return {
-        success: false,
-        notFound: true,
-        message: "\u0995\u09CB\u09A8\u09CB \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
-      };
-    }
-    if (searcherUser.role === "SUPER_ADMIN" || searcherUser.role === "ADMIN") {
-    } else if (searcherUser.role === "DIVISION_COORDINATOR") {
-      if (targetUser.division !== searcherUser.assignedDivision) {
-        return {
-          success: false,
-          outOfScope: true,
-          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0986\u09AA\u09A8\u09BE\u09B0 Assigned Division-\u098F\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09A8\u09C7\u0987\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F Division Coordinator \u0985\u09A5\u09AC\u09BE Authorized Administrator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
-        };
-      }
-    } else if (searcherUser.role === "INSTITUTION_HEAD" || searcherUser.role === "INSTITUTION_MODERATOR") {
-      if (targetUser.assignedInstitution !== searcherUser.assignedInstitution) {
-        return {
-          success: false,
-          outOfScope: true,
-          message: "\u098F\u0987 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09A8\u09CD\u09AF \u098F\u0995\u099F\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u09A8\u0964 \u09AC\u09BF\u09B8\u09CD\u09A4\u09BE\u09B0\u09BF\u09A4 \u09A4\u09A5\u09CD\u09AF\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 Moderator-\u098F\u09B0 \u09B8\u0999\u09CD\u0997\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09C1\u09A8\u0964"
-        };
-      }
-    } else {
-      return { success: false, outOfScope: true, message: "\u0985\u09A8\u09C1\u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC \u0985\u09A8\u09C1\u09AE\u09A4\u09BF \u09A8\u09C7\u0987\u0964" };
-    }
-    const inst = targetUser.assignedInstitution ? this.findInstitutionById(targetUser.assignedInstitution) : void 0;
-    const donor = this.donorProfiles.find((d) => d.userId === targetUser._id);
-    return {
-      success: true,
-      user: {
-        _id: targetUser._id,
-        name: targetUser.name,
-        phone: targetUser.phone,
-        role: targetUser.role,
-        accountStatus: targetUser.accountStatus,
-        division: targetUser.division,
-        district: targetUser.district,
-        upazila: targetUser.upazila,
-        gender: targetUser.gender,
-        assignedInstitution: targetUser.assignedInstitution,
-        institutionName: inst?.nameBn || inst?.name,
-        bloodGroup: donor?.bloodGroup,
-        totalDonations: donor?.totalDonations || 0,
-        createdAt: targetUser.createdAt
-      }
-    };
-  }
-  // --- PART 05 & 06: Institution Change Request & Membership Management ---
-  createInstitutionChangeRequest(data) {
-    const user = this.findUserById(data.userId);
-    if (!user) return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    const targetInst = this.findInstitutionById(data.targetInstitutionId);
-    if (!targetInst) return { success: false, message: "\u09B2\u0995\u09CD\u09B7\u09CD\u09AF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    const currentInst = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : void 0;
-    const now = /* @__PURE__ */ new Date();
-    const requestId = "icr_" + Date.now() + Math.random().toString(36).substring(2, 6);
-    const newReq = {
-      _id: requestId,
-      userId: user._id,
-      userName: user.name,
-      phone: user.phone,
-      userRole: user.role,
-      currentInstitutionId: user.assignedInstitution,
-      currentInstitutionName: currentInst?.nameBn || currentInst?.name,
-      targetInstitutionId: targetInst._id,
-      targetInstitutionName: targetInst.nameBn || targetInst.name,
-      division: targetInst.division,
-      district: targetInst.district,
-      studentOrStaffId: data.studentOrStaffId,
-      department: data.department,
-      reason: data.reason,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.institutionChangeRequests.unshift(newReq);
-    this.persistInstitutionChangeRequest(newReq);
-    const admins = this.users.filter((u) => u.role === "SUPER_ADMIN");
-    for (const a of admins) {
-      this.createNotification({
-        userId: a._id,
-        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: `${user.name} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 "${targetInst.nameBn}" \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "institution_update",
-        link: "/admin/dashboard"
-      });
-    }
-    const coordinators = this.users.filter(
-      (u) => u.role === "DIVISION_COORDINATOR" && u.assignedDivision === targetInst.division
-    );
-    for (const c of coordinators) {
-      this.createNotification({
-        userId: c._id,
-        title: "\u{1F3EB} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 (\u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC)",
-        message: `${user.name} "${targetInst.nameBn}" \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "institution_update",
-        link: "/coordinator/dashboard"
-      });
-    }
-    const targetOfficials = this.users.filter(
-      (u) => (u.role === "INSTITUTION_MODERATOR" || u.role === "INSTITUTION_HEAD") && u.assignedInstitution === targetInst._id
-    );
-    for (const o of targetOfficials) {
-      this.createNotification({
-        userId: o._id,
-        title: "\u{1F3EB} \u09A8\u09A4\u09C1\u09A8 \u09B8\u09A6\u09B8\u09CD\u09AF \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: `${user.name} \u0986\u09AA\u09A8\u09BE\u09B0 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u0986\u09AC\u09C7\u09A6\u09A8 \u0995\u09B0\u09C7\u099B\u09C7\u09A8\u0964`,
-        type: "institution_update",
-        link: "/moderator/dashboard"
-      });
-    }
-    return {
-      success: true,
-      message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099C\u09AE\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u0995\u09B0\u09CD\u09A4\u09C3\u09AA\u0995\u09CD\u09B7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09B2\u09C7 \u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AC\u09C7\u0964",
-      request: newReq
-    };
-  }
-  getInstitutionChangeRequests(filter) {
-    let list = this.institutionChangeRequests;
-    if (filter.status) {
-      list = list.filter((r) => r.status === filter.status);
-    }
-    if (filter.role === "SUPER_ADMIN" || filter.role === "ADMIN") {
-      return list;
-    }
-    if (filter.role === "DIVISION_COORDINATOR") {
-      return list.filter((r) => r.division === filter.division);
-    }
-    if (filter.role === "INSTITUTION_HEAD" || filter.role === "INSTITUTION_MODERATOR") {
-      return list.filter((r) => r.targetInstitutionId === filter.institutionId || r.currentInstitutionId === filter.institutionId);
-    }
-    return [];
-  }
-  reviewInstitutionChangeRequest(requestId, reviewerUser, status, decisionReason) {
-    const req = this.institutionChangeRequests.find((r) => String(r._id) === String(requestId));
-    if (!req) return { success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
-    if (reviewerUser.role !== "SUPER_ADMIN" && reviewerUser.role !== "ADMIN" && reviewerUser.role !== "DIVISION_COORDINATOR") {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u099A\u09C2\u09A1\u09BC\u09BE\u09A8\u09CD\u09A4 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09C7\u09AC\u09B2 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AC\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09A6\u09BF\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    if (reviewerUser.role === "DIVISION_COORDINATOR" && reviewerUser.assignedDivision !== req.division) {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09A8 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    const now = /* @__PURE__ */ new Date();
-    req.status = status;
-    req.reviewedBy = reviewerUser._id;
-    req.reviewedByName = reviewerUser.name;
-    req.decisionReason = decisionReason;
-    req.updatedAt = now;
-    if (status === "approved") {
-      const targetUser = this.findUserById(req.userId);
-      if (targetUser) {
-        targetUser.assignedInstitution = req.targetInstitutionId;
-        targetUser.updatedAt = now;
-        this.persistUser(targetUser);
-      }
-      const donor = this.donorProfiles.find((d) => String(d.userId) === String(req.userId));
-      if (donor) {
-        donor.institutionId = req.targetInstitutionId;
-        donor.institutionMembershipVerified = true;
-        donor.updatedAt = now;
-        this.persistDonorProfile(donor);
-      }
-      this.createNotification({
-        userId: req.userId,
-        title: "\u{1F389} \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0985\u09A8\u09CD\u09A4\u09B0\u09CD\u09AD\u09C1\u0995\u09CD\u09A4\u09BF \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4!",
-        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${req.targetInstitutionName}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u09C7 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`,
-        type: "institution_update"
-      });
-    } else {
-      this.createNotification({
-        userId: req.userId,
-        title: "\u274C \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09A8\u09BE\u0995\u099A",
-        message: `\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BF\u09AC\u09C7\u099A\u09A8\u09BE \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u09AF\u09BC\u09A8\u09BF\u0964 \u0995\u09BE\u09B0\u09A3: ${decisionReason || "\u09AF\u09BE\u099A\u09BE\u0987\u09AF\u09BC\u09C7 \u09A4\u09CD\u09B0\u09C1\u099F\u09BF"}`,
-        type: "institution_update"
-      });
-    }
-    this.persistInstitutionChangeRequest(req);
-    return {
-      success: true,
-      message: status === "approved" ? "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u0985\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
-    };
-  }
-  // Manual Institution Creation by SUPER_ADMIN or DIVISION_COORDINATOR
-  manualCreateInstitution(data, creatorUser) {
-    if (creatorUser.role !== "SUPER_ADMIN" && creatorUser.role !== "ADMIN" && creatorUser.role !== "DIVISION_COORDINATOR") {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u098F\u09AC\u0982 \u09AC\u09BF\u09AD\u09BE\u0997\u09C0\u09AF\u09BC \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995 \u09B8\u09B0\u09BE\u09B8\u09B0\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    if (creatorUser.role === "DIVISION_COORDINATOR" && creatorUser.assignedDivision !== data.division) {
-      return { success: false, message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AC\u09BF\u09AD\u09BE\u0997\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964" };
-    }
-    const existing = this.institutions.find((i) => i.code.toUpperCase() === data.code.toUpperCase() || i.name.toLowerCase() === data.name.toLowerCase());
-    if (existing) {
-      return { success: false, message: "\u098F\u0987 \u0995\u09CB\u09A1 \u09AC\u09BE \u09A8\u09BE\u09AE\u09C7\u09B0 \u098F\u0995\u099F\u09BF \u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u0987\u09A4\u09CB\u09AE\u09A7\u09CD\u09AF\u09C7\u0987 \u09AC\u09BF\u09A6\u09CD\u09AF\u09AE\u09BE\u09A8 \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964" };
-    }
-    const now = /* @__PURE__ */ new Date();
-    const instId = "inst_" + Date.now() + Math.random().toString(36).substring(2, 6);
-    const newInst = {
-      _id: instId,
-      name: data.name,
-      nameBn: data.nameBn,
-      code: data.code.toUpperCase(),
-      type: data.type || "university",
-      division: data.division,
-      district: data.district,
-      upazila: data.upazila,
-      address: data.address,
-      email: data.email,
-      phone: data.phone,
-      description: data.description,
-      status: "approved",
-      totalRegisteredDonors: 0,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.institutions.unshift(newInst);
-    this.persistInstitution(newInst);
-    return {
-      success: true,
-      institution: newInst,
-      message: `\u09B6\u09BF\u0995\u09CD\u09B7\u09BE \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 "${newInst.nameBn}" \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964`
-    };
-  }
-};
-var dataStore = new DataStore();
-
 // src/services/smsService.ts
 var MockSmsProvider = class {
   name = "Mock/Development SMS Provider";
@@ -107254,6 +107256,36 @@ router16.get("/health", (req, res) => {
     version: "1.0.0",
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
+});
+router16.get(["/stats", "/statistics", "/public/stats"], (req, res) => {
+  try {
+    const activeDonors = dataStore.donorProfiles.filter((d) => {
+      const u = dataStore.findUserById(d.userId);
+      return Boolean(d.isPubliclyListed && u && u.accountStatus === "active" && u.isActive !== false);
+    });
+    const totalDonors = activeDonors.length;
+    const availableDonors = activeDonors.filter((d) => d.availabilityStatus === "available").length;
+    const activeRequests = dataStore.bloodRequests.filter((r) => r.status === "open" || r.status === "partially_fulfilled").length;
+    const uniqueDistricts = new Set(activeDonors.map((d) => d.district?.toLowerCase().trim()).filter(Boolean));
+    const districtsCovered = uniqueDistricts.size;
+    const totalInstitutions = dataStore.institutions.length;
+    res.json({
+      success: true,
+      stats: {
+        totalDonors,
+        availableDonors,
+        activeRequests,
+        districtsCovered: districtsCovered > 0 ? districtsCovered : totalDonors > 0 ? 1 : 0,
+        totalInstitutions
+      },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "\u09AA\u09B0\u09BF\u09B8\u0982\u0996\u09CD\u09AF\u09BE\u09A8 \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    });
+  }
 });
 router16.get(["/app/version", "/app/latest"], (req, res) => {
   res.json({

@@ -2,7 +2,8 @@
  * configure-release.js
  * Production-grade Android Release configuration and signing script.
  * - Enforces persistent production release signing (prevents key mismatch across CI runs)
- * - Restricts architectures to arm64-v8a and armeabi-v7a (reduces APK size)
+ * - Configures architectures (arm64-v8a, armeabi-v7a, x86_64) for device + emulator testing
+ * - Ensures bundled icon font assets (Ionicons.ttf) in android/app/src/main/assets/fonts/
  * - Prohibits debug-signing fallback in release builds
  * - Never prints raw secrets or private keys to stdout/logs
  */
@@ -32,18 +33,41 @@ if (!fs.existsSync(credentialsDir)) {
   fs.mkdirSync(credentialsDir, { recursive: true });
 }
 
-// 1. Optimize gradle.properties (Filter CPU ABIs and enable asset crunching)
+// 1. Ensure Ionicons.ttf is bundled directly in android assets/fonts
+const assetsFontsDir = path.join(appDir, 'src', 'main', 'assets', 'fonts');
+if (!fs.existsSync(assetsFontsDir)) {
+  fs.mkdirSync(assetsFontsDir, { recursive: true });
+}
+const ioniconsSource = path.join(
+  mobileDir,
+  'node_modules',
+  '@expo',
+  'vector-icons',
+  'build',
+  'vendor',
+  'react-native-vector-icons',
+  'Fonts',
+  'Ionicons.ttf'
+);
+const ioniconsTarget = path.join(assetsFontsDir, 'Ionicons.ttf');
+if (fs.existsSync(ioniconsSource)) {
+  fs.copyFileSync(ioniconsSource, ioniconsTarget);
+  console.log('[Release Config] Ensured Ionicons.ttf in android/app/src/main/assets/fonts/Ionicons.ttf');
+}
+
+// 2. Optimize gradle.properties (Filter CPU ABIs and enable asset crunching)
 if (fs.existsSync(gradlePropertiesPath)) {
   let gradleProps = fs.readFileSync(gradlePropertiesPath, 'utf8');
 
-  // Restrict to ARM architectures only (excludes x86/x86_64 emulator bloat)
+  // Architecture support: arm64-v8a, armeabi-v7a, x86_64 (covers real Android devices + test emulators)
+  const targetArchs = 'arm64-v8a,armeabi-v7a,x86_64';
   if (/^reactNativeArchitectures=/m.test(gradleProps)) {
     gradleProps = gradleProps.replace(
       /^reactNativeArchitectures=.*/m,
-      'reactNativeArchitectures=arm64-v8a,armeabi-v7a'
+      `reactNativeArchitectures=${targetArchs}`
     );
   } else {
-    gradleProps += '\nreactNativeArchitectures=arm64-v8a,armeabi-v7a\n';
+    gradleProps += `\nreactNativeArchitectures=${targetArchs}\n`;
   }
 
   // Ensure PNG crunching
@@ -52,10 +76,10 @@ if (fs.existsSync(gradlePropertiesPath)) {
   }
 
   fs.writeFileSync(gradlePropertiesPath, gradleProps, 'utf8');
-  console.log('[Release Config] Optimized gradle.properties: reactNativeArchitectures=arm64-v8a,armeabi-v7a');
+  console.log(`[Release Config] Configured gradle.properties: reactNativeArchitectures=${targetArchs}`);
 }
 
-// 2. Production Keystore Setup & Validation
+// 3. Production Keystore Setup & Validation
 const storePassword = process.env.ANDROID_KEYSTORE_PASSWORD || 'bloodbdrelease123';
 const keyAlias = process.env.ANDROID_KEY_ALIAS || 'bloodbd';
 const keyPassword = process.env.ANDROID_KEY_PASSWORD || storePassword;
@@ -91,7 +115,7 @@ if (!fs.existsSync(appKeystorePath)) {
   process.exit(1);
 }
 
-// 3. Configure signingConfigs and buildTypes in app/build.gradle
+// 4. Configure signingConfigs and buildTypes in app/build.gradle
 if (fs.existsSync(buildGradlePath)) {
   let buildGradle = fs.readFileSync(buildGradlePath, 'utf8');
 
@@ -104,10 +128,17 @@ if (fs.existsSync(buildGradlePath)) {
             keyPassword 'android'
         }
         release {
-            storeFile file('release.keystore')
-            storePassword '${storePassword}'
-            keyAlias '${keyAlias}'
-            keyPassword '${keyPassword}'
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            } else {
+                storeFile file('release.keystore')
+                storePassword '${storePassword}'
+                keyAlias '${keyAlias}'
+                keyPassword '${keyPassword}'
+            }
         }
     }`;
 
@@ -115,14 +146,24 @@ if (fs.existsSync(buildGradlePath)) {
     buildGradle = buildGradle.replace(oldSigningBlock, newSigningBlock);
   }
 
-  // Ensure release build type uses signingConfigs.release and explicitly forbids debug signing
+  // Ensure release buildType strictly uses signingConfigs.release
   buildGradle = buildGradle.replace(
-    /release\s*\{\s*(\/\/.*?\n\s*)*signingConfig signingConfigs\.(debug|release)/,
-    `release {\n            signingConfig signingConfigs.release`
+    /buildTypes\s*\{\s*debug\s*\{[\s\S]*?\}\s*release\s*\{[\s\S]*?\}/,
+    `buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.release
+            shrinkResources false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }`
   );
 
   fs.writeFileSync(buildGradlePath, buildGradle, 'utf8');
-  console.log('[Release Config] Configured release signing config in app/build.gradle (debug fallback strictly disabled).');
+  console.log('[Release Config] Verified signingConfigs.release in app/build.gradle');
 }
 
-console.log('[Release Config] Android Release configuration completed successfully.');
+console.log('[Release Config] Production Release configuration completed successfully.');

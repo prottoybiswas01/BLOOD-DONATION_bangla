@@ -51,3 +51,27 @@ test('2. Dual Platform API Aliases: /app/latest responds identically to /app/ver
     server.close();
   }
 });
+
+test('3. Public Live Statistics Endpoint: /stats returns verified counts', async () => {
+  const server = http.createServer(app);
+  await new Promise<void>((resolve) => server.listen(0, resolve));
+  const address = server.address() as any;
+  const port = address.port;
+
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/v1/stats`);
+    assert.equal(res.status, 200);
+    const data: any = await res.json();
+
+    assert.equal(data.success, true);
+    assert.ok(data.stats, 'stats object must exist');
+    assert.equal(typeof data.stats.totalDonors, 'number');
+    assert.equal(typeof data.stats.availableDonors, 'number');
+    assert.equal(typeof data.stats.activeRequests, 'number');
+    assert.equal(typeof data.stats.districtsCovered, 'number');
+    assert.equal(typeof data.stats.totalInstitutions, 'number');
+    assert.ok(data.stats.totalDonors >= 0);
+  } finally {
+    server.close();
+  }
+});

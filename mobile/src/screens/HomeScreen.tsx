@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { MobileApi } from '../api/client';
 import { BloodRequestCard, BloodRequestItem } from '../components/BloodRequestCard';
+import { StateView } from '../components/StateView';
+import { AppRoutes } from '../navigation/routes';
 import { useAuth } from '../context/AuthContext';
 
 interface HomeScreenProps {
@@ -23,25 +25,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [recentRequests, setRecentRequests] = useState<BloodRequestItem[]>([]);
-  const [stats, setStats] = useState({
-    totalDonors: 24,
-    availableDonors: 17,
-    activeRequests: 9,
-    districtsCovered: 64
+  const [stats, setStats] = useState<{
+    totalDonors: number | null;
+    availableDonors: number | null;
+    activeRequests: number | null;
+    districtsCovered: number | null;
+  }>({
+    totalDonors: null,
+    availableDonors: null,
+    activeRequests: null,
+    districtsCovered: null
   });
   const [loading, setLoading] = useState(true);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
-  const loadHomeData = async () => {
+  const loadHomeData = async (skipCache: boolean = false) => {
     try {
-      const reqRes = await MobileApi.getBloodRequests({ limit: 4 });
-      if (reqRes.success && reqRes.requests) {
-        setRecentRequests(reqRes.requests);
+      setRequestError(null);
+      const [reqRes, statsRes] = await Promise.allSettled([
+        MobileApi.getBloodRequests({ limit: 4 }, skipCache),
+        MobileApi.getPublicStats(skipCache)
+      ]);
+
+      // Handle Blood Requests
+      if (reqRes.status === 'fulfilled' && reqRes.value.success && reqRes.value.requests) {
+        setRecentRequests(reqRes.value.requests);
+      } else if (reqRes.status === 'rejected') {
+        const errMsg = reqRes.reason?.userMessage || reqRes.reason?.message || 'রক্তের আবেদন লোড করা যায়নি।';
+        setRequestError(errMsg);
       }
-      if (reqRes.total !== undefined) {
-        setStats(prev => ({ ...prev, activeRequests: reqRes.total }));
+
+      // Handle Live Statistics
+      if (statsRes.status === 'fulfilled' && statsRes.value.success && statsRes.value.stats) {
+        setStats({
+          totalDonors: statsRes.value.stats.totalDonors ?? 0,
+          availableDonors: statsRes.value.stats.availableDonors ?? 0,
+          activeRequests: statsRes.value.stats.activeRequests ?? 0,
+          districtsCovered: statsRes.value.stats.districtsCovered ?? 0
+        });
+      } else if (reqRes.status === 'fulfilled' && reqRes.value.total !== undefined) {
+        // Fallback for requests count if stats endpoint blips
+        setStats(prev => ({ ...prev, activeRequests: reqRes.value.total }));
       }
-    } catch (e) {
-      // Graceful offline or slow connection
+    } catch (e: any) {
+      setRequestError(e?.userMessage || e?.message || 'তথ্য লোড করতে সমস্যা হয়েছে।');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,12 +76,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   };
 
   useEffect(() => {
-    loadHomeData();
+    loadHomeData(false);
   }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadHomeData();
+    loadHomeData(true);
+  };
+
+  const formatStat = (num: number | null, suffix: string = '') => {
+    if (num === null) return '—';
+    return `${num}${suffix}`;
   };
 
   return (
@@ -80,7 +112,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         <View style={styles.heroBtnRow}>
           <TouchableOpacity 
             activeOpacity={0.85}
-            onPress={() => onNavigate('donors')}
+            onPress={() => onNavigate(AppRoutes.DONORS)}
             style={styles.heroPrimaryBtn}
           >
             <Ionicons name="search" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
@@ -89,7 +121,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
           <TouchableOpacity 
             activeOpacity={0.85}
-            onPress={() => onNavigate('createRequest')}
+            onPress={() => onNavigate(AppRoutes.CREATE_REQUEST)}
             style={styles.heroSecondaryBtn}
           >
             <Ionicons name="add-circle-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -104,7 +136,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         <View style={styles.grid}>
           <TouchableOpacity 
             activeOpacity={0.8}
-            onPress={() => onNavigate('donors')}
+            onPress={() => onNavigate(AppRoutes.DONORS)}
             style={styles.gridItem}
           >
             <View style={[styles.gridIconBox, { backgroundColor: Colors.primaryLight }]}>
@@ -116,7 +148,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
           <TouchableOpacity 
             activeOpacity={0.8}
-            onPress={() => onNavigate('requests')}
+            onPress={() => onNavigate(AppRoutes.REQUESTS)}
             style={styles.gridItem}
           >
             <View style={[styles.gridIconBox, { backgroundColor: '#FEF3C7' }]}>
@@ -128,7 +160,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
           <TouchableOpacity 
             activeOpacity={0.8}
-            onPress={() => onNavigate('institutions')}
+            onPress={() => onNavigate(AppRoutes.INSTITUTIONS)}
             style={styles.gridItem}
           >
             <View style={[styles.gridIconBox, { backgroundColor: Colors.tealLight }]}>
@@ -152,29 +184,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         </View>
       </View>
 
-      {/* Live Impact Stats */}
+      {/* Live Impact Stats (Verified Backend Data) */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>প্ল্যাটফর্ম পরিসংখ্যান</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>প্ল্যাটফর্ম পরিসংখ্যান</Text>
+          <Text style={styles.liveBadge}>লাইভ ডাটা</Text>
+        </View>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{stats.totalDonors}+</Text>
+            <Text style={styles.statNumber}>{formatStat(stats.totalDonors, stats.totalDonors ? '+' : '')}</Text>
             <Text style={styles.statLabel}>নিবন্ধিত রক্তদাতা</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={[styles.statNumber, { color: Colors.tealAccent }]}>
-              {stats.availableDonors}+
+              {formatStat(stats.availableDonors, stats.availableDonors ? '+' : '')}
             </Text>
             <Text style={styles.statLabel}>প্রস্তুত রক্তদাতা</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={[styles.statNumber, { color: Colors.primary }]}>
-              {stats.activeRequests}
+              {formatStat(stats.activeRequests)}
             </Text>
             <Text style={styles.statLabel}>জরুরি প্রয়োজন</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={[styles.statNumber, { color: '#0F172A' }]}>
-              {stats.districtsCovered}
+              {formatStat(stats.districtsCovered)}
             </Text>
             <Text style={styles.statLabel}>জেলায় সক্রিয়</Text>
           </View>
@@ -185,17 +220,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       <View style={[styles.section, { marginBottom: 30 }]}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>জরুরি রক্তের আবেদনসমূহ</Text>
-          <TouchableOpacity onPress={() => onNavigate('requests')}>
+          <TouchableOpacity onPress={() => onNavigate(AppRoutes.REQUESTS)}>
             <Text style={styles.seeAllText}>সকল আবেদন →</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
+          <StateView type="loading" message="সাম্প্রতিক রক্তের আবেদনসমূহ লোড হচ্ছে..." />
+        ) : requestError && recentRequests.length === 0 ? (
+          <StateView 
+            type="error"
+            title="আবেদনগুলো লোড করা সম্ভব হয়নি"
+            message={requestError}
+            onRetry={() => loadHomeData(true)}
+            retryLabel="পুনরায় চেষ্টা করুন"
+          />
         ) : recentRequests.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>বর্তমানে কোনো জরুরি রক্তের আবেদন নেই।</Text>
-          </View>
+          <StateView 
+            type="empty"
+            icon="clipboard-outline"
+            title="বর্তমানে কোনো জরুরি আবেদন নেই"
+            message="এখন এই প্ল্যাটফর্মে কোনো জরুরি রক্তের আবেদন অপেক্ষমাণ নেই। প্রয়োজনে আপনি নতুন আবেদন তৈরি করতে পারেন।"
+            onAction={() => onNavigate(AppRoutes.CREATE_REQUEST)}
+            actionLabel="রক্তের আবেদন করুন"
+          />
         ) : (
           recentRequests.map(r => (
             <BloodRequestCard key={r._id} request={r} />
@@ -297,7 +345,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: Colors.mainText,
-    marginBottom: 12,
+  },
+  liveBadge: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#059669',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   seeAllText: {
     fontSize: 12,
@@ -360,17 +416,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  emptyCard: {
-    backgroundColor: Colors.surface,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.appBorder,
-  },
-  emptyText: {
-    color: Colors.subText,
-    fontSize: 12,
-  },
 });
-

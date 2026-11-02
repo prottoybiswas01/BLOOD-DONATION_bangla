@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { dataStore } from '../services/dataStore.js';
 import authRoutes from './authRoutes.js';
 import donorRoutes from './donorRoutes.js';
 import requestRoutes from './requestRoutes.js';
@@ -44,6 +45,40 @@ router.get('/health', (req, res) => {
   });
 });
 
+// Live Public Statistics Endpoint (Verified backend data for Web & Mobile)
+router.get(['/stats', '/statistics', '/public/stats'], (req, res) => {
+  try {
+    const activeDonors = dataStore.donorProfiles.filter(d => {
+      const u = dataStore.findUserById(d.userId);
+      return Boolean(d.isPubliclyListed && u && u.accountStatus === 'active' && u.isActive !== false);
+    });
+
+    const totalDonors = activeDonors.length;
+    const availableDonors = activeDonors.filter(d => d.availabilityStatus === 'available').length;
+    const activeRequests = dataStore.bloodRequests.filter(r => r.status === 'open' || r.status === 'partially_fulfilled').length;
+    const uniqueDistricts = new Set(activeDonors.map(d => d.district?.toLowerCase().trim()).filter(Boolean));
+    const districtsCovered = uniqueDistricts.size;
+    const totalInstitutions = dataStore.institutions.length;
+
+    res.json({
+      success: true,
+      stats: {
+        totalDonors,
+        availableDonors,
+        activeRequests,
+        districtsCovered: districtsCovered > 0 ? districtsCovered : (totalDonors > 0 ? 1 : 0),
+        totalInstitutions
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'পরিসংখ্যান লোড করতে ব্যর্থ হয়েছে।'
+    });
+  }
+});
+
 // Native Android App update & distribution info
 router.get(['/app/version', '/app/latest'], (req, res) => {
   res.json({
@@ -66,4 +101,3 @@ router.get(['/app/version', '/app/latest'], (req, res) => {
 });
 
 export default router;
-

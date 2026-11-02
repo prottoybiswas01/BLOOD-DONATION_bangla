@@ -417,23 +417,9 @@ export const Home: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3">
-                <a
-                  href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-6 py-3.5 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2.5 transition-all text-sm"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>সরাসরি APK ফাইল ডাউনলোড করুন</span>
-                </a>
-                <a
-                  href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-5 py-3.5 bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-200 font-bold rounded-2xl border border-slate-600 flex items-center justify-center gap-2 transition-all text-sm"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>গিটহাব রিলিজ পাতা</span>
+                <a href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk" download="blood-donation-bangla.apk" className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all text-base">
+                  <Download className="w-6 h-6 animate-pulse" />
+                  <span>এক ক্লিকে APK সরাসরি ডাউনলোড করুন (Android App)</span>
                 </a>
               </div>
             </div>

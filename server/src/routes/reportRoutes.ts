@@ -15,13 +15,13 @@ router.post('/', requireAuth, validateBody(CreateReportSchema), createReport);
 router.get(
   '/', 
   requireAuth, 
-  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR', 'INSTITUTION_MODERATOR'), 
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR', 'INSTITUTION_MODERATOR'), 
   getReports
 );
 router.patch(
   '/:id/resolve', 
   requireAuth, 
-  requireRoles('SUPER_ADMIN', 'DIVISION_COORDINATOR'), 
+  requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR'), 
   validateBody(ResolveReportSchema), 
   resolveReport
 );

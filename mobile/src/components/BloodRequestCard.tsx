@@ -24,6 +24,13 @@ interface BloodRequestCardProps {
 }
 
 export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request }) => {
+  const handleOpenMap = () => {
+    const query = encodeURIComponent(request.hospitalName + ', ' + request.district);
+    Linking.openURL('https://www.google.com/maps/search/?api=1&query=' + query).catch(() => {
+      Alert.alert('ত্রুটি', 'গুগল ম্যাপ ওপেন করা সম্ভব হয়নি');
+    });
+  };
+
   const handleCall = () => {
     if (request.contactNumber) {
       Linking.openURL(`tel:${request.contactNumber}`).catch(() => {
@@ -90,12 +97,20 @@ export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request }) =
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleCall}
-          style={styles.callButton}
+          style={[styles.callButton, { flex: 1, marginRight: 8 }]}
         >
           <Ionicons name="call" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
           <Text style={styles.callButtonText}>
             কল করুন ({request.contactNumber})
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleOpenMap}
+          style={styles.mapButton}
+        >
+          <Ionicons name="map-outline" size={15} color={Colors.tealAccent} style={{ marginRight: 4 }} />
+          <Text style={styles.mapButtonText}>ম্যাপে দেখুন</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -199,6 +214,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 40,
     borderRadius: 12,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.tealAccent,
+    backgroundColor: Colors.tealLight,
+  },
+  mapButtonText: {
+    color: Colors.tealAccent,
+    fontSize: 12,
+    fontWeight: '700',
   },
   callButtonText: {
     color: '#FFFFFF',

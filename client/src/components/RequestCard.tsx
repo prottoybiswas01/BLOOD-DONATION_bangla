@@ -164,6 +164,18 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) =
           <span>কল করুন ({request.contactNumber})</span>
         </a>
 
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.hospitalName + ', ' + request.district)}`}
+          target="_blank"
+          rel="noreferrer"
+          title="গুগল ম্যাপে হাসপাতালের অবস্থান দেখুন"
+          aria-label="গুগল ম্যাপে দেখুন"
+          className="p-2.5 border border-appBorder rounded-xl text-teal-600 hover:text-white hover:bg-teal-600 hover:border-teal-600 active:scale-95 transition-all flex items-center gap-1.5 text-xs font-semibold"
+        >
+          <MapPin className="w-4 h-4" />
+          <span className="hidden sm:inline">ম্যাপে দেখুন</span>
+        </a>
+
         <button
           onClick={handleShare}
           title="শেয়ার করুন"

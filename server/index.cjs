@@ -106448,13 +106448,13 @@ router7.post("/", requireAuth, validateBody(CreateReportSchema), createReport);
 router7.get(
   "/",
   requireAuth,
-  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_MODERATOR"),
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_MODERATOR"),
   getReports
 );
 router7.patch(
   "/:id/resolve",
   requireAuth,
-  requireRoles("SUPER_ADMIN", "DIVISION_COORDINATOR"),
+  requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR"),
   validateBody(ResolveReportSchema),
   resolveReport
 );

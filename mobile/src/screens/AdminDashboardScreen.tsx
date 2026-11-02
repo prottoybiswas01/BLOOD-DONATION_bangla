@@ -23,7 +23,7 @@ interface AdminDashboardScreenProps {
 }
 
 export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'institutions' | 'phones' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'institutions' | 'phones' | 'users' | 'reports'>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -48,6 +48,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
   const [searchedUser, setSearchedUser] = useState<any | null>(null);
   const [blockReason, setBlockReason] = useState('');
   const [blockingAction, setBlockingAction] = useState(false);
+  const [reports, setReports] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -55,10 +56,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
   const loadDashboardData = async () => {
     try {
-      const [ovRes, instRes, phoneRes] = await Promise.all([
+      const [ovRes, instRes, phoneRes, repRes] = await Promise.all([
         MobileApi.getAdminDashboard().catch(() => null),
         MobileApi.getInstitutionRequests().catch(() => null),
-        MobileApi.getPhoneChangeRequests().catch(() => null)
+        MobileApi.getPhoneChangeRequests().catch(() => null),
+        (MobileApi as any).getReports().catch(() => null)
       ]);
 
       if (ovRes?.success) {
@@ -69,6 +71,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
       }
       if (phoneRes?.success && phoneRes.requests) {
         setPhoneRequests(phoneRes.requests);
+      }
+      if (repRes?.success && repRes.reports) {
+        setReports(repRes.reports);
       }
     } catch (err: any) {
       Alert.alert('ত্রুটি', err.message || 'ড্যাশবোর্ড ডেটা লোড ব্যর্থ হয়েছে');
@@ -227,6 +232,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
           onPress={() => setActiveTab('users')}
         >
           <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>ইউজার সার্চ</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabItem, activeTab === 'reports' && styles.tabItemActive]}
+          onPress={() => setActiveTab('reports')}
+        >
+          <Text style={[styles.tabText, activeTab === 'reports' && styles.tabTextActive]}>
+            রিপোর্ট ({reports.filter((r: any) => r.status === 'pending').length})
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -435,6 +448,58 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             )}
           </View>
         )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>অভিযোগ ও অপব্যবহার রিপোর্ট পর্যালোচনা</Text>
+              <Text style={styles.reqSub}>রক্তদাতা বা আবেদন সংক্রান্ত অভিযোগের তালিকা</Text>
+            </View>
+
+            {reports.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Ionicons name="shield-checkmark" size={48} color={colors.teal} />
+                <Text style={styles.emptyText}>কোনো সমাধানহীন অভিযোগ নেই</Text>
+              </View>
+            ) : (
+              reports.map((rep: any) => (
+                <View key={rep._id || rep.id} style={styles.card}>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.reqTitle}>অভিযোগের কারণ: {rep.reason || rep.reportType}</Text>
+                    <Badge
+                      label={rep.status === 'pending' ? 'অপেক্ষমাণ' : 'নিষ্পন্ন'}
+                      variant={rep.status === 'pending' ? 'danger' : 'success'}
+                    />
+                  </View>
+                  <Text style={styles.reqText}>বিস্তারিত: {rep.description || 'বিবরণ নেই'}</Text>
+                  {rep.targetType && <Text style={styles.reqText}>টার্গেট: {rep.targetType}</Text>}
+
+                  {rep.status === 'pending' && (
+                    <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                      <Button
+                        title="নিষ্পন্ন চিহ্নিত করুন"
+                        variant="teal"
+                        size="sm"
+                        style={{ flex: 1, marginRight: 6 }}
+                        onPress={async () => {
+                          try {
+                            await (MobileApi as any).resolveReport(rep._id || rep.id, 'dismiss', 'অ্যাডমিন কর্তৃক নিষ্পত্তি');
+                            Alert.alert('সফল', 'রিপোর্টটি নিষ্পত্তি করা হয়েছে');
+                            loadDashboardData();
+                          } catch (e: any) {
+                            Alert.alert('ত্রুটি', e.message);
+                          }
+                        }}
+                      />
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
       </ScrollView>
 
       {/* Review Institution Modal */}

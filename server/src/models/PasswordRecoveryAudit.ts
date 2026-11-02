@@ -17,7 +17,7 @@ export interface IPasswordRecoveryAudit extends Document {
 
 const PasswordRecoveryAuditSchema = new Schema<IPasswordRecoveryAudit>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     requestId: { type: Schema.Types.Mixed, required: true, index: true },
     userId: { type: Schema.Types.Mixed, required: true, index: true },
     userName: { type: String, required: true },

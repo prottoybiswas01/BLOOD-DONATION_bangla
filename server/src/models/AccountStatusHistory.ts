@@ -17,7 +17,7 @@ export interface IAccountStatusHistory extends Document {
 
 const AccountStatusHistorySchema = new Schema<IAccountStatusHistory>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     userId: { type: Schema.Types.Mixed, required: true, index: true },
     targetUserName: { type: String, required: true },
     targetUserPhone: { type: String, required: true },

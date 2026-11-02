@@ -14,6 +14,7 @@ import { ContactAccessLogModel } from '../models/ContactAccessLog.js';
 import { PhoneChangeRequestModel } from '../models/PhoneChangeRequest.js';
 import { PasswordRecoveryRequestModel } from '../models/PasswordRecoveryRequest.js';
 import { InstitutionChangeRequestModel } from '../models/InstitutionChangeRequest.js';
+import { OtpVerificationModel } from '../models/OtpVerification.js';
 import { isDatabaseConnected } from '../config/db.js';
 import { ENV } from '../config/env.js';
 
@@ -1126,108 +1127,152 @@ class DataStore {
   }
 
   assertWritable(): void {
+    if (ENV.NODE_ENV === 'production' && !isDatabaseConnected()) {
+      const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। ডাটার নির্ভরযোগ্যতা বজায় রাখতে এই মুহূর্তে পরিবর্তন গ্রহণ করা হচ্ছে না।');
+      err.statusCode = 503;
+      err.code = 'DATABASE_UNAVAILABLE';
+      throw err;
+    }
     if (!isDatabaseConnected()) {
       console.warn("[Database Notice] MongoDB Atlas is disconnected; proceeding with in-memory store.");
     }
   }
 
-  persistUser(user: StoredUser) {
+  async persistUser(user: StoredUser): Promise<void> {
     if (isDatabaseConnected()) {
-      UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true }).catch(() => {});
+      await UserModel.findOneAndUpdate({ _id: user._id }, user, { upsert: true, new: true });
     }
   }
 
-  persistDonorProfile(profile: StoredDonorProfile) {
+  async persistDonorProfile(profile: StoredDonorProfile): Promise<void> {
     if (isDatabaseConnected()) {
-      DonorProfileModel.findOneAndUpdate({ _id: profile._id }, profile, { upsert: true }).catch(() => {});
+      await DonorProfileModel.findOneAndUpdate({ _id: profile._id }, profile, { upsert: true, new: true });
     }
   }
 
-  persistInstitution(inst: StoredInstitution) {
+  async persistInstitution(inst: StoredInstitution): Promise<void> {
     if (isDatabaseConnected()) {
-      InstitutionModel.findOneAndUpdate({ _id: inst._id }, inst, { upsert: true }).catch(() => {});
+      await InstitutionModel.findOneAndUpdate({ _id: inst._id }, inst, { upsert: true, new: true });
     }
   }
 
-  persistBloodRequest(req: StoredBloodRequest) {
+  async persistBloodRequest(req: StoredBloodRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      BloodRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+      await BloodRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true, new: true });
     }
   }
 
-  persistInstitutionRequest(req: StoredInstitutionRequest) {
+  async persistInstitutionRequest(req: StoredInstitutionRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      InstitutionRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+      await InstitutionRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true, new: true });
     }
   }
 
-  persistContactRequest(req: StoredContactRequest) {
+  async persistContactRequest(req: StoredContactRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      ContactRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true }).catch(() => {});
+      await ContactRequestModel.findOneAndUpdate({ _id: req._id }, req, { upsert: true, new: true });
     }
   }
 
-  persistModeratorActivity(act: StoredModeratorActivity) {
+  async persistModeratorActivity(act: StoredModeratorActivity): Promise<void> {
     if (isDatabaseConnected()) {
-      ModeratorActivityModel.create(act).catch(() => {});
+      await ModeratorActivityModel.create(act);
     }
   }
 
-  persistAccountStatusHistory(hist: StoredAccountStatusHistory) {
+  async persistAccountStatusHistory(hist: StoredAccountStatusHistory): Promise<void> {
     if (isDatabaseConnected()) {
-      AccountStatusHistoryModel.create(hist).catch(() => {});
+      await AccountStatusHistoryModel.create(hist);
     }
   }
 
-  persistReport(rep: StoredReport) {
+  async persistReport(rep: StoredReport): Promise<void> {
     if (isDatabaseConnected()) {
-      ReportModel.findOneAndUpdate({ _id: rep._id }, rep, { upsert: true }).catch(() => {});
+      await ReportModel.findOneAndUpdate({ _id: rep._id }, rep, { upsert: true, new: true });
     }
   }
 
-  persistContactAccessLog(cal: StoredContactAccessLog) {
+  async persistContactAccessLog(cal: StoredContactAccessLog): Promise<void> {
     if (isDatabaseConnected()) {
-      ContactAccessLogModel.create(cal).catch(() => {});
+      await ContactAccessLogModel.create(cal);
     }
   }
 
-  persistNotification(n: StoredNotification) {
+  async persistNotification(n: StoredNotification): Promise<void> {
     if (isDatabaseConnected()) {
-      NotificationModel.create(n).catch(() => {});
+      await NotificationModel.create(n);
     }
   }
 
-  persistPhoneChangeRequest(pcr: StoredPhoneChangeRequest) {
+  async persistPhoneChangeRequest(pcr: StoredPhoneChangeRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true }).catch(() => {});
+      await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true, new: true });
     }
   }
 
-  persistPasswordRecoveryRequest(prr: StoredPasswordRecoveryRequest) {
+  async persistPasswordRecoveryRequest(prr: StoredPasswordRecoveryRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true }).catch(() => {});
+      await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true, new: true });
     }
   }
 
-  persistInstitutionChangeRequest(icr: StoredInstitutionChangeRequest) {
+  async persistInstitutionChangeRequest(icr: StoredInstitutionChangeRequest): Promise<void> {
     if (isDatabaseConnected()) {
-      InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true }).catch(() => {});
+      await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true, new: true });
     }
   }
 
   // --- User Methods ---
-  findUserById(id: string): StoredUser | undefined {
+  async findUserById(id: string): Promise<StoredUser | undefined> {
+    if (!id) return undefined;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await UserModel.findOne({ _id: id }).lean();
+        if (doc) {
+          const u = doc as any;
+          const idx = this.users.findIndex(item => item._id === id);
+          if (idx >= 0) this.users[idx] = u;
+          else this.users.push(u);
+          return u;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] findUserById DB query error:', e?.message);
+      }
+    }
+    return this.findUserByIdSync(id);
+  }
+
+  findUserByIdSync(id: string): StoredUser | undefined {
     return this.users.find(u => String(u._id) === String(id));
   }
 
-  findUserByPhone(phone: string): StoredUser | undefined {
+  async findUserByPhone(phone: string): Promise<StoredUser | undefined> {
+    if (!phone) return undefined;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await UserModel.findOne({ phone }).lean();
+        if (doc) {
+          const u = doc as any;
+          const idx = this.users.findIndex(item => item.phone === phone);
+          if (idx >= 0) this.users[idx] = u;
+          else this.users.push(u);
+          return u;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] findUserByPhone DB query error:', e?.message);
+      }
+    }
+    return this.findUserByPhoneSync(phone);
+  }
+
+  findUserByPhoneSync(phone: string): StoredUser | undefined {
     return this.users.find(u => u.phone === phone);
   }
 
-  createUser(userData: Partial<StoredUser>): StoredUser {
+  createUserSync(userData: Partial<StoredUser>): StoredUser {
     this.assertWritable();
     const newUser: StoredUser = {
-      _id: 'usr_' + Date.now() + Math.random().toString(36).substring(2, 7),
+      _id: userData._id || ('usr_' + Date.now() + Math.random().toString(36).substring(2, 7)),
       name: userData.name || '',
       phone: userData.phone || '',
       email: userData.email,
@@ -1258,12 +1303,38 @@ class DataStore {
     return newUser;
   }
 
-  updateUser(id: string, update: Partial<StoredUser>): StoredUser | null {
-    const user = this.findUserById(id);
-    if (!user) return null;
-    Object.assign(user, update, { updatedAt: new Date() });
-    this.persistUser(user);
+  async createUser(userData: Partial<StoredUser>): Promise<StoredUser> {
+    const user = this.createUserSync(userData);
+    await this.persistUser(user);
     return user;
+  }
+
+  async updateUser(id: string, update: Partial<StoredUser>): Promise<StoredUser | null> {
+    this.assertWritable();
+    let user: StoredUser | null = null;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await UserModel.findOneAndUpdate(
+          { _id: id },
+          { ...update, updatedAt: new Date() },
+          { new: true }
+        ).lean();
+        if (doc) {
+          user = doc as any;
+          const idx = this.users.findIndex(u => u._id === id);
+          if (idx >= 0) this.users[idx] = user!;
+          else this.users.push(user!);
+          return user;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] updateUser DB error:', e?.message);
+      }
+    }
+    const memUser = this.findUserByIdSync(id);
+    if (!memUser) return null;
+    Object.assign(memUser, update, { updatedAt: new Date() });
+    await this.persistUser(memUser);
+    return memUser;
   }
 
   // --- Manual Member Creation with Temporary Password ---
@@ -1285,7 +1356,7 @@ class DataStore {
     const temporaryPassword = 'Temp#' + Math.floor(100000 + Math.random() * 900000);
     const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
 
-    const newUser = this.createUser({
+    const newUser = this.createUserSync({
       name: params.name,
       phone: params.phone,
       passwordHash,
@@ -1302,7 +1373,7 @@ class DataStore {
       isPhoneVerified: true
     });
 
-    const newProfile = this.createDonorProfile({
+    const newProfile = this.createDonorProfileSync({
       userId: newUser._id,
       displayName: params.name,
       bloodGroup: params.bloodGroup,
@@ -1320,7 +1391,7 @@ class DataStore {
     });
 
     // Increment institution total registered donors
-    const inst = this.findInstitutionById(params.institutionId);
+    const inst = this.findInstitutionByIdSync(params.institutionId);
     if (inst) {
       inst.totalRegisteredDonors = (inst.totalRegisteredDonors || 0) + 1;
     }
@@ -1342,7 +1413,7 @@ class DataStore {
   }
 
   changeFirstLoginPassword(userId: string, newPassword: string): boolean {
-    const user = this.findUserById(userId);
+    const user = this.findUserByIdSync(userId);
     if (!user) return false;
     user.passwordHash = bcrypt.hashSync(newPassword, 10);
     user.requirePasswordChangeAtFirstLogin = false;
@@ -1360,7 +1431,7 @@ class DataStore {
     reason: string;
     newStatus?: AccountStatus;
   }): { success: boolean; message: string } {
-    const targetUser = this.findUserById(params.userId);
+    const targetUser = this.findUserByIdSync(params.userId);
     if (!targetUser) {
       return { success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' };
     }
@@ -1425,7 +1496,7 @@ class DataStore {
     actorRole: string;
     reason: string;
   }): { success: boolean; message: string } {
-    const targetUser = this.findUserById(params.userId);
+    const targetUser = this.findUserByIdSync(params.userId);
     if (!targetUser) {
       return { success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' };
     }
@@ -1487,17 +1558,56 @@ class DataStore {
   }
 
   // --- Donor Profile Methods ---
-  findDonorProfileByUserId(userId: string): StoredDonorProfile | undefined {
-    return this.donorProfiles.find(d => d.userId === userId);
+  async findDonorProfileByUserId(userId: string): Promise<StoredDonorProfile | undefined> {
+    if (!userId) return undefined;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await DonorProfileModel.findOne({ userId }).lean();
+        if (doc) {
+          const profile = doc as any;
+          const idx = this.donorProfiles.findIndex(d => d.userId === userId);
+          if (idx >= 0) this.donorProfiles[idx] = profile;
+          else this.donorProfiles.push(profile);
+          return profile;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] findDonorProfileByUserId DB error:', e?.message);
+      }
+    }
+    return this.findDonorProfileByUserIdSync(userId);
   }
 
-  findDonorProfileById(id: string): StoredDonorProfile | undefined {
-    return this.donorProfiles.find(d => d._id === id);
+  findDonorProfileByUserIdSync(userId: string): StoredDonorProfile | undefined {
+    return this.donorProfiles.find(d => String(d.userId) === String(userId));
   }
 
-  createDonorProfile(data: Partial<StoredDonorProfile>): StoredDonorProfile {
+  async findDonorProfileById(id: string): Promise<StoredDonorProfile | undefined> {
+    if (!id) return undefined;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await DonorProfileModel.findOne({ _id: id }).lean();
+        if (doc) {
+          const profile = doc as any;
+          const idx = this.donorProfiles.findIndex(d => d._id === id);
+          if (idx >= 0) this.donorProfiles[idx] = profile;
+          else this.donorProfiles.push(profile);
+          return profile;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] findDonorProfileById DB error:', e?.message);
+      }
+    }
+    return this.findDonorProfileByIdSync(id);
+  }
+
+  findDonorProfileByIdSync(id: string): StoredDonorProfile | undefined {
+    return this.donorProfiles.find(d => String(d._id) === String(id));
+  }
+
+  createDonorProfileSync(data: Partial<StoredDonorProfile>): StoredDonorProfile {
+    this.assertWritable();
     const newProfile: StoredDonorProfile = {
-      _id: 'donor_prof_' + Date.now() + Math.random().toString(36).substring(2, 7),
+      _id: data._id || ('donor_prof_' + Date.now() + Math.random().toString(36).substring(2, 7)),
       userId: data.userId || '',
       displayName: data.displayName || '',
       bloodGroup: data.bloodGroup || 'A+',
@@ -1525,15 +1635,123 @@ class DataStore {
     return newProfile;
   }
 
-  updateDonorProfile(userId: string, update: Partial<StoredDonorProfile>): StoredDonorProfile | null {
-    const profile = this.findDonorProfileByUserId(userId);
-    if (!profile) return null;
-    Object.assign(profile, update, { updatedAt: new Date() });
-    this.persistDonorProfile(profile);
+  async createDonorProfile(data: Partial<StoredDonorProfile>): Promise<StoredDonorProfile> {
+    const profile = this.createDonorProfileSync(data);
+    await this.persistDonorProfile(profile);
     return profile;
   }
 
-  searchDonors(filters: {
+  async updateDonorProfile(userId: string, update: Partial<StoredDonorProfile>): Promise<StoredDonorProfile | null> {
+    this.assertWritable();
+    let profile: StoredDonorProfile | null = null;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await DonorProfileModel.findOneAndUpdate(
+          { userId },
+          { ...update, updatedAt: new Date() },
+          { new: true }
+        ).lean();
+        if (doc) {
+          profile = doc as any;
+          const idx = this.donorProfiles.findIndex(d => d.userId === userId);
+          if (idx >= 0) this.donorProfiles[idx] = profile!;
+          else this.donorProfiles.push(profile!);
+          return profile;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] updateDonorProfile DB error:', e?.message);
+      }
+    }
+    const memProf = this.findDonorProfileByUserIdSync(userId);
+    if (!memProf) return null;
+    Object.assign(memProf, update, { updatedAt: new Date() });
+    await this.persistDonorProfile(memProf);
+    return memProf;
+  }
+
+  async searchDonors(filters: {
+    bloodGroup?: string;
+    division?: string;
+    district?: string;
+    upazila?: string;
+    institutionId?: string;
+    availabilityStatus?: string;
+    limit?: number;
+    page?: number;
+  }) {
+    if (isDatabaseConnected()) {
+      try {
+        const query: any = {
+          isPubliclyListed: { $ne: false }
+        };
+
+        if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
+        if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
+        if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
+        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+        if (filters.institutionId) query.institutionId = filters.institutionId;
+        if (filters.availabilityStatus) query.availabilityStatus = filters.availabilityStatus;
+
+        const total = await DonorProfileModel.countDocuments(query);
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const profiles = await DonorProfileModel.find(query)
+          .skip(skip)
+          .limit(limit)
+          .lean();
+
+        const userIds = profiles.map(p => String(p.userId));
+        const users = await UserModel.find({ _id: { $in: userIds } }).select('_id phone accountStatus isActive').lean();
+        const activeUserMap = new Map(
+          users.filter(u => u.accountStatus === 'active' && u.isActive !== false)
+               .map(u => [String(u._id), u.phone])
+        );
+
+        const instIds = profiles.map(p => p.institutionId).filter(Boolean);
+        const insts = await InstitutionModel.find({ _id: { $in: instIds } }).lean();
+        const instMap = new Map(insts.map(i => [String(i._id), i.nameBn || i.name]));
+
+        const safeDonors = profiles
+          .filter(p => activeUserMap.has(String(p.userId)))
+          .map(p => {
+            const isPublicContactAllowed = Boolean(p.consentToShareContact);
+            return {
+              _id: p._id,
+              displayName: p.displayName,
+              bloodGroup: p.bloodGroup,
+              division: p.division,
+              district: p.district,
+              upazila: p.upazila,
+              availabilityStatus: p.availabilityStatus,
+              lastDonationDate: p.lastDonationDate,
+              totalDonations: p.totalDonations,
+              institutionName: p.institutionId ? instMap.get(String(p.institutionId)) : undefined,
+              institutionId: p.institutionId,
+              institutionMembershipVerified: p.institutionMembershipVerified,
+              emergencyAvailable: p.emergencyAvailable,
+              consentToShareContact: isPublicContactAllowed,
+              phone: isPublicContactAllowed ? activeUserMap.get(String(p.userId)) : undefined,
+              bio: p.bio,
+              createdAt: p.createdAt
+            };
+          });
+
+        return {
+          donors: safeDonors,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        };
+      } catch (e: any) {
+        console.warn('[DataStore] searchDonors DB error:', e?.message);
+      }
+    }
+    return this.searchDonorsSync(filters);
+  }
+
+    searchDonorsSync(filters: {
     bloodGroup?: string;
     division?: string;
     district?: string;
@@ -1544,8 +1762,7 @@ class DataStore {
     page?: number;
   }) {
     let result = this.donorProfiles.filter(d => {
-      // Must be publicly listed AND user must be active
-      const user = this.findUserById(d.userId);
+      const user = this.findUserByIdSync(d.userId);
       return d.isPubliclyListed && user && user.accountStatus === 'active' && user.isActive;
     });
 
@@ -1575,8 +1792,8 @@ class DataStore {
     const paginated = result.slice(startIndex, startIndex + limit);
 
     const safeDonors = paginated.map(p => {
-      const institution = p.institutionId ? this.findInstitutionById(p.institutionId) : undefined;
-      const donorUser = this.findUserById(p.userId);
+      const institution = p.institutionId ? this.findInstitutionByIdSync(p.institutionId) : undefined;
+      const donorUser = this.findUserByIdSync(p.userId);
       const isPublicContactAllowed = Boolean(p.consentToShareContact);
 
       return {
@@ -1594,7 +1811,6 @@ class DataStore {
         institutionMembershipVerified: p.institutionMembershipVerified,
         emergencyAvailable: p.emergencyAvailable,
         consentToShareContact: isPublicContactAllowed,
-        // Strictly return phone only if donor gave explicit public consent
         phone: isPublicContactAllowed ? donorUser?.phone : undefined,
         bio: p.bio,
         createdAt: p.createdAt
@@ -1610,7 +1826,33 @@ class DataStore {
   }
 
   // --- Blood Request Methods ---
-  findBloodRequestById(idOrPublicId: string): StoredBloodRequest | undefined {
+  async findBloodRequestById(idOrPublicId: string): Promise<StoredBloodRequest | undefined> {
+    if (!idOrPublicId) return undefined;
+    const target = String(idOrPublicId).trim();
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await BloodRequestModel.findOne({
+          $or: [
+            { _id: target },
+            { publicId: target },
+            { publicId: target.toUpperCase() }
+          ]
+        }).lean();
+        if (doc) {
+          const stored = doc as any;
+          const idx = this.bloodRequests.findIndex(r => r._id === stored._id);
+          if (idx >= 0) this.bloodRequests[idx] = stored;
+          else this.bloodRequests.unshift(stored);
+          return stored;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] findBloodRequestById DB error:', e?.message);
+      }
+    }
+    return this.findBloodRequestByIdSync(target);
+  }
+
+  findBloodRequestByIdSync(idOrPublicId: string): StoredBloodRequest | undefined {
     if (!idOrPublicId) return undefined;
     const target = String(idOrPublicId).toLowerCase().trim();
     return this.bloodRequests.find(r => 
@@ -1619,7 +1861,7 @@ class DataStore {
     );
   }
 
-  createBloodRequest(data: Partial<StoredBloodRequest>): StoredBloodRequest {
+  createBloodRequestSync(data: Partial<StoredBloodRequest>): StoredBloodRequest {
     this.assertWritable();
     const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
     const timePart = Date.now().toString(36).toUpperCase().slice(-4);
@@ -1648,7 +1890,7 @@ class DataStore {
       additionalNotes: data.additionalNotes,
       consentForPublicShare: data.consentForPublicShare ?? true,
       status: data.status || 'open',
-      statusHistory: [
+      statusHistory: data.statusHistory || [
         {
           status: data.status || 'open',
           unitsFulfilled: data.unitsFulfilled || 0,
@@ -1668,15 +1910,102 @@ class DataStore {
     return newReq;
   }
 
-  updateBloodRequest(id: string, update: Partial<StoredBloodRequest>): StoredBloodRequest | null {
-    const req = this.findBloodRequestById(id);
-    if (!req) return null;
-    Object.assign(req, update, { updatedAt: new Date() });
-    this.persistBloodRequest(req);
+  async createBloodRequest(data: Partial<StoredBloodRequest>): Promise<StoredBloodRequest> {
+    const req = this.createBloodRequestSync(data);
+    await this.persistBloodRequest(req);
     return req;
   }
 
-  searchBloodRequests(filters: {
+  async updateBloodRequest(id: string, update: Partial<StoredBloodRequest>): Promise<StoredBloodRequest | null> {
+    this.assertWritable();
+    let req: StoredBloodRequest | null = null;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await BloodRequestModel.findOneAndUpdate(
+          { $or: [{ _id: id }, { publicId: id }] },
+          { ...update, updatedAt: new Date() },
+          { new: true }
+        ).lean();
+        if (doc) {
+          req = doc as any;
+          const idx = this.bloodRequests.findIndex(r => r._id === req!._id);
+          if (idx >= 0) this.bloodRequests[idx] = req!;
+          else this.bloodRequests.unshift(req!);
+          return req;
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] updateBloodRequest DB error:', e?.message);
+      }
+    }
+    const memReq = this.findBloodRequestByIdSync(id);
+    if (!memReq) return null;
+    Object.assign(memReq, update, { updatedAt: new Date() });
+    await this.persistBloodRequest(memReq);
+    return memReq;
+  }
+
+  async searchBloodRequests(filters: {
+    bloodGroup?: string;
+    division?: string;
+    district?: string;
+    upazila?: string;
+    status?: string;
+    urgencyLevel?: string;
+    institutionId?: string;
+    limit?: number;
+    page?: number;
+  }) {
+    if (isDatabaseConnected()) {
+      try {
+        const query: any = {};
+        if (filters.status) {
+          query.status = filters.status;
+        } else {
+          query.status = { $in: ['open', 'partially_fulfilled'] };
+        }
+        if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
+        if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
+        if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
+        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+        if (filters.urgencyLevel) query.urgencyLevel = filters.urgencyLevel;
+        if (filters.institutionId) query.institutionId = filters.institutionId;
+
+        const total = await BloodRequestModel.countDocuments(query);
+        const page = filters.page || 1;
+        const limit = filters.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const docs = await BloodRequestModel.find(query)
+          .sort({
+            urgencyLevel: -1,
+            requiredDate: 1
+          })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+
+        const now = new Date();
+        const results = (docs as any[]).map(r => {
+          if ((r.status === 'open' || r.status === 'partially_fulfilled') && new Date(r.expiresAt) < now) {
+            r.status = 'expired';
+          }
+          return r;
+        });
+
+        return {
+          requests: results,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        };
+      } catch (e: any) {
+        console.warn('[DataStore] searchBloodRequests DB error:', e?.message);
+      }
+    }
+    return this.searchBloodRequestsSync(filters);
+  }
+
+  searchBloodRequestsSync(filters: {
     bloodGroup?: string;
     division?: string;
     district?: string;
@@ -1742,11 +2071,53 @@ class DataStore {
   }
 
   // --- Institution Methods ---
-  findInstitutionById(id: string): StoredInstitution | undefined {
+  async findInstitutionById(id: string): Promise<StoredInstitution | undefined> {
+    if (!id) return undefined;
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await InstitutionModel.findOne({ _id: id }).lean();
+        if (doc) return doc as any;
+      } catch (e: any) {
+        console.warn('[DataStore] findInstitutionById DB error:', e?.message);
+      }
+    }
+    return this.findInstitutionByIdSync(id);
+  }
+
+  findInstitutionByIdSync(id: string): StoredInstitution | undefined {
     return this.institutions.find(i => String(i._id) === String(id));
   }
 
-  getInstitutions(filters: { division?: string; status?: string; search?: string }) {
+  async getInstitutions(filters: { division?: string; status?: string; search?: string }) {
+    if (isDatabaseConnected()) {
+      try {
+        const query: any = {};
+        if (filters.division) {
+          query.division = new RegExp(`^${filters.division}$`, 'i');
+        }
+        if (filters.status) {
+          query.status = filters.status;
+        } else {
+          query.status = 'approved';
+        }
+        if (filters.search) {
+          const s = filters.search.trim();
+          query.$or = [
+            { name: new RegExp(s, 'i') },
+            { nameBn: new RegExp(s, 'i') },
+            { code: new RegExp(s, 'i') }
+          ];
+        }
+        const docs = await InstitutionModel.find(query).sort({ nameBn: 1, name: 1 }).lean();
+        return docs as any[];
+      } catch (e: any) {
+        console.warn('[DataStore] getInstitutions DB error:', e?.message);
+      }
+    }
+    return this.getInstitutionsSync(filters);
+  }
+
+  getInstitutionsSync(filters: { division?: string; status?: string; search?: string }) {
     let result = [...this.institutions];
     if (filters.status) {
       result = result.filter(i => i.status === filters.status);
@@ -1765,9 +2136,10 @@ class DataStore {
     return result;
   }
 
-  createInstitution(data: Partial<StoredInstitution>): StoredInstitution {
+  async createInstitution(data: Partial<StoredInstitution>): Promise<StoredInstitution> {
+    this.assertWritable();
     const newInst: StoredInstitution = {
-      _id: 'inst_' + Date.now() + Math.random().toString(36).substring(2, 7),
+      _id: data._id || ('inst_' + Date.now() + Math.random().toString(36).substring(2, 7)),
       name: data.name || '',
       nameBn: data.nameBn || data.name || '',
       code: data.code?.toUpperCase() || 'INST-' + Date.now(),
@@ -1788,15 +2160,16 @@ class DataStore {
       updatedAt: new Date()
     };
     this.institutions.push(newInst);
-    this.persistInstitution(newInst);
+    await this.persistInstitution(newInst);
     return newInst;
   }
 
-  updateInstitution(id: string, update: Partial<StoredInstitution>): StoredInstitution | null {
-    const inst = this.findInstitutionById(id);
+  async updateInstitution(id: string, update: Partial<StoredInstitution>): Promise<StoredInstitution | null> {
+    this.assertWritable();
+    const inst = this.findInstitutionByIdSync(id);
     if (!inst) return null;
     Object.assign(inst, update, { updatedAt: new Date() });
-    this.persistInstitution(inst);
+    await this.persistInstitution(inst);
     return inst;
   }
 
@@ -1969,10 +2342,10 @@ class DataStore {
     const moderators = this.users.filter(u => u.role === 'INSTITUTION_MODERATOR');
     return moderators.filter(m => {
       if (!m.assignedInstitution) return false;
-      const inst = this.findInstitutionById(m.assignedInstitution);
+      const inst = this.findInstitutionByIdSync(m.assignedInstitution);
       return inst && inst.division.toLowerCase() === division.toLowerCase();
     }).map(m => {
-      const inst = m.assignedInstitution ? this.findInstitutionById(m.assignedInstitution) : undefined;
+      const inst = m.assignedInstitution ? this.findInstitutionByIdSync(m.assignedInstitution) : undefined;
       const membersAdded = this.moderatorActivities.filter(a => a.actorId === m._id && a.action === 'MEMBER_CREATED').length;
       const profilesEdited = this.moderatorActivities.filter(a => a.actorId === m._id && a.action === 'MEMBER_EDITED').length;
       const membersBlocked = this.moderatorActivities.filter(a => a.actorId === m._id && a.action === 'MEMBER_BLOCKED').length;
@@ -2006,7 +2379,7 @@ class DataStore {
     urgency: 'emergency' | 'urgent' | 'standard';
     reason: string;
   }): StoredContactRequest {
-    const inst = this.findInstitutionById(data.institutionId);
+    const inst = this.findInstitutionByIdSync(data.institutionId);
     const newContactReq: StoredContactRequest = {
       _id: 'cr_' + Date.now() + Math.random().toString(36).substring(2, 6),
       ...data,
@@ -2096,7 +2469,7 @@ class DataStore {
     };
     this.contactAccessLogs.push(newLog);
 
-    const viewer = this.findUserById(logData.viewerId);
+    const viewer = this.findUserByIdSync(logData.viewerId);
     this.createNotification({
       userId: logData.donorUserId,
       title: 'জরুরি যোগাযোগের অনুরোধ',
@@ -2108,7 +2481,7 @@ class DataStore {
   }
 
   // --- OTP Methods ---
-  saveOtp(phone: string, otp: string, purpose: string): StoredOtp {
+  async saveOtp(phone: string, otp: string, purpose: string): Promise<StoredOtp> {
     const otpHash = bcrypt.hashSync(otp, 6);
     const otpRecord: StoredOtp = {
       phone,
@@ -2121,10 +2494,53 @@ class DataStore {
     };
     this.otps = this.otps.filter(o => o.phone !== phone);
     this.otps.push(otpRecord);
+
+    if (isDatabaseConnected()) {
+      try {
+        await OtpVerificationModel.deleteMany({ phone, purpose });
+        await OtpVerificationModel.create({
+          phone,
+          otpHash,
+          expiresAt: otpRecord.expiresAt,
+          attempts: 0,
+          isUsed: false,
+          purpose: purpose as any
+        });
+      } catch (e: any) {
+        console.warn('[DataStore] saveOtp DB error:', e?.message);
+      }
+    }
     return otpRecord;
   }
 
-  verifyOtp(phone: string, rawOtp: string, purpose: string): { success: boolean; message: string } {
+  async verifyOtp(phone: string, rawOtp: string, purpose: string): Promise<{ success: boolean; message: string }> {
+    if (isDatabaseConnected()) {
+      try {
+        const doc = await OtpVerificationModel.findOne({
+          phone,
+          purpose,
+          isUsed: false,
+          expiresAt: { $gt: new Date() }
+        });
+        if (doc) {
+          if (doc.attempts >= 5) {
+            return { success: false, message: 'সর্বোচ্চ চেষ্টা সংখ্যা অতিক্রম করেছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' };
+          }
+          const isValid = bcrypt.compareSync(rawOtp, doc.otpHash);
+          if (!isValid) {
+            doc.attempts += 1;
+            await doc.save();
+            return { success: false, message: 'ভুল ওটিপি কোড। অনুগ্রহ করে সঠিক ৬ ডিজিটের কোডটি দিন।' };
+          }
+          doc.isUsed = true;
+          await doc.save();
+          return { success: true, message: 'সফলভাবে যাচাই সম্পন্ন হয়েছে।' };
+        }
+      } catch (e: any) {
+        console.warn('[DataStore] verifyOtp DB error, falling back to memory:', e?.message);
+      }
+    }
+
     const record = this.otps.find(o => o.phone === phone && o.purpose === purpose && !o.isUsed);
     if (!record) {
       return { success: false, message: 'ওটিপি কোড পাওয়া যায়নি বা পূর্বে ব্যবহার করা হয়েছে। নতুন কোড অনুরোধ করুন।' };
@@ -2224,7 +2640,7 @@ class DataStore {
     newPhone: string;
     reason: string;
   }): { success: boolean; message: string; request?: StoredPhoneChangeRequest } {
-    const user = this.findUserById(params.userId);
+    const user = this.findUserByIdSync(params.userId);
     if (!user) {
       return { success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' };
     }
@@ -2241,7 +2657,7 @@ class DataStore {
     }
 
     // Check if new phone is already used by someone else
-    const phoneOwner = this.findUserByPhone(params.newPhone);
+    const phoneOwner = this.findUserByPhoneSync(params.newPhone);
     if (phoneOwner && phoneOwner._id !== params.userId) {
       return {
         success: false,
@@ -2252,7 +2668,7 @@ class DataStore {
     // Get institution name if affiliated
     let institutionName: string | undefined = undefined;
     if (user.assignedInstitution) {
-      const inst = this.findInstitutionById(user.assignedInstitution);
+      const inst = this.findInstitutionByIdSync(user.assignedInstitution);
       institutionName = inst?.nameBn;
     }
 
@@ -2345,7 +2761,7 @@ class DataStore {
     req.reviewNotes = reviewNotes || (status === 'approved' ? 'অনুমোদিত' : 'বাতিলকৃত');
     req.updatedAt = new Date();
 
-    const targetUser = this.findUserById(req.userId);
+    const targetUser = this.findUserByIdSync(req.userId);
     if (status === 'approved' && targetUser) {
       targetUser.phone = req.newPhone;
       targetUser.updatedAt = new Date();
@@ -2393,7 +2809,7 @@ class DataStore {
     email?: string;
     gender?: string;
   }): { success: boolean; message: string; moderator?: StoredUser; temporaryPassword?: string } {
-    const institution = this.findInstitutionById(params.institutionId);
+    const institution = this.findInstitutionByIdSync(params.institutionId);
     if (!institution) {
       return { success: false, message: 'নির্বাচিত প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' };
     }
@@ -2409,7 +2825,7 @@ class DataStore {
     }
 
     // Check if user already exists with phone
-    const existingUser = this.findUserByPhone(params.phone);
+    const existingUser = this.findUserByPhoneSync(params.phone);
     if (existingUser) {
       // Upgrade existing user to INSTITUTION_MODERATOR
       existingUser.role = 'INSTITUTION_MODERATOR';
@@ -2464,7 +2880,7 @@ class DataStore {
 
   // --- Institution Drill-Down Members ---
   getInstitutionMembers(institutionId: string) {
-    const institution = this.findInstitutionById(institutionId);
+    const institution = this.findInstitutionByIdSync(institutionId);
     if (!institution) return [];
 
     // Find donor profiles linked to this institution
@@ -2555,7 +2971,7 @@ class DataStore {
       };
     }
 
-    const institution = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : undefined;
+    const institution = user.assignedInstitution ? this.findInstitutionByIdSync(user.assignedInstitution) : undefined;
     const now = new Date();
     const requestId = 'prr_' + Date.now() + Math.random().toString(36).substring(2, 6);
 
@@ -2705,7 +3121,7 @@ class DataStore {
       return { success: false, message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত প্রতিষ্ঠানের রিকভারি অনুমোদন করতে পারেন।' };
     }
 
-    const targetUser = this.findUserById(req.userId);
+    const targetUser = this.findUserByIdSync(req.userId);
     if (!targetUser) {
       return { success: false, message: 'ব্যবহারকারীর মূল অ্যাকাউন্ট পাওয়া যায়নি।' };
     }
@@ -2848,7 +3264,7 @@ class DataStore {
     }
 
     // Safe profile return
-    const inst = targetUser.assignedInstitution ? this.findInstitutionById(targetUser.assignedInstitution) : undefined;
+    const inst = targetUser.assignedInstitution ? this.findInstitutionByIdSync(targetUser.assignedInstitution) : undefined;
     const donor = this.donorProfiles.find(d => d.userId === targetUser._id);
 
     return {
@@ -2881,13 +3297,13 @@ class DataStore {
     department?: string;
     reason?: string;
   }) {
-    const user = this.findUserById(data.userId);
+    const user = this.findUserByIdSync(data.userId);
     if (!user) return { success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' };
 
-    const targetInst = this.findInstitutionById(data.targetInstitutionId);
+    const targetInst = this.findInstitutionByIdSync(data.targetInstitutionId);
     if (!targetInst) return { success: false, message: 'লক্ষ্য প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' };
 
-    const currentInst = user.assignedInstitution ? this.findInstitutionById(user.assignedInstitution) : undefined;
+    const currentInst = user.assignedInstitution ? this.findInstitutionByIdSync(user.assignedInstitution) : undefined;
     const now = new Date();
     const requestId = 'icr_' + Date.now() + Math.random().toString(36).substring(2, 6);
 
@@ -3002,7 +3418,7 @@ class DataStore {
 
     if (status === 'approved') {
       // Update target user's assignedInstitution
-      const targetUser = this.findUserById(req.userId);
+      const targetUser = this.findUserByIdSync(req.userId);
       if (targetUser) {
         targetUser.assignedInstitution = req.targetInstitutionId;
         targetUser.updatedAt = now;

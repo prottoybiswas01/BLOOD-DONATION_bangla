@@ -28,7 +28,7 @@ export const RevealContactSchema = z.object({
 export async function searchDonors(req: Request, res: Response): Promise<void> {
   const { bloodGroup, division, district, upazila, availabilityStatus, page, limit } = req.query;
 
-  const result = dataStore.searchDonors({
+  const result = await dataStore.searchDonors({
     bloodGroup: bloodGroup as string,
     division: division as string,
     district: district as string,
@@ -46,7 +46,7 @@ export async function searchDonors(req: Request, res: Response): Promise<void> {
 
 export async function getDonorById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const profile = dataStore.findDonorProfileById(id);
+  const profile = await dataStore.findDonorProfileById(id);
 
   if (!profile || !profile.isPubliclyListed) {
     res.status(404).json({
@@ -56,8 +56,8 @@ export async function getDonorById(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const institution = profile.institutionId ? dataStore.findInstitutionById(profile.institutionId) : undefined;
-  const donorUser = dataStore.findUserById(profile.userId);
+  const institution = profile.institutionId ? await dataStore.findInstitutionById(profile.institutionId) : undefined;
+  const donorUser = await dataStore.findUserById(profile.userId);
   const isPublicContactAllowed = Boolean(profile.consentToShareContact);
 
   // Return phone strictly when donor gave explicit consent
@@ -102,13 +102,13 @@ export async function revealDonorContact(req: AuthRequest, res: Response): Promi
   const { id } = req.params;
   const { purpose, relatedBloodRequestId } = req.body;
 
-  const profile = dataStore.findDonorProfileById(id);
+  const profile = await dataStore.findDonorProfileById(id);
   if (!profile) {
     res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল পাওয়া যায়নি।' });
     return;
   }
 
-  const donorUser = dataStore.findUserById(profile.userId);
+  const donorUser = await dataStore.findUserById(profile.userId);
   if (!donorUser) {
     res.status(404).json({ success: false, message: 'রক্তদাতার মূল অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -177,7 +177,7 @@ export async function getMyDonorProfile(req: AuthRequest, res: Response): Promis
     return;
   }
 
-  const profile = dataStore.findDonorProfileByUserId(req.user.userId);
+  const profile = await dataStore.findDonorProfileByUserId(req.user.userId);
   if (!profile) {
     res.status(404).json({
       success: false,
@@ -204,7 +204,7 @@ export async function updateMyDonorProfile(req: AuthRequest, res: Response): Pro
     updatePayload.lastDonationDate = new Date(data.lastDonationDate);
   }
 
-  const updated = dataStore.updateDonorProfile(req.user.userId, updatePayload);
+  const updated = await dataStore.updateDonorProfile(req.user.userId, updatePayload);
   if (!updated) {
     res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল পাওয়া যায়নি।' });
     return;
@@ -224,14 +224,14 @@ export async function recordDonation(req: AuthRequest, res: Response): Promise<v
   }
 
   const { donationDate } = req.body;
-  const profile = dataStore.findDonorProfileByUserId(req.user.userId);
+  const profile = await dataStore.findDonorProfileByUserId(req.user.userId);
   if (!profile) {
     res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল পাওয়া যায়নি।' });
     return;
   }
 
   const date = donationDate ? new Date(donationDate) : new Date();
-  const updated = dataStore.updateDonorProfile(req.user.userId, {
+  const updated = await dataStore.updateDonorProfile(req.user.userId, {
     lastDonationDate: date,
     totalDonations: profile.totalDonations + 1,
     availabilityStatus: 'recently_donated'

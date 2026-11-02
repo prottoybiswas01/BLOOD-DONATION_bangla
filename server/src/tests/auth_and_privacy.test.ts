@@ -3,8 +3,8 @@ import assert from 'node:assert';
 import { dataStore } from '../services/dataStore.js';
 import { SmsService } from '../services/smsService.js';
 
-test('1. Guest donor search strictly omits private phone numbers unless donor explicitly consents', () => {
-  const result = dataStore.searchDonors({ division: 'dhaka' });
+test('1. Guest donor search strictly omits private phone numbers unless donor explicitly consents', async () => {
+  const result = await dataStore.searchDonors({ division: 'dhaka' });
   assert.ok(result.donors.length > 0, 'Should find donors in Dhaka');
 
   // For donors who have not given consent, phone must be strictly undefined
@@ -36,9 +36,9 @@ test('3. SMS Service provides development OTP simulator in non-production', asyn
   assert.strictEqual(result.devOtp, '123456');
 });
 
-test('4. Contact reveal flow records audit log and enforces consent', () => {
+test('4. Contact reveal flow records audit log and enforces consent', async () => {
   // Donor 1 has consented
-  const donor = dataStore.findDonorProfileById('donor_prof_1');
+  const donor = await dataStore.findDonorProfileById('donor_prof_1');
   assert.ok(donor);
   assert.strictEqual(donor.consentToShareContact, true);
 
@@ -63,10 +63,10 @@ test('5. Cannot demote the last active SUPER_ADMIN', () => {
   assert.strictEqual(canDemote, false, 'Demoting the last super admin must be strictly prevented');
 });
 
-test('6. Expired requests are updated and excluded from active emergencies', () => {
+test('6. Expired requests are updated and excluded from active emergencies', async () => {
   // Add an expired request
   const pastDate = new Date(Date.now() - 86400000 * 5); // 5 days ago
-  dataStore.createBloodRequest({
+  await dataStore.createBloodRequest({
     requesterId: 'usr_requester_1',
     patientName: 'Expired Patient',
     bloodGroup: 'AB+',
@@ -78,7 +78,7 @@ test('6. Expired requests are updated and excluded from active emergencies', () 
     status: 'open'
   });
 
-  const searchResult = dataStore.searchBloodRequests({});
+  const searchResult = await dataStore.searchBloodRequests({});
   const foundExpired = searchResult.requests.find(r => r.patientName === 'Expired Patient');
   assert.strictEqual(foundExpired, undefined, 'Expired requests must not appear in active search feed');
 });

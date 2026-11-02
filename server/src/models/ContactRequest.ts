@@ -25,7 +25,7 @@ export interface IContactRequest extends Document {
 
 const ContactRequestSchema = new Schema<IContactRequest>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     requesterId: { type: Schema.Types.Mixed, required: true, index: true },
     requesterName: { type: String, required: true },
     requesterPhone: { type: String, required: true },

@@ -13,7 +13,7 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     userId: { 
       type: Schema.Types.Mixed, 
       required: true,

@@ -35,7 +35,7 @@ export interface IInstitution extends Document {
 
 const InstitutionSchema = new Schema<IInstitution>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, required: true, trim: true },
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },

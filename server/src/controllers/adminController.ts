@@ -96,13 +96,13 @@ export async function getUsers(req: AuthRequest, res: Response): Promise<void> {
 
 export async function getUserById(req: AuthRequest, res: Response): Promise<void> {
   const { id } = req.params;
-  const user = dataStore.findUserById(id);
+  const user = await dataStore.findUserById(id);
   if (!user) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
     return;
   }
 
-  const donorProfile = dataStore.findDonorProfileByUserId(user._id);
+  const donorProfile = await dataStore.findDonorProfileByUserId(user._id);
 
   // Return complete authorized user profile WITHOUT secrets
   res.json({
@@ -139,7 +139,7 @@ export async function editUserProfileByAdmin(req: AuthRequest, res: Response): P
   }
 
   const { id } = req.params;
-  const user = dataStore.findUserById(id);
+  const user = await dataStore.findUserById(id);
   if (!user) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
     return;
@@ -152,7 +152,7 @@ export async function editUserProfileByAdmin(req: AuthRequest, res: Response): P
   }
 
   const data = req.body;
-  const updated = dataStore.updateUser(id, data);
+  const updated = await dataStore.updateUser(id, data);
 
   await logAuditEvent({
     actorId: req.user.userId,
@@ -188,7 +188,7 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
     return;
   }
 
-  const user = dataStore.findUserById(id);
+  const user = await dataStore.findUserById(id);
   if (!user) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
     return;
@@ -207,7 +207,7 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
   }
 
   const oldRole = user.role;
-  dataStore.updateUser(id, {
+  await dataStore.updateUser(id, {
     role,
     assignedDivision: role === 'DIVISION_COORDINATOR' ? assignedDivision : undefined,
     assignedInstitution: role === 'INSTITUTION_MODERATOR' ? assignedInstitution : undefined,
@@ -238,7 +238,7 @@ export async function blockUserAccount(req: AuthRequest, res: Response): Promise
   const { id } = req.params;
   const { reason, status } = req.body;
 
-  const targetUser = dataStore.findUserById(id);
+  const targetUser = await dataStore.findUserById(id);
   if (!targetUser) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
     return;
@@ -351,8 +351,8 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
 
 export async function getContactAccessLogs(req: AuthRequest, res: Response): Promise<void> {
   const logsWithDetails = dataStore.contactAccessLogs.map(log => {
-    const viewer = dataStore.findUserById(log.viewerId);
-    const donor = dataStore.findUserById(log.donorUserId);
+    const viewer = dataStore.findUserByIdSync(log.viewerId);
+    const donor = dataStore.findUserByIdSync(log.donorUserId);
     return {
       _id: log._id,
       viewerName: viewer?.name || 'অজানা',
@@ -423,7 +423,7 @@ export async function searchScopedUser(req: AuthRequest, res: Response): Promise
     return;
   }
 
-  const searcher = dataStore.findUserById(req.user.userId);
+  const searcher = await dataStore.findUserById(req.user.userId);
   if (!searcher) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -445,7 +445,7 @@ export async function manualCreateInstitution(req: AuthRequest, res: Response): 
     return;
   }
 
-  const creator = dataStore.findUserById(req.user.userId);
+  const creator = await dataStore.findUserById(req.user.userId);
   if (!creator) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;

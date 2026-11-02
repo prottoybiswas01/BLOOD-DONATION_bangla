@@ -69,7 +69,7 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
   const phone = normalizePhone(rawPhone);
 
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  dataStore.saveOtp(phone, otpCode, purpose);
+  await dataStore.saveOtp(phone, otpCode, purpose);
 
   const smsResult = await SmsService.sendOtp(phone, otpCode, purpose);
 
@@ -85,7 +85,7 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, otp, purpose } = req.body;
   const phone = normalizePhone(rawPhone);
 
-  const verification = dataStore.verifyOtp(phone, otp, purpose);
+  const verification = await dataStore.verifyOtp(phone, otp, purpose);
   if (!verification.success) {
     res.status(400).json({ success: false, message: verification.message });
     return;
@@ -101,7 +101,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   const data = req.body;
   const phone = normalizePhone(data.phone);
 
-  const existingUser = dataStore.findUserByPhone(phone);
+  const existingUser = await dataStore.findUserByPhone(phone);
   if (existingUser) {
     res.status(409).json({
       success: false,
@@ -134,7 +134,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   }
 
   const passwordHash = bcrypt.hashSync(data.password, 10);
-  const newUser = dataStore.createUser({
+  const newUser = await dataStore.createUser({
     name: data.name,
     phone,
     email: data.email || undefined,
@@ -154,7 +154,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   let donorProfile = null;
   if (isDonorRegistration && data.bloodGroup) {
-    donorProfile = dataStore.createDonorProfile({
+    donorProfile = await dataStore.createDonorProfile({
       userId: newUser._id,
       displayName: data.name,
       bloodGroup: data.bloodGroup,
@@ -216,7 +216,7 @@ export async function login(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, password } = req.body;
   const phone = normalizePhone(rawPhone);
 
-  const user = dataStore.findUserByPhone(phone);
+  const user = await dataStore.findUserByPhone(phone);
   if (!user) {
     res.status(401).json({
       success: false,
@@ -285,7 +285,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     });
   }
 
-  dataStore.updateUser(user._id, { lastLoginAt: new Date() });
+  await dataStore.updateUser(user._id, { lastLoginAt: new Date() });
 
   const token = jwt.sign(
     {
@@ -301,7 +301,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     { expiresIn: '7d' }
   );
 
-  const donorProfile = dataStore.findDonorProfileByUserId(user._id);
+  const donorProfile = await dataStore.findDonorProfileByUserId(user._id);
 
   res.json({
     success: true,
@@ -378,7 +378,7 @@ export async function getPasswordRecoveryRequests(req: AuthRequest, res: Respons
     return;
   }
 
-  const user = dataStore.findUserById(req.user.userId);
+  const user = await dataStore.findUserById(req.user.userId);
   if (!user) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -405,7 +405,7 @@ export async function approvePasswordRecoveryRequest(req: AuthRequest, res: Resp
     return;
   }
 
-  const approver = dataStore.findUserById(req.user.userId);
+  const approver = await dataStore.findUserById(req.user.userId);
   if (!approver) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -436,7 +436,7 @@ export async function rejectPasswordRecoveryRequest(req: AuthRequest, res: Respo
     return;
   }
 
-  const rejecter = dataStore.findUserById(req.user.userId);
+  const rejecter = await dataStore.findUserById(req.user.userId);
   if (!rejecter) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -474,7 +474,7 @@ export async function getPasswordRecoveryHistory(req: AuthRequest, res: Response
     return;
   }
 
-  const user = dataStore.findUserById(req.user.userId);
+  const user = await dataStore.findUserById(req.user.userId);
   if (!user) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -503,13 +503,13 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
     return;
   }
 
-  const user = dataStore.findUserById(req.user.userId);
+  const user = await dataStore.findUserById(req.user.userId);
   if (!user) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
     return;
   }
 
-  const donorProfile = dataStore.findDonorProfileByUserId(user._id);
+  const donorProfile = await dataStore.findDonorProfileByUserId(user._id);
   const unreadNotifications = dataStore.getUserNotifications(user._id).filter(n => !n.isRead).length;
 
   res.json({

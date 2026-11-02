@@ -29,7 +29,7 @@ export interface IPasswordRecoveryRequest extends Document {
 
 const PasswordRecoveryRequestSchema = new Schema<IPasswordRecoveryRequest>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     userId: { type: Schema.Types.Mixed, required: true, index: true },
     userName: { type: String, required: true },
     phone: { type: String, required: true, index: true },

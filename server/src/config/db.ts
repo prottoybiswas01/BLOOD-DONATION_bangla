@@ -15,9 +15,10 @@ if (!cached) {
 let isConnected = false;
 
 export async function connectDB(): Promise<boolean> {
-  // If connection already cached on global scope, reuse it
-  if (cached.conn && mongoose.connection.readyState === 1) {
+  // If connection already cached on global scope and active
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
     isConnected = true;
+    cached.conn = mongoose;
     return true;
   }
 
@@ -33,12 +34,12 @@ export async function connectDB(): Promise<boolean> {
     return false;
   }
 
-  if (!cached.promise) {
-    const opts = {
+  if (!cached.promise || (mongoose.connection && mongoose.connection.readyState === 0)) {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false, // Disables Mongoose buffering so requests never hang
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 8000, // Adequate window for serverless cold-starts
-      connectTimeoutMS: 8000,
+      serverSelectionTimeoutMS: 10000, // Adequate window for serverless cold-starts
+      connectTimeoutMS: 10000,
     };
 
     console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);
@@ -52,17 +53,17 @@ export async function connectDB(): Promise<boolean> {
 
   try {
     cached.conn = await cached.promise;
-    isConnected = true;
-    return true;
+    isConnected = mongoose.connection.readyState === 1;
+    return isConnected;
   } catch (error: any) {
     cached.promise = null;
+    cached.conn = null;
     isConnected = false;
     console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
-    console.warn('[Database] Running in Fallback In-Memory Datastore mode with full seed data.');
     return false;
   }
 }
 
 export function isDatabaseConnected(): boolean {
-  return isConnected && mongoose.connection.readyState === 1;
+  return Boolean(mongoose.connection && mongoose.connection.readyState === 1);
 }

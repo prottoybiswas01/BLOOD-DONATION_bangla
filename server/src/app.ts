@@ -5,7 +5,7 @@ import apiRoutes from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalRateLimiter } from './middleware/rateLimiter.js';
 import { ENV } from './config/env.js';
-import { connectDB } from './config/db.js';
+import { connectDB, isDatabaseConnected } from './config/db.js';
 import { dataStore } from './services/dataStore.js';
 
 const app = express();
@@ -13,35 +13,44 @@ const app = express();
 // Trust reverse proxy (Vercel, Nginx, Render) for client IP rate limiting
 app.set('trust proxy', 1);
 
-// Auto-initialize MongoDB connection in background without blocking API requests
-let isDbInitialized = false;
-let isInitializing = false;
-
-async function ensureDbInitialized() {
-  if (isDbInitialized || isInitializing) return;
-  isInitializing = true;
+// Auto-initialize MongoDB connection in serverless environment
+async function ensureDbInitialized(): Promise<boolean> {
+  if (isDatabaseConnected()) return true;
+  if (!ENV.MONGO_URI) return false;
   try {
     const isConnected = await connectDB();
     if (isConnected) {
       await dataStore.syncWithMongoDB();
-      isDbInitialized = true;
+      return true;
     }
+    return false;
   } catch (err: any) {
     console.warn('[Database Init Warning]:', err?.message);
-  } finally {
-    isInitializing = false;
+    return false;
   }
 }
 
 app.use(async (req, res, next) => {
-  if (!isDbInitialized && !isInitializing) {
-    try {
-      await Promise.race([
-        ensureDbInitialized(),
-        new Promise(resolve => setTimeout(resolve, 1500))
-      ]);
-    } catch {}
+  // Static and root diagnostics can proceed immediately
+  if (req.path === '/' || req.path === '/health' || req.path === '/favicon.ico') {
+    return next();
   }
+
+  if (ENV.MONGO_URI && !isDatabaseConnected()) {
+    await ensureDbInitialized();
+  }
+
+  // Production write guard: prevent phantom in-memory writes when DB is disconnected
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+  const isProdMode = ENV.NODE_ENV === 'production' || Boolean(process.env.VERCEL) || Boolean(ENV.MONGO_URI);
+  if (isMutation && isProdMode && !isDatabaseConnected()) {
+    return res.status(503).json({
+      success: false,
+      code: 'DATABASE_UNAVAILABLE',
+      message: 'ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।'
+    });
+  }
+
   next();
 });
 
@@ -91,7 +100,8 @@ app.get(['/', '/api', '/api/v1'], (req, res) => {
   res.json({
     success: true,
     platform: 'বাংলাদেশ রক্তদান প্ল্যাটফর্ম (Bangladesh Blood Donation Platform)',
-    status: 'online',
+    status: isDatabaseConnected() ? 'online' : (ENV.NODE_ENV === 'production' ? 'degraded' : 'in-memory'),
+    databaseConnected: isDatabaseConnected(),
     version: '1.0.0',
     environment: ENV.NODE_ENV,
     apiBase: '/api/v1',
@@ -122,4 +132,3 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = app;
   module.exports.default = app;
 }
-

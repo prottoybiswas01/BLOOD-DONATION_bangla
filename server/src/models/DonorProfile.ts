@@ -30,7 +30,7 @@ export interface IDonorProfile extends Document {
 
 const DonorProfileSchema = new Schema<IDonorProfile>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     userId: { 
       type: Schema.Types.Mixed, 
       required: true, 

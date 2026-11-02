@@ -14,7 +14,7 @@ export interface IContactAccessLog extends Document {
 
 const ContactAccessLogSchema = new Schema<IContactAccessLog>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     viewerId: { 
       type: Schema.Types.Mixed, 
       required: true, 

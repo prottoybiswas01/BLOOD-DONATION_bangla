@@ -74,6 +74,7 @@ export const TokenStorage = {
     try {
       await SecureStore.deleteItemAsync(USER_KEY);
     } catch (e) {}
+    clearApiCache();
   }
 };
 
@@ -112,7 +113,7 @@ export async function request<T = any>(
     timeoutMs = 10000, 
     retries = 1, 
     skipCache = false, 
-    cacheTtlMs = 60000,
+    cacheTtlMs = 15000,
     ...fetchOptions 
   } = options;
 
@@ -120,6 +121,11 @@ export async function request<T = any>(
   const isIdempotent = method === 'GET' || method === 'HEAD';
   const url = `${API_BASE_URL}${endpoint}`;
   const cacheKey = `${method}:${url}`;
+
+  // If explicit refresh requested, evict existing cache entry
+  if (skipCache) {
+    apiCache.delete(cacheKey);
+  }
 
   // Serve from in-memory cache for GET if still valid
   if (isIdempotent && !skipCache) {
@@ -196,6 +202,10 @@ export async function request<T = any>(
           if (endpoint.includes('/requests')) clearApiCache('/requests');
           if (endpoint.includes('/donors')) clearApiCache('/donors');
           if (endpoint.includes('/institutions')) clearApiCache('/institutions');
+          if (endpoint.includes('/members')) {
+            clearApiCache('/donors');
+            clearApiCache('/members');
+          }
           if (endpoint.includes('/phone-change')) clearApiCache('/phone-change');
           if (endpoint.includes('/institution-change')) clearApiCache('/institution-change');
           clearApiCache('/stats');
@@ -218,8 +228,8 @@ export async function request<T = any>(
           continue;
         }
 
-        // Fallback to stale cached data if available rather than throwing
-        if (isIdempotent && apiCache.has(cacheKey)) {
+        // Fallback to stale cached data only if user did NOT explicitly skip cache
+        if (isIdempotent && !skipCache && apiCache.has(cacheKey)) {
           console.warn('[MobileApi] Serving stale cache due to network glitch');
           return apiCache.get(cacheKey)!.data as T;
         }

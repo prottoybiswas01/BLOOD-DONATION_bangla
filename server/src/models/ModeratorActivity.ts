@@ -29,7 +29,7 @@ export interface IModeratorActivity extends Document {
 
 const ModeratorActivitySchema = new Schema<IModeratorActivity>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     actorId: { type: Schema.Types.Mixed, required: true, index: true },
     actorName: { type: String, required: true },
     actorRole: { type: String, required: true },

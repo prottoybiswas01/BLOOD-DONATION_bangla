@@ -53,7 +53,7 @@ export interface IBloodRequest extends Document {
 
 const BloodRequestSchema = new Schema<IBloodRequest>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     publicId: { 
       type: String, 
       unique: true, 

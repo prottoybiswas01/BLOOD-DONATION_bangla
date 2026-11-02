@@ -23,7 +23,7 @@ export interface IPhoneChangeRequest extends Document {
 
 const PhoneChangeRequestSchema = new Schema<IPhoneChangeRequest>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     userId: { type: Schema.Types.Mixed, required: true, index: true },
     userName: { type: String, required: true },
     userRole: { type: String, required: true },

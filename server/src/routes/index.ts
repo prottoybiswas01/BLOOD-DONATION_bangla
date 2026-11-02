@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { dataStore } from '../services/dataStore.js';
+import { isDatabaseConnected } from '../config/db.js';
+import { DonorProfileModel } from '../models/DonorProfile.js';
+import { BloodRequestModel } from '../models/BloodRequest.js';
+import { InstitutionModel } from '../models/Institution.js';
 import authRoutes from './authRoutes.js';
 import donorRoutes from './donorRoutes.js';
 import requestRoutes from './requestRoutes.js';
@@ -39,6 +43,7 @@ router.use('/phone-change', phoneChangeRoutes);
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
+    database: isDatabaseConnected() ? 'connected' : 'disconnected',
     platform: 'Bangladesh Blood Donation Platform API',
     version: '1.0.0',
     timestamp: new Date().toISOString()
@@ -46,19 +51,39 @@ router.get('/health', (req, res) => {
 });
 
 // Live Public Statistics Endpoint (Verified backend data for Web & Mobile)
-router.get(['/stats', '/statistics', '/public/stats'], (req, res) => {
+router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
   try {
-    const activeDonors = dataStore.donorProfiles.filter(d => {
-      const u = dataStore.findUserById(d.userId);
-      return Boolean(d.isPubliclyListed && u && u.accountStatus === 'active' && u.isActive !== false);
-    });
+    let totalDonors = 0;
+    let availableDonors = 0;
+    let activeRequests = 0;
+    let districtsCovered = 0;
+    let totalInstitutions = 0;
 
-    const totalDonors = activeDonors.length;
-    const availableDonors = activeDonors.filter(d => d.availabilityStatus === 'available').length;
-    const activeRequests = dataStore.bloodRequests.filter(r => r.status === 'open' || r.status === 'partially_fulfilled').length;
-    const uniqueDistricts = new Set(activeDonors.map(d => d.district?.toLowerCase().trim()).filter(Boolean));
-    const districtsCovered = uniqueDistricts.size;
-    const totalInstitutions = dataStore.institutions.length;
+    if (isDatabaseConnected()) {
+      totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
+      availableDonors = await DonorProfileModel.countDocuments({
+        isPubliclyListed: true,
+        availabilityStatus: 'available'
+      });
+      activeRequests = await BloodRequestModel.countDocuments({
+        status: { $in: ['open', 'partially_fulfilled'] }
+      });
+      const districtList = await DonorProfileModel.distinct('district', { isPubliclyListed: true });
+      districtsCovered = districtList.filter(Boolean).length;
+      totalInstitutions = await InstitutionModel.countDocuments();
+    } else {
+      const activeDonors = dataStore.donorProfiles.filter(d => {
+        const u = dataStore.findUserById(d.userId);
+        return Boolean(d.isPubliclyListed && u && u.accountStatus === 'active' && u.isActive !== false);
+      });
+
+      totalDonors = activeDonors.length;
+      availableDonors = activeDonors.filter(d => d.availabilityStatus === 'available').length;
+      activeRequests = dataStore.bloodRequests.filter(r => r.status === 'open' || r.status === 'partially_fulfilled').length;
+      const uniqueDistricts = new Set(activeDonors.map(d => d.district?.toLowerCase().trim()).filter(Boolean));
+      districtsCovered = uniqueDistricts.size;
+      totalInstitutions = dataStore.institutions.length;
+    }
 
     res.json({
       success: true,

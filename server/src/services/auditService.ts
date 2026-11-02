@@ -17,12 +17,14 @@ export const inMemoryAuditLogs: any[] = [];
 
 export async function logAuditEvent(params: AuditParams): Promise<void> {
   try {
+    const logId = 'audit_' + Date.now() + Math.random().toString(36).substring(2, 6);
     const entry = {
+      _id: logId,
       ...params,
       createdAt: new Date()
     };
 
-    inMemoryAuditLogs.unshift({ ...entry, _id: 'audit_' + Date.now() + Math.random().toString(36).substring(2, 6) });
+    inMemoryAuditLogs.unshift(entry);
     if (inMemoryAuditLogs.length > 500) {
       inMemoryAuditLogs.pop();
     }

@@ -70,7 +70,7 @@ export async function createMemberByModerator(req: AuthRequest, res: Response): 
   }
 
   // Check duplicate phone
-  const existingUser = dataStore.findUserByPhone(phone);
+  const existingUser = await dataStore.findUserByPhone(phone);
   if (existingUser) {
     res.status(409).json({
       success: false,
@@ -145,7 +145,7 @@ export async function updateMyProfile(req: AuthRequest, res: Response): Promise<
   if (data.upazila !== undefined) userUpdates.upazila = data.upazila;
 
   if (Object.keys(userUpdates).length > 0) {
-    dataStore.updateUser(req.user.userId, userUpdates);
+    await dataStore.updateUser(req.user.userId, userUpdates);
   }
 
   // Update DonorProfile fields
@@ -160,7 +160,7 @@ export async function updateMyProfile(req: AuthRequest, res: Response): Promise<
   if (data.consentToShareContact !== undefined) donorUpdates.consentToShareContact = data.consentToShareContact;
   if (data.preferredContactMethod) donorUpdates.preferredContactMethod = data.preferredContactMethod;
 
-  const updatedProfile = dataStore.updateDonorProfile(req.user.userId, donorUpdates);
+  const updatedProfile = await dataStore.updateDonorProfile(req.user.userId, donorUpdates);
 
   res.json({
     success: true,

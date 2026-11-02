@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { dataStore } from '../services/dataStore.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { logAuditEvent } from '../services/auditService.js';
+import { isDatabaseConnected } from '../config/db.js';
+import { BloodRequestModel } from '../models/BloodRequest.js';
 
 const BD_PHONE_REGEX = /^(\+?88)?01[3-9]\d{8}$/;
 
@@ -37,7 +39,7 @@ export const UpdateRequestStatusSchema = z.object({
 export async function searchRequests(req: Request, res: Response): Promise<void> {
   const { bloodGroup, division, district, upazila, status, urgencyLevel, page, limit } = req.query;
 
-  const result = dataStore.searchBloodRequests({
+  const result = await dataStore.searchBloodRequests({
     bloodGroup: bloodGroup as string,
     division: division as string,
     district: district as string,
@@ -68,7 +70,7 @@ export async function searchRequests(req: Request, res: Response): Promise<void>
 
 export async function getRequestById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const request = dataStore.findBloodRequestById(id);
+  const request = await dataStore.findBloodRequestById(id);
 
   if (!request) {
     res.status(404).json({
@@ -83,8 +85,8 @@ export async function getRequestById(req: Request, res: Response): Promise<void>
     request.status = 'expired';
   }
 
-  const requester = dataStore.findUserById(request.requesterId);
-  const institution = request.institutionId ? dataStore.findInstitutionById(request.institutionId) : undefined;
+  const requester = await dataStore.findUserById(request.requesterId);
+  const institution = request.institutionId ? await dataStore.findInstitutionById(request.institutionId) : undefined;
 
   const unitsRemaining = Math.max(0, request.unitsRequired - (request.unitsFulfilled || 0));
   const publicId = request.publicId || request._id;
@@ -154,7 +156,7 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
   const timePart = Date.now().toString(36).toUpperCase().slice(-4);
   const publicId = `BR-${timePart}-${randPart}`;
 
-  const newRequest = dataStore.createBloodRequest({
+  const newRequest = await dataStore.createBloodRequest({
     publicId,
     requesterId: req.user.userId,
     patientName: data.patientName.trim(),
@@ -217,7 +219,7 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
   const { id } = req.params;
   const { status, unitsFulfilled, moderationNotes, notes } = req.body;
 
-  const request = dataStore.findBloodRequestById(id);
+  const request = await dataStore.findBloodRequestById(id);
   if (!request) {
     res.status(404).json({ success: false, message: 'রক্তের অনুরোধ পাওয়া যায়নি।' });
     return;
@@ -275,7 +277,7 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
   const currentHistory = request.statusHistory || [];
   updatePayload.statusHistory = [...currentHistory, historyEntry];
 
-  const updated = dataStore.updateBloodRequest(request._id, updatePayload);
+  const updated = await dataStore.updateBloodRequest(request._id, updatePayload);
 
   await logAuditEvent({
     actorId: req.user.userId,

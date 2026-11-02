@@ -25,7 +25,7 @@ export async function getInstitutions(req: Request, res: Response): Promise<void
   // By default, public directory only shows approved institutions
   const targetStatus = (status as string) || 'approved';
 
-  const institutions = dataStore.getInstitutions({
+  const institutions = await dataStore.getInstitutions({
     division: division as string,
     search: search as string,
     status: targetStatus
@@ -58,7 +58,7 @@ export async function getInstitutions(req: Request, res: Response): Promise<void
 
 export async function getInstitutionById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const institution = dataStore.findInstitutionById(id);
+  const institution = await dataStore.findInstitutionById(id);
 
   if (!institution) {
     res.status(404).json({ success: false, message: 'প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' });
@@ -85,7 +85,7 @@ export async function createInstitution(req: AuthRequest, res: Response): Promis
   // If created by SUPER_ADMIN, approve immediately, otherwise mark pending
   const initialStatus = req.user?.role === 'SUPER_ADMIN' ? 'approved' : 'pending';
 
-  const newInst = dataStore.createInstitution({
+  const newInst = await dataStore.createInstitution({
     ...data,
     code: data.code.toUpperCase(),
     status: initialStatus
@@ -134,7 +134,7 @@ export async function getModeratorDashboard(req: AuthRequest, res: Response): Pr
     return;
   }
 
-  const institution = dataStore.findInstitutionById(instId);
+  const institution = await dataStore.findInstitutionById(instId);
   if (!institution) {
     res.status(404).json({ success: false, message: 'নির্ধারিত প্রতিষ্ঠান পাওয়া যায়নি।' });
     return;
@@ -175,7 +175,7 @@ export async function getModeratorDashboard(req: AuthRequest, res: Response): Pr
  */
 export async function getInstitutionMembers(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const institution = dataStore.findInstitutionById(id);
+  const institution = await dataStore.findInstitutionById(id);
   if (!institution) {
     res.status(404).json({ success: false, message: 'প্রতিষ্ঠানটি খুঁজে পাওয়া যায়নি।' });
     return;

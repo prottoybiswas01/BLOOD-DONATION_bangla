@@ -23,7 +23,7 @@ export interface AuthRequest extends Request {
  * Require valid JWT authentication token
  * Also strictly enforces accountStatus and first-login password change!
  */
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
@@ -36,7 +36,7 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, ENV.JWT_SECRET) as AuthenticatedUser;
-    const user = dataStore.findUserById(decoded.userId);
+    const user = await dataStore.findUserById(decoded.userId);
     if (!user) {
       res.status(403).json({
         success: false,
@@ -94,7 +94,7 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
 /**
  * Optional authentication: attaches user if token is valid, but allows guest
  */
-export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function optionalAuth(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];

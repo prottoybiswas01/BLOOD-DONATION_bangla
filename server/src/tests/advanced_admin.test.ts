@@ -24,7 +24,7 @@ test('1. Role Hierarchy & Super Admin Safeguards: Cannot demote or block the las
   assert.strictEqual(canDemote, false, 'Demoting the last active super admin is prohibited');
 });
 
-test('2. Platform Admin Permissions: Admin can approve or reject institutional registration requests while unauthorized roles cannot', () => {
+test('2. Platform Admin Permissions: Admin can approve or reject institutional registration requests while unauthorized roles cannot', async () => {
   // Create an institution request
   const request = dataStore.createInstitutionRequest({
     name: 'Test College Blood Club',
@@ -44,7 +44,7 @@ test('2. Platform Admin Permissions: Admin can approve or reject institutional r
   assert.strictEqual(request.status, 'pending_review');
 
   // Verify unauthorized role (MEMBER) cannot review/approve
-  const memberActor = dataStore.findUserByPhone('01711111111');
+  const memberActor = await dataStore.findUserByPhone('01711111111');
   assert.ok(memberActor, 'Member user must exist');
   const unauthorizedReview = dataStore.reviewInstitutionRequest({
     requestId: request._id,
@@ -57,7 +57,7 @@ test('2. Platform Admin Permissions: Admin can approve or reject institutional r
   assert.strictEqual(unauthorizedReview.success, false, 'Member cannot review or approve institution requests');
 
   // Verify Admin role is permitted to review/approve institution requests
-  const adminActor = dataStore.findUserByPhone('01700000007'); // Admin seed
+  const adminActor = await dataStore.findUserByPhone('01700000007'); // Admin seed
   assert.ok(adminActor, 'Admin user must exist');
   assert.strictEqual(adminActor.role, 'ADMIN');
 
@@ -134,7 +134,7 @@ test('3. Division Coordinator Scoping: Can only review requests and manage withi
   assert.strictEqual(dhakaRequest.decisionReason, 'Dhaka coordinator verified and approved');
 });
 
-test('4. Institution Moderator: Manual member creation generates temporary password & enforces first-login change', () => {
+test('4. Institution Moderator: Manual member creation generates temporary password & enforces first-login change', async () => {
   const moderator = dataStore.users.find(u => u.role === 'INSTITUTION_MODERATOR');
   assert.ok(moderator, 'Institution moderator must exist');
   assert.ok(moderator.assignedInstitution, 'Moderator must have assigned institution');
@@ -168,14 +168,14 @@ test('4. Institution Moderator: Manual member creation generates temporary passw
   // Test first-login password change
   const changeSuccess = dataStore.changeFirstLoginPassword(creationResult.user._id, 'SecurePassword123#');
   assert.strictEqual(changeSuccess, true, 'Password change must succeed');
-  const refreshedUser = dataStore.findUserById(creationResult.user._id);
+  const refreshedUser = await dataStore.findUserById(creationResult.user._id);
   assert.strictEqual(refreshedUser?.requirePasswordChangeAtFirstLogin, false, 'Flag must be cleared after change');
 });
 
-test('5. Female Donor Privacy & Safety Notice Defaults', () => {
+test('5. Female Donor Privacy & Safety Notice Defaults', async () => {
   // If donor is female, default consent to share contact should be false if not explicitly opted in
   const femalePhone = '01712345999';
-  const femaleUser = dataStore.createUser({
+  const femaleUser = await dataStore.createUser({
     phone: femalePhone,
     name: 'Nusrat Jahan',
     role: 'MEMBER',
@@ -184,7 +184,7 @@ test('5. Female Donor Privacy & Safety Notice Defaults', () => {
     femalePublicPhoneConsent: false
   });
 
-  const femaleDonor = dataStore.createDonorProfile({
+  const femaleDonor = await dataStore.createDonorProfile({
     userId: femaleUser._id,
     displayName: 'নুসরাত জাহান',
     bloodGroup: 'O+',
@@ -198,8 +198,8 @@ test('5. Female Donor Privacy & Safety Notice Defaults', () => {
   assert.strictEqual(femaleUser.gender, 'female');
 });
 
-test('6. Centralized Account Blocking & Unblocking with mandatory reason', () => {
-  const memberToBlock = dataStore.createUser({
+test('6. Centralized Account Blocking & Unblocking with mandatory reason', async () => {
+  const memberToBlock = await dataStore.createUser({
     phone: '01718887766',
     name: 'Spam User',
     role: 'MEMBER'
@@ -277,13 +277,13 @@ test('7. Institutional Contact Request Flow', () => {
   assert.ok(updatedReq.handledAt);
 });
 
-test('8. Phone Number Change Approval Flow by Admin/Moderator', () => {
+test('8. Phone Number Change Approval Flow by Admin/Moderator', async () => {
   // Test approving existing pending request pcr_1
   const existingReq = dataStore.phoneChangeRequests.find(r => r._id === 'pcr_1');
   assert.ok(existingReq, 'Existing pending request pcr_1 should exist');
   assert.strictEqual(existingReq.status, 'pending');
 
-  const admin = dataStore.findUserByPhone('01700000007');
+  const admin = await dataStore.findUserByPhone('01700000007');
   assert.ok(admin);
 
   const reviewRes = dataStore.updatePhoneChangeRequest(
@@ -297,11 +297,11 @@ test('8. Phone Number Change Approval Flow by Admin/Moderator', () => {
   assert.strictEqual(reviewRes.request?.status, 'approved');
 
   // Verify user's phone is actually updated
-  const updatedUser = dataStore.findUserById(existingReq.userId);
+  const updatedUser = await dataStore.findUserById(existingReq.userId);
   assert.strictEqual(updatedUser?.phone, existingReq.newPhone, 'User phone number must be updated');
 });
 
-test('9. Institution Change Request Approval by Admin', () => {
+test('9. Institution Change Request Approval by Admin', async () => {
   const user = dataStore.users.find(u => u.phone === '01722222222');
   assert.ok(user);
 
@@ -316,7 +316,7 @@ test('9. Institution Change Request Approval by Admin', () => {
   assert.ok(changeRes.success);
   assert.ok(changeRes.request?._id);
 
-  const admin = dataStore.findUserByPhone('01700000007');
+  const admin = await dataStore.findUserByPhone('01700000007');
   assert.ok(admin);
 
   const reviewRes = dataStore.reviewInstitutionChangeRequest(
@@ -327,6 +327,6 @@ test('9. Institution Change Request Approval by Admin', () => {
   );
 
   assert.ok(reviewRes.success);
-  const updatedUser = dataStore.findUserById(user._id);
+  const updatedUser = await dataStore.findUserById(user._id);
   assert.strictEqual(updatedUser?.assignedInstitution, 'inst_buet', 'Assigned institution must be updated to target');
 });

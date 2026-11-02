@@ -27,7 +27,7 @@ export interface IReport extends Document {
 
 const ReportSchema = new Schema<IReport>(
   {
-    _id: { type: String },
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     reportedBy: { 
       type: Schema.Types.Mixed, 
       required: true,

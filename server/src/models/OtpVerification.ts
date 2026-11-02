@@ -14,7 +14,7 @@ const OtpVerificationSchema = new Schema<IOtpVerification>(
   {
     phone: { type: String, required: true, index: true },
     otpHash: { type: String, required: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     attempts: { type: Number, default: 0 },
     isUsed: { type: Boolean, default: false },
     purpose: { 

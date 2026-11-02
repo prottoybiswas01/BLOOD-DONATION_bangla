@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { MobileApi, TokenStorage } from '../api/client';
+import { MobileApi, TokenStorage, clearApiCache } from '../api/client';
 
 export type UserRole = 
   | 'SUPER_ADMIN' 
@@ -121,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (phone: string, pass: string) => {
+    clearApiCache();
     try {
       const res = await MobileApi.login(phone, pass);
       if (res.success && res.token && res.user) {
@@ -138,6 +139,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (data: any) => {
+    clearApiCache();
     try {
       const res = await MobileApi.register(data);
       if (res.success && res.token && res.user) {
@@ -155,6 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    clearApiCache();
     await TokenStorage.clearAll();
     setToken(null);
     setUser(null);
@@ -175,8 +178,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateAvailability = async (status: 'available' | 'recently_donated' | 'temporarily_unavailable') => {
     try {
       const res = await MobileApi.updateDonorProfile({ availabilityStatus: status });
-      if (res.success && res.donorProfile) {
-        setDonorProfile(res.donorProfile);
+      if (res.success && (res.donorProfile || res.profile)) {
+        setDonorProfile(res.donorProfile || res.profile);
       }
     } catch (e) {
       throw e;

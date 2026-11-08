@@ -1107,13 +1107,49 @@ class DataStore {
       } else {
         console.log('[Database] Loading existing data from MongoDB Atlas...');
         const dbUsers = await UserModel.find().lean();
-        if (dbUsers.length > 0) this.users = dbUsers as any;
+        if (dbUsers.length > 0) {
+          const dbUserIds = new Set(dbUsers.map((u: any) => String(u._id)));
+          for (const u of this.users) {
+            if (!dbUserIds.has(String(u._id))) {
+              dbUsers.push(u as any);
+              UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true }).catch(() => {});
+            }
+          }
+          this.users = dbUsers as any;
+        }
         const dbDonors = await DonorProfileModel.find().lean();
-        if (dbDonors.length > 0) this.donorProfiles = dbDonors as any;
+        if (dbDonors.length > 0) {
+          const dbDonorIds = new Set(dbDonors.map((d: any) => String(d._id)));
+          for (const d of this.donorProfiles) {
+            if (!dbDonorIds.has(String(d._id))) {
+              dbDonors.push(d as any);
+              DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true }).catch(() => {});
+            }
+          }
+          this.donorProfiles = dbDonors as any;
+        }
         const dbInsts = await InstitutionModel.find().lean();
-        if (dbInsts.length > 0) this.institutions = dbInsts as any;
+        if (dbInsts.length > 0) {
+          const dbInstIds = new Set(dbInsts.map((i: any) => String(i._id)));
+          for (const i of this.institutions) {
+            if (!dbInstIds.has(String(i._id))) {
+              dbInsts.push(i as any);
+              InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true }).catch(() => {});
+            }
+          }
+          this.institutions = dbInsts as any;
+        }
         const dbRequests = await BloodRequestModel.find().lean();
-        if (dbRequests.length > 0) this.bloodRequests = dbRequests as any;
+        if (dbRequests.length > 0) {
+          const dbReqIds = new Set(dbRequests.map((r: any) => String(r._id)));
+          for (const r of this.bloodRequests) {
+            if (!dbReqIds.has(String(r._id))) {
+              dbRequests.push(r as any);
+              BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true }).catch(() => {});
+            }
+          }
+          this.bloodRequests = dbRequests as any;
+        }
         const dbInstReqs = await InstitutionRequestModel.find().lean();
         if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs as any;
         const dbContactReqs = await ContactRequestModel.find().lean();

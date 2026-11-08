@@ -161,16 +161,16 @@ const manifestPath = path.join(appDir, 'src', 'main', 'AndroidManifest.xml');
 if (fs.existsSync(manifestPath)) {
   let manifest = fs.readFileSync(manifestPath, 'utf8');
 
-  // Ensure updates are enabled
+  // Ensure silent background updates are disabled
   if (manifest.includes('expo.modules.updates.ENABLED')) {
     manifest = manifest.replace(
       /<meta-data android:name="expo.modules.updates.ENABLED" android:value=".*?"\/>/,
-      '<meta-data android:name="expo.modules.updates.ENABLED" android:value="true"/>'
+      '<meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>'
     );
   } else {
     manifest = manifest.replace(
       '</application>',
-      '  <meta-data android:name="expo.modules.updates.ENABLED" android:value="true"/>\n  </application>'
+      '  <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>\n  </application>'
     );
   }
 

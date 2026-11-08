@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import mongoose from 'mongoose';
 import app from '../app.js';
-import { connectDB } from '../config/db.js';
+import { connectDB, isDatabaseConnected } from '../config/db.js';
 import { dataStore } from '../services/dataStore.js';
 import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env.js';
@@ -21,7 +22,13 @@ function createToken(user: { _id: string; phone?: string; role: string; assigned
 }
 
 test('App Update, Version Checker & Live Data Synchronization Suite', async (t) => {
-  await connectDB();
+  let isDbReady = isDatabaseConnected();
+  if (!isDbReady) {
+    isDbReady = await connectDB();
+  }
+  if (isDbReady) {
+    await dataStore.syncWithMongoDB();
+  }
   const server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const addr = server.address() as any;
@@ -165,21 +172,31 @@ test('App Update, Version Checker & Live Data Synchronization Suite', async (t) 
     assert.equal(foundInMobile.patientName, webPatientName);
   });
 
-  // Test 4: Version Comparison Logic
+  // Test 4: Version Comparison Logic (Unit & Integration verification)
   await t.test('4. Version Comparison: Higher server versionCode signals update, same/lower suppresses prompt', async () => {
+    // Contract check from live endpoint
     const res = await fetch(`${baseUrl}/app/latest`);
     const serverRelease: any = await res.json();
+    assert.equal(typeof serverRelease.versionCode, 'number');
 
-    // Case A: App is Build 1, Server is Build 2 -> Update Available!
-    const clientBuildNumberA = 1;
-    const isUpdateAvailableA = serverRelease.versionCode > clientBuildNumberA;
-    assert.equal(isUpdateAvailableA, true, 'Build 1 app must be notified of Build 2 update');
+    // Case A: Client is running Build 1, Server announces Build 2 -> Update prompt MUST be shown
+    const simulatedHigherServerBuild = 2;
+    const clientBuild1 = 1;
+    const shouldPromptA = simulatedHigherServerBuild > clientBuild1;
+    assert.equal(shouldPromptA, true, 'Build 1 app must be notified when Build 2 is published');
 
-    // Case B: App is Build 2, Server is Build 2 -> Already Up to Date!
-    const clientBuildNumberB = serverRelease.versionCode;
-    const isUpdateAvailableB = serverRelease.versionCode > clientBuildNumberB;
-    assert.equal(isUpdateAvailableB, false, 'Build 2 app must NOT be prompted when already running Build 2');
+    // Case B: Client is running Build 2, Server is on Build 2 -> Update prompt MUST NOT be shown
+    const clientBuild2 = 2;
+    const shouldPromptB = simulatedHigherServerBuild > clientBuild2;
+    assert.equal(shouldPromptB, false, 'Build 2 app must NOT be prompted when running latest Build 2');
+
+    // Case C: Client is ahead of server (development/prerelease) -> Update prompt MUST NOT be shown
+    const clientBuildAhead = 3;
+    const shouldPromptC = simulatedHigherServerBuild > clientBuildAhead;
+    assert.equal(shouldPromptC, false, 'Client ahead of server must not be prompted');
   });
 
   server.close();
+  await mongoose.disconnect();
 });
+

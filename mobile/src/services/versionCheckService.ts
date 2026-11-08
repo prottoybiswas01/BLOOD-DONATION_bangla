@@ -136,3 +136,4 @@ class VersionCheckManager {
 }
 
 export const versionCheckManager = new VersionCheckManager();
+

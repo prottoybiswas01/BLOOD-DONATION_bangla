@@ -97574,7 +97574,7 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 var isConnected = false;
-async function connectDB() {
+async function connectDB(retries = 2) {
   if (import_mongoose16.default.connection && import_mongoose16.default.connection.readyState === 1) {
     isConnected = true;
     cached.conn = import_mongoose16.default;
@@ -97590,33 +97590,38 @@ async function connectDB() {
     isConnected = false;
     return false;
   }
-  if (!cached.promise || import_mongoose16.default.connection && import_mongoose16.default.connection.readyState === 0) {
-    const opts = {
-      bufferCommands: false,
-      // Disables Mongoose buffering so requests never hang
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 1e4,
-      // Adequate window for serverless cold-starts
-      connectTimeoutMS: 1e4
-    };
-    console.log(`[Database] Attempting connection to MongoDB at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
-    cached.promise = import_mongoose16.default.connect(uri, opts).then((m) => {
-      console.log("[Database] Successfully connected to MongoDB Atlas database.");
-      isConnected = true;
-      return m;
-    });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    if (!cached.promise || import_mongoose16.default.connection && import_mongoose16.default.connection.readyState === 0) {
+      const opts = {
+        bufferCommands: false,
+        // Disables Mongoose buffering so requests never hang
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 1e4,
+        // Adequate window for serverless cold-starts & cloud DNS
+        connectTimeoutMS: 1e4
+      };
+      console.log(`[Database] Attempting connection to MongoDB (attempt ${attempt}/${retries}) at: ${uri.replace(/\/\/.*@/, "//<credentials>@")}`);
+      cached.promise = import_mongoose16.default.connect(uri, opts).then((m) => {
+        console.log("[Database] Successfully connected to MongoDB Atlas database.");
+        isConnected = true;
+        return m;
+      });
+    }
+    try {
+      cached.conn = await cached.promise;
+      isConnected = import_mongoose16.default.connection.readyState === 1;
+      if (isConnected) return true;
+    } catch (error) {
+      cached.promise = null;
+      cached.conn = null;
+      isConnected = false;
+      console.warn(`[Database Warning] Could not connect to MongoDB (attempt ${attempt}/${retries}): ${error.message}`);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1e3));
+      }
+    }
   }
-  try {
-    cached.conn = await cached.promise;
-    isConnected = import_mongoose16.default.connection.readyState === 1;
-    return isConnected;
-  } catch (error) {
-    cached.promise = null;
-    cached.conn = null;
-    isConnected = false;
-    console.warn(`[Database Warning] Could not connect to MongoDB (${error.message}).`);
-    return false;
-  }
+  return isConnected;
 }
 function isDatabaseConnected() {
   return Boolean(import_mongoose16.default.connection && import_mongoose16.default.connection.readyState === 1);
@@ -98353,13 +98358,53 @@ var DataStore = class {
       } else {
         console.log("[Database] Loading existing data from MongoDB Atlas...");
         const dbUsers = await UserModel.find().lean();
-        if (dbUsers.length > 0) this.users = dbUsers;
+        if (dbUsers.length > 0) {
+          const dbUserIds = new Set(dbUsers.map((u) => String(u._id)));
+          for (const u of this.users) {
+            if (!dbUserIds.has(String(u._id))) {
+              dbUsers.push(u);
+              UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true }).catch(() => {
+              });
+            }
+          }
+          this.users = dbUsers;
+        }
         const dbDonors = await DonorProfileModel.find().lean();
-        if (dbDonors.length > 0) this.donorProfiles = dbDonors;
+        if (dbDonors.length > 0) {
+          const dbDonorIds = new Set(dbDonors.map((d) => String(d._id)));
+          for (const d of this.donorProfiles) {
+            if (!dbDonorIds.has(String(d._id))) {
+              dbDonors.push(d);
+              DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true }).catch(() => {
+              });
+            }
+          }
+          this.donorProfiles = dbDonors;
+        }
         const dbInsts = await InstitutionModel.find().lean();
-        if (dbInsts.length > 0) this.institutions = dbInsts;
+        if (dbInsts.length > 0) {
+          const dbInstIds = new Set(dbInsts.map((i) => String(i._id)));
+          for (const i of this.institutions) {
+            if (!dbInstIds.has(String(i._id))) {
+              dbInsts.push(i);
+              InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true }).catch(() => {
+              });
+            }
+          }
+          this.institutions = dbInsts;
+        }
         const dbRequests = await BloodRequestModel.find().lean();
-        if (dbRequests.length > 0) this.bloodRequests = dbRequests;
+        if (dbRequests.length > 0) {
+          const dbReqIds = new Set(dbRequests.map((r) => String(r._id)));
+          for (const r of this.bloodRequests) {
+            if (!dbReqIds.has(String(r._id))) {
+              dbRequests.push(r);
+              BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true }).catch(() => {
+              });
+            }
+          }
+          this.bloodRequests = dbRequests;
+        }
         const dbInstReqs = await InstitutionRequestModel.find().lean();
         if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs;
         const dbContactReqs = await ContactRequestModel.find().lean();
@@ -108242,15 +108287,15 @@ router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
 var currentAppRelease = {
   platform: "android",
   packageName: "org.bloodbd.app",
-  latestVersion: process.env.LATEST_APP_VERSION || "1.0.1",
-  versionCode: parseInt(process.env.LATEST_APP_VERSION_CODE || "2", 10),
+  latestVersion: process.env.LATEST_APP_VERSION || "1.0.0",
+  versionCode: parseInt(process.env.LATEST_APP_VERSION_CODE || "1", 10),
   minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || "1.0.0",
   forceUpdate: process.env.APP_FORCE_UPDATE === "true",
-  fileSizeMb: 60.5,
-  releaseDate: "2026-11-08",
-  downloadUrl: process.env.APP_DOWNLOAD_URL || "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.1/blood-donation-bangla.apk",
+  fileSizeMb: 60,
+  releaseDate: "2026-11-02",
+  downloadUrl: process.env.APP_DOWNLOAD_URL || "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk",
   directDownloadPath: "/downloads/blood-donation-bangla.apk",
-  releaseNotes: process.env.APP_RELEASE_NOTES || "\u09B8\u0982\u09B8\u09CD\u0995\u09B0\u09A3 \u09E7.\u09E6.\u09E7 (Build 2): \u0987\u09A8-\u0985\u09CD\u09AF\u09BE\u09AA \u09B8\u09CD\u09AE\u09BE\u09B0\u09CD\u099F \u0986\u09AA\u09A1\u09C7\u099F \u0985\u09CD\u09AF\u09BE\u09B2\u09BE\u09B0\u09CD\u099F, \u09AC\u09CD\u09AF\u09BE\u0995\u0997\u09CD\u09B0\u09BE\u0989\u09A8\u09CD\u09A1 \u09A1\u09BE\u099F\u09BE \u0985\u099F\u09CB-\u09B8\u09BF\u0999\u09CD\u0995 \u0993 \u09AA\u09BE\u09B0\u09AB\u09B0\u09AE\u09CD\u09AF\u09BE\u09A8\u09CD\u09B8 \u0985\u09AA\u09CD\u099F\u09BF\u09AE\u09BE\u0987\u099C\u09C7\u09B6\u09A8\u0964"
+  releaseNotes: process.env.APP_RELEASE_NOTES || "\u0985\u09AB\u09BF\u09B8\u09BF\u09DF\u09BE\u09B2 \u09B8\u09CD\u099F\u09CD\u09AF\u09BE\u09A8\u09CD\u09A1\u0985\u09CD\u09AF\u09BE\u09B2\u09CB\u09A8 \u09B0\u09BF\u09B2\u09BF\u099C \u09E7.\u09E6.\u09E6 (Build 1): \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u0985\u09AB\u09B2\u09BE\u0987\u09A8 \u0993 \u09AA\u09CD\u09B0\u09CB\u09A1\u09BE\u0995\u09B6\u09A8 \u09B0\u09C7\u09A1\u09BF\u0964"
 };
 router16.get(["/app/version", "/app/latest"], (req, res) => {
   res.json({

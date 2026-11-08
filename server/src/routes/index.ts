@@ -104,19 +104,19 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
   }
 });
 
-// Dynamic App Release state
+// Dynamic App Release state - Defaults to verified published release (Build 1)
 export const currentAppRelease = {
   platform: 'android',
   packageName: 'org.bloodbd.app',
-  latestVersion: process.env.LATEST_APP_VERSION || '1.0.1',
-  versionCode: parseInt(process.env.LATEST_APP_VERSION_CODE || '2', 10),
+  latestVersion: process.env.LATEST_APP_VERSION || '1.0.0',
+  versionCode: parseInt(process.env.LATEST_APP_VERSION_CODE || '1', 10),
   minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || '1.0.0',
   forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
-  fileSizeMb: 60.5,
-  releaseDate: '2026-11-08',
-  downloadUrl: process.env.APP_DOWNLOAD_URL || 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.1/blood-donation-bangla.apk',
+  fileSizeMb: 60.0,
+  releaseDate: '2026-11-02',
+  downloadUrl: process.env.APP_DOWNLOAD_URL || 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk',
   directDownloadPath: '/downloads/blood-donation-bangla.apk',
-  releaseNotes: process.env.APP_RELEASE_NOTES || 'সংস্করণ ১.০.১ (Build 2): ইন-অ্যাপ স্মার্ট আপডেট অ্যালার্ট, ব্যাকগ্রাউন্ড ডাটা অটো-সিঙ্ক ও পারফরম্যান্স অপ্টিমাইজেশন।'
+  releaseNotes: process.env.APP_RELEASE_NOTES || 'অফিসিয়াল স্ট্যান্ডঅ্যালোন রিলিজ ১.০.০ (Build 1): সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি।'
 };
 
 // Native Android App update & distribution info

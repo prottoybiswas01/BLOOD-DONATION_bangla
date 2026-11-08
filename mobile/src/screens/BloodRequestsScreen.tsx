@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -34,7 +34,13 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({
   const [filterUrgency, setFilterUrgency] = useState<string>('all');
   const [selectedRequest, setSelectedRequest] = useState<BloodRequestItem | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const loadRequests = async (skipCache: boolean = false) => {
+    // Prevent concurrent stacked fetches
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     // Only show full-screen loader if there is no data at all
     if (requests.length === 0) setLoading(true);
     setRequestError(null);
@@ -51,32 +57,53 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isFetchingRef.current = false;
     }
   };
 
+  // Controlled polling & lifecycle controller:
+  // - ONLY runs when BOTH isActive === true AND AppState === 'active'
+  // - Instantly stops interval when user leaves screen or minimizes app
+  // - No duplicate timers, listeners, or stacked network calls
   useEffect(() => {
-    loadRequests(false);
-  }, []);
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-  // When tab becomes active or user navigates to it, refresh immediately and start gentle 30s polling
-  useEffect(() => {
-    if (isActive) {
+    const startPolling = () => {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        if (AppState.currentState === 'active' && isActive) {
+          loadRequests(true);
+        }
+      }, 35000);
+    };
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    if (isActive && AppState.currentState === 'active') {
       loadRequests(true);
-      const pollTimer = setInterval(() => {
-        loadRequests(true);
-      }, 30000);
-      return () => clearInterval(pollTimer);
+      startPolling();
+    } else {
+      stopPolling();
     }
-  }, [isActive]);
 
-  // When app returns from background while on Requests tab
-  useEffect(() => {
     const appStateSub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && isActive) {
         loadRequests(true);
+        startPolling();
+      } else {
+        stopPolling(); // Immediately halt polling when app leaves foreground
       }
     });
-    return () => appStateSub.remove();
+
+    return () => {
+      stopPolling();
+      appStateSub.remove();
+    };
   }, [isActive]);
 
   const onRefresh = () => {

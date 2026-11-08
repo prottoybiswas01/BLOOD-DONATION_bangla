@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -44,7 +44,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [requestError, setRequestError] = useState<string | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const loadHomeData = async (skipCache: boolean = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       setRequestError(null);
       const [reqRes, statsRes] = await Promise.allSettled([
@@ -77,32 +81,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isFetchingRef.current = false;
     }
   };
 
+  // Safe polling and lifecycle controller
   useEffect(() => {
-    loadHomeData(false);
-  }, []);
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-  // When Home tab is active, refresh immediately and lightly poll every 45s
-  useEffect(() => {
-    if (isActive) {
-      loadHomeData(true);
-      const pollTimer = setInterval(() => {
-        loadHomeData(true);
+    const startPolling = () => {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        if (AppState.currentState === 'active' && isActive) {
+          loadHomeData(true);
+        }
       }, 45000);
-      return () => clearInterval(pollTimer);
-    }
-  }, [isActive]);
+    };
 
-  // When app returns from background while on Home
-  useEffect(() => {
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    if (isActive && AppState.currentState === 'active') {
+      loadHomeData(true);
+      startPolling();
+    } else {
+      stopPolling();
+    }
+
     const appStateSub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && isActive) {
         loadHomeData(true);
+        startPolling();
+      } else {
+        stopPolling(); // Immediately stop polling when in background
       }
     });
-    return () => appStateSub.remove();
+
+    return () => {
+      stopPolling();
+      appStateSub.remove();
+    };
   }, [isActive]);
 
   const onRefresh = () => {

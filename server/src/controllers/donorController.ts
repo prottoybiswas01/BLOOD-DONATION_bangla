@@ -134,7 +134,7 @@ export async function revealDonorContact(req: AuthRequest, res: Response): Promi
   }
 
   // Check daily limit for viewer
-  const accessCountToday = dataStore.getViewerDailyContactAccessCount(req.user.userId);
+  const accessCountToday = await dataStore.getViewerDailyContactAccessCount(req.user.userId);
   if (accessCountToday >= ENV.DAILY_CONTACT_LIMIT) {
     res.status(429).json({
       success: false,
@@ -144,7 +144,7 @@ export async function revealDonorContact(req: AuthRequest, res: Response): Promi
   }
 
   // Record in ContactAccessLog
-  const accessLog = dataStore.recordContactAccess({
+  const accessLog = await dataStore.recordContactAccess({
     viewerId: req.user.userId,
     donorUserId: donorUser._id,
     donorProfileId: profile._id,

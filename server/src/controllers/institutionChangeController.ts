@@ -54,7 +54,7 @@ export async function getInstitutionChangeRequests(req: AuthRequest, res: Respon
     return;
   }
 
-  const user = dataStore.findUserById(req.user.userId);
+  const user = await dataStore.findUserById(req.user.userId);
   if (!user) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;
@@ -81,7 +81,7 @@ export async function reviewInstitutionChangeRequest(req: AuthRequest, res: Resp
     return;
   }
 
-  const reviewer = dataStore.findUserById(req.user.userId);
+  const reviewer = await dataStore.findUserById(req.user.userId);
   if (!reviewer) {
     res.status(401).json({ success: false, message: 'ব্যবহারকারী অ্যাকাউন্ট পাওয়া যায়নি।' });
     return;

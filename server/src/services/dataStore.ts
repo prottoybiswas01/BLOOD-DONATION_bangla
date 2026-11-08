@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { BANGLADESH_DIVISIONS, BloodGroup } from '../data/bangladeshLocations.js';
 import { UserModel, UserRole, AccountStatus, GenderType } from '../models/User.js';
@@ -17,6 +18,14 @@ import { InstitutionChangeRequestModel } from '../models/InstitutionChangeReques
 import { OtpVerificationModel } from '../models/OtpVerification.js';
 import { isDatabaseConnected } from '../config/db.js';
 import { ENV } from '../config/env.js';
+
+/**
+ * Sanitizes input string to prevent ReDoS (Regular Expression Denial of Service)
+ * and unintended regex pattern injection.
+ */
+export function escapeRegex(text: string): string {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
 
 export interface StoredUser {
   _id: string;
@@ -1353,7 +1362,7 @@ class DataStore {
     dateOfBirth?: Date;
   }): { user: StoredUser; donorProfile: StoredDonorProfile; temporaryPassword: string } {
     // Generate secure temporary password
-    const temporaryPassword = 'Temp#' + Math.floor(100000 + Math.random() * 900000);
+    const temporaryPassword = 'Temp#' + crypto.randomInt(100000, 1000000);
     const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
 
     const newUser = this.createUserSync({
@@ -1686,9 +1695,9 @@ class DataStore {
         };
 
         if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
-        if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
-        if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
-        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+        if (filters.division) query.division = new RegExp(`^${escapeRegex(filters.division)}$`, 'i');
+        if (filters.district) query.district = new RegExp(`^${escapeRegex(filters.district)}$`, 'i');
+        if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, 'i');
         if (filters.institutionId) query.institutionId = filters.institutionId;
         if (filters.availabilityStatus) query.availabilityStatus = filters.availabilityStatus;
 
@@ -1964,9 +1973,9 @@ class DataStore {
           query.status = { $in: ['open', 'partially_fulfilled'] };
         }
         if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
-        if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
-        if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
-        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+        if (filters.division) query.division = new RegExp(`^${escapeRegex(filters.division)}$`, 'i');
+        if (filters.district) query.district = new RegExp(`^${escapeRegex(filters.district)}$`, 'i');
+        if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, 'i');
         if (filters.urgencyLevel) query.urgencyLevel = filters.urgencyLevel;
         if (filters.institutionId) query.institutionId = filters.institutionId;
 
@@ -2093,7 +2102,7 @@ class DataStore {
       try {
         const query: any = {};
         if (filters.division) {
-          query.division = new RegExp(`^${filters.division}$`, 'i');
+          query.division = new RegExp(`^${escapeRegex(filters.division)}$`, 'i');
         }
         if (filters.status) {
           query.status = filters.status;
@@ -2101,7 +2110,7 @@ class DataStore {
           query.status = 'approved';
         }
         if (filters.search) {
-          const s = filters.search.trim();
+          const s = escapeRegex(filters.search.trim());
           query.$or = [
             { name: new RegExp(s, 'i') },
             { nameBn: new RegExp(s, 'i') },
@@ -2440,14 +2449,28 @@ class DataStore {
   }
 
   // --- Contact Access & Privacy Flow ---
-  getViewerDailyContactAccessCount(viewerId: string): number {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  async getViewerDailyContactAccessCount(viewerId: string): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (isDatabaseConnected()) {
+      try {
+        const count = await ContactAccessLogModel.countDocuments({
+          viewerId,
+          createdAt: { $gte: today }
+        });
+        return count;
+      } catch (e: any) {
+        console.warn('[DataStore] getViewerDailyContactAccessCount DB error:', e?.message);
+      }
+    }
+
     return this.contactAccessLogs.filter(
-      log => log.viewerId === viewerId && log.createdAt >= twentyFourHoursAgo
+      log => log.viewerId === viewerId && new Date(log.createdAt) >= today
     ).length;
   }
 
-  recordContactAccess(logData: {
+  async recordContactAccess(logData: {
     viewerId: string;
     donorUserId: string;
     donorProfileId: string;
@@ -2455,7 +2478,8 @@ class DataStore {
     relatedBloodRequestId?: string;
     ipAddress?: string;
     userAgent?: string;
-  }): StoredContactAccessLog {
+  }): Promise<StoredContactAccessLog> {
+    this.assertWritable();
     const newLog: StoredContactAccessLog = {
       _id: 'cal_' + Date.now() + Math.random().toString(36).substring(2, 7),
       viewerId: logData.viewerId,
@@ -2468,6 +2492,7 @@ class DataStore {
       createdAt: new Date()
     };
     this.contactAccessLogs.push(newLog);
+    await this.persistContactAccessLog(newLog);
 
     const viewer = this.findUserByIdSync(logData.viewerId);
     this.createNotification({
@@ -2849,7 +2874,7 @@ class DataStore {
     }
 
     // Create new moderator user with temporary password
-    const temporaryPassword = 'Mod@' + Math.floor(100000 + Math.random() * 900000);
+    const temporaryPassword = 'Mod@' + crypto.randomInt(100000, 1000000);
     const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
 
     const newMod = this.createUser({
@@ -3127,7 +3152,7 @@ class DataStore {
     }
 
     // Cryptographically secure temporary password (e.g. BD739281)
-    const tempPass = 'BD' + Math.floor(100000 + Math.random() * 900000);
+    const tempPass = 'BD' + crypto.randomInt(100000, 1000000);
     const hash = bcrypt.hashSync(tempPass, 10);
     const now = new Date();
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1000); // 24 hours expiry

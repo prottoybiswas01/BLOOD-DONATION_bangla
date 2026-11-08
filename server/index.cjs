@@ -18991,14 +18991,14 @@ var require_etag = __commonJS({
   "node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -21907,11 +21907,11 @@ var require_request = __commonJS({
 // node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/cookie-signature/index.js"(exports2) {
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" !== typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto2.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(val, secret) {
       if ("string" !== typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -21920,7 +21920,7 @@ var require_cookie_signature = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto2.createHash("sha1").update(str).digest("hex");
+      return crypto4.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -23453,10 +23453,10 @@ var require_bson = __commonJS({
       return webByteUtils.fromNumberArray(Array.from({ length: byteLength }, () => Math.floor(Math.random() * 256)));
     }
     var webRandomBytes = (() => {
-      const { crypto: crypto2 } = globalThis;
-      if (crypto2 != null && typeof crypto2.getRandomValues === "function") {
+      const { crypto: crypto4 } = globalThis;
+      if (crypto4 != null && typeof crypto4.getRandomValues === "function") {
         return (byteLength) => {
-          return crypto2.getRandomValues(webByteUtils.allocate(byteLength));
+          return crypto4.getRandomValues(webByteUtils.allocate(byteLength));
         };
       } else {
         if (isReactNative()) {
@@ -29152,7 +29152,7 @@ var require_utils3 = __commonJS({
     exports2.decorateDecryptionResult = decorateDecryptionResult;
     exports2.addAbortListener = addAbortListener;
     exports2.abortable = abortable;
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     var fs_1 = require("fs");
     var http = require("http");
     var timers_1 = require("timers");
@@ -29308,7 +29308,7 @@ var require_utils3 = __commonJS({
       }
     }
     function uuidV4() {
-      const result = crypto2.randomBytes(16);
+      const result = crypto4.randomBytes(16);
       result[6] = result[6] & 15 | 64;
       result[8] = result[8] & 63 | 128;
       return result;
@@ -29892,7 +29892,7 @@ var require_utils3 = __commonJS({
     function squashError(_error) {
       return;
     }
-    exports2.randomBytes = (0, util_1.promisify)(crypto2.randomBytes);
+    exports2.randomBytes = (0, util_1.promisify)(crypto4.randomBytes);
     async function once(ee, name, options) {
       options?.signal?.throwIfAborted();
       const { promise, resolve, reject } = promiseWithResolvers();
@@ -39322,12 +39322,12 @@ var require_crypto_callbacks = __commonJS({
     exports2.sha256Hook = sha256Hook;
     exports2.makeHmacHook = makeHmacHook;
     exports2.signRsaSha256Hook = signRsaSha256Hook;
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     function makeAES256Hook(method, mode) {
       return function(key, iv, input, output) {
         let result;
         try {
-          const cipher = crypto2[method](mode, key, iv);
+          const cipher = crypto4[method](mode, key, iv);
           cipher.setAutoPadding(false);
           result = cipher.update(input);
           const final = cipher.final();
@@ -39343,7 +39343,7 @@ var require_crypto_callbacks = __commonJS({
     }
     function randomHook(buffer, count) {
       try {
-        crypto2.randomFillSync(buffer, 0, count);
+        crypto4.randomFillSync(buffer, 0, count);
       } catch (e) {
         return e;
       }
@@ -39352,7 +39352,7 @@ var require_crypto_callbacks = __commonJS({
     function sha256Hook(input, output) {
       let result;
       try {
-        result = crypto2.createHash("sha256").update(input).digest();
+        result = crypto4.createHash("sha256").update(input).digest();
       } catch (e) {
         return e;
       }
@@ -39363,7 +39363,7 @@ var require_crypto_callbacks = __commonJS({
       return (key, input, output) => {
         let result;
         try {
-          result = crypto2.createHmac(algorithm, key).update(input).digest();
+          result = crypto4.createHmac(algorithm, key).update(input).digest();
         } catch (e) {
           return e;
         }
@@ -39374,7 +39374,7 @@ var require_crypto_callbacks = __commonJS({
     function signRsaSha256Hook(key, input, output) {
       let result;
       try {
-        const signer = crypto2.createSign("sha256WithRSAEncryption");
+        const signer = crypto4.createSign("sha256WithRSAEncryption");
         const privateKey = Buffer.from(`-----BEGIN PRIVATE KEY-----
 ${key.toString("base64")}
 -----END PRIVATE KEY-----
@@ -48583,7 +48583,7 @@ var require_scram = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ScramSHA256 = exports2.ScramSHA1 = void 0;
     var saslprep_1 = require_node2();
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     var bson_1 = require_bson2();
     var error_1 = require_error();
     var utils_1 = require_utils3();
@@ -48736,9 +48736,9 @@ var require_scram = __commonJS({
       }
       let md5;
       try {
-        md5 = crypto2.createHash("md5");
+        md5 = crypto4.createHash("md5");
       } catch (err) {
-        if (crypto2.getFips()) {
+        if (crypto4.getFips()) {
           throw new Error("Auth mechanism SCRAM-SHA-1 is not supported in FIPS mode");
         }
         throw err;
@@ -48761,10 +48761,10 @@ var require_scram = __commonJS({
       return Buffer.from(res).toString("base64");
     }
     function H(method, text) {
-      return crypto2.createHash(method).update(text).digest();
+      return crypto4.createHash(method).update(text).digest();
     }
     function HMAC(method, key, text) {
-      return crypto2.createHmac(method, key).update(text).digest();
+      return crypto4.createHmac(method, key).update(text).digest();
     }
     var _hiCache = {};
     var _hiCacheCount = 0;
@@ -48781,7 +48781,7 @@ var require_scram = __commonJS({
       if (_hiCache[key] != null) {
         return _hiCache[key];
       }
-      const saltedData = crypto2.pbkdf2Sync(data, salt, iterations, hiLengthMap[cryptoMethod], cryptoMethod);
+      const saltedData = crypto4.pbkdf2Sync(data, salt, iterations, hiLengthMap[cryptoMethod], cryptoMethod);
       if (_hiCacheCount >= 200) {
         _hiCachePurge();
       }
@@ -48793,8 +48793,8 @@ var require_scram = __commonJS({
       if (lhs.length !== rhs.length) {
         return false;
       }
-      if (typeof crypto2.timingSafeEqual === "function") {
-        return crypto2.timingSafeEqual(lhs, rhs);
+      if (typeof crypto4.timingSafeEqual === "function") {
+        return crypto4.timingSafeEqual(lhs, rhs);
       }
       let result = 0;
       for (let i = 0; i < lhs.length; i++) {
@@ -89370,7 +89370,7 @@ var require_main = __commonJS({
     var fs = require("fs");
     var path = require("path");
     var os2 = require("os");
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     var TIPS = [
       "\u25C8 encrypted .env [www.dotenvx.com]",
       "\u25C8 secrets for agents [www.dotenvx.com]",
@@ -89614,7 +89614,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto2.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto4.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error) {
@@ -89933,14 +89933,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer3 = require_safe_buffer().Buffer;
-    var crypto2 = require("crypto");
+    var crypto4 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util2 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto4.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -90030,17 +90030,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto2.createHmac("sha" + bits, secret);
+        var hmac = crypto4.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto4 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto2.timingSafeEqual(a, b);
+      return crypto4.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -90057,7 +90057,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto4.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -90067,7 +90067,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto4.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -90076,11 +90076,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto4.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -90090,12 +90090,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto4.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -94135,6 +94135,9 @@ var helmet = Object.assign(
 // src/routes/index.ts
 var import_express16 = __toESM(require_express2());
 
+// src/services/dataStore.ts
+var import_node_crypto = __toESM(require("node:crypto"));
+
 // node_modules/bcryptjs/index.js
 var import_crypto = __toESM(require("crypto"), 1);
 var randomFallback = null;
@@ -97620,6 +97623,9 @@ function isDatabaseConnected() {
 }
 
 // src/services/dataStore.ts
+function escapeRegex(text) {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
 var DataStore = class {
   users = [];
   donorProfiles = [];
@@ -98565,7 +98571,7 @@ var DataStore = class {
   }
   // --- Manual Member Creation with Temporary Password ---
   createMemberWithTemporaryPassword(params) {
-    const temporaryPassword = "Temp#" + Math.floor(1e5 + Math.random() * 9e5);
+    const temporaryPassword = "Temp#" + import_node_crypto.default.randomInt(1e5, 1e6);
     const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
     const newUser = this.createUserSync({
       name: params.name,
@@ -98838,9 +98844,9 @@ var DataStore = class {
           isPubliclyListed: { $ne: false }
         };
         if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
-        if (filters.division) query.division = new RegExp(`^${filters.division}$`, "i");
-        if (filters.district) query.district = new RegExp(`^${filters.district}$`, "i");
-        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, "i");
+        if (filters.division) query.division = new RegExp(`^${escapeRegex(filters.division)}$`, "i");
+        if (filters.district) query.district = new RegExp(`^${escapeRegex(filters.district)}$`, "i");
+        if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, "i");
         if (filters.institutionId) query.institutionId = filters.institutionId;
         if (filters.availabilityStatus) query.availabilityStatus = filters.availabilityStatus;
         const total = await DonorProfileModel.countDocuments(query);
@@ -99071,9 +99077,9 @@ var DataStore = class {
           query.status = { $in: ["open", "partially_fulfilled"] };
         }
         if (filters.bloodGroup) query.bloodGroup = filters.bloodGroup;
-        if (filters.division) query.division = new RegExp(`^${filters.division}$`, "i");
-        if (filters.district) query.district = new RegExp(`^${filters.district}$`, "i");
-        if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, "i");
+        if (filters.division) query.division = new RegExp(`^${escapeRegex(filters.division)}$`, "i");
+        if (filters.district) query.district = new RegExp(`^${escapeRegex(filters.district)}$`, "i");
+        if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, "i");
         if (filters.urgencyLevel) query.urgencyLevel = filters.urgencyLevel;
         if (filters.institutionId) query.institutionId = filters.institutionId;
         const total = await BloodRequestModel.countDocuments(query);
@@ -99172,7 +99178,7 @@ var DataStore = class {
       try {
         const query = {};
         if (filters.division) {
-          query.division = new RegExp(`^${filters.division}$`, "i");
+          query.division = new RegExp(`^${escapeRegex(filters.division)}$`, "i");
         }
         if (filters.status) {
           query.status = filters.status;
@@ -99180,7 +99186,7 @@ var DataStore = class {
           query.status = "approved";
         }
         if (filters.search) {
-          const s = filters.search.trim();
+          const s = escapeRegex(filters.search.trim());
           query.$or = [
             { name: new RegExp(s, "i") },
             { nameBn: new RegExp(s, "i") },
@@ -99449,13 +99455,26 @@ var DataStore = class {
     return req;
   }
   // --- Contact Access & Privacy Flow ---
-  getViewerDailyContactAccessCount(viewerId) {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1e3);
+  async getViewerDailyContactAccessCount(viewerId) {
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    if (isDatabaseConnected()) {
+      try {
+        const count = await ContactAccessLogModel.countDocuments({
+          viewerId,
+          createdAt: { $gte: today }
+        });
+        return count;
+      } catch (e) {
+        console.warn("[DataStore] getViewerDailyContactAccessCount DB error:", e?.message);
+      }
+    }
     return this.contactAccessLogs.filter(
-      (log) => log.viewerId === viewerId && log.createdAt >= twentyFourHoursAgo
+      (log) => log.viewerId === viewerId && new Date(log.createdAt) >= today
     ).length;
   }
-  recordContactAccess(logData) {
+  async recordContactAccess(logData) {
+    this.assertWritable();
     const newLog = {
       _id: "cal_" + Date.now() + Math.random().toString(36).substring(2, 7),
       viewerId: logData.viewerId,
@@ -99468,6 +99487,7 @@ var DataStore = class {
       createdAt: /* @__PURE__ */ new Date()
     };
     this.contactAccessLogs.push(newLog);
+    await this.persistContactAccessLog(newLog);
     const viewer = this.findUserByIdSync(logData.viewerId);
     this.createNotification({
       userId: logData.donorUserId,
@@ -99782,7 +99802,7 @@ var DataStore = class {
         moderator: existingUser
       };
     }
-    const temporaryPassword = "Mod@" + Math.floor(1e5 + Math.random() * 9e5);
+    const temporaryPassword = "Mod@" + import_node_crypto.default.randomInt(1e5, 1e6);
     const passwordHash = bcryptjs_default.hashSync(temporaryPassword, 10);
     const newMod = this.createUser({
       name: params.name,
@@ -100014,7 +100034,7 @@ var DataStore = class {
     if (!targetUser) {
       return { success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0\u09B0 \u09AE\u09C2\u09B2 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" };
     }
-    const tempPass = "BD" + Math.floor(1e5 + Math.random() * 9e5);
+    const tempPass = "BD" + import_node_crypto.default.randomInt(1e5, 1e6);
     const hash2 = bcryptjs_default.hashSync(tempPass, 10);
     const now = /* @__PURE__ */ new Date();
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1e3);
@@ -100330,6 +100350,7 @@ var dataStore = new DataStore();
 var import_express = __toESM(require_express2());
 
 // src/controllers/authController.ts
+var import_node_crypto2 = __toESM(require("node:crypto"));
 var import_jsonwebtoken = __toESM(require_jsonwebtoken());
 
 // node_modules/zod/v3/external.js
@@ -104534,13 +104555,13 @@ function normalizePhone(raw) {
 async function requestOtp(req, res) {
   const { phone: rawPhone, purpose } = req.body;
   const phone = normalizePhone(rawPhone);
-  const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
+  const otpCode = import_node_crypto2.default.randomInt(1e5, 1e6).toString();
   await dataStore.saveOtp(phone, otpCode, purpose);
   const smsResult = await SmsService.sendOtp(phone, otpCode, purpose);
   res.json({
     success: true,
     message: smsResult.message,
-    devOtp: smsResult.devOtp,
+    devOtp: ENV.NODE_ENV !== "production" ? smsResult.devOtp : void 0,
     isMock: ENV.NODE_ENV !== "production" && ENV.SMS_PROVIDER === "mock"
   });
 }
@@ -104961,7 +104982,7 @@ async function requireAuth(req, res, next) {
   }
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = import_jsonwebtoken2.default.verify(token, ENV.JWT_SECRET);
+    const decoded = import_jsonwebtoken2.default.verify(token, ENV.JWT_SECRET, { algorithms: ["HS256"] });
     const user = await dataStore.findUserById(decoded.userId);
     if (!user) {
       res.status(403).json({
@@ -105011,8 +105032,8 @@ async function optionalAuth(req, res, next) {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
-      const decoded = import_jsonwebtoken2.default.verify(token, ENV.JWT_SECRET);
-      const user = dataStore.findUserById(decoded.userId);
+      const decoded = import_jsonwebtoken2.default.verify(token, ENV.JWT_SECRET, { algorithms: ["HS256"] });
+      const user = await dataStore.findUserById(decoded.userId);
       if (user && user.isActive && user.accountStatus === "active") {
         req.user = {
           userId: user._id,
@@ -105057,7 +105078,7 @@ function requireRoles(...roles) {
 
 // node_modules/express-rate-limit/dist/index.mjs
 var import_node_buffer = require("node:buffer");
-var import_node_crypto = require("node:crypto");
+var import_node_crypto3 = require("node:crypto");
 var import_node_net = require("node:net");
 var SUPPORTED_DRAFT_VERSIONS = [
   "draft-6",
@@ -105075,7 +105096,7 @@ var getResetSeconds = (resetTime, windowMs) => {
   return resetSeconds;
 };
 var getPartitionKey = (key) => {
-  const hash2 = (0, import_node_crypto.createHash)("sha256");
+  const hash2 = (0, import_node_crypto3.createHash)("sha256");
   hash2.update(key);
   const partitionKey = hash2.digest("hex").slice(0, 12);
   return import_node_buffer.Buffer.from(partitionKey).toString("base64");
@@ -105987,7 +106008,7 @@ async function revealDonorContact(req, res) {
     });
     return;
   }
-  const accessCountToday = dataStore.getViewerDailyContactAccessCount(req.user.userId);
+  const accessCountToday = await dataStore.getViewerDailyContactAccessCount(req.user.userId);
   if (accessCountToday >= ENV.DAILY_CONTACT_LIMIT) {
     res.status(429).json({
       success: false,
@@ -105995,7 +106016,7 @@ async function revealDonorContact(req, res) {
     });
     return;
   }
-  const accessLog = dataStore.recordContactAccess({
+  const accessLog = await dataStore.recordContactAccess({
     viewerId: req.user.userId,
     donorUserId: donorUser._id,
     donorProfileId: profile._id,
@@ -106084,12 +106105,12 @@ async function recordDonation(req, res) {
 
 // src/routes/donorRoutes.ts
 var router2 = (0, import_express2.Router)();
-router2.get(["/", "/search"], searchDonors);
-router2.get(["/profile/:id", "/:id"], getDonorById);
-router2.get(["/me", "/profile", "/dashboard"], requireAuth, getMyDonorProfile);
+router2.get(["/me", "/dashboard"], requireAuth, getMyDonorProfile);
 router2.patch(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.put(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.post("/record-donation", requireAuth, recordDonation);
+router2.get(["/", "/search"], searchDonors);
+router2.get(["/profile/:id", "/:id"], getDonorById);
 router2.post(
   ["/reveal-contact/:id", "/:id/reveal-contact"],
   requireAuth,
@@ -106316,7 +106337,7 @@ async function updateRequestStatus(req, res) {
       updatePayload.unitsFulfilled = request.unitsRequired;
     }
   }
-  if (moderationNotes) {
+  if (moderationNotes && (isSuperAdmin || isDivisionCoordinator)) {
     updatePayload.moderationNotes = moderationNotes;
   }
   const historyEntry = {
@@ -107289,7 +107310,7 @@ async function getReports(req, res) {
     institutionId: scopedInstitutionId
   });
   const enriched = reports.map((r) => {
-    const reporter = dataStore.findUserById(r.reportedBy);
+    const reporter = dataStore.findUserByIdSync(r.reportedBy);
     return {
       ...r,
       reporterName: reporter?.name || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0"
@@ -107316,6 +107337,7 @@ async function resolveReport(req, res) {
   report.reviewedBy = req.user.userId;
   report.resolutionNotes = resolutionNotes;
   report.updatedAt = /* @__PURE__ */ new Date();
+  await dataStore.persistReport(report);
   await logAuditEvent({
     actorId: req.user.userId,
     actorRole: req.user.role,
@@ -107892,7 +107914,7 @@ async function getPhoneChangeRequests(req, res) {
   const { status, division, institutionId } = req.query;
   let scopedDivision = division;
   let scopedInstitutionId = institutionId;
-  if (req.user.role === "INSTITUTION_MODERATOR") {
+  if (req.user.role === "INSTITUTION_MODERATOR" || req.user.role === "INSTITUTION_HEAD") {
     scopedInstitutionId = req.user.assignedInstitution;
   } else if (req.user.role === "DIVISION_COORDINATOR") {
     scopedDivision = req.user.assignedDivision;
@@ -107914,13 +107936,21 @@ async function reviewPhoneChangeRequest(req, res) {
   }
   const { id } = req.params;
   const { status, reviewNotes } = req.body;
-  const targetReq = dataStore.phoneChangeRequests.find((r) => String(r._id) === String(id));
+  let targetReq = dataStore.phoneChangeRequests.find((r) => String(r._id) === String(id));
+  if (!targetReq && isDatabaseConnected()) {
+    try {
+      const doc = await PhoneChangeRequestModel.findById(id).lean();
+      if (doc) targetReq = doc;
+    } catch {
+    }
+  }
   if (!targetReq) {
     res.status(404).json({ success: false, message: "\u0986\u09AC\u09C7\u09A6\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }
-  if (req.user.role === "INSTITUTION_MODERATOR") {
-    if (targetReq.institutionId !== req.user.assignedInstitution) {
+  if (req.user.role === "INSTITUTION_MODERATOR" || req.user.role === "INSTITUTION_HEAD") {
+    const isAssigned = targetReq.institutionId === req.user.assignedInstitution || Boolean(req.user.assignedInstitutions && req.user.assignedInstitutions.includes(targetReq.institutionId));
+    if (!isAssigned) {
       res.status(403).json({
         success: false,
         message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0986\u09AA\u09A8\u09BF \u0995\u09C7\u09AC\u09B2 \u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09BF\u09A4 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09C7\u09B0 \u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u09AA\u09B0\u09CD\u09AF\u09BE\u09B2\u09CB\u099A\u09A8\u09BE \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
@@ -108030,7 +108060,7 @@ async function getInstitutionChangeRequests(req, res) {
     res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
     return;
   }
-  const user = dataStore.findUserById(req.user.userId);
+  const user = await dataStore.findUserById(req.user.userId);
   if (!user) {
     res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
@@ -108053,7 +108083,7 @@ async function reviewInstitutionChangeRequest(req, res) {
     res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
     return;
   }
-  const reviewer = dataStore.findUserById(req.user.userId);
+  const reviewer = await dataStore.findUserById(req.user.userId);
   if (!reviewer) {
     res.status(401).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
@@ -108165,7 +108195,7 @@ router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
       totalInstitutions = await InstitutionModel.countDocuments();
     } else {
       const activeDonors = dataStore.donorProfiles.filter((d) => {
-        const u = dataStore.findUserById(d.userId);
+        const u = dataStore.findUserByIdSync(d.userId);
         return Boolean(d.isPubliclyListed && u && u.accountStatus === "active" && u.isActive !== false);
       });
       totalDonors = activeDonors.length;

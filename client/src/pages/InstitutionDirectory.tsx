@@ -175,8 +175,8 @@ export const InstitutionDirectory: React.FC = () => {
                     <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
                     <span>{inst.address}, {inst.district}</span>
                   </p>
-                  {inst.website && (
-                    <a href={inst.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-700 hover:underline">
+                  {inst.website && /^https?:\/\//i.test(inst.website) && (
+                    <a href={inst.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-teal-700 hover:underline">
                       <Globe className="w-3.5 h-3.5 flex-shrink-0" />
                       <span className="truncate">{inst.website}</span>
                     </a>

@@ -261,7 +261,8 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
     }
   }
 
-  if (moderationNotes) {
+  // Only administrative personnel can set moderation notes
+  if (moderationNotes && (isSuperAdmin || isDivisionCoordinator)) {
     updatePayload.moderationNotes = moderationNotes;
   }
 

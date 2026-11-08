@@ -72,7 +72,7 @@ export async function getReports(req: AuthRequest, res: Response): Promise<void>
   });
 
   const enriched = reports.map(r => {
-    const reporter = dataStore.findUserById(r.reportedBy);
+    const reporter = dataStore.findUserByIdSync(r.reportedBy);
     return {
       ...r,
       reporterName: reporter?.name || 'ব্যবহারকারী'
@@ -104,6 +104,8 @@ export async function resolveReport(req: AuthRequest, res: Response): Promise<vo
   report.reviewedBy = req.user.userId;
   report.resolutionNotes = resolutionNotes;
   report.updatedAt = new Date();
+
+  await dataStore.persistReport(report);
 
   await logAuditEvent({
     actorId: req.user.userId,

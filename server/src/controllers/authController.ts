@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
@@ -68,7 +69,8 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, purpose } = req.body;
   const phone = normalizePhone(rawPhone);
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  // Cryptographically secure 6-digit OTP generation
+  const otpCode = crypto.randomInt(100000, 1000000).toString();
   await dataStore.saveOtp(phone, otpCode, purpose);
 
   const smsResult = await SmsService.sendOtp(phone, otpCode, purpose);
@@ -76,7 +78,7 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
   res.json({
     success: true,
     message: smsResult.message,
-    devOtp: smsResult.devOtp,
+    devOtp: ENV.NODE_ENV !== 'production' ? smsResult.devOtp : undefined,
     isMock: ENV.NODE_ENV !== 'production' && ENV.SMS_PROVIDER === 'mock'
   });
 }

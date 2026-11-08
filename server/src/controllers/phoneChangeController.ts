@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.js';
 import { dataStore } from '../services/dataStore.js';
 import { logAuditEvent } from '../services/auditService.js';
+import { PhoneChangeRequestModel } from '../models/PhoneChangeRequest.js';
+import { isDatabaseConnected } from '../config/db.js';
 
 const BD_PHONE_REGEX = /^(\+?88)?01[3-9]\d{8}$/;
 
@@ -104,7 +106,7 @@ export async function getPhoneChangeRequests(req: AuthRequest, res: Response): P
   let scopedDivision: string | undefined = division as string;
   let scopedInstitutionId: string | undefined = institutionId as string;
 
-  if (req.user.role === 'INSTITUTION_MODERATOR') {
+  if (req.user.role === 'INSTITUTION_MODERATOR' || req.user.role === 'INSTITUTION_HEAD') {
     scopedInstitutionId = req.user.assignedInstitution;
   } else if (req.user.role === 'DIVISION_COORDINATOR') {
     scopedDivision = req.user.assignedDivision;
@@ -134,16 +136,27 @@ export async function reviewPhoneChangeRequest(req: AuthRequest, res: Response):
   const { id } = req.params;
   const { status, reviewNotes } = req.body;
 
-  // Find target request to verify role scope
-  const targetReq = dataStore.phoneChangeRequests.find(r => String(r._id) === String(id));
+  // Find target request from memory or database to verify role scope
+  let targetReq = dataStore.phoneChangeRequests.find(r => String(r._id) === String(id));
+  if (!targetReq && isDatabaseConnected()) {
+    try {
+      const doc = await PhoneChangeRequestModel.findById(id).lean();
+      if (doc) targetReq = doc as any;
+    } catch {
+      // ignore find error
+    }
+  }
+
   if (!targetReq) {
     res.status(404).json({ success: false, message: 'আবেদনটি খুঁজে পাওয়া যায়নি।' });
     return;
   }
 
-  // Scoping check
-  if (req.user.role === 'INSTITUTION_MODERATOR') {
-    if (targetReq.institutionId !== req.user.assignedInstitution) {
+  // Scoping check: Super Admin has nationwide authority
+  if (req.user.role === 'INSTITUTION_MODERATOR' || req.user.role === 'INSTITUTION_HEAD') {
+    const isAssigned = targetReq.institutionId === req.user.assignedInstitution ||
+      Boolean(req.user.assignedInstitutions && req.user.assignedInstitutions.includes(targetReq.institutionId));
+    if (!isAssigned) {
       res.status(403).json({
         success: false,
         message: 'অনধিকার চর্চা: আপনি কেবল আপনার নির্ধারিত প্রতিষ্ঠানের সদস্যের আবেদন পর্যালোচনা করতে পারেন।'

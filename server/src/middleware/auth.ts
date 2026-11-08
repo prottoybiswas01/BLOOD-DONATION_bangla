@@ -35,7 +35,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, ENV.JWT_SECRET) as AuthenticatedUser;
+    const decoded = jwt.verify(token, ENV.JWT_SECRET, { algorithms: ['HS256'] }) as AuthenticatedUser;
     const user = await dataStore.findUserById(decoded.userId);
     if (!user) {
       res.status(403).json({
@@ -99,8 +99,8 @@ export async function optionalAuth(req: AuthRequest, res: Response, next: NextFu
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const decoded = jwt.verify(token, ENV.JWT_SECRET) as AuthenticatedUser;
-      const user = dataStore.findUserById(decoded.userId);
+      const decoded = jwt.verify(token, ENV.JWT_SECRET, { algorithms: ['HS256'] }) as AuthenticatedUser;
+      const user = await dataStore.findUserById(decoded.userId);
       if (user && user.isActive && user.accountStatus === 'active') {
         req.user = {
           userId: user._id,

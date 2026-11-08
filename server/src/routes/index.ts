@@ -73,7 +73,7 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
       totalInstitutions = await InstitutionModel.countDocuments();
     } else {
       const activeDonors = dataStore.donorProfiles.filter(d => {
-        const u = dataStore.findUserById(d.userId);
+        const u = dataStore.findUserByIdSync(d.userId);
         return Boolean(d.isPubliclyListed && u && u.accountStatus === 'active' && u.isActive !== false);
       });
 

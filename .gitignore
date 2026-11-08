@@ -15,6 +15,7 @@ server/dist/
 
 # Android Keystores & Credentials
 *.keystore
+mobile/test-builds/
 *.jks
 credentials.json
 google-services.json

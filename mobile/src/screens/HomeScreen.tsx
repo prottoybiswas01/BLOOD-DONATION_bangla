@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   RefreshControl,
   Linking,
-  ActivityIndicator
+  ActivityIndicator,
+  AppState
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
@@ -19,9 +20,13 @@ import { useAuth } from '../context/AuthContext';
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void;
+  isActive?: boolean;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ 
+  onNavigate, 
+  isActive = false 
+}) => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [recentRequests, setRecentRequests] = useState<BloodRequestItem[]>([]);
@@ -78,6 +83,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   useEffect(() => {
     loadHomeData(false);
   }, []);
+
+  // When Home tab is active, refresh immediately and lightly poll every 45s
+  useEffect(() => {
+    if (isActive) {
+      loadHomeData(true);
+      const pollTimer = setInterval(() => {
+        loadHomeData(true);
+      }, 45000);
+      return () => clearInterval(pollTimer);
+    }
+  }, [isActive]);
+
+  // When app returns from background while on Home
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && isActive) {
+        loadHomeData(true);
+      }
+    });
+    return () => appStateSub.remove();
+  }, [isActive]);
 
   const onRefresh = () => {
     setRefreshing(true);

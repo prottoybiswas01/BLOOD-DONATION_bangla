@@ -104,24 +104,26 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
   }
 });
 
+// Dynamic App Release state
+export const currentAppRelease = {
+  platform: 'android',
+  packageName: 'org.bloodbd.app',
+  latestVersion: process.env.LATEST_APP_VERSION || '1.0.1',
+  versionCode: parseInt(process.env.LATEST_APP_VERSION_CODE || '2', 10),
+  minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || '1.0.0',
+  forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
+  fileSizeMb: 60.5,
+  releaseDate: '2026-11-08',
+  downloadUrl: process.env.APP_DOWNLOAD_URL || 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.1/blood-donation-bangla.apk',
+  directDownloadPath: '/downloads/blood-donation-bangla.apk',
+  releaseNotes: process.env.APP_RELEASE_NOTES || 'সংস্করণ ১.০.১ (Build 2): ইন-অ্যাপ স্মার্ট আপডেট অ্যালার্ট, ব্যাকগ্রাউন্ড ডাটা অটো-সিঙ্ক ও পারফরম্যান্স অপ্টিমাইজেশন।'
+};
+
 // Native Android App update & distribution info
 router.get(['/app/version', '/app/latest'], (req, res) => {
   res.json({
     success: true,
-    platform: 'android',
-    packageName: 'org.bloodbd.app',
-    latestVersion: '1.0.0',
-    versionCode: 1,
-    minSupportedVersion: '1.0.0',
-    forceUpdate: false,
-    fileSizeMb: 60.0,
-    fileSizeBytes: 62911392,
-    releaseDate: '2026-11-02',
-    sha256Checksum: '3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2',
-    certificateSha256: '2A:52:02:9C:E4:F3:11:D2:11:F7:EB:E8:2A:0D:C5:D2:5B:38:CC:B3:EB:7B:B7:01:DD:72:55:74:26:86:99:FA',
-    downloadUrl: 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk',
-    directDownloadPath: '/downloads/blood-donation-bangla.apk',
-    releaseNotes: 'অফিসিয়াল স্ট্যান্ডঅ্যালোন রিলিজ ১.০.০ (Build 1): সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি Hermes বাইটকোড, গুগল ম্যাপ নেভিগেশন ও সরাসরি রক্তদাতা যোগাযোগ।'
+    ...currentAppRelease
   });
 });
 

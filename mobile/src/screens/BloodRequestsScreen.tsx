@@ -8,7 +8,8 @@ import {
   FlatList,
   Platform,
   Modal,
-  ScrollView
+  ScrollView,
+  AppState
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
@@ -19,9 +20,13 @@ import { NativeDigitalCard } from '../components/NativeDigitalCard';
 
 interface BloodRequestsScreenProps {
   onNavigateCreate: () => void;
+  isActive?: boolean;
 }
 
-export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavigateCreate }) => {
+export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ 
+  onNavigateCreate, 
+  isActive = false 
+}) => {
   const [requests, setRequests] = useState<BloodRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +35,8 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
   const [selectedRequest, setSelectedRequest] = useState<BloodRequestItem | null>(null);
 
   const loadRequests = async (skipCache: boolean = false) => {
-    setLoading(true);
+    // Only show full-screen loader if there is no data at all
+    if (requests.length === 0) setLoading(true);
     setRequestError(null);
     try {
       const res = await MobileApi.getBloodRequests({ limit: 25 }, skipCache);
@@ -51,6 +57,27 @@ export const BloodRequestsScreen: React.FC<BloodRequestsScreenProps> = ({ onNavi
   useEffect(() => {
     loadRequests(false);
   }, []);
+
+  // When tab becomes active or user navigates to it, refresh immediately and start gentle 30s polling
+  useEffect(() => {
+    if (isActive) {
+      loadRequests(true);
+      const pollTimer = setInterval(() => {
+        loadRequests(true);
+      }, 30000);
+      return () => clearInterval(pollTimer);
+    }
+  }, [isActive]);
+
+  // When app returns from background while on Requests tab
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && isActive) {
+        loadRequests(true);
+      }
+    });
+    return () => appStateSub.remove();
+  }, [isActive]);
 
   const onRefresh = () => {
     setRefreshing(true);

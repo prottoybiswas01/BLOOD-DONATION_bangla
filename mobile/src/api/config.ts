@@ -5,8 +5,8 @@ export const API_BASE_URL =
   'https://blood-donationbangla.vercel.app/api';
 
 export const APP_CONFIG = {
-  version: '1.0.0',
-  buildNumber: 1,
+  version: '1.0.1',
+  buildNumber: 2,
   appNameBn: 'রক্তদান বাংলাদেশ',
   appNameEn: 'Bangladesh Blood Donation Platform',
   platform: 'android' as const,

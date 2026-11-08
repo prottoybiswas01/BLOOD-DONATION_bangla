@@ -22,7 +22,11 @@ import { useAuth } from '../context/AuthContext';
 
 const BLOOD_GROUPS = ['সকল', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-export const DonorSearchScreen: React.FC = () => {
+interface DonorSearchScreenProps {
+  isActive?: boolean;
+}
+
+export const DonorSearchScreen: React.FC<DonorSearchScreenProps> = ({ isActive = false }) => {
   const { user } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState('সকল');
   const [division, setDivision] = useState('dhaka');

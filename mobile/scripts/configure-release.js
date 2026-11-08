@@ -190,6 +190,19 @@ if (fs.existsSync(manifestPath)) {
     );
   }
 
+  // Ensure silent auto-update on launch is DISABLED so user's choice to "পরে করুন" is strictly respected
+  if (manifest.includes('expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH')) {
+    manifest = manifest.replace(
+      /<meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value=".*?"\/>/,
+      '<meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="NEVER"/>'
+    );
+  } else {
+    manifest = manifest.replace(
+      '</application>',
+      '  <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="NEVER"/>\n  </application>'
+    );
+  }
+
   fs.writeFileSync(manifestPath, manifest, 'utf8');
   console.log('[Release Config] Verified Expo EAS OTA Updates enabled (waitMs=0, channel=production) in AndroidManifest.xml');
 }

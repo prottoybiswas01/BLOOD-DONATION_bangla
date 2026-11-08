@@ -74,15 +74,18 @@ const MainTabNavigator: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* Persistent Tab Views to preserve state, scroll position & cache */}
       <View style={styles.screensArea}>
         <View style={[styles.screenWrapper, currentTab === 'Home' ? styles.visibleScreen : styles.hiddenScreen]}>
-          <HomeScreen onNavigate={handleNavigate} />
+          <HomeScreen onNavigate={handleNavigate} isActive={currentTab === 'Home'} />
         </View>
 
         <View style={[styles.screenWrapper, currentTab === 'Donors' ? styles.visibleScreen : styles.hiddenScreen]}>
-          <DonorSearchScreen />
+          <DonorSearchScreen isActive={currentTab === 'Donors'} />
         </View>
 
         <View style={[styles.screenWrapper, currentTab === 'Requests' ? styles.visibleScreen : styles.hiddenScreen]}>
-          <BloodRequestsScreen onNavigateCreate={() => navigation.navigate(AppRoutes.CREATE_REQUEST)} />
+          <BloodRequestsScreen 
+            onNavigateCreate={() => navigation.navigate(AppRoutes.CREATE_REQUEST)} 
+            isActive={currentTab === 'Requests'}
+          />
         </View>
 
         <View style={[styles.screenWrapper, currentTab === 'Institutions' ? styles.visibleScreen : styles.hiddenScreen]}>

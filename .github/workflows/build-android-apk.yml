@@ -37,6 +37,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Install Mobile Dependencies
         run: |
@@ -47,6 +48,12 @@ jobs:
         run: |
           cd mobile
           npx expo prebuild --platform android --clean
+
+      - name: Setup Gradle Build Cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-cleanup: true
 
       - name: Configure Android Release Signing and Optimization
         run: |
@@ -61,7 +68,7 @@ jobs:
         run: |
           cd mobile/android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --build-cache
 
       - name: Verify Standalone Bundle and Signature Integrity
         run: |
@@ -83,10 +90,19 @@ jobs:
           echo "=== Certificate Fingerprint ==="
           keytool -printcert -jarfile build-output/blood-donation-bangla.apk
 
+      - name: Extract App Version and Build Metadata
+        id: app_meta
+        run: |
+          APP_VER=$(node -p "require('./mobile/app.json').expo.version")
+          APP_CODE=$(node -p "require('./mobile/app.json').expo.android.versionCode")
+          echo "version=${APP_VER}" >> $GITHUB_OUTPUT
+          echo "code=${APP_CODE}" >> $GITHUB_OUTPUT
+          echo "tag=v${APP_VER}" >> $GITHUB_OUTPUT
+
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blood-donation-bangla-apk
+          name: blood-donation-bangla-apk-${{ steps.app_meta.outputs.version }}
           path: build-output/blood-donation-bangla.apk
           if-no-files-found: error
 
@@ -94,16 +110,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/master')
         with:
-          tag_name: v1.0.0
-          name: "রক্তদান বাংলাদেশ Android v1.0.0 Standalone Release"
+          tag_name: ${{ steps.app_meta.outputs.tag }}
+          name: "রক্তদান বাংলাদেশ Android v${{ steps.app_meta.outputs.version }} (Build ${{ steps.app_meta.outputs.code }})"
           body: |
             ## বাংলাদেশ রক্তদান প্ল্যাটফর্ম — অফিসিয়াল নেটিভ অ্যান্ড্রয়েড অ্যাপ
-            - **সংস্করণ**: 1.0.0 (Build 1)
+            - **সংস্করণ**: ${{ steps.app_meta.outputs.version }} (Build ${{ steps.app_meta.outputs.code }})
             - **প্যাকেজ**: org.bloodbd.app
-            - **স্ট্যান্ডঅ্যালোন মোড**: সম্পূর্ণ অফলাইন/প্রোডাকশন রেডি (কোনো Metro/Dev Server বা localhost:8081 প্রয়োজন নেই)
-            - **জাভাস্ক্রিপ্ট ইঞ্জিন**: Hermes AOT Pre-compiled Bytecode (1.68 MB)
+            - **স্ট্যান্ডঅ্যালোন মোড**: সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি (Hermes AOT Pre-compiled Bytecode)
             - **সমর্থিত আর্কিটেকচার**: ARM64-v8a এবং armeabi-v7a (বাংলাদেশের ১০০% অ্যান্ড্রয়েড স্মার্টফোনের উপযোগী)
-            - **সরাসরি ডাউনলোড লিঙ্ক**: [blood-donation-bangla.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.0/blood-donation-bangla.apk)
+            - **সরাসরি ডাউনলোড লিঙ্ক**: [blood-donation-bangla.apk](https://github.com/${{ github.repository }}/releases/download/${{ steps.app_meta.outputs.tag }}/blood-donation-bangla.apk)
           files: build-output/blood-donation-bangla.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

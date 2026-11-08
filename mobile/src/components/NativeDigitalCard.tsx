@@ -42,41 +42,22 @@ interface NativeDigitalCardProps {
 }
 
 export const NativeDigitalCard: React.FC<NativeDigitalCardProps> = ({ request, onClose }) => {
-  const [qrUri, setQrUri] = useState<string | null>(null);
-  const [qrLoading, setQrLoading] = useState(true);
-
   const publicId = request.publicId || request._id || 'BR-EMERGENCY';
   const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
+  const defaultQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(canonicalUrl)}&color=991B1B&bgcolor=FFFFFF`;
+
+  const [qrUri, setQrUri] = useState<string>(defaultQrUrl);
+  const [qrLoading, setQrLoading] = useState(false);
+
   const unitsRequired = request.unitsRequired || 1;
   const unitsFulfilled = request.unitsFulfilled || 0;
   const unitsRemaining = Math.max(0, unitsRequired - unitsFulfilled);
   const isFulfilled = request.status === 'fulfilled' || unitsRemaining === 0;
 
   useEffect(() => {
-    let isMounted = true;
-    QRCode.toDataURL(canonicalUrl, {
-      width: 300,
-      margin: 1,
-      color: {
-        dark: '#991B1B', // Dark red
-        light: '#FFFFFF'
-      },
-      errorCorrectionLevel: 'H'
-    })
-      .then(url => {
-        if (isMounted) {
-          setQrUri(url);
-          setQrLoading(false);
-        }
-      })
-      .catch(err => {
-        console.warn('QR Code generation error:', err);
-        if (isMounted) setQrLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    // Ensure qrUri is always fresh for canonicalUrl
+    const newQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(canonicalUrl)}&color=991B1B&bgcolor=FFFFFF`;
+    setQrUri(newQrUrl);
   }, [canonicalUrl]);
 
   const handleShare = async () => {
@@ -217,12 +198,16 @@ ${canonicalUrl}`;
         {/* QR Code Section */}
         <View style={styles.qrSection}>
           <View style={styles.qrWrapper}>
-            {qrLoading ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : qrUri ? (
-              <Image source={{ uri: qrUri }} style={styles.qrImage} />
-            ) : (
-              <Ionicons name="qr-code" size={60} color={Colors.subText} />
+            <Image 
+              source={{ uri: qrUri }} 
+              style={styles.qrImage}
+              onLoadStart={() => setQrLoading(true)}
+              onLoadEnd={() => setQrLoading(false)}
+            />
+            {qrLoading && (
+              <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }]}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+              </View>
             )}
           </View>
           <View style={styles.qrInfo}>

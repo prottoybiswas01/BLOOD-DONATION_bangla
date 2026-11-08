@@ -98511,7 +98511,7 @@ var DataStore = class {
       name: userData.name || "",
       phone: userData.phone || "",
       email: userData.email,
-      passwordHash: userData.passwordHash || "",
+      passwordHash: userData.passwordHash || "$2a$10$defaultHashPlaceholderNeverValidForLoginWithoutExplicitPassword",
       role: userData.role || "MEMBER",
       accountStatus: userData.accountStatus || "active",
       blockReason: userData.blockReason,
@@ -106128,16 +106128,16 @@ var BD_PHONE_REGEX2 = /^(\+?88)?01[3-9]\d{8}$/;
 var CreateBloodRequestSchema = external_exports.object({
   patientName: external_exports.string().min(2, "\u09B0\u09CB\u0997\u09C0\u09B0 \u09A8\u09BE\u09AE \u0986\u09AC\u09B6\u09CD\u09AF\u0995").max(80),
   bloodGroup: external_exports.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
-  unitsRequired: external_exports.number().int().min(1, "\u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09E7 \u09AC\u09CD\u09AF\u09BE\u0997 \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8").max(20),
-  hospitalName: external_exports.string().min(3, "\u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2\u09C7\u09B0 \u09A8\u09BE\u09AE \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
-  hospitalAddress: external_exports.string().min(5, "\u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2\u09C7\u09B0 \u09B8\u09C1\u09A8\u09BF\u09B0\u09CD\u09A6\u09BF\u09B7\u09CD\u099F \u09A0\u09BF\u0995\u09BE\u09A8\u09BE \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  unitsRequired: external_exports.union([external_exports.number(), external_exports.string()]).transform((v) => typeof v === "string" ? parseInt(v, 10) || 1 : v),
+  hospitalName: external_exports.string().min(2, "\u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2\u09C7\u09B0 \u09A8\u09BE\u09AE \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  hospitalAddress: external_exports.string().optional().or(external_exports.literal("")),
   division: external_exports.string().min(1, "\u09AC\u09BF\u09AD\u09BE\u0997 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
   district: external_exports.string().min(1, "\u099C\u09C7\u09B2\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
-  upazila: external_exports.string().min(1, "\u0989\u09AA\u099C\u09C7\u09B2\u09BE/\u09A5\u09BE\u09A8\u09BE \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8"),
-  requiredDate: external_exports.string().min(1, "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u09A4\u09BE\u09B0\u09BF\u0996 \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  upazila: external_exports.string().optional().or(external_exports.literal("")),
+  requiredDate: external_exports.string().optional().or(external_exports.literal("")),
   requiredWithin: external_exports.string().optional(),
-  urgencyLevel: external_exports.enum(["emergency", "urgent", "standard"]).default("emergency"),
-  reason: external_exports.string().min(5, "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09BE\u09B0\u09A3 \u09B8\u0982\u0995\u09CD\u09B7\u09C7\u09AA\u09C7 \u09B2\u09BF\u0996\u09C1\u09A8"),
+  urgencyLevel: external_exports.enum(["emergency", "critical", "urgent", "standard", "normal"]).default("urgent"),
+  reason: external_exports.string().optional().or(external_exports.literal("")),
   contactPersonName: external_exports.string().optional(),
   contactNumber: external_exports.string().regex(BD_PHONE_REGEX2, "\u09B8\u09A0\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09A6\u09BF\u09A8"),
   alternativeContactNumber: external_exports.string().optional().or(external_exports.literal("")),
@@ -106243,11 +106243,22 @@ async function createRequest(req, res) {
     });
     return;
   }
-  const reqDate = new Date(data.requiredDate);
+  const reqDate = data.requiredDate ? new Date(data.requiredDate) : /* @__PURE__ */ new Date();
   const expiresAt = new Date(reqDate.getTime() + 864e5 * 3);
   const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
   const timePart = Date.now().toString(36).toUpperCase().slice(-4);
   const publicId = `BR-${timePart}-${randPart}`;
+  let urgencyLevel = "urgent";
+  if (data.urgencyLevel === "critical" || data.urgencyLevel === "emergency") {
+    urgencyLevel = "emergency";
+  } else if (data.urgencyLevel === "normal" || data.urgencyLevel === "standard") {
+    urgencyLevel = "standard";
+  } else {
+    urgencyLevel = "urgent";
+  }
+  const hospitalAddress = data.hospitalAddress && data.hospitalAddress.trim().length > 0 ? data.hospitalAddress.trim() : `${data.hospitalName.trim()}, ${data.district}`;
+  const upazila = data.upazila && data.upazila.trim().length > 0 ? data.upazila.trim() : data.district;
+  const reason = data.reason && data.reason.trim().length > 0 ? data.reason.trim() : `${data.patientName.trim()}-\u098F\u09B0 \u099C\u09A8\u09CD\u09AF \u099C\u09B0\u09C1\u09B0\u09BF ${data.bloodGroup} \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964`;
   const newRequest = await dataStore.createBloodRequest({
     publicId,
     requesterId: req.user.userId,
@@ -106256,14 +106267,14 @@ async function createRequest(req, res) {
     unitsRequired: data.unitsRequired,
     unitsFulfilled: 0,
     hospitalName: data.hospitalName.trim(),
-    hospitalAddress: data.hospitalAddress.trim(),
+    hospitalAddress,
     division: data.division,
     district: data.district,
-    upazila: data.upazila,
+    upazila,
     requiredDate: reqDate,
     requiredWithin: data.requiredWithin || void 0,
-    urgencyLevel: data.urgencyLevel,
-    reason: data.reason.trim(),
+    urgencyLevel,
+    reason,
     contactPersonName: data.contactPersonName ? data.contactPersonName.trim() : void 0,
     contactNumber: data.contactNumber.trim(),
     alternativeContactNumber: data.alternativeContactNumber ? data.alternativeContactNumber.trim() : void 0,
@@ -106292,6 +106303,11 @@ async function createRequest(req, res) {
     success: true,
     message: "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u098F\u09AC\u0982 \u09A1\u09BF\u099C\u09BF\u099F\u09BE\u09B2 \u0995\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09C8\u09B0\u09BF \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
     bloodRequest: {
+      ...newRequest,
+      unitsRemaining: newRequest.unitsRequired,
+      canonicalUrl
+    },
+    data: {
       ...newRequest,
       unitsRemaining: newRequest.unitsRequired,
       canonicalUrl

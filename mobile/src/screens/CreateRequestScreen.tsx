@@ -91,18 +91,22 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
         bloodGroup,
         unitsRequired: parseInt(unitsRequired, 10) || 1,
         hospitalName: hospitalName.trim(),
+        hospitalAddress: `${hospitalName.trim()}, ${district}`,
         division,
         district,
+        upazila: district,
+        requiredDate: new Date().toISOString(),
         urgencyLevel,
         contactPersonName: contactPersonName.trim() || user.name,
         contactNumber: cleanPhone,
-        reason: reason.trim() || undefined,
+        reason: reason.trim() || `${patientName.trim()}-এর জন্য জরুরি ${bloodGroup} রক্ত প্রয়োজন।`,
         additionalNotes: additionalNotes.trim() || undefined,
         consentForPublicShare
       });
 
-      if (res.success && res.data) {
-        setCreatedRequest(res.data);
+      const authoritativeRequest = res.bloodRequest || res.data || res.request;
+      if (res.success && authoritativeRequest) {
+        setCreatedRequest(authoritativeRequest);
       } else if (res.success) {
         // Fallback if data is not directly nested
         setCreatedRequest({
@@ -110,11 +114,13 @@ export const CreateRequestScreen: React.FC<CreateRequestScreenProps> = ({
           bloodGroup,
           unitsRequired: parseInt(unitsRequired, 10) || 1,
           hospitalName: hospitalName.trim(),
+          hospitalAddress: `${hospitalName.trim()}, ${district}`,
+          division,
           district,
           contactNumber: cleanPhone,
           contactPersonName: contactPersonName.trim() || user.name,
           urgencyLevel,
-          reason: reason.trim(),
+          reason: reason.trim() || `${patientName.trim()}-এর জন্য জরুরি ${bloodGroup} রক্ত প্রয়োজন।`,
           publicId: res.publicId || 'BR-' + Date.now().toString().slice(-6)
         });
       } else {

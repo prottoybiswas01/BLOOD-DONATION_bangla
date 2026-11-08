@@ -161,41 +161,30 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) =
       </div>
 
       {/* Action Footer */}
-      <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+      <div className="pt-3 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center gap-2">
         <a
           href={`tel:${request.contactNumber}`}
-          className="flex-1 py-2.5 px-4 bg-primary hover:bg-primary-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-soft hover:shadow-md transition-all"
+          className="flex-1 min-w-[130px] py-2.5 px-3 sm:px-4 bg-primary hover:bg-primary-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-soft hover:shadow-md transition-all"
         >
-          <Phone className="w-4 h-4" />
-          <span>কল করুন ({request.contactNumber})</span>
+          <Phone className="w-4 h-4 shrink-0" />
+          <span className="truncate">কল দিন ({request.contactNumber})</span>
         </a>
 
         <Link
           to={`/blood-request/${publicId}`}
           title="ডিজিটাল কার্ড ও কিউআর কোড দেখুন"
           aria-label="ডিজিটাল কার্ড"
-          className="p-2.5 border border-red-200 bg-red-50 text-primary hover:bg-primary hover:text-white rounded-xl active:scale-95 transition-all flex items-center gap-1 text-xs font-semibold"
+          className="py-2.5 px-3 border border-red-200 bg-red-50 text-primary hover:bg-primary hover:text-white rounded-xl active:scale-95 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
         >
-          <QrCode className="w-4 h-4" />
-          <span className="hidden sm:inline">কার্ড ও কিউআর</span>
+          <QrCode className="w-4 h-4 shrink-0" />
+          <span>কার্ড ও কিউআর</span>
         </Link>
-
-        <a
-          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.hospitalName + ', ' + request.district)}`}
-          target="_blank"
-          rel="noreferrer"
-          title="গুগল ম্যাপে হাসপাতালের অবস্থান দেখুন"
-          aria-label="গুগল ম্যাপে দেখুন"
-          className="p-2.5 border border-appBorder rounded-xl text-teal-600 hover:text-white hover:bg-teal-600 hover:border-teal-600 active:scale-95 transition-all flex items-center gap-1.5 text-xs font-semibold"
-        >
-          <MapPin className="w-4 h-4" />
-        </a>
 
         <button
           onClick={handleShare}
           title="শেয়ার করুন"
           aria-label="শেয়ার করুন"
-          className="p-2.5 border border-appBorder rounded-xl text-slate-600 hover:text-primary hover:bg-rose-50 hover:border-rose-200 active:scale-95 transition-all"
+          className="p-2.5 border border-appBorder rounded-xl text-slate-600 hover:text-primary hover:bg-rose-50 hover:border-rose-200 active:scale-95 transition-all shrink-0"
         >
           <Share2 className="w-4 h-4" />
         </button>
@@ -205,7 +194,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onReport }) =
             onClick={() => onReport(request._id)}
             title="ভুয়া অনুরোধ বা অপব্যবহার রিপোর্ট করুন"
             aria-label="রিপোর্ট করুন"
-            className="p-2.5 border border-appBorder rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 active:scale-95 transition-all"
+            className="p-2.5 border border-appBorder rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 active:scale-95 transition-all shrink-0"
           >
             <Flag className="w-4 h-4" />
           </button>

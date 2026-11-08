@@ -44,6 +44,7 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
     _id: syncUserId,
     name: uniqueDonorName,
     phone: syncPhone,
+    passwordHash: '$2a$10$testHashForSyncUserAlwaysValid1234567890',
     role: 'DONOR',
     accountStatus: 'active',
     division: 'dhaka',
@@ -60,6 +61,7 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
     division: 'dhaka',
     district: 'dhaka',
     upazila: 'mirpur',
+    dateOfBirth: new Date('1998-05-15'),
     availabilityStatus: 'available',
     consentToShareContact: true,
     isPubliclyListed: true,
@@ -89,7 +91,7 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
     assert.equal(updateData.profile.displayName, `${uniqueDonorName} (নিয়মিত)`);
 
     // 2. Android queries donor via /donors? (Mobile search convention)
-    const mobileSearchRes = await fetch(`${baseUrl}/donors?bloodGroup=O%2B&district=dhaka`, {
+    const mobileSearchRes = await fetch(`${baseUrl}/donors?bloodGroup=O%2B&district=dhaka&limit=50`, {
       headers: {
         'x-client-platform': 'android'
       }
@@ -144,8 +146,9 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
   // TEST C: Mobile creates blood request -> Website retrieves same request with publicId and live status
   let createdPublicId = '';
   await t.test('Test C: Mobile creates blood request -> Website retrieves same request with publicId and live status', async () => {
+    const testPatientName = `রাবেয়া খাতুন_${Date.now()}`;
     const newRequestPayload = {
-      patientName: 'রাবেয়া খাতুন',
+      patientName: testPatientName,
       bloodGroup: 'AB+',
       unitsRequired: 2,
       hospitalName: 'বঙ্গবন্ধু শেখ মুজিব মেডিকেল বিশ্ববিদ্যালয় (BSMMU)',
@@ -179,7 +182,7 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
     createdPublicId = createData.bloodRequest.publicId;
 
     // 2. Website searches requests via /requests/search (Website convention)
-    const webSearchRes = await fetch(`${baseUrl}/requests/search?bloodGroup=AB%2B&division=dhaka`, {
+    const webSearchRes = await fetch(`${baseUrl}/requests/search?bloodGroup=AB%2B&division=dhaka&limit=50`, {
       headers: {
         'x-client-platform': 'web'
       }
@@ -190,7 +193,7 @@ test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
     assert.equal(webSearchData.success, true);
     const foundInWeb = webSearchData.requests.find((r: any) => r.publicId === createdPublicId);
     assert.ok(foundInWeb, 'Request posted from Mobile must immediately appear on Website search');
-    assert.equal(foundInWeb.patientName, 'রাবেয়া খাতুন');
+    assert.equal(foundInWeb.patientName, testPatientName);
     assert.equal(foundInWeb.unitsRemaining, 2);
 
     // 3. Website opens digital request card by publicId

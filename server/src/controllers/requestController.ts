@@ -11,16 +11,16 @@ const BD_PHONE_REGEX = /^(\+?88)?01[3-9]\d{8}$/;
 export const CreateBloodRequestSchema = z.object({
   patientName: z.string().min(2, 'রোগীর নাম আবশ্যক').max(80),
   bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
-  unitsRequired: z.number().int().min(1, 'কমপক্ষে ১ ব্যাগ রক্ত প্রয়োজন').max(20),
-  hospitalName: z.string().min(3, 'হাসপাতালের নাম আবশ্যক'),
-  hospitalAddress: z.string().min(5, 'হাসপাতালের সুনির্দিষ্ট ঠিকানা আবশ্যক'),
+  unitsRequired: z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseInt(v, 10) || 1 : v),
+  hospitalName: z.string().min(2, 'হাসপাতালের নাম আবশ্যক'),
+  hospitalAddress: z.string().optional().or(z.literal('')),
   division: z.string().min(1, 'বিভাগ নির্বাচন করুন'),
   district: z.string().min(1, 'জেলা নির্বাচন করুন'),
-  upazila: z.string().min(1, 'উপজেলা/থানা নির্বাচন করুন'),
-  requiredDate: z.string().min(1, 'রক্তদানের তারিখ আবশ্যক'),
+  upazila: z.string().optional().or(z.literal('')),
+  requiredDate: z.string().optional().or(z.literal('')),
   requiredWithin: z.string().optional(),
-  urgencyLevel: z.enum(['emergency', 'urgent', 'standard']).default('emergency'),
-  reason: z.string().min(5, 'রক্তের কারণ সংক্ষেপে লিখুন'),
+  urgencyLevel: z.enum(['emergency', 'critical', 'urgent', 'standard', 'normal']).default('urgent'),
+  reason: z.string().optional().or(z.literal('')),
   contactPersonName: z.string().optional(),
   contactNumber: z.string().regex(BD_PHONE_REGEX, 'সঠিক যোগাযোগ নম্বর দিন'),
   alternativeContactNumber: z.string().optional().or(z.literal('')),
@@ -149,12 +149,30 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
     return;
   }
 
-  const reqDate = new Date(data.requiredDate);
+  const reqDate = data.requiredDate ? new Date(data.requiredDate) : new Date();
   const expiresAt = new Date(reqDate.getTime() + 86400000 * 3); // expires 3 days after required date
 
   const randPart = Math.random().toString(36).substring(2, 6).toUpperCase();
   const timePart = Date.now().toString(36).toUpperCase().slice(-4);
   const publicId = `BR-${timePart}-${randPart}`;
+
+  // Normalize urgency level
+  let urgencyLevel: 'emergency' | 'urgent' | 'standard' = 'urgent';
+  if (data.urgencyLevel === 'critical' || data.urgencyLevel === 'emergency') {
+    urgencyLevel = 'emergency';
+  } else if (data.urgencyLevel === 'normal' || data.urgencyLevel === 'standard') {
+    urgencyLevel = 'standard';
+  } else {
+    urgencyLevel = 'urgent';
+  }
+
+  const hospitalAddress = (data.hospitalAddress && data.hospitalAddress.trim().length > 0)
+    ? data.hospitalAddress.trim()
+    : `${data.hospitalName.trim()}, ${data.district}`;
+  const upazila = (data.upazila && data.upazila.trim().length > 0) ? data.upazila.trim() : data.district;
+  const reason = (data.reason && data.reason.trim().length > 0)
+    ? data.reason.trim()
+    : `${data.patientName.trim()}-এর জন্য জরুরি ${data.bloodGroup} রক্তের প্রয়োজন।`;
 
   const newRequest = await dataStore.createBloodRequest({
     publicId,
@@ -164,14 +182,14 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
     unitsRequired: data.unitsRequired,
     unitsFulfilled: 0,
     hospitalName: data.hospitalName.trim(),
-    hospitalAddress: data.hospitalAddress.trim(),
+    hospitalAddress,
     division: data.division,
     district: data.district,
-    upazila: data.upazila,
+    upazila,
     requiredDate: reqDate,
     requiredWithin: data.requiredWithin || undefined,
-    urgencyLevel: data.urgencyLevel,
-    reason: data.reason.trim(),
+    urgencyLevel,
+    reason,
     contactPersonName: data.contactPersonName ? data.contactPersonName.trim() : undefined,
     contactNumber: data.contactNumber.trim(),
     alternativeContactNumber: data.alternativeContactNumber ? data.alternativeContactNumber.trim() : undefined,
@@ -203,6 +221,11 @@ export async function createRequest(req: AuthRequest, res: Response): Promise<vo
     success: true,
     message: 'রক্তের অনুরোধ এবং ডিজিটাল কার্ড সফলভাবে তৈরি হয়েছে।',
     bloodRequest: {
+      ...newRequest,
+      unitsRemaining: newRequest.unitsRequired,
+      canonicalUrl
+    },
+    data: {
       ...newRequest,
       unitsRemaining: newRequest.unitsRequired,
       canonicalUrl

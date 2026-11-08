@@ -1285,7 +1285,7 @@ class DataStore {
       name: userData.name || '',
       phone: userData.phone || '',
       email: userData.email,
-      passwordHash: userData.passwordHash || '',
+      passwordHash: userData.passwordHash || '$2a$10$defaultHashPlaceholderNeverValidForLoginWithoutExplicitPassword',
       role: userData.role || 'MEMBER',
       accountStatus: userData.accountStatus || 'active',
       blockReason: userData.blockReason,

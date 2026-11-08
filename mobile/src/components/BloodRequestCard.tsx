@@ -30,13 +30,6 @@ interface BloodRequestCardProps {
 }
 
 export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request, onPressCard }) => {
-  const handleOpenMap = () => {
-    const query = encodeURIComponent(request.hospitalName + ', ' + request.district);
-    Linking.openURL('https://www.google.com/maps/search/?api=1&query=' + query).catch(() => {
-      Alert.alert('ত্রুটি', 'গুগল ম্যাপ ওপেন করা সম্ভব হয়নি');
-    });
-  };
-
   const handleCall = () => {
     if (request.contactNumber) {
       Linking.openURL(`tel:${request.contactNumber}`).catch(() => {
@@ -103,11 +96,11 @@ export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request, onP
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleCall}
-          style={[styles.callButton, { flex: 1, marginRight: 6 }]}
+          style={[styles.callButton, { flex: 1, marginRight: onPressCard ? 8 : 0 }]}
         >
-          <Ionicons name="call" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+          <Ionicons name="call" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
           <Text style={styles.callButtonText} numberOfLines={1}>
-            কল ({request.contactNumber})
+            কল করুন ({request.contactNumber})
           </Text>
         </TouchableOpacity>
 
@@ -117,18 +110,10 @@ export const BloodRequestCard: React.FC<BloodRequestCardProps> = ({ request, onP
             onPress={() => onPressCard(request)}
             style={styles.qrButton}
           >
-            <Ionicons name="qr-code-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
-            <Text style={styles.qrButtonText}>কার্ড</Text>
+            <Ionicons name="qr-code-outline" size={15} color={Colors.primary} style={{ marginRight: 5 }} />
+            <Text style={styles.qrButtonText}>ডিজিটাল কার্ড</Text>
           </TouchableOpacity>
         )}
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleOpenMap}
-          style={styles.mapButton}
-        >
-          <Ionicons name="map-outline" size={14} color={Colors.tealAccent} />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -220,9 +205,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   footer: {
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   callButton: {
     backgroundColor: Colors.primary,
@@ -231,34 +218,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 40,
     borderRadius: 12,
-  },
-  mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.tealAccent,
-    backgroundColor: Colors.tealLight,
-  },
-  mapButtonText: {
-    color: Colors.tealAccent,
-    fontSize: 12,
-    fontWeight: '700',
   },
   qrButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    height: 40,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
-    marginRight: 6,
   },
   qrButtonText: {
     color: Colors.primary,

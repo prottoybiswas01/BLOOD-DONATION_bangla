@@ -30,13 +30,15 @@ export const DigitalBloodRequestCard: React.FC<DigitalBloodRequestCardProps> = (
   onClose,
   showActions = true
 }) => {
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const publicId = request.publicId || request._id;
+  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
+  const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(canonicalUrl)}&color=991B1B&bgcolor=FFFFFF`;
+
+  const [qrDataUrl, setQrDataUrl] = useState<string>(fallbackQrUrl);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const publicId = request.publicId || request._id;
-  const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
   const unitsRemaining = Math.max(0, request.unitsRequired - (request.unitsFulfilled || 0));
 
   useEffect(() => {
@@ -50,8 +52,11 @@ export const DigitalBloodRequestCard: React.FC<DigitalBloodRequestCardProps> = (
       errorCorrectionLevel: 'H'
     })
       .then(url => setQrDataUrl(url))
-      .catch(err => console.error('QR code generation failed:', err));
-  }, [canonicalUrl]);
+      .catch(err => {
+        console.warn('QR code canvas generation failed, using server fallback:', err);
+        setQrDataUrl(fallbackQrUrl);
+      });
+  }, [canonicalUrl, fallbackQrUrl]);
 
   const handleCopyLink = async () => {
     try {

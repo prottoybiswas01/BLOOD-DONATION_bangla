@@ -11,7 +11,6 @@ import {
   Clock, 
   Share2, 
   Download, 
-  Navigation, 
   PlusCircle, 
   XCircle, 
   ArrowLeft,
@@ -168,8 +167,6 @@ export const BloodRequestLanding: React.FC = () => {
   const isCancelled = request.status === 'cancelled';
   const isExpired = request.status === 'expired';
   const isPartiallyFulfilled = request.status === 'partially_fulfilled' || (request.unitsFulfilled > 0 && !isFulfilled);
-
-  const hospitalMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${request.hospitalName}, ${request.hospitalAddress || ''}, ${request.district}`)}`;
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6">
@@ -380,17 +377,6 @@ export const BloodRequestLanding: React.FC = () => {
                 </span>
               </div>
             </div>
-
-            {/* Google Map Button */}
-            <a 
-              href={hospitalMapUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition-colors"
-            >
-              <Navigation className="w-4 h-4 text-primary" />
-              হাসপাতালের গুগল ম্যাপ লোকেশন
-            </a>
           </div>
 
           {/* Contact Details & Emergency Action */}

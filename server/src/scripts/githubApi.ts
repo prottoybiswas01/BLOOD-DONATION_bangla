@@ -75,3 +75,4 @@ if (process.argv[1] && process.argv[1].endsWith('githubApi.ts')) {
       process.exit(1);
     });
 }
+

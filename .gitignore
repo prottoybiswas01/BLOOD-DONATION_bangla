@@ -40,4 +40,9 @@ Thumbs.db
 .vscode/
 
 
+# Backups & Data Dumps
+backups/
+server/backups/
+*.backup.json
+
 .vercel

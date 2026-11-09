@@ -1,7 +1,73 @@
-import test from 'node:test';
+import test, { before } from 'node:test';
 import assert from 'node:assert';
 import { dataStore } from '../services/dataStore.js';
 import { SmsService } from '../services/smsService.js';
+
+before(async () => {
+  // Test fixtures for auth & privacy testing
+  if (!dataStore.users.some(u => u._id === 'usr_donor_1')) {
+    dataStore.users.push({
+      _id: 'usr_donor_1',
+      name: 'রফিকুল ইসলাম',
+      phone: '01711111111',
+      passwordHash: 'dummy',
+      role: 'MEMBER',
+      accountStatus: 'active',
+      gender: 'male',
+      division: 'dhaka',
+      district: 'dhaka',
+      isActive: true,
+      isPhoneVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  if (!dataStore.donorProfiles.some(d => d._id === 'donor_prof_1')) {
+    dataStore.donorProfiles.push({
+      _id: 'donor_prof_1',
+      userId: 'usr_donor_1',
+      displayName: 'রফিকুল ইসলাম',
+      bloodGroup: 'O+',
+      division: 'dhaka',
+      district: 'dhaka',
+      upazila: 'mirpur',
+      dateOfBirth: new Date('1998-05-14'),
+      gender: 'male',
+      availabilityStatus: 'available',
+      totalDonations: 6,
+      institutionId: 'inst_du',
+      institutionMembershipVerified: true,
+      consentToShareContact: true,
+      preferredContactMethod: 'phone',
+      isPubliclyListed: true,
+      emergencyAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  if (!dataStore.donorProfiles.some(d => d._id === 'donor_prof_private')) {
+    dataStore.donorProfiles.push({
+      _id: 'donor_prof_private',
+      userId: 'usr_donor_private',
+      displayName: 'গোপন রক্তদাতা',
+      bloodGroup: 'A+',
+      division: 'dhaka',
+      district: 'dhaka',
+      upazila: 'dhanmondi',
+      dateOfBirth: new Date('1999-01-01'),
+      gender: 'male',
+      availabilityStatus: 'available',
+      totalDonations: 2,
+      institutionMembershipVerified: false,
+      consentToShareContact: false,
+      preferredContactMethod: 'platform',
+      isPubliclyListed: true,
+      emergencyAvailable: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+});
 
 test('1. Guest donor search strictly omits private phone numbers unless donor explicitly consents', async () => {
   const result = await dataStore.searchDonors({ division: 'dhaka' });

@@ -1,6 +1,57 @@
-import test from 'node:test';
+import test, { before } from 'node:test';
 import assert from 'node:assert';
 import { dataStore } from '../services/dataStore.js';
+
+before(async () => {
+  // Ensure required test fixtures exist for permissions unit testing
+  if (!dataStore.users.some(u => u.phone === '01711111111')) {
+    await dataStore.createUser({
+      phone: '01711111111',
+      name: 'Test Member',
+      role: 'MEMBER'
+    });
+  }
+  if (!dataStore.users.some(u => u.role === 'DIVISION_COORDINATOR' && u.assignedDivision === 'dhaka')) {
+    await dataStore.createUser({
+      phone: '01700000002',
+      name: 'Dhaka Coordinator',
+      role: 'DIVISION_COORDINATOR',
+      assignedDivision: 'dhaka'
+    });
+  }
+  if (!dataStore.users.some(u => u.role === 'INSTITUTION_MODERATOR')) {
+    await dataStore.createUser({
+      phone: '01700000004',
+      name: 'DU Moderator',
+      role: 'INSTITUTION_MODERATOR',
+      assignedInstitution: 'inst_du'
+    });
+  }
+  if (!dataStore.users.some(u => u.phone === '01722222222')) {
+    await dataStore.createUser({
+      phone: '01722222222',
+      name: 'Transfer User',
+      role: 'DONOR'
+    });
+  }
+  const testUser = await dataStore.findUserByPhone('01711111111');
+  if (!dataStore.phoneChangeRequests.some(r => r._id === 'pcr_1')) {
+    dataStore.phoneChangeRequests.push({
+      _id: 'pcr_1',
+      userId: testUser?._id || 'usr_test_donor',
+      userName: 'Test Member',
+      userRole: 'DONOR',
+      currentPhone: '01711111111',
+      newPhone: '01711999888',
+      reason: 'SIM lost',
+      division: 'dhaka',
+      district: 'dhaka',
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+});
 
 test('1. Role Hierarchy & Super Admin Safeguards: Cannot demote or block the last active Super Admin', () => {
   const superAdmin = dataStore.users.find(u => u.role === 'SUPER_ADMIN' && u.accountStatus === 'active');

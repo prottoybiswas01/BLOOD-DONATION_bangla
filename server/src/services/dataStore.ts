@@ -411,181 +411,10 @@ class DataStore {
         isPhoneVerified: true,
         createdAt: now,
         updatedAt: now
-      },
-      {
-        _id: 'usr_coordinator_dhaka',
-        name: 'মো: কামরুল হাসান (ঢাকা সমন্বয়ক)',
-        phone: '01700000002',
-        email: 'dhaka.coordinator@bloodbd.org',
-        passwordHash: defaultPasswordHash,
-        role: 'DIVISION_COORDINATOR',
-        accountStatus: 'active',
-        gender: 'male',
-        assignedDivision: 'dhaka',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_coordinator_ctg',
-        name: 'ফারহানা আহমেদ (চট্টগ্রাম সমন্বয়ক)',
-        phone: '01700000003',
-        email: 'ctg.coordinator@bloodbd.org',
-        passwordHash: defaultPasswordHash,
-        role: 'DIVISION_COORDINATOR',
-        accountStatus: 'active',
-        gender: 'female',
-        assignedDivision: 'chattogram',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_moderator_du',
-        name: 'আব্দুল্লাহ আল মামুন (ঢাবি মডারেটর)',
-        phone: '01700000004',
-        email: 'mamun.du@bloodbd.org',
-        passwordHash: defaultPasswordHash,
-        role: 'INSTITUTION_MODERATOR',
-        accountStatus: 'active',
-        gender: 'male',
-        assignedInstitution: 'inst_du',
-        assignedInstitutions: ['inst_du'],
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_head',
-        name: 'অধ্যাপক ড. ফজলুল হক (ঢাবি প্রতিষ্ঠান প্রধান)',
-        phone: '01700000008',
-        email: 'head@du.ac.bd',
-        passwordHash: defaultPasswordHash,
-        role: 'INSTITUTION_HEAD',
-        accountStatus: 'active',
-        gender: 'male',
-        assignedInstitution: 'inst_du',
-        assignedInstitutions: ['inst_du'],
-        division: 'dhaka',
-        district: 'dhaka',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_donor_1',
-        name: 'রফিকুল ইসলাম',
-        phone: '01711111111',
-        email: 'rafiqul@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'active',
-        gender: 'male',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'mirpur',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_donor_2',
-        name: 'তানভীর আহমেদ',
-        phone: '01722222222',
-        email: 'tanveer@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'active',
-        gender: 'male',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'dhanmondi',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_donor_3',
-        name: 'নুসরাত জাহান',
-        phone: '01733333333',
-        email: 'nusrat@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'active',
-        gender: 'female',
-        femaleSafetyAcknowledged: true,
-        femalePublicPhoneConsent: false,
-        division: 'chattogram',
-        district: 'chattogram',
-        upazila: 'panchlaish',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_donor_4',
-        name: 'সাকিব মাহমুদ',
-        phone: '01744444444',
-        email: 'sakib@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'active',
-        gender: 'male',
-        division: 'rajshahi',
-        district: 'rajshahi',
-        upazila: 'boalia',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_requester_1',
-        name: 'মাহবুব আলম',
-        phone: '01755555555',
-        email: 'mahbub@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'active',
-        gender: 'male',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'shahbagh',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_blocked_demo',
-        name: 'ফারুক হোসেন (স্থগিত সদস্য)',
-        phone: '01799999999',
-        email: 'faruk@example.com',
-        passwordHash: defaultPasswordHash,
-        role: 'MEMBER',
-        accountStatus: 'temporarily_blocked',
-        blockReason: 'ভুয়া রক্তের অনুরোধ পোস্ট এবং বাণিজ্যিক সুবিধার অভিযোগে স্থগিত রাখা হয়েছে।',
-        blockedBy: 'usr_coordinator_dhaka',
-        blockedAt: new Date(Date.now() - 86400000 * 2),
-        gender: 'male',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'savar',
-        isActive: false,
-        isPhoneVerified: true,
-        createdAt: new Date(Date.now() - 86400000 * 10),
-        updatedAt: now
       }
     ];
 
-    // 2. Initial Institutions
+    // 2. Verified Partner Institutions (real baseline structure, strictly 0 registered donors and no mock moderators)
     this.institutions = [
       {
         _id: 'inst_du',
@@ -601,9 +430,7 @@ class DataStore {
         email: 'bloodclub@du.ac.bd',
         phone: '01811112233',
         status: 'approved',
-        assignedModeratorId: 'usr_moderator_du',
-        assignedModeratorIds: ['usr_moderator_du'],
-        totalRegisteredDonors: 142,
+        totalRegisteredDonors: 0,
         description: 'ঢাকা বিশ্ববিদ্যালয় বাঁধন এবং রোভার স্কাউট স্বেচ্ছায় রক্তদান ফোরাম।',
         createdAt: now,
         updatedAt: now
@@ -622,7 +449,7 @@ class DataStore {
         email: 'blooddonor@buet.ac.bd',
         phone: '01822223344',
         status: 'approved',
-        totalRegisteredDonors: 85,
+        totalRegisteredDonors: 0,
         description: 'বুয়েট ব্লাড ডোনার্স নেটওয়ার্ক। জরুরি প্রয়োজনে রক্তদানে সদা জাগ্রত।',
         createdAt: now,
         updatedAt: now
@@ -641,7 +468,7 @@ class DataStore {
         email: 'bloodbank@cmc.edu.bd',
         phone: '01833334455',
         status: 'approved',
-        totalRegisteredDonors: 96,
+        totalRegisteredDonors: 0,
         description: 'চট্টগ্রাম মেডিকেল কলেজ সন্ধানী স্বেচ্ছাসেবী রক্তদান সংস্থা ইউনিট।',
         createdAt: now,
         updatedAt: now
@@ -660,7 +487,7 @@ class DataStore {
         email: 'bloodclub@ru.ac.bd',
         phone: '01844445566',
         status: 'approved',
-        totalRegisteredDonors: 64,
+        totalRegisteredDonors: 0,
         description: 'রাজশাহী বিশ্ববিদ্যালয় বাঁধন শাখা ও লাল গোলাপ স্বেচ্ছায় রক্তদান ফোরাম।',
         createdAt: now,
         updatedAt: now
@@ -678,414 +505,29 @@ class DataStore {
         website: 'https://www.sust.edu',
         email: 'blood@sust.edu',
         phone: '01855556677',
-        status: 'pending',
-        totalRegisteredDonors: 12,
+        status: 'approved',
+        totalRegisteredDonors: 0,
         description: 'ক্যাম্পাস ও সিলেট অঞ্চলের রক্তদান নেটওয়ার্ক সম্প্রসারণ ফোরাম।',
         createdAt: now,
         updatedAt: now
       }
     ];
 
-    // 3. Initial Donor Profiles
-    this.donorProfiles = [
-      {
-        _id: 'donor_prof_1',
-        userId: 'usr_donor_1',
-        displayName: 'রফিকুল ইসলাম',
-        bloodGroup: 'O+',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'mirpur',
-        addressDetails: 'মিরপুর ১০, ঢাকা',
-        dateOfBirth: new Date('1998-05-14'),
-        gender: 'male',
-        availabilityStatus: 'available',
-        lastDonationDate: new Date('2026-05-10'),
-        totalDonations: 6,
-        institutionId: 'inst_du',
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: 'phone',
-        bio: 'নিয়মিত রক্তদান করি। জরুরি প্রয়োজনে যোগাযোগ করতে পারেন।',
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'donor_prof_2',
-        userId: 'usr_donor_2',
-        displayName: 'তানভীর আহমেদ',
-        bloodGroup: 'A+',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'dhanmondi',
-        addressDetails: 'ধানমন্ডি ২৭, ঢাকা',
-        dateOfBirth: new Date('2000-08-20'),
-        gender: 'male',
-        availabilityStatus: 'available',
-        lastDonationDate: new Date('2026-06-01'),
-        totalDonations: 4,
-        institutionId: 'inst_buet',
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: 'phone',
-        bio: 'সচেতন থাকুন, নিয়মিত রক্ত দিন। রোগীর সেবায় সর্বদা নিয়োজিত।',
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'donor_prof_3',
-        userId: 'usr_donor_3',
-        displayName: 'নুসরাত জাহান',
-        bloodGroup: 'B+',
-        division: 'chattogram',
-        district: 'chattogram',
-        upazila: 'panchlaish',
-        addressDetails: 'প্রবর্তক মোড়, চট্টগ্রাম',
-        dateOfBirth: new Date('1999-11-12'),
-        gender: 'female',
-        availabilityStatus: 'recently_donated',
-        lastDonationDate: new Date('2026-09-25'),
-        totalDonations: 3,
-        institutionId: 'inst_cmc',
-        institutionMembershipVerified: true,
-        consentToShareContact: false, // Default private for female safety
-        preferredContactMethod: 'platform',
-        bio: 'মেডিকেল শিক্ষার্থী। রক্তদান একটি পবিত্র দায়িত্ব।',
-        isPubliclyListed: true,
-        emergencyAvailable: false,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'donor_prof_4',
-        userId: 'usr_donor_4',
-        displayName: 'সাকিব মাহমুদ',
-        bloodGroup: 'AB+',
-        division: 'rajshahi',
-        district: 'rajshahi',
-        upazila: 'boalia',
-        addressDetails: 'সাহেব বাজার, রাজশাহী',
-        dateOfBirth: new Date('1997-03-05'),
-        gender: 'male',
-        availabilityStatus: 'available',
-        lastDonationDate: new Date('2026-04-12'),
-        totalDonations: 5,
-        institutionId: 'inst_ru',
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: 'phone',
-        bio: 'রাজশাহী শহরের যেকোনো জরুরি প্রয়োজনে যোগাযোগ করতে পারেন।',
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-
-    // 4. Initial Blood Requests
-    this.bloodRequests = [
-      {
-        _id: 'req_1',
-        publicId: 'BR-2026-DH01',
-        requesterId: 'usr_requester_1',
-        patientName: 'ফরিদা বেগম (৬৫)',
-        bloodGroup: 'O+',
-        unitsRequired: 2,
-        unitsFulfilled: 1,
-        hospitalName: 'ঢাকা মেডিকেল কলেজ হাসপাতাল',
-        hospitalAddress: 'জরুরি বিভাগ, ওটি ভবন, ৩য় তলা, ঢাকা',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'shahbagh',
-        requiredDate: new Date(Date.now() + 86400000 * 2),
-        urgencyLevel: 'emergency',
-        reason: 'হিপ ফ্র্যাকচার অপারেশন ও হিমোগ্লোবিন স্বল্পতার কারণে রক্তের জরুরি প্রয়োজন।',
-        contactNumber: '01755555555',
-        alternativeContactNumber: '01855555555',
-        status: 'partially_fulfilled',
-        expiresAt: new Date(Date.now() + 86400000 * 4),
-        createdAt: new Date(Date.now() - 3600000 * 5),
-        updatedAt: now
-      },
-      {
-        _id: 'req_2',
-        publicId: 'BR-2026-DH02',
-        requesterId: 'usr_requester_1',
-        patientName: 'আরিফুল হক (২৮)',
-        bloodGroup: 'A+',
-        unitsRequired: 1,
-        unitsFulfilled: 0,
-        hospitalName: 'বঙ্গবন্ধু শেখ মুজিব মেডিক্যাল বিশ্ববিদ্যালয় (বিএসএমএমইউ)',
-        hospitalAddress: 'কেবিন ব্লক, শাহবাগ, ঢাকা',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'shahbagh',
-        requiredDate: new Date(Date.now() + 86400000),
-        urgencyLevel: 'emergency',
-        reason: 'থ্যালাসেমিয়া নিয়মিত ব্লাড ট্রান্সফিউশন। দ্রুত ১ ব্যাগ এ পজিটিভ রক্ত প্রয়োজন।',
-        contactNumber: '01755555555',
-        status: 'open',
-        expiresAt: new Date(Date.now() + 86400000 * 3),
-        createdAt: new Date(Date.now() - 3600000 * 12),
-        updatedAt: now
-      },
-      {
-        _id: 'req_3',
-        publicId: 'BR-2026-CT01',
-        requesterId: 'usr_donor_1',
-        patientName: 'শামসুল আলম (৫০)',
-        bloodGroup: 'B+',
-        unitsRequired: 2,
-        unitsFulfilled: 0,
-        hospitalName: 'চট্টগ্রাম মেডিকেল কলেজ হাসপাতাল',
-        hospitalAddress: 'সার্জারি ওয়ার্ড নং ১২, পাঁচলাইশ, চট্টগ্রাম',
-        division: 'chattogram',
-        district: 'chattogram',
-        upazila: 'panchlaish',
-        requiredDate: new Date(Date.now() + 86400000 * 3),
-        urgencyLevel: 'urgent',
-        reason: 'পাকস্থলী অপারেশনের জন্য রক্তের প্রয়োজন।',
-        contactNumber: '01711111111',
-        status: 'open',
-        expiresAt: new Date(Date.now() + 86400000 * 5),
-        createdAt: new Date(Date.now() - 3600000 * 24),
-        updatedAt: now
-      }
-    ];
-
-    // 5. Initial Institution Requests (Applications to review)
-    this.institutionRequests = [
-      {
-        _id: 'inst_req_1',
-        name: 'Jahangirnagar University',
-        nameBn: 'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়',
-        code: 'JU-BD',
-        type: 'university',
-        division: 'dhaka',
-        district: 'dhaka',
-        upazila: 'savar',
-        address: 'Savar, Dhaka 1342',
-        applicantName: 'মো: হাসিবুর রহমান',
-        applicantPhone: '01788881111',
-        applicantEmail: 'hasib.ju@example.com',
-        applicantRole: 'সাধারণ সম্পাদক, বাঁধন জাবি ইউনিট',
-        supportingDetails: 'জাহাঙ্গীরনগর বিশ্ববিদ্যালয় বাঁধন রক্তদান শাখার মাধ্যমে ক্যাম্পাসে রক্তদান কার্যক্রম পরিচালনার জন্য নিবন্ধন।',
-        status: 'pending_review',
-        createdAt: new Date(Date.now() - 86400000 * 2),
-        updatedAt: new Date(Date.now() - 86400000 * 2)
-      },
-      {
-        _id: 'inst_req_2',
-        name: 'University of Chittagong',
-        nameBn: 'চট্টগ্রাম বিশ্ববিদ্যালয়',
-        code: 'CU-BD',
-        type: 'university',
-        division: 'chattogram',
-        district: 'chattogram',
-        upazila: 'hathazari',
-        address: 'Fatehpur, Hathazari, Chattogram 4331',
-        applicantName: 'নাসরিন সুলতানা',
-        applicantPhone: '01788882222',
-        applicantEmail: 'nasrin.cu@example.com',
-        applicantRole: 'সভাপতি, রোভার স্কাউট চবি',
-        supportingDetails: 'চট্টগ্রাম বিশ্ববিদ্যালয় শিক্ষার্থী ও ক্যাম্পাসে রক্তের প্রয়োজনীয়তায় তাৎক্ষণিক সাড়ার জন্য প্রাতিষ্ঠানিক সংযুক্তি।',
-        status: 'pending_review',
-        createdAt: new Date(Date.now() - 86400000 * 3),
-        updatedAt: new Date(Date.now() - 86400000 * 3)
-      }
-    ];
-
-    // 6. Initial Moderator Activities
-    this.moderatorActivities = [
-      {
-        _id: 'act_1',
-        actorId: 'usr_moderator_du',
-        actorName: 'আব্দুল্লাহ আল মামুন',
-        actorRole: 'INSTITUTION_MODERATOR',
-        action: 'MEMBER_CREATED',
-        targetRecordId: 'usr_donor_1',
-        targetRecordType: 'User',
-        institutionScope: 'inst_du',
-        divisionScope: 'dhaka',
-        reason: 'ঢাবি ক্যাম্পাসে রক্তদান ক্যাম্পেইন থেকে নতুন স্বেচ্ছাসেবী সদস্য সংযুক্তি।',
-        result: 'সফল',
-        createdAt: new Date(Date.now() - 86400000 * 5)
-      },
-      {
-        _id: 'act_2',
-        actorId: 'usr_moderator_du',
-        actorName: 'আব্দুল্লাহ আল মামুন',
-        actorRole: 'INSTITUTION_MODERATOR',
-        action: 'MEMBER_EDITED',
-        targetRecordId: 'donor_prof_1',
-        targetRecordType: 'DonorProfile',
-        institutionScope: 'inst_du',
-        divisionScope: 'dhaka',
-        reason: 'সদস্যের সর্বশেষ রক্তদানের তারিখ ও প্রাপ্ত নম্বর হালনাগাদ।',
-        result: 'সফল',
-        createdAt: new Date(Date.now() - 86400000 * 3)
-      },
-      {
-        _id: 'act_3',
-        actorId: 'usr_coordinator_dhaka',
-        actorName: 'মো: কামরুল হাসান',
-        actorRole: 'DIVISION_COORDINATOR',
-        action: 'MEMBER_BLOCKED',
-        targetRecordId: 'usr_blocked_demo',
-        targetRecordType: 'User',
-        divisionScope: 'dhaka',
-        reason: 'ভুয়া রক্তের অনুরোধ পোস্ট এবং বাণিজ্যিক সুবিধার অভিযোগে স্থগিত রাখা হয়েছে।',
-        result: 'স্থগিত',
-        createdAt: new Date(Date.now() - 86400000 * 2)
-      }
-    ];
-
-    // 7. Initial Contact Requests
-    this.contactRequests = [
-      {
-        _id: 'cr_1',
-        requesterId: 'usr_requester_1',
-        requesterName: 'মাহবুব আলম',
-        requesterPhone: '01755555555',
-        institutionId: 'inst_du',
-        targetBloodGroup: 'O+',
-        patientName: 'ফরিদা বেগম',
-        hospitalName: 'ঢাকা মেডিকেল কলেজ হাসপাতাল',
-        unitsRequired: 2,
-        urgency: 'emergency',
-        reason: 'হিপ ফ্র্যাকচার সার্জারির জন্য জরুরি ভিত্তিতে ঢাকা বিশ্ববিদ্যালয় ক্যাম্পাসের ও পজিটিভ রক্তদাতার প্রয়োজন।',
-        status: 'pending',
-        assignedModeratorId: 'usr_moderator_du',
-        createdAt: new Date(Date.now() - 3600000 * 3),
-        updatedAt: new Date(Date.now() - 3600000 * 3)
-      }
-    ];
-
-    // 8. Initial Account Status Histories
-    this.accountStatusHistories = [
-      {
-        _id: 'ash_1',
-        userId: 'usr_blocked_demo',
-        targetUserName: 'ফারুক হোসেন (স্থগিত সদস্য)',
-        targetUserPhone: '01799999999',
-        oldStatus: 'active',
-        newStatus: 'temporarily_blocked',
-        actorId: 'usr_coordinator_dhaka',
-        actorName: 'মো: কামরুল হাসান',
-        actorRole: 'DIVISION_COORDINATOR',
-        reason: 'ভুয়া রক্তের অনুরোধ পোস্ট এবং বাণিজ্যিক সুবিধার অভিযোগে স্থগিত রাখা হয়েছে।',
-        createdAt: new Date(Date.now() - 86400000 * 2)
-      }
-    ];
-
-    // 9. Initial Reports
-    this.reports = [
-      {
-        _id: 'rep_1',
-        reportedBy: 'usr_donor_1',
-        targetType: 'blood_request',
-        targetId: 'req_3',
-        targetTitle: 'রোগী: সালমা বেগম (ঢাকা মেডিকেল)',
-        division: 'dhaka',
-        institutionId: 'inst_du',
-        reason: 'false_information',
-        description: 'যোগাযোগ নম্বরে ফোন দিলে তারা বলে রক্ত প্রয়োজন মিটে গেছে কিন্তু পোস্ট এখনো ওপেন দেখাচ্ছে।',
-        status: 'pending',
-        createdAt: new Date(Date.now() - 3600000 * 4),
-        updatedAt: now
-      }
-    ];
-
-    // 10. Initial Notifications
-    this.notifications = [
-      {
-        _id: 'notif_1',
-        userId: 'usr_moderator_du',
-        title: 'নতুন প্রাতিষ্ঠানিক যোগাযোগের অনুরোধ',
-        message: 'ঢাকা বিশ্ববিদ্যালয় ক্যাম্পাসের জন্য O+ রক্তের ১টি জরুরি আবেদন এসেছে।',
-        type: 'contact_request',
-        link: '/moderator/dashboard',
-        isRead: false,
-        createdAt: new Date(Date.now() - 3600000 * 3)
-      },
-      {
-        _id: 'notif_2',
-        userId: 'usr_coordinator_dhaka',
-        title: 'নতুন প্রতিষ্ঠান নিবন্ধন আবেদন',
-        message: 'ঢাকা বিভাগের অধীনে জাহাঙ্গীরনগর বিশ্ববিদ্যালয় (JU-BD) নিবন্ধনের আবেদন জমা দিয়েছে।',
-        type: 'institution_update',
-        link: '/coordinator/dashboard',
-        isRead: false,
-        createdAt: new Date(Date.now() - 86400000 * 2)
-      }
-    ];
-
-    // 11. Initial Phone Change Requests
-    this.phoneChangeRequests = [
-      {
-        _id: 'pcr_1',
-        userId: 'usr_donor_1',
-        userName: 'রফিকুল ইসলাম',
-        userRole: 'DONOR',
-        currentPhone: '01711111111',
-        newPhone: '01711999888',
-        reason: 'আমার পূর্বের সিমটি হারিয়ে যাওয়ায় জরুরি রক্তের কল পেতে এই নতুন সচল নম্বরটি সংযুক্ত করার অনুরোধ করছি।',
-        division: 'dhaka',
-        district: 'dhaka',
-        institutionId: 'inst_du',
-        institutionName: 'ঢাকা বিশ্ববিদ্যালয়',
-        status: 'pending',
-        createdAt: new Date(Date.now() - 3600000 * 2),
-        updatedAt: now
-      }
-    ];
-
-    // 12. Initial Password Recovery Requests
-    this.passwordRecoveryRequests = [
-      {
-        _id: 'prr_1',
-        userId: 'usr_donor_2',
-        userName: 'তানভীর আহমেদ',
-        phone: '01722222222',
-        userRole: 'DONOR',
-        division: 'dhaka',
-        district: 'dhaka',
-        institutionId: 'inst_du',
-        institutionName: 'ঢাকা বিশ্ববিদ্যালয়',
-        status: 'pending',
-        reason: 'পাসওয়ার্ড মনে নেই, দয়া করে সাময়িক পাসওয়ার্ড প্রদান করে সাহায্য করুন।',
-        isUsed: false,
-        createdAt: new Date(Date.now() - 3600000 * 4),
-        updatedAt: now
-      }
-    ];
-
-    // 13. Initial Institution Change Requests
-    this.institutionChangeRequests = [
-      {
-        _id: 'icr_1',
-        userId: 'usr_donor_1',
-        userName: 'রফিকুল ইসলাম',
-        phone: '01711111111',
-        userRole: 'DONOR',
-        currentInstitutionId: undefined,
-        currentInstitutionName: undefined,
-        targetInstitutionId: 'inst_du',
-        targetInstitutionName: 'ঢাকা বিশ্ববিদ্যালয়',
-        division: 'dhaka',
-        district: 'dhaka',
-        studentOrStaffId: 'DU-CSE-2022-019',
-        department: 'কম্পিউটার সায়েন্স',
-        reason: 'ঢাকা বিশ্ববিদ্যালয়ে অধ্যয়নরত থাকায় ক্যাম্পাস রক্তদাতা পুলের সাথে যুক্ত হতে চাই।',
-        status: 'pending',
-        createdAt: new Date(Date.now() - 3600000 * 5),
-        updatedAt: now
-      }
-    ];
+    // 3. All other queues and feeds start completely clean (real operational data only)
+    this.donorProfiles = [];
+    this.bloodRequests = [];
+    this.institutionRequests = [];
+    this.moderatorActivities = [];
+    this.contactRequests = [];
+    this.accountStatusHistories = [];
+    this.reports = [];
+    this.notifications = [];
+    this.phoneChangeRequests = [];
+    this.passwordRecoveryRequests = [];
+    this.passwordRecoveryAudits = [];
+    this.institutionChangeRequests = [];
+    this.contactAccessLogs = [];
+    this.otps = [];
   }
 
   // --- MongoDB Atlas Synchronization & Persistence ---
@@ -1115,6 +557,12 @@ class DataStore {
       this.passwordRecoveryRequests = (dbRecoveryReqs || []) as any;
       const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
       this.institutionChangeRequests = (dbChangeReqs || []) as any;
+      const dbReports = await ReportModel.find().lean();
+      this.reports = (dbReports || []) as any;
+      const dbNotifs = await NotificationModel.find().lean();
+      this.notifications = (dbNotifs || []) as any;
+      const dbLogs = await ContactAccessLogModel.find().lean();
+      this.contactAccessLogs = (dbLogs || []) as any;
       console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err: any) {
       console.warn('[Database Sync Warning]:', err.message);

@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'node:path';
+
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
+
 import app from '../app.js';
 import { ENV } from '../config/env.js';
 import { connectDB } from '../config/db.js';
@@ -10,7 +15,12 @@ import { dataStore } from '../services/dataStore.js';
 import { BloodRequestModel } from '../models/BloodRequest.js';
 import { UserModel } from '../models/User.js';
 
+const TEST_DB_URI = (process.env.MONGO_URI || '').replace(/\/([^/?]+)(\?|$)/, '/test_bidirectional_sync$2');
+
 after(async () => {
+  if (mongoose.connection.db) {
+    await mongoose.connection.db.dropDatabase();
+  }
   await mongoose.disconnect();
 });
 
@@ -28,7 +38,8 @@ function createTestToken(user: { _id: string; role: string; phone?: string; assi
 }
 
 test('Bidirectional Synchronization & Persistence Test Suite', async (t) => {
-  await connectDB();
+  await mongoose.disconnect();
+  await mongoose.connect(TEST_DB_URI);
   const server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const addr = server.address() as any;

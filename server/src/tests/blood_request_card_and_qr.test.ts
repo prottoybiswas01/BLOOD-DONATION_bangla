@@ -30,6 +30,38 @@ test('Blood Request Card & QR Code Workflow', async (t) => {
   const address = server.address() as any;
   const baseUrl = `http://127.0.0.1:${address.port}/api/v1`;
 
+  // Test fixtures for this test suite
+  if (!dataStore.users.some(u => u._id === 'usr_requester_1')) {
+    dataStore.users.push({
+      _id: 'usr_requester_1',
+      name: 'মাহবুব আলম (টেস্ট আবেদনকারী)',
+      phone: '01755555555',
+      passwordHash: 'dummy',
+      role: 'REQUESTER',
+      accountStatus: 'active',
+      gender: 'male',
+      isActive: true,
+      isPhoneVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  if (!dataStore.users.some(u => u._id === 'usr_other_99')) {
+    dataStore.users.push({
+      _id: 'usr_other_99',
+      name: 'অন্য ব্যবহারকারী',
+      phone: '01799999999',
+      passwordHash: 'dummy',
+      role: 'DONOR',
+      accountStatus: 'active',
+      gender: 'male',
+      isActive: true,
+      isPhoneVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+
   const requesterToken = createTestToken({ _id: 'usr_requester_1', role: 'REQUESTER' });
   const otherUserToken = createTestToken({ _id: 'usr_other_99', role: 'DONOR' });
 

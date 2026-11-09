@@ -71,6 +71,12 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
       const districtList = await DonorProfileModel.distinct('district', { isPubliclyListed: true });
       districtsCovered = districtList.filter(Boolean).length;
       totalInstitutions = await InstitutionModel.countDocuments();
+    } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return res.status(503).json({
+        success: false,
+        code: 'DATABASE_UNAVAILABLE',
+        message: 'ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।'
+      });
     } else {
       const activeDonors = dataStore.donorProfiles.filter(d => {
         const u = dataStore.findUserByIdSync(d.userId);
@@ -113,7 +119,10 @@ export const currentAppRelease = {
   minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || '1.0.0',
   forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
   fileSizeMb: 60.0,
+  fileSizeBytes: 62911392,
   releaseDate: '2026-11-02',
+  sha256Checksum: '3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2',
+  certificateSha256: '2A:52:02:9C:E4:F3:11:D2:11:F7:EB:E8:2A:0D:C5:D2:5B:38:CC:B3:EB:7B:B7:01:DD:72:55:74:26:86:99:FA',
   downloadUrl: process.env.APP_DOWNLOAD_URL || 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk',
   directDownloadPath: '/downloads/blood-donation-bangla.apk',
   releaseNotes: process.env.APP_RELEASE_NOTES || 'অফিসিয়াল স্ট্যান্ডঅ্যালোন রিলিজ ১.০.০ (Build 1): সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি।'

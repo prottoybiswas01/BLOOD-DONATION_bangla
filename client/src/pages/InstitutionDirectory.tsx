@@ -148,7 +148,7 @@ export const InstitutionDirectory: React.FC = () => {
       ) : institutions.length === 0 ? (
         <div className="bg-surface rounded-3xl border border-appBorder p-12 text-center text-subText shadow-soft space-y-3">
           <Building2 className="w-14 h-14 text-slate-300 mx-auto" />
-          <h3 className="font-bold text-mainText text-lg">কোনো অনুমোদিত প্রতিষ্ঠান পাওয়া যায়নি</h3>
+          <h3 className="font-bold text-mainText text-lg">এখনো কোনো প্রতিষ্ঠানের তথ্য নেই</h3>
           <p className="text-xs text-subText max-w-sm mx-auto">আপনার অনুসন্ধানের সাথে মিলে এমন কোনো শিক্ষাপ্রতিষ্ঠান বর্তমানে ডিরেক্টরিতে নেই।</p>
         </div>
       ) : (

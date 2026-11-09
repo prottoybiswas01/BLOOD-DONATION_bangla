@@ -55,11 +55,6 @@ export const Footer: React.FC = () => {
               <li>
                 <Link to="/register" className="hover:text-white transition-colors">রক্তদাতা হিসেবে নিবন্ধন</Link>
               </li>
-              <li>
-                <a href="https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk" download="blood-donation-bangla.apk" className="text-rose-400 font-semibold hover:text-rose-300 transition-colors flex items-center gap-1.5">
-                  📱 অ্যান্ড্রয়েড অ্যাপ ডাউনলোড (APK)
-                </a>
-              </li>
             </ul>
           </div>
 

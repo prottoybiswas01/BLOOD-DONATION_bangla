@@ -371,7 +371,11 @@ class DataStore {
   institutionChangeRequests: StoredInstitutionChangeRequest[] = [];
 
   constructor() {
-    this.seedInitialData();
+    // Demo auto-seeding is strictly disabled in production or on Vercel deployment.
+    // In-memory seed is preserved for local development and unit tests.
+    if (ENV.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      this.seedInitialData();
+    }
   }
 
   seedInitialData() {
@@ -1088,84 +1092,30 @@ class DataStore {
   async syncWithMongoDB(): Promise<void> {
     try {
       if (!isDatabaseConnected()) return;
-      const userCount = await UserModel.countDocuments();
-      if (userCount === 0) {
-        console.log('[Database] Fresh MongoDB Atlas cluster detected. Auto-seeding initial data...');
-        for (const u of this.users) await UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true });
-        for (const i of this.institutions) await InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true });
-        for (const d of this.donorProfiles) await DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true });
-        for (const r of this.bloodRequests) await BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true });
-        for (const ir of this.institutionRequests) await InstitutionRequestModel.findOneAndUpdate({ _id: ir._id }, ir, { upsert: true });
-        for (const cr of this.contactRequests) await ContactRequestModel.findOneAndUpdate({ _id: cr._id }, cr, { upsert: true });
-        for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
-        for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
-        for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
-        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
-        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
-        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
-        console.log('[Database] Auto-seeding completed successfully in MongoDB Atlas!');
-      } else {
-        console.log('[Database] Loading existing data from MongoDB Atlas...');
-        const dbUsers = await UserModel.find().lean();
-        if (dbUsers.length > 0) {
-          const dbUserIds = new Set(dbUsers.map((u: any) => String(u._id)));
-          for (const u of this.users) {
-            if (!dbUserIds.has(String(u._id))) {
-              dbUsers.push(u as any);
-              UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true }).catch(() => {});
-            }
-          }
-          this.users = dbUsers as any;
-        }
-        const dbDonors = await DonorProfileModel.find().lean();
-        if (dbDonors.length > 0) {
-          const dbDonorIds = new Set(dbDonors.map((d: any) => String(d._id)));
-          for (const d of this.donorProfiles) {
-            if (!dbDonorIds.has(String(d._id))) {
-              dbDonors.push(d as any);
-              DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true }).catch(() => {});
-            }
-          }
-          this.donorProfiles = dbDonors as any;
-        }
-        const dbInsts = await InstitutionModel.find().lean();
-        if (dbInsts.length > 0) {
-          const dbInstIds = new Set(dbInsts.map((i: any) => String(i._id)));
-          for (const i of this.institutions) {
-            if (!dbInstIds.has(String(i._id))) {
-              dbInsts.push(i as any);
-              InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true }).catch(() => {});
-            }
-          }
-          this.institutions = dbInsts as any;
-        }
-        const dbRequests = await BloodRequestModel.find().lean();
-        if (dbRequests.length > 0) {
-          const dbReqIds = new Set(dbRequests.map((r: any) => String(r._id)));
-          for (const r of this.bloodRequests) {
-            if (!dbReqIds.has(String(r._id))) {
-              dbRequests.push(r as any);
-              BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true }).catch(() => {});
-            }
-          }
-          this.bloodRequests = dbRequests as any;
-        }
-        const dbInstReqs = await InstitutionRequestModel.find().lean();
-        if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs as any;
-        const dbContactReqs = await ContactRequestModel.find().lean();
-        if (dbContactReqs.length > 0) this.contactRequests = dbContactReqs as any;
-        const dbActivities = await ModeratorActivityModel.find().lean();
-        if (dbActivities.length > 0) this.moderatorActivities = dbActivities as any;
-        const dbHistories = await AccountStatusHistoryModel.find().lean();
-        if (dbHistories.length > 0) this.accountStatusHistories = dbHistories as any;
-        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
-        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs as any;
-        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
-        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs as any;
-        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
-        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs as any;
-        console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
-      }
+      console.log('[Database] Loading authoritative live data from MongoDB Atlas...');
+      const dbUsers = await UserModel.find().lean();
+      this.users = (dbUsers || []) as any;
+      const dbDonors = await DonorProfileModel.find().lean();
+      this.donorProfiles = (dbDonors || []) as any;
+      const dbInsts = await InstitutionModel.find().lean();
+      this.institutions = (dbInsts || []) as any;
+      const dbRequests = await BloodRequestModel.find().lean();
+      this.bloodRequests = (dbRequests || []) as any;
+      const dbInstReqs = await InstitutionRequestModel.find().lean();
+      this.institutionRequests = (dbInstReqs || []) as any;
+      const dbContactReqs = await ContactRequestModel.find().lean();
+      this.contactRequests = (dbContactReqs || []) as any;
+      const dbActivities = await ModeratorActivityModel.find().lean();
+      this.moderatorActivities = (dbActivities || []) as any;
+      const dbHistories = await AccountStatusHistoryModel.find().lean();
+      this.accountStatusHistories = (dbHistories || []) as any;
+      const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
+      this.phoneChangeRequests = (dbPhoneReqs || []) as any;
+      const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
+      this.passwordRecoveryRequests = (dbRecoveryReqs || []) as any;
+      const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
+      this.institutionChangeRequests = (dbChangeReqs || []) as any;
+      console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err: any) {
       console.warn('[Database Sync Warning]:', err.message);
     }
@@ -1791,7 +1741,18 @@ class DataStore {
         };
       } catch (e: any) {
         console.warn('[DataStore] searchDonors DB error:', e?.message);
+        if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+          const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          err.statusCode = 503;
+          err.code = 'DATABASE_UNAVAILABLE';
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+      const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+      err.statusCode = 503;
+      err.code = 'DATABASE_UNAVAILABLE';
+      throw err;
     }
     return this.searchDonorsSync(filters);
   }
@@ -2045,7 +2006,18 @@ class DataStore {
         };
       } catch (e: any) {
         console.warn('[DataStore] searchBloodRequests DB error:', e?.message);
+        if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+          const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          err.statusCode = 503;
+          err.code = 'DATABASE_UNAVAILABLE';
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+      const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+      err.statusCode = 503;
+      err.code = 'DATABASE_UNAVAILABLE';
+      throw err;
     }
     return this.searchBloodRequestsSync(filters);
   }
@@ -2157,7 +2129,18 @@ class DataStore {
         return docs as any[];
       } catch (e: any) {
         console.warn('[DataStore] getInstitutions DB error:', e?.message);
+        if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+          const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          err.statusCode = 503;
+          err.code = 'DATABASE_UNAVAILABLE';
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === 'production' || process.env.VERCEL) {
+      const err: any = new Error('ডাটাবেজ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+      err.statusCode = 503;
+      err.code = 'DATABASE_UNAVAILABLE';
+      throw err;
     }
     return this.getInstitutionsSync(filters);
   }

@@ -242,9 +242,9 @@ export const BloodRequests: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
             <PlusCircle className="w-8 h-8" />
           </div>
-          <h3 className="font-black text-mainText text-xl">কোনো রক্তের অনুরোধ পাওয়া যায়নি</h3>
+          <h3 className="font-black text-mainText text-xl">এখনো কোনো রক্তের অনুরোধ নেই</h3>
           <p className="text-xs sm:text-sm text-subText max-w-md mx-auto leading-relaxed">
-            আপনার ফিল্টার অনুযায়ী কোনো রক্তের আবেদন পাওয়া যায়নি। প্রয়োজনে নতুন একটি রক্তের আবেদন তৈরি করতে পারেন।
+            বর্তমানে কোনো সক্রিয় রক্তের অনুরোধ পাওয়া যায়নি। জরুরি প্রয়োজনে নতুন একটি রক্তের আবেদন তৈরি করতে পারেন।
           </p>
           <div className="flex items-center justify-center gap-3">
             <Button variant="outline" size="sm" onClick={handleReset}>

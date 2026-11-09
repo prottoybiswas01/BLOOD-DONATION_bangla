@@ -1,4 +1,5 @@
 import { connectDB, isDatabaseConnected } from '../config/db.js';
+import { ENV } from '../config/env.js';
 import { UserModel } from '../models/User.js';
 import { DonorProfileModel } from '../models/DonorProfile.js';
 import { BloodRequestModel } from '../models/BloodRequest.js';
@@ -6,6 +7,11 @@ import { InstitutionModel } from '../models/Institution.js';
 import { dataStore } from '../services/dataStore.js';
 
 async function runSeed() {
+  if (process.env.NODE_ENV === 'production' || ENV.NODE_ENV === 'production' || Boolean(process.env.VERCEL)) {
+    console.error('[FATAL] Seeding is strictly prohibited in production environment to prevent data contamination and loss.');
+    process.exit(1);
+  }
+
   console.log('Seeding database with Bangladesh Blood Donation Platform demo data...');
   const connected = await connectDB();
 

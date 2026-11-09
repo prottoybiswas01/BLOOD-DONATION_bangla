@@ -328,9 +328,9 @@ export const DonorSearch: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
             <Users className="w-8 h-8" />
           </div>
-          <h3 className="font-black text-mainText text-xl">কোনো রক্তদাতা পাওয়া যায়নি</h3>
+          <h3 className="font-black text-mainText text-xl">এখনো কোনো রক্তদাতার তথ্য নেই</h3>
           <p className="text-xs sm:text-sm text-subText max-w-md mx-auto leading-relaxed">
-            আপনার নির্বাচিত গ্রুপ বা স্থানে বর্তমানে কোনো রক্তদাতা সক্রিয় নেই। অনুগ্রহ করে নিকটবর্তী অন্য কোনো উপজেলা বা জেলা নির্বাচন করে পুনরায় অনুসন্ধান করুন।
+            আপনার নির্বাচিত মানদণ্ডে বর্তমানে কোনো রক্তদাতা সক্রিয় নেই। রক্তদাতা হিসেবে নিজে যুক্ত হতে পারেন অথবা ফিল্টার রিসেট করতে পারেন।
           </p>
           <Button
             variant="primary"

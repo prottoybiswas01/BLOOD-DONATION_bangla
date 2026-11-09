@@ -90,6 +90,13 @@ jobs:
           echo "=== Certificate Fingerprint ==="
           keytool -printcert -jarfile build-output/blood-donation-bangla.apk
 
+          # 4. Print package name and versionCode
+          echo "=== Package & Version Information ==="
+          AAPT_BIN=$(find $ANDROID_HOME/build-tools -name aapt | sort -V | tail -n 1)
+          if [ -n "$AAPT_BIN" ]; then
+            "$AAPT_BIN" dump badging build-output/blood-donation-bangla.apk | grep -E "package: name|versionCode|versionName" || true
+          fi
+
       - name: Extract App Version and Build Metadata
         id: app_meta
         run: |
@@ -97,25 +104,35 @@ jobs:
           APP_CODE=$(node -p "require('./mobile/app.json').expo.android.versionCode")
           echo "version=${APP_VER}" >> $GITHUB_OUTPUT
           echo "code=${APP_CODE}" >> $GITHUB_OUTPUT
-          echo "tag=v${APP_VER}" >> $GITHUB_OUTPUT
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            echo "tag=v${APP_VER}" >> $GITHUB_OUTPUT
+            echo "release_name=রক্তদান বাংলাদেশ Android v${APP_VER} (Build ${APP_CODE})" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          else
+            echo "tag=test-v${APP_VER}-b${APP_CODE}" >> $GITHUB_OUTPUT
+            echo "release_name=রক্তদান বাংলাদেশ Test Build v${APP_VER} (Build ${APP_CODE})" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blood-donation-bangla-apk-${{ steps.app_meta.outputs.version }}
+          name: blood-donation-bangla-apk-${{ steps.app_meta.outputs.version }}-b${{ steps.app_meta.outputs.code }}
           path: build-output/blood-donation-bangla.apk
           if-no-files-found: error
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/heads/master')
         with:
           tag_name: ${{ steps.app_meta.outputs.tag }}
-          name: "রক্তদান বাংলাদেশ Android v${{ steps.app_meta.outputs.version }} (Build ${{ steps.app_meta.outputs.code }})"
+          name: ${{ steps.app_meta.outputs.release_name }}
+          prerelease: ${{ steps.app_meta.outputs.is_prerelease == 'true' }}
           body: |
-            ## বাংলাদেশ রক্তদান প্ল্যাটফর্ম — অফিসিয়াল নেটিভ অ্যান্ড্রয়েড অ্যাপ
-            - **সংস্করণ**: ${{ steps.app_meta.outputs.version }} (Build ${{ steps.app_meta.outputs.code }})
-            - **প্যাকেজ**: org.bloodbd.app
+            ## বাংলাদেশ রক্তদান প্ল্যাটফর্ম — অ্যান্ড্রয়েড রিলিজ
+            - **সংস্করণ (Version)**: ${{ steps.app_meta.outputs.version }} (Build ${{ steps.app_meta.outputs.code }})
+            - **শাখা (Branch)**: ${{ github.ref_name }}
+            - **কমিট (Commit SHA)**: ${{ github.sha }}
+            - **প্যাকেজ আইডি**: org.bloodbd.app
             - **স্ট্যান্ডঅ্যালোন মোড**: সম্পূর্ণ অফলাইন ও প্রোডাকশন রেডি (Hermes AOT Pre-compiled Bytecode)
             - **সমর্থিত আর্কিটেকচার**: ARM64-v8a এবং armeabi-v7a (বাংলাদেশের ১০০% অ্যান্ড্রয়েড স্মার্টফোনের উপযোগী)
             - **সরাসরি ডাউনলোড লিঙ্ক**: [blood-donation-bangla.apk](https://github.com/${{ github.repository }}/releases/download/${{ steps.app_meta.outputs.tag }}/blood-donation-bangla.apk)

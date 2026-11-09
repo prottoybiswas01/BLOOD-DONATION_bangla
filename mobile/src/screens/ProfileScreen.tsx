@@ -20,6 +20,7 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { BLOOD_GROUPS, BloodGroup } from '../data/bangladeshLocations';
+import { APP_CONFIG } from '../api/config';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -447,6 +448,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           variant="outline"
           style={{ marginVertical: 18 }}
         />
+
+        <View style={{ alignItems: 'center', marginBottom: 28 }}>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>
+            অ্যাপ সংস্করণ: v{APP_CONFIG.version} (Build {APP_CONFIG.buildNumber})
+          </Text>
+        </View>
       </ScrollView>
 
       {/* Location Picker Modal */}

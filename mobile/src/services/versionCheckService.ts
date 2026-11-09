@@ -64,6 +64,28 @@ class VersionCheckManager {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
 
+      // 1. Isolated test update configuration (enables in-app update prompt verification on phone without modifying production Vercel metadata)
+      const TEST_UPDATE_CONFIG_URL = `https://raw.githubusercontent.com/prottoybiswas01/BLOOD-DONATION_bangla/feature/in-app-update-and-polling-sync/mobile/test-app-update.json?t=${now}`;
+
+      let testData: any = null;
+      try {
+        const testRes = await fetch(TEST_UPDATE_CONFIG_URL, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal
+        });
+        if (testRes.ok) {
+          testData = await testRes.json();
+        }
+      } catch (e) {
+        // Fall through to server API
+      }
+
+      if (testData && testData.versionCode) {
+        clearTimeout(timeoutId);
+        return this.processReleaseData(testData);
+      }
+
       const response = await fetch(`${API_BASE_URL}/v1/app/latest`, {
         method: 'GET',
         headers: {

@@ -23,10 +23,11 @@ test('Website Launch Preview Verification: Empty State, Persistence & Privacy', 
   const db = mongoose.connection.db;
   if (!db) throw new Error('Preview test database connection failed');
 
-  // Ensure database starts 100% EMPTY of user data
+  // Ensure database starts 100% EMPTY of user and institution data
   await db.collection('users').deleteMany({});
   await db.collection('donorprofiles').deleteMany({});
   await db.collection('bloodrequests').deleteMany({});
+  await db.collection('institutions').deleteMany({});
 
   // Sync dataStore from this empty database
   await dataStore.syncWithMongoDB();
@@ -57,12 +58,20 @@ test('Website Launch Preview Verification: Empty State, Persistence & Privacy', 
       assert.equal(reqData.requests.length, 0, 'No demo blood requests must appear');
       assert.equal(reqData.total, 0);
 
+      // Institutions search - ZERO demo institutions
+      const instRes = await fetch(`${baseUrl}/api/v1/institutions`);
+      assert.equal(instRes.status, 200);
+      const instData = await instRes.json() as any;
+      assert.equal(instData.success, true);
+      assert.equal(instData.institutions.length, 0, 'Zero demo institutions must be returned');
+
       // Stats endpoint
       const statsRes = await fetch(`${baseUrl}/api/v1/stats`);
       assert.equal(statsRes.status, 200);
       const statsData = await statsRes.json() as any;
       assert.equal(statsData.stats.totalDonors, 0);
       assert.equal(statsData.stats.activeRequests, 0);
+      assert.equal(statsData.stats.totalInstitutions, 0);
     });
 
     // -------------------------------------------------------------

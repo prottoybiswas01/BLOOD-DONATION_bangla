@@ -34,6 +34,40 @@ before(async () => {
       role: 'DONOR'
     });
   }
+  if (!dataStore.institutions.some(i => i._id === 'inst_du')) {
+    dataStore.institutions.push({
+      _id: 'inst_du',
+      name: 'University of Dhaka',
+      nameBn: 'ঢাকা বিশ্ববিদ্যালয়',
+      code: 'DU-BD',
+      type: 'university',
+      division: 'dhaka',
+      district: 'dhaka',
+      upazila: 'shahbagh',
+      address: 'Nilkhet Rd, Dhaka 1000',
+      status: 'approved',
+      totalRegisteredDonors: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  if (!dataStore.institutions.some(i => i._id === 'inst_buet')) {
+    dataStore.institutions.push({
+      _id: 'inst_buet',
+      name: 'BUET',
+      nameBn: 'বাংলাদেশ প্রকৌশল বিশ্ববিদ্যালয় (বুয়েট)',
+      code: 'BUET-BD',
+      type: 'university',
+      division: 'dhaka',
+      district: 'dhaka',
+      upazila: 'shahbagh',
+      address: 'Palashi, Dhaka 1000',
+      status: 'approved',
+      totalRegisteredDonors: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
   const testUser = await dataStore.findUserByPhone('01711111111');
   if (!dataStore.phoneChangeRequests.some(r => r._id === 'pcr_1')) {
     dataStore.phoneChangeRequests.push({

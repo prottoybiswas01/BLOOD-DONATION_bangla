@@ -145,6 +145,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }
       showsVerticalScrollIndicator={false}
     >
+      {/* Visual Update Test Success Badge */}
+      <View style={styles.updateSuccessCard}>
+        <Ionicons name="checkmark-done-circle" size={24} color="#15803D" style={{ marginRight: 10 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.updateSuccessTitle}>আপডেট পরীক্ষা সফল</Text>
+          <Text style={styles.updateSuccessSub}>সংস্করণ ১.০.২ (Build 3) সফলভাবে ইনস্টল হয়েছে • সেশন অক্ষুণ্ণ রয়েছে</Text>
+        </View>
+      </View>
+
       {/* Hero Banner */}
       <View style={styles.heroCard}>
         <View style={styles.heroBadge}>
@@ -463,5 +472,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  updateSuccessCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    padding: 12,
+    marginBottom: 14,
+  },
+  updateSuccessTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  updateSuccessSub: {
+    fontSize: 11,
+    color: '#166534',
+    marginTop: 2,
+    fontWeight: '600',
   },
 });

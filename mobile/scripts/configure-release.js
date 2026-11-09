@@ -96,17 +96,10 @@ if (process.env.ANDROID_KEYSTORE_BASE64) {
   console.log('[Release Config] Existing release keystore found in app directory.');
   fs.copyFileSync(appKeystorePath, persistentKeystorePath);
 } else {
-  // Generate consistent persistent keystore
-  console.log('[Release Config] Initializing persistent release keystore...');
-  try {
-    const keytoolCmd = `keytool -genkeypair -v -keystore "${appKeystorePath}" -alias "${keyAlias}" -keyalg RSA -keysize 2048 -validity 10000 -storepass "${storePassword}" -keypass "${keyPassword}" -dname "CN=BangladeshBloodDonation, OU=MobileRelease, O=BloodBD, L=Dhaka, ST=Dhaka, C=BD"`;
-    execSync(keytoolCmd, { stdio: 'ignore' });
-    fs.copyFileSync(appKeystorePath, persistentKeystorePath);
-    console.log('[Release Config] Persistent release keystore generated successfully.');
-  } catch (err) {
-    console.error('[Release Config] FATAL: Keytool could not generate release keystore. Build cannot proceed with unverified signing.');
-    process.exit(1);
-  }
+  console.error('[Release Config] FATAL: Production signing keystore is missing!');
+  console.error('[Release Config] ANDROID_KEYSTORE_BASE64 secret is not configured, and no local release.keystore was found.');
+  console.error('[Release Config] Dynamic ephemeral key generation fallback has been strictly disabled to protect user account upgrade compatibility.');
+  process.exit(1);
 }
 
 // Verify keystore exists now

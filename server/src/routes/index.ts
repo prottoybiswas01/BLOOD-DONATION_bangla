@@ -113,6 +113,8 @@ export const currentAppRelease = {
   minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || '1.0.0',
   forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
   fileSizeMb: 60.0,
+  fileSizeBytes: 62911392,
+  sha256Checksum: '3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2',
   releaseDate: '2026-11-02',
   downloadUrl: process.env.APP_DOWNLOAD_URL || 'https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk',
   directDownloadPath: '/downloads/blood-donation-bangla.apk',

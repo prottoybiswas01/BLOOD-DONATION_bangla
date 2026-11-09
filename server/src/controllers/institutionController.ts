@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { dataStore } from '../services/dataStore.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { logAuditEvent } from '../services/auditService.js';
+import { DonorProfileModel } from '../models/DonorProfile.js';
+import { isDatabaseConnected } from '../config/db.js';
 
 export const CreateInstitutionSchema = z.object({
   name: z.string().min(3, 'প্রতিষ্ঠানের নাম আবশ্যক'),
@@ -31,24 +33,44 @@ export async function getInstitutions(req: Request, res: Response): Promise<void
     status: targetStatus
   });
 
+  // Dynamically calculate actual real registered donor count for each institution
+  let donorCounts: any[] = [];
+  if (isDatabaseConnected()) {
+    try {
+      donorCounts = await DonorProfileModel.aggregate([
+        { $match: { institutionId: { $ne: null } } },
+        { $group: { _id: '$institutionId', count: { $sum: 1 } } }
+      ]);
+    } catch (e) {
+      // fallback
+    }
+  }
+  const countMap = new Map(donorCounts.map((dc: any) => [String(dc._id), dc.count]));
+
   // Never expose raw member rosters in directory
-  const safeInstitutions = institutions.map(i => ({
-    _id: i._id,
-    name: i.name,
-    nameBn: i.nameBn,
-    code: i.code,
-    type: i.type,
-    division: i.division,
-    district: i.district,
-    upazila: i.upazila,
-    address: i.address,
-    website: i.website,
-    email: i.email,
-    phone: i.phone,
-    totalRegisteredDonors: i.totalRegisteredDonors,
-    description: i.description,
-    status: i.status
-  }));
+  const safeInstitutions = institutions.map(i => {
+    let actualDonors = countMap.get(String(i._id));
+    if (actualDonors === undefined) {
+      actualDonors = dataStore.donorProfiles.filter(d => String(d.institutionId) === String(i._id)).length;
+    }
+    return {
+      _id: i._id,
+      name: i.name,
+      nameBn: i.nameBn,
+      code: i.code,
+      type: i.type,
+      division: i.division,
+      district: i.district,
+      upazila: i.upazila,
+      address: i.address,
+      website: i.website,
+      email: i.email,
+      phone: i.phone,
+      totalRegisteredDonors: actualDonors || 0,
+      description: i.description,
+      status: i.status
+    };
+  });
 
   res.json({
     success: true,
@@ -65,9 +87,24 @@ export async function getInstitutionById(req: Request, res: Response): Promise<v
     return;
   }
 
+  // Calculate actual real registered donors
+  let realDonorCount = 0;
+  if (isDatabaseConnected()) {
+    try {
+      realDonorCount = await DonorProfileModel.countDocuments({ institutionId: institution._id });
+    } catch (e) {
+      realDonorCount = 0;
+    }
+  } else {
+    realDonorCount = dataStore.donorProfiles.filter(d => String(d.institutionId) === String(institution._id)).length;
+  }
+
   res.json({
     success: true,
-    institution
+    institution: {
+      ...institution,
+      totalRegisteredDonors: realDonorCount
+    }
   });
 }
 

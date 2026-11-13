@@ -27,6 +27,13 @@ before(async () => {
       assignedInstitution: 'inst_du'
     });
   }
+  if (!dataStore.users.some(u => u.phone === '01700000007')) {
+    await dataStore.createUser({
+      phone: '01700000007',
+      name: 'Platform Admin',
+      role: 'ADMIN'
+    });
+  }
   if (!dataStore.users.some(u => u.phone === '01722222222')) {
     await dataStore.createUser({
       phone: '01722222222',

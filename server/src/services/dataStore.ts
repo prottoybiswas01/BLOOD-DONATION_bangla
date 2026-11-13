@@ -441,32 +441,18 @@ class DataStore {
   }
 
   seedInitialData() {
-    const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+    const defaultPasswordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
     const now = new Date();
 
-    // 1. Initial Users
+    // 1. Initial Users: Exactly ONE authoritative Super Admin configured from ENV
     this.users = [
       {
         _id: 'usr_superadmin',
-        name: 'সুপার অ্যাডমিন (Super Admin)',
-        phone: '01700000001',
-        email: 'superadmin@bloodbd.org',
+        name: ENV.SUPER_ADMIN_NAME,
+        phone: ENV.SUPER_ADMIN_PHONE,
+        email: ENV.SUPER_ADMIN_EMAIL,
         passwordHash: defaultPasswordHash,
         role: 'SUPER_ADMIN',
-        accountStatus: 'active',
-        gender: 'male',
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: 'usr_admin',
-        name: 'প্ল্যাটফর্ম অ্যাডমিন (Admin)',
-        phone: '01700000007',
-        email: 'admin@bloodbd.org',
-        passwordHash: defaultPasswordHash,
-        role: 'ADMIN',
         accountStatus: 'active',
         gender: 'male',
         isActive: true,
@@ -529,9 +515,78 @@ class DataStore {
       this.notifications = (dbNotifs || []) as any;
       const dbLogs = await ContactAccessLogModel.find().lean();
       this.contactAccessLogs = (dbLogs || []) as any;
+      
+      // Enforce single authoritative Super Admin from ENV configuration
+      await this.ensureSingleSuperAdmin();
+
       console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err: any) {
       console.warn('[Database Sync Warning]:', err.message);
+    }
+  }
+
+  async ensureSingleSuperAdmin(): Promise<void> {
+    const targetPhone = ENV.SUPER_ADMIN_PHONE;
+    const targetPassword = ENV.SUPER_ADMIN_PASSWORD;
+    const targetName = ENV.SUPER_ADMIN_NAME;
+    const targetEmail = ENV.SUPER_ADMIN_EMAIL;
+    const passwordHash = bcrypt.hashSync(targetPassword, 10);
+    const now = new Date();
+
+    // 1. In-memory clean up: Remove any other SUPER_ADMIN
+    this.users = this.users.filter(u => u.role !== 'SUPER_ADMIN' || u.phone === targetPhone);
+
+    // 2. Find or create the single authoritative super admin
+    let superAdmin = this.users.find(u => u.phone === targetPhone || u._id === 'usr_superadmin');
+    if (!superAdmin) {
+      superAdmin = {
+        _id: 'usr_superadmin',
+        name: targetName,
+        phone: targetPhone,
+        email: targetEmail,
+        passwordHash,
+        role: 'SUPER_ADMIN',
+        accountStatus: 'active',
+        gender: 'male',
+        isActive: true,
+        isPhoneVerified: true,
+        createdAt: now,
+        updatedAt: now
+      };
+      this.users.unshift(superAdmin);
+    } else {
+      superAdmin._id = 'usr_superadmin';
+      superAdmin.name = targetName;
+      superAdmin.phone = targetPhone;
+      superAdmin.email = targetEmail;
+      superAdmin.passwordHash = passwordHash;
+      superAdmin.role = 'SUPER_ADMIN';
+      superAdmin.accountStatus = 'active';
+      superAdmin.isActive = true;
+      superAdmin.isPhoneVerified = true;
+      superAdmin.updatedAt = now;
+    }
+
+    // 3. Database synchronization (if connected)
+    if (isDatabaseConnected()) {
+      try {
+        // Delete any other SUPER_ADMIN records from MongoDB Atlas
+        await UserModel.deleteMany({
+          role: 'SUPER_ADMIN',
+          phone: { $ne: targetPhone },
+          _id: { $ne: superAdmin._id }
+        });
+
+        // Upsert the single super admin with latest passwordHash and credentials from ENV
+        await UserModel.updateOne(
+          { _id: superAdmin._id },
+          { $set: superAdmin },
+          { upsert: true }
+        );
+        console.log(`[DataStore] Single Super Admin synchronized from .env (Phone: ${targetPhone})`);
+      } catch (err: any) {
+        console.warn('[DataStore] ensureSingleSuperAdmin DB error:', err?.message);
+      }
     }
   }
 

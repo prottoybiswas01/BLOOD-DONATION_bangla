@@ -179,11 +179,11 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
   const { id } = req.params;
   const { role, assignedDivision, assignedInstitution } = req.body;
 
-  // Strict restriction: Admin cannot promote anyone to SUPER_ADMIN or change to SUPER_ADMIN!
-  if (role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
-    res.status(403).json({
+  // Strict restriction: Exactly ONE Super Admin is permitted, managed via .env
+  if (role === 'SUPER_ADMIN') {
+    res.status(400).json({
       success: false,
-      message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন নতুন সুপার অ্যাডমিন পদবি প্রদান করতে পারেন।'
+      message: 'অনুরোধ প্রত্যাখ্যান: প্ল্যাটফর্মে কেবল একটিমাত্র সুপার অ্যাডমিন অ্যাকাউন্ট অনুমোদিত, যা পরিবেশ ভ্যারিয়েবল (.env)-এর মাধ্যমে পরিচালিত।'
     });
     return;
   }

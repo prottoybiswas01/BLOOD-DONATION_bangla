@@ -46,7 +46,7 @@ export const RegisterSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  phone: z.string().regex(BD_PHONE_REGEX, 'সঠিক মোবাইল নম্বর দিন'),
+  phone: z.string().min(3, 'সঠিক মোবাইল নম্বর বা ইউজার আইডি দিন'),
   password: z.string().min(1, 'পাসওয়ার্ড আবশ্যক')
 });
 
@@ -218,7 +218,32 @@ export async function login(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, password } = req.body;
   const phone = normalizePhone(rawPhone);
 
-  const user = await dataStore.findUserByPhone(phone);
+  let user = await dataStore.findUserByPhone(phone);
+  if (!user && rawPhone) {
+    const rawIdentifier = String(rawPhone).trim();
+    user = await dataStore.findUserById(rawIdentifier) ||
+           dataStore.users.find(u => 
+             (u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase()) ||
+             (u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase()) ||
+             (rawIdentifier.toLowerCase() === 'superadmin' && u.role === 'SUPER_ADMIN')
+           );
+
+    if (!user && isDatabaseConnected()) {
+      try {
+        const doc = await UserModel.findOne({
+          $or: [
+            { _id: rawIdentifier },
+            { email: rawIdentifier.toLowerCase() },
+            { phone: rawIdentifier }
+          ]
+        }).lean();
+        if (doc) user = doc as any;
+      } catch (err: any) {
+        console.warn('[AuthController] Login lookup error:', err?.message);
+      }
+    }
+  }
+
   if (!user) {
     res.status(401).json({
       success: false,

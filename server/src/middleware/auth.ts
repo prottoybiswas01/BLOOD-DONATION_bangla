@@ -45,6 +45,17 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
       return;
     }
 
+    // Invalidate previous session tokens if tokenVersion has been incremented
+    const tokenVer = (decoded as any).tokenVersion;
+    if (user.tokenVersion !== undefined && (tokenVer === undefined || tokenVer < user.tokenVersion)) {
+      res.status(401).json({
+        success: false,
+        sessionInvalidated: true,
+        message: 'আপনার পূর্বের সেশনটি বাতিল করা হয়েছে। অনুগ্রহ করে পুনরায় লগইন করুন।'
+      });
+      return;
+    }
+
     // Check blocked or suspended status
     if (
       user.accountStatus === 'temporarily_blocked' || 

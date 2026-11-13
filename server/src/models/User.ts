@@ -43,6 +43,7 @@ export interface IUser extends Document {
   upazila?: string;
   isActive: boolean;
   isPhoneVerified: boolean;
+  tokenVersion?: number;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -94,6 +95,7 @@ const UserSchema = new Schema<IUser>(
     upazila: { type: String, trim: true },
     isActive: { type: Boolean, default: true, index: true },
     isPhoneVerified: { type: Boolean, default: false },
+    tokenVersion: { type: Number, default: 1 },
     lastLoginAt: { type: Date }
   },
   {

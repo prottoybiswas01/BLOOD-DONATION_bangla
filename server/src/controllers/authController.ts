@@ -293,9 +293,12 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 
   let isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
-  // Built-in Super Admin password fallback support
-  if (!isPasswordValid && user.role === 'SUPER_ADMIN' && (password === 'Admin@123456' || password === 'admin123456')) {
+  // Authoritative runtime environment secret match for Super Admin
+  if (!isPasswordValid && user.role === 'SUPER_ADMIN' && ENV.SUPER_ADMIN_PASSWORD && password === ENV.SUPER_ADMIN_PASSWORD) {
     isPasswordValid = true;
+    const newHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+    user.passwordHash = newHash;
+    dataStore.updateUser(user._id, { passwordHash: newHash }).catch(() => {});
   }
   if (!isPasswordValid) {
     res.status(401).json({
@@ -350,7 +353,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       name: user.name,
       assignedDivision: user.assignedDivision,
       assignedInstitution: user.assignedInstitution,
-      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin,
+      tokenVersion: user.tokenVersion || 1
     },
     ENV.JWT_SECRET,
     { expiresIn: '7d' }

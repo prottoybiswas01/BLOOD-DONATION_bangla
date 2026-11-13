@@ -51,6 +51,7 @@ export interface StoredUser {
   upazila?: string;
   isActive: boolean;
   isPhoneVerified: boolean;
+  tokenVersion?: number;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -410,22 +411,25 @@ export function isConfirmedDemoRequest(r: any): boolean {
          CONFIRMED_DEMO_USER_IDS.has(requesterId);
 }
 
-// Built-in Default Super Admin (Hardcoded in code; works on Vercel without environment variable dependencies)
-export const DEFAULT_SUPER_ADMIN_PASSWORD_HASH = bcrypt.hashSync('Admin@123456', 10);
-
+// Authoritative Super Admin Template (Secret password must be provided via environment variable SUPER_ADMIN_PASSWORD)
 export function getBuiltInSuperAdmin(): StoredUser {
   const now = new Date();
+  const rawPass = ENV.SUPER_ADMIN_PASSWORD;
+  const passwordHash = rawPass 
+    ? bcrypt.hashSync(rawPass, 10) 
+    : '$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin';
   return {
     _id: 'usr_superadmin',
-    name: 'সুপার অ্যাডমিন (Super Admin)',
-    phone: '01700000000',
-    email: 'admin@bloodbd.org',
-    passwordHash: DEFAULT_SUPER_ADMIN_PASSWORD_HASH,
+    name: ENV.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)',
+    phone: ENV.SUPER_ADMIN_PHONE || '01700000000',
+    email: ENV.SUPER_ADMIN_EMAIL || 'admin@bloodbd.org',
+    passwordHash,
     role: 'SUPER_ADMIN',
     accountStatus: 'active',
     gender: 'male',
     isActive: true,
     isPhoneVerified: true,
+    tokenVersion: 2,
     createdAt: now,
     updatedAt: now
   };
@@ -529,10 +533,33 @@ class DataStore {
   }
 
   async ensureSingleSuperAdmin(): Promise<void> {
-    // Ensure at least one active Super Admin exists (built-in or user-promoted)
-    const hasSuperAdmin = this.users.some(u => u.role === 'SUPER_ADMIN' && u.accountStatus === 'active');
-    if (!hasSuperAdmin) {
-      const defaultAdmin = getBuiltInSuperAdmin();
+    const defaultAdmin = getBuiltInSuperAdmin();
+    // Ensure Super Admin exists and synchronize with environment secret if provided
+    const existing = this.users.find(u => u._id === defaultAdmin._id || u.role === 'SUPER_ADMIN');
+    if (existing) {
+      if (ENV.SUPER_ADMIN_PASSWORD) {
+        existing.passwordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+      }
+      if (ENV.SUPER_ADMIN_PHONE) {
+        existing.phone = ENV.SUPER_ADMIN_PHONE;
+      }
+      if (isDatabaseConnected()) {
+        try {
+          await UserModel.updateOne(
+            { _id: existing._id },
+            {
+              $set: {
+                ...(ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {}),
+                ...(ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {}),
+                updatedAt: new Date()
+              }
+            }
+          );
+        } catch (err: any) {
+          console.warn('[DataStore] ensureSingleSuperAdmin sync error:', err?.message);
+        }
+      }
+    } else {
       this.users.unshift(defaultAdmin);
       if (isDatabaseConnected()) {
         try {
@@ -541,7 +568,6 @@ class DataStore {
             { $set: defaultAdmin },
             { upsert: true }
           );
-          console.log('[DataStore] Built-in Super Admin initialized in database (01700000000)');
         } catch (err: any) {
           console.warn('[DataStore] ensureSingleSuperAdmin DB error:', err?.message);
         }

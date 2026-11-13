@@ -95909,6 +95909,7 @@ var UserSchema = new import_mongoose.Schema(
     upazila: { type: String, trim: true },
     isActive: { type: Boolean, default: true, index: true },
     isPhoneVerified: { type: Boolean, default: false },
+    tokenVersion: { type: Number, default: 1 },
     lastLoginAt: { type: Date }
   },
   {
@@ -97688,20 +97689,22 @@ function isConfirmedDemoRequest(r) {
   }
   return CONFIRMED_DEMO_REQUEST_IDS.has(id) || CONFIRMED_DEMO_PUBLIC_IDS.has(publicId) || CONFIRMED_DEMO_USER_IDS.has(requesterId);
 }
-var DEFAULT_SUPER_ADMIN_PASSWORD_HASH = bcryptjs_default.hashSync("Admin@123456", 10);
 function getBuiltInSuperAdmin() {
   const now = /* @__PURE__ */ new Date();
+  const rawPass = ENV.SUPER_ADMIN_PASSWORD;
+  const passwordHash = rawPass ? bcryptjs_default.hashSync(rawPass, 10) : "$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin";
   return {
     _id: "usr_superadmin",
-    name: "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-    phone: "01700000000",
-    email: "admin@bloodbd.org",
-    passwordHash: DEFAULT_SUPER_ADMIN_PASSWORD_HASH,
+    name: ENV.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
+    phone: ENV.SUPER_ADMIN_PHONE || "01700000000",
+    email: ENV.SUPER_ADMIN_EMAIL || "admin@bloodbd.org",
+    passwordHash,
     role: "SUPER_ADMIN",
     accountStatus: "active",
     gender: "male",
     isActive: true,
     isPhoneVerified: true,
+    tokenVersion: 2,
     createdAt: now,
     updatedAt: now
   };
@@ -97788,9 +97791,32 @@ var DataStore = class {
     }
   }
   async ensureSingleSuperAdmin() {
-    const hasSuperAdmin = this.users.some((u) => u.role === "SUPER_ADMIN" && u.accountStatus === "active");
-    if (!hasSuperAdmin) {
-      const defaultAdmin = getBuiltInSuperAdmin();
+    const defaultAdmin = getBuiltInSuperAdmin();
+    const existing = this.users.find((u) => u._id === defaultAdmin._id || u.role === "SUPER_ADMIN");
+    if (existing) {
+      if (ENV.SUPER_ADMIN_PASSWORD) {
+        existing.passwordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+      }
+      if (ENV.SUPER_ADMIN_PHONE) {
+        existing.phone = ENV.SUPER_ADMIN_PHONE;
+      }
+      if (isDatabaseConnected()) {
+        try {
+          await UserModel.updateOne(
+            { _id: existing._id },
+            {
+              $set: {
+                ...ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {},
+                ...ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {},
+                updatedAt: /* @__PURE__ */ new Date()
+              }
+            }
+          );
+        } catch (err) {
+          console.warn("[DataStore] ensureSingleSuperAdmin sync error:", err?.message);
+        }
+      }
+    } else {
       this.users.unshift(defaultAdmin);
       if (isDatabaseConnected()) {
         try {
@@ -97799,7 +97825,6 @@ var DataStore = class {
             { $set: defaultAdmin },
             { upsert: true }
           );
-          console.log("[DataStore] Built-in Super Admin initialized in database (01700000000)");
         } catch (err) {
           console.warn("[DataStore] ensureSingleSuperAdmin DB error:", err?.message);
         }
@@ -104224,8 +104249,12 @@ async function login(req, res) {
     return;
   }
   let isPasswordValid = bcryptjs_default.compareSync(password, user.passwordHash);
-  if (!isPasswordValid && user.role === "SUPER_ADMIN" && (password === "Admin@123456" || password === "admin123456")) {
+  if (!isPasswordValid && user.role === "SUPER_ADMIN" && ENV.SUPER_ADMIN_PASSWORD && password === ENV.SUPER_ADMIN_PASSWORD) {
     isPasswordValid = true;
+    const newHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+    user.passwordHash = newHash;
+    dataStore.updateUser(user._id, { passwordHash: newHash }).catch(() => {
+    });
   }
   if (!isPasswordValid) {
     res.status(401).json({
@@ -104272,7 +104301,8 @@ async function login(req, res) {
       name: user.name,
       assignedDivision: user.assignedDivision,
       assignedInstitution: user.assignedInstitution,
-      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin
+      requirePasswordChangeAtFirstLogin: user.requirePasswordChangeAtFirstLogin,
+      tokenVersion: user.tokenVersion || 1
     },
     ENV.JWT_SECRET,
     { expiresIn: "7d" }
@@ -104513,6 +104543,15 @@ async function requireAuth(req, res, next) {
       res.status(403).json({
         success: false,
         message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964"
+      });
+      return;
+    }
+    const tokenVer = decoded.tokenVersion;
+    if (user.tokenVersion !== void 0 && (tokenVer === void 0 || tokenVer < user.tokenVersion)) {
+      res.status(401).json({
+        success: false,
+        sessionInvalidated: true,
+        message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7\u09B0 \u09B8\u09C7\u09B6\u09A8\u099F\u09BF \u09AC\u09BE\u09A4\u09BF\u09B2 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09AA\u09C1\u09A8\u09B0\u09BE\u09AF\u09BC \u09B2\u0997\u0987\u09A8 \u0995\u09B0\u09C1\u09A8\u0964"
       });
       return;
     }

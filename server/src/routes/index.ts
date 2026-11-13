@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { dataStore } from '../services/dataStore.js';
+import { 
+  dataStore, 
+  CONFIRMED_DEMO_DONOR_IDS, 
+  CONFIRMED_DEMO_USER_IDS, 
+  CONFIRMED_DEMO_REQUEST_IDS, 
+  CONFIRMED_DEMO_PUBLIC_IDS 
+} from '../services/dataStore.js';
 import { isDatabaseConnected } from '../config/db.js';
 import { DonorProfileModel } from '../models/DonorProfile.js';
 import { BloodRequestModel } from '../models/BloodRequest.js';
@@ -60,16 +66,41 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
     let totalInstitutions = 0;
 
     if (isDatabaseConnected()) {
-      totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
-      availableDonors = await DonorProfileModel.countDocuments({
-        isPubliclyListed: true,
-        availabilityStatus: 'available'
-      });
-      activeRequests = await BloodRequestModel.countDocuments({
-        status: { $in: ['open', 'partially_fulfilled'] }
-      });
-      const districtList = await DonorProfileModel.distinct('district', { isPubliclyListed: true });
-      districtsCovered = districtList.filter(Boolean).length;
+      if (dataStore.suppressDemoData) {
+        totalDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        availableDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          availabilityStatus: 'available',
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        activeRequests = await BloodRequestModel.countDocuments({
+          status: { $in: ['open', 'partially_fulfilled'] },
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
+          publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
+        });
+        const districtList = await DonorProfileModel.distinct('district', {
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        districtsCovered = districtList.filter(Boolean).length;
+      } else {
+        totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
+        availableDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          availabilityStatus: 'available'
+        });
+        activeRequests = await BloodRequestModel.countDocuments({
+          status: { $in: ['open', 'partially_fulfilled'] }
+        });
+        const districtList = await DonorProfileModel.distinct('district', { isPubliclyListed: true });
+        districtsCovered = districtList.filter(Boolean).length;
+      }
       totalInstitutions = await InstitutionModel.countDocuments();
     } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
       return res.status(503).json({

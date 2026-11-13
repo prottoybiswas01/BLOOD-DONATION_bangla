@@ -351,8 +351,70 @@ export interface StoredInstitutionChangeRequest {
   updatedAt: Date;
 }
 
+// Confirmed Demo Identifiers & Launch Suppression Helpers
+export const CONFIRMED_DEMO_USER_IDS = new Set([
+  'usr_coordinator_dhaka',
+  'usr_coordinator_ctg',
+  'usr_moderator_du',
+  'usr_head',
+  'usr_donor_1',
+  'usr_donor_2',
+  'usr_donor_3',
+  'usr_donor_4',
+  'usr_requester_1',
+  'usr_blocked_demo',
+  'usr_sync_v2_1794563476694'
+]);
+
+export const CONFIRMED_DEMO_DONOR_IDS = new Set([
+  'donor_prof_1',
+  'donor_prof_2',
+  'donor_prof_3',
+  'donor_prof_4',
+  'donor_prof_1794563476796kd5ko'
+]);
+
+export const CONFIRMED_DEMO_REQUEST_IDS = new Set([
+  'req_1',
+  'req_2',
+  'req_3',
+  'req_179456347713833s9v',
+  'req_1794563477775sywcg'
+]);
+
+export const CONFIRMED_DEMO_PUBLIC_IDS = new Set([
+  'BR-RD02-7365',
+  'BR-RDHR-Q1FE'
+]);
+
+export function isConfirmedDemoDonor(d: any): boolean {
+  if (!d) return false;
+  const id = String(d._id || '');
+  const userId = String(d.userId || '');
+  return CONFIRMED_DEMO_DONOR_IDS.has(id) || CONFIRMED_DEMO_USER_IDS.has(userId);
+}
+
+export function isConfirmedDemoRequest(r: any): boolean {
+  if (!r) return false;
+  const id = String(r._id || '');
+  const publicId = String(r.publicId || '');
+  const requesterId = String(r.requesterId || '');
+
+  // If request has donor fulfillment or modification notes, retain for review; DO NOT suppress as confirmed demo
+  if (r.unitsFulfilled > 0 || (r.statusHistory && r.statusHistory.length > 1) || r.status === 'partially_fulfilled') {
+    return false;
+  }
+
+  return CONFIRMED_DEMO_REQUEST_IDS.has(id) ||
+         CONFIRMED_DEMO_PUBLIC_IDS.has(publicId) ||
+         CONFIRMED_DEMO_USER_IDS.has(requesterId);
+}
+
 // In-Memory Repository
 class DataStore {
+  // Website launch suppression: stops returning confirmed demo data in public lists and direct URLs
+  public suppressDemoData: boolean = (ENV.NODE_ENV === 'production' || Boolean(process.env.VERCEL) || process.env.SUPPRESS_DEMO_DATA === 'true');
+
   users: StoredUser[] = [];
   donorProfiles: StoredDonorProfile[] = [];
   bloodRequests: StoredBloodRequest[] = [];
@@ -930,6 +992,7 @@ class DataStore {
 
   async findDonorProfileById(id: string): Promise<StoredDonorProfile | undefined> {
     if (!id) return undefined;
+    let prof: StoredDonorProfile | undefined;
     if (isDatabaseConnected()) {
       try {
         const doc = await DonorProfileModel.findOne({ _id: id }).lean();
@@ -938,17 +1001,25 @@ class DataStore {
           const idx = this.donorProfiles.findIndex(d => d._id === id);
           if (idx >= 0) this.donorProfiles[idx] = profile;
           else this.donorProfiles.push(profile);
-          return profile;
+          prof = profile;
         }
       } catch (e: any) {
         console.warn('[DataStore] findDonorProfileById DB error:', e?.message);
       }
     }
-    return this.findDonorProfileByIdSync(id);
+    if (!prof) prof = this.findDonorProfileByIdSync(id);
+    if (this.suppressDemoData && prof && isConfirmedDemoDonor(prof)) {
+      return undefined;
+    }
+    return prof;
   }
 
   findDonorProfileByIdSync(id: string): StoredDonorProfile | undefined {
-    return this.donorProfiles.find(d => String(d._id) === String(id));
+    const prof = this.donorProfiles.find(d => String(d._id) === String(id));
+    if (this.suppressDemoData && prof && isConfirmedDemoDonor(prof)) {
+      return undefined;
+    }
+    return prof;
   }
 
   createDonorProfileSync(data: Partial<StoredDonorProfile>): StoredDonorProfile {
@@ -1060,7 +1131,7 @@ class DataStore {
         const insts = await InstitutionModel.find({ _id: { $in: instIds } }).lean();
         const instMap = new Map(insts.map(i => [String(i._id), i.nameBn || i.name]));
 
-        const safeDonors = profiles
+        let safeDonors = profiles
           .filter(p => activeUserMap.has(String(p.userId)))
           .map(p => {
             const isPublicContactAllowed = Boolean(p.consentToShareContact);
@@ -1085,11 +1156,16 @@ class DataStore {
             };
           });
 
+        if (this.suppressDemoData) {
+          safeDonors = safeDonors.filter(p => !isConfirmedDemoDonor(p));
+        }
+
+        const effectiveTotal = this.suppressDemoData ? safeDonors.length : total;
         return {
           donors: safeDonors,
-          total,
+          total: effectiveTotal,
           page,
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.ceil(effectiveTotal / limit)
         };
       } catch (e: any) {
         console.warn('[DataStore] searchDonors DB error:', e?.message);
@@ -1123,6 +1199,10 @@ class DataStore {
       const user = this.findUserByIdSync(d.userId);
       return d.isPubliclyListed && user && user.accountStatus === 'active' && user.isActive;
     });
+
+    if (this.suppressDemoData) {
+      result = result.filter(d => !isConfirmedDemoDonor(d));
+    }
 
     if (filters.bloodGroup) {
       result = result.filter(d => d.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
@@ -1187,6 +1267,7 @@ class DataStore {
   async findBloodRequestById(idOrPublicId: string): Promise<StoredBloodRequest | undefined> {
     if (!idOrPublicId) return undefined;
     const target = String(idOrPublicId).trim();
+    let req: StoredBloodRequest | undefined;
     if (isDatabaseConnected()) {
       try {
         const doc = await BloodRequestModel.findOne({
@@ -1201,22 +1282,30 @@ class DataStore {
           const idx = this.bloodRequests.findIndex(r => r._id === stored._id);
           if (idx >= 0) this.bloodRequests[idx] = stored;
           else this.bloodRequests.unshift(stored);
-          return stored;
+          req = stored;
         }
       } catch (e: any) {
         console.warn('[DataStore] findBloodRequestById DB error:', e?.message);
       }
     }
-    return this.findBloodRequestByIdSync(target);
+    if (!req) req = this.findBloodRequestByIdSync(target);
+    if (this.suppressDemoData && req && isConfirmedDemoRequest(req)) {
+      return undefined;
+    }
+    return req;
   }
 
   findBloodRequestByIdSync(idOrPublicId: string): StoredBloodRequest | undefined {
     if (!idOrPublicId) return undefined;
     const target = String(idOrPublicId).toLowerCase().trim();
-    return this.bloodRequests.find(r => 
+    const req = this.bloodRequests.find(r => 
       String(r._id).toLowerCase() === target || 
       (r.publicId && String(r.publicId).toLowerCase() === target)
     );
+    if (this.suppressDemoData && req && isConfirmedDemoRequest(req)) {
+      return undefined;
+    }
+    return req;
   }
 
   createBloodRequestSync(data: Partial<StoredBloodRequest>): StoredBloodRequest {
@@ -1343,18 +1432,23 @@ class DataStore {
           .lean();
 
         const now = new Date();
-        const results = (docs as any[]).map(r => {
+        let results = (docs as any[]).map(r => {
           if ((r.status === 'open' || r.status === 'partially_fulfilled') && new Date(r.expiresAt) < now) {
             r.status = 'expired';
           }
           return r;
         });
 
+        if (this.suppressDemoData) {
+          results = results.filter(r => !isConfirmedDemoRequest(r));
+        }
+
+        const effectiveTotal = this.suppressDemoData ? results.length : total;
         return {
           requests: results,
-          total,
+          total: effectiveTotal,
           page,
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.ceil(effectiveTotal / limit)
         };
       } catch (e: any) {
         console.warn('[DataStore] searchBloodRequests DB error:', e?.message);
@@ -1386,6 +1480,9 @@ class DataStore {
     page?: number;
   }) {
     let result = [...this.bloodRequests];
+    if (this.suppressDemoData) {
+      result = result.filter(r => !isConfirmedDemoRequest(r));
+    }
 
     const now = new Date();
     result.forEach(r => {

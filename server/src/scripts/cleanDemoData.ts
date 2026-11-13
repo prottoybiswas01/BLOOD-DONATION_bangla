@@ -3,10 +3,13 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { ENV } from '../config/env.js';
 
+dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const MONGO_URI = process.env.MONGO_URI || '';
+const MONGO_URI = ENV.MONGO_URI || process.env.MONGO_URI || '';
 
 export type ClassificationType = 'CONFIRMED_DEMO' | 'AMBIGUOUS_PENDING_REVIEW' | 'PRESERVED';
 
@@ -113,6 +116,9 @@ export function hashRecord(doc: any): string {
 
 /**
  * Classifies a user record based on seed fixtures and evidence of real activity.
+ * ID prefix matching is treated solely as a suspicion signal.
+ * To confirm demo: BOTH specific fixture ID and verified fixture identity must match.
+ * Modified records and accounts linked to real activity are retained for review.
  */
 export function classifyUser(u: any): { classification: ClassificationType; reason: string } {
   const id = String(u._id);
@@ -125,16 +131,20 @@ export function classifyUser(u: any): { classification: ClassificationType; reas
     };
   }
 
-  // 2. Check if this is an organic account not in known seed/test lists
+  // 2. ID prefix match is strictly a SUSPICION SIGNAL (candidate / flag)
   const isSeedUser = EXACT_SEED_USER_IDS.has(id);
-  const isAutomatedTestUser = id.startsWith('usr_sync_') ||
+  const hasSuspiciousPrefix = isSeedUser ||
+                              id.startsWith('usr_sync_') ||
                               id.startsWith('usr_target_') ||
                               id.startsWith('usr_req_') ||
                               id.startsWith('usr_test_') ||
                               id.startsWith('usr_actor_') ||
-                              id.startsWith('usr_viewer_');
+                              id.startsWith('usr_viewer_') ||
+                              id.startsWith('usr_head_') ||
+                              id.startsWith('usr_moderator_') ||
+                              id.startsWith('usr_coordinator_');
 
-  if (!isSeedUser && !isAutomatedTestUser) {
+  if (!hasSuspiciousPrefix) {
     // Identity is organic or not a recognized seed/test fixture -> PRESERVE
     return {
       classification: 'PRESERVED',
@@ -142,16 +152,45 @@ export function classifyUser(u: any): { classification: ClassificationType; reas
     };
   }
 
-  // 3. For seed/test users: check for evidence of modification or real use
+  // 3. For users with suspicious prefix: check for evidence of modification or real use
   const hasLastLogin = Boolean(u.lastLoginAt);
   const createdAtTime = u.createdAt ? new Date(u.createdAt).getTime() : 0;
   const updatedAtTime = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
-  const wasSignificantlyUpdated = (updatedAtTime - createdAtTime) > 10000; // > 10 seconds after creation
+  const wasSignificantlyUpdated = (updatedAtTime - createdAtTime) > 2000;
 
   if (hasLastLogin || wasSignificantlyUpdated) {
     return {
       classification: 'AMBIGUOUS_PENDING_REVIEW',
-      reason: 'Seed/test identifier but has recorded user login history or substantial post-creation modification'
+      reason: 'Suspicious identifier but has recorded user login history or substantial post-creation modification'
+    };
+  }
+
+  // 4. Verify Record Identity against known fixtures
+  const KNOWN_FIXTURE_NAMES = new Set([
+    'সুপার অ্যাডমিন (Super Admin)', 'প্ল্যাটফর্ম অ্যাডমিন (Admin)',
+    'বিভাগীয় সমন্বয়ক (ঢাকা)', 'বিভাগীয় সমন্বয়ক (চট্টগ্রাম)',
+    'প্রতিষ্ঠান মডারেটর (ঢাকা বিশ্ববিদ্যালয়)', 'প্রতিষ্ঠান প্রধান',
+    'রফিকুল ইসলাম', 'তাহমিদ হাসান', 'মোস্তাফিজুর রহমান',
+    'আহমেদ হাসান', 'হাসান মাহমুদ', 'মাহবুব আলম (টেস্ট আবেদনকারী)',
+    'সাদিয়া জাহান', 'তানভীর আহমেদ', 'ফারহানা আক্তার'
+  ]);
+
+  const hasFixtureCredentials = Boolean(
+    (u.passwordHash && (
+      u.passwordHash.includes('validPasswordHash') ||
+      u.passwordHash.includes('defaultHashPlaceholder') ||
+      u.passwordHash === 'dummy'
+    ))
+  );
+
+  const isKnownFixtureIdentity = isSeedUser ||
+                                KNOWN_FIXTURE_NAMES.has(u.name) ||
+                                hasFixtureCredentials;
+
+  if (!isKnownFixtureIdentity) {
+    return {
+      classification: 'AMBIGUOUS_PENDING_REVIEW',
+      reason: 'Identifier has suspicious prefix but record identity does not match verified fixture signatures'
     };
   }
 
@@ -185,9 +224,9 @@ export function classifyDonor(d: any, userClassificationMap: Map<string, Classif
   }
 
   const isSeedDonor = EXACT_SEED_DONOR_IDS.has(id);
-  const isTestDonor = id.startsWith('donor_prof_sync_') || id.startsWith('donor_prof_target_') || id.startsWith('donor_prof_');
+  const hasSuspiciousPrefix = isSeedDonor || id.startsWith('donor_prof_');
 
-  if (!isSeedDonor && !isTestDonor) {
+  if (!hasSuspiciousPrefix) {
     return {
       classification: 'PRESERVED',
       reason: 'Non-fixture donor registration'
@@ -196,7 +235,7 @@ export function classifyDonor(d: any, userClassificationMap: Map<string, Classif
 
   const createdAtTime = d.createdAt ? new Date(d.createdAt).getTime() : 0;
   const updatedAtTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
-  if ((updatedAtTime - createdAtTime) > 10000) {
+  if ((updatedAtTime - createdAtTime) > 2000) {
     return {
       classification: 'AMBIGUOUS_PENDING_REVIEW',
       reason: 'Donor profile has post-creation modifications'
@@ -211,6 +250,7 @@ export function classifyDonor(d: any, userClassificationMap: Map<string, Classif
 
 /**
  * Classifies a blood request.
+ * Any request with responses (units fulfilled > 0), history modifications, or status updates is retained for review.
  */
 export function classifyBloodRequest(r: any, userClassificationMap: Map<string, ClassificationType>): { classification: ClassificationType; reason: string } {
   const id = String(r._id);
@@ -231,28 +271,43 @@ export function classifyBloodRequest(r: any, userClassificationMap: Map<string, 
     };
   }
 
+  // 1. Evidence of real donor response or status update
+  const hasDonorResponse = (r.unitsFulfilled && r.unitsFulfilled > 0) || r.status === 'partially_fulfilled' || r.status === 'fulfilled';
+  const hasHistoryUpdates = Array.isArray(r.statusHistory) && r.statusHistory.length > 1;
+  const createdAtTime = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+  const updatedAtTime = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+  const wasSignificantlyUpdated = (updatedAtTime - createdAtTime) > 2000;
+
+  if (hasDonorResponse || hasHistoryUpdates || wasSignificantlyUpdated) {
+    return {
+      classification: 'AMBIGUOUS_PENDING_REVIEW',
+      reason: 'Blood request has donor response, status change, or history modifications; retained for review'
+    };
+  }
+
   const isSeedReq = EXACT_SEED_REQUEST_IDS.has(id);
   const publicId = String(r.publicId || '');
-  const isTestReq = id.startsWith('req_') ||
-                    publicId.startsWith('BR-2026-SYNC') ||
-                    publicId.startsWith('BR-2026-TEST') ||
-                    publicId.startsWith('BR-2026-DH') ||
-                    publicId.startsWith('BR-2026-CT');
+  const hasSuspiciousPrefix = isSeedReq || id.startsWith('req_') || publicId.startsWith('BR-');
 
-  if (!isSeedReq && !isTestReq) {
+  if (!hasSuspiciousPrefix) {
     return {
       classification: 'PRESERVED',
       reason: 'Organic blood request by public user'
     };
   }
 
-  const createdAtTime = r.createdAt ? new Date(r.createdAt).getTime() : 0;
-  const updatedAtTime = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
-  // If request has units fulfilled by real donors or notes added later
-  if (r.unitsFulfilled > 0 && !isSeedReq && (updatedAtTime - createdAtTime) > 10000) {
+  // 2. Verified fixture identity check
+  const KNOWN_TEST_PATIENTS = new Set([
+    'নাজমুল হাসান', 'সালেহা বেগম', 'ফারহানা আক্তার', 'নুরুল ইসলাম', 'আহমেদ কবির (৫৫)',
+    'রাশেদ খান', 'কামাল উদ্দিন', 'মরিয়ম আক্তার'
+  ]);
+  const patient = String(r.patientName || '').split('_')[0].trim();
+  const matchesKnownPatient = KNOWN_TEST_PATIENTS.has(patient) || /_\d{10,}/.test(r.patientName || '');
+
+  if (!isSeedReq && !matchesKnownPatient) {
     return {
       classification: 'AMBIGUOUS_PENDING_REVIEW',
-      reason: 'Blood request has donor responses or updates recorded'
+      reason: 'ID has fixture prefix signal but record identity does not match known test fixtures; retained for review'
     };
   }
 
@@ -349,7 +404,19 @@ export async function performFullClassification(db: mongoose.mongo.Db): Promise<
     const hash = hashRecord(r);
 
     if (classification === 'CONFIRMED_DEMO') reqsDemo++;
-    else if (classification === 'AMBIGUOUS_PENDING_REVIEW') reqsAmbiguous++;
+    else if (classification === 'AMBIGUOUS_PENDING_REVIEW') {
+      reqsAmbiguous++;
+      // Cross-reference: if an ambiguous or modified request exists, keep its requester user account for review
+      const reqId = String(r.requesterId);
+      if (userClassMap.get(reqId) === 'CONFIRMED_DEMO') {
+        userClassMap.set(reqId, 'AMBIGUOUS_PENDING_REVIEW');
+        const uRec = records.find(rec => rec.collection === 'users' && rec.id === reqId);
+        if (uRec) {
+          uRec.classification = 'AMBIGUOUS_PENDING_REVIEW';
+          uRec.reason = 'Associated with a modified blood request pending review';
+        }
+      }
+    }
     else reqsPreserved++;
 
     records.push({
@@ -362,13 +429,22 @@ export async function performFullClassification(db: mongoose.mongo.Db): Promise<
     });
   }
 
+  // Recalculate user summary based on cross-referenced ambiguous classifications
+  const userSummary = summary.find(s => s.collection === 'users');
+  if (userSummary) {
+    const userRecs = records.filter(r => r.collection === 'users');
+    userSummary.confirmedDemo = userRecs.filter(r => r.classification === 'CONFIRMED_DEMO').length;
+    userSummary.ambiguousPendingReview = userRecs.filter(r => r.classification === 'AMBIGUOUS_PENDING_REVIEW').length;
+    userSummary.preserved = userRecs.filter(r => r.classification === 'PRESERVED').length;
+  }
+
   summary.push({
     collection: 'bloodrequests',
     total: allRequests.length,
     confirmedDemo: reqsDemo,
     ambiguousPendingReview: reqsAmbiguous,
     preserved: reqsPreserved,
-    notes: 'Purges unmodified test/seed requests; retains requests with donor responses or organic origin.'
+    notes: 'Purges unmodified test/seed requests; retains requests with donor responses, modified notes, or organic origin.'
   });
 
   // 4. Institutions: 100% Preserved
@@ -425,6 +501,17 @@ export async function performFullClassification(db: mongoose.mongo.Db): Promise<
       } else if (userClass === 'AMBIGUOUS_PENDING_REVIEW') {
         classification = 'AMBIGUOUS_PENDING_REVIEW';
         reason = 'Belongs to an ambiguous user record pending review';
+      } else if (doc.status === 'pending' || doc.status === 'under_review') {
+        classification = 'AMBIGUOUS_PENDING_REVIEW';
+        reason = 'Active pending request requiring administrator review';
+        if (userRef && userClassMap.get(userRef) === 'CONFIRMED_DEMO') {
+          userClassMap.set(userRef, 'AMBIGUOUS_PENDING_REVIEW');
+          const uRec = records.find(rec => rec.collection === 'users' && rec.id === userRef);
+          if (uRec) {
+            uRec.classification = 'AMBIGUOUS_PENDING_REVIEW';
+            uRec.reason = 'Associated with an active pending request requiring review';
+          }
+        }
       } else if (!isSeed && !id.startsWith(sec.name.slice(0, 3))) {
         classification = 'PRESERVED';
         reason = 'Non-fixture secondary record';
@@ -452,6 +539,15 @@ export async function performFullClassification(db: mongoose.mongo.Db): Promise<
       preserved: secPreserved,
       notes: `Secondary collection audit.`
     });
+  }
+
+  // Final synchronization of user collection summary
+  const finalUserSummary = summary.find(s => s.collection === 'users');
+  if (finalUserSummary) {
+    const userRecs = records.filter(r => r.collection === 'users');
+    finalUserSummary.confirmedDemo = userRecs.filter(r => r.classification === 'CONFIRMED_DEMO').length;
+    finalUserSummary.ambiguousPendingReview = userRecs.filter(r => r.classification === 'AMBIGUOUS_PENDING_REVIEW').length;
+    finalUserSummary.preserved = userRecs.filter(r => r.classification === 'PRESERVED').length;
   }
 
   return {

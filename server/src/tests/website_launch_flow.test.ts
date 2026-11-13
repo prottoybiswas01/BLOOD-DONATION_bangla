@@ -1,8 +1,13 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import mongoose from 'mongoose';
 import app from '../app.js';
 import { dataStore } from '../services/dataStore.js';
+
+after(async () => {
+  await mongoose.disconnect();
+});
 
 test('Website Launch Flow Verification Suite', async (t) => {
   const server = http.createServer(app);

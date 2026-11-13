@@ -174,21 +174,7 @@ export const AdminDashboard: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [
-        overviewRes, 
-        usersRes, 
-        contactRes, 
-        auditRes, 
-        blockedRes, 
-        histRes, 
-        instReqRes,
-        instRes,
-        reqsRes,
-        phoneReqsRes,
-        recRes,
-        recHistRes,
-        chgRes
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         api.getAdminOverview(),
         api.getAdminUsers({ search: userSearch }),
         api.getContactAccessLogs(),
@@ -204,16 +190,32 @@ export const AdminDashboard: React.FC = () => {
         api.getInstitutionChangeRequests()
       ]);
 
-      if (overviewRes.success) setStats(overviewRes.stats);
-      if (usersRes.success) setUsers(usersRes.users || []);
-      if (contactRes.success) setContactLogs(contactRes.logs || []);
-      if (auditRes.success) setAuditLogs(auditRes.logs || []);
-      if (blockedRes.success) setBlockedUsers(blockedRes.blockedUsers || []);
-      if (histRes.success) setStatusHistories(histRes.histories || []);
-      if (instReqRes.success) setInstitutionRequests(instReqRes.requests || []);
-      if (instRes.success) setInstitutions(instRes.institutions || []);
-      if (reqsRes.success) setBloodRequests(reqsRes.requests || []);
-      if (phoneReqsRes.success) setPhoneRequests(phoneReqsRes.requests || []);
+      const [
+        overviewRes, 
+        usersRes, 
+        contactRes, 
+        auditRes, 
+        blockedRes, 
+        histRes, 
+        instReqRes,
+        instRes,
+        reqsRes,
+        phoneReqsRes,
+        recRes,
+        recHistRes,
+        chgRes
+      ] = results.map(r => (r.status === 'fulfilled' ? r.value : { success: false }));
+
+      if (overviewRes?.success) setStats(overviewRes.stats);
+      if (usersRes?.success) setUsers(usersRes.users || []);
+      if (contactRes?.success) setContactLogs(contactRes.logs || []);
+      if (auditRes?.success) setAuditLogs(auditRes.logs || []);
+      if (blockedRes?.success) setBlockedUsers(blockedRes.blockedUsers || []);
+      if (histRes?.success) setStatusHistories(histRes.histories || []);
+      if (instReqRes?.success) setInstitutionRequests(instReqRes.requests || []);
+      if (instRes?.success) setInstitutions(instRes.institutions || []);
+      if (reqsRes?.success) setBloodRequests(reqsRes.requests || []);
+      if (phoneReqsRes?.success) setPhoneRequests(phoneReqsRes.requests || []);
       if (recRes && recRes.success) setRecoveryRequests(recRes.requests || []);
       if (recHistRes && recHistRes.success) setRecoveryHistory(recHistRes.history || []);
       if (chgRes && chgRes.success) setInstChanges(chgRes.requests || []);

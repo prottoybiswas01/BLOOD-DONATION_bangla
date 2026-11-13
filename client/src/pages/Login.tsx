@@ -44,32 +44,42 @@ export const Login: React.FC = () => {
     setLoading(true);
     setErrorMsg(null);
 
-    const cleanPhone = phone.trim();
+    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    let cleanPhone = phone.trim();
+    for (let i = 0; i < 10; i++) {
+      cleanPhone = cleanPhone.split(bengaliDigits[i]).join(String(i));
+    }
+
     if (!cleanPhone) {
-      setErrorMsg('অনুগ্রহ করে মোবাইল নম্বর প্রদান করুন।');
+      setErrorMsg('অনুগ্রহ করে মোবাইল নম্বর অথবা ইউজার আইডি প্রদান করুন।');
       setLoading(false);
       return;
     }
 
-    const res = await login(cleanPhone, password);
-    setLoading(false);
+    try {
+      const res = await login(cleanPhone, password.trim());
+      setLoading(false);
 
-    if (res.success) {
-      // Direct user based on role
-      const user = res.user;
-      if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') {
-        navigate('/admin/dashboard');
-      } else if (user?.role === 'DIVISION_COORDINATOR') {
-        navigate('/coordinator/dashboard');
-      } else if (user?.role === 'INSTITUTION_HEAD') {
-        navigate('/head/dashboard');
-      } else if (user?.role === 'INSTITUTION_MODERATOR') {
-        navigate('/moderator/dashboard');
+      if (res.success) {
+        // Direct user based on role
+        const user = res.user;
+        if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (user?.role === 'DIVISION_COORDINATOR') {
+          navigate('/coordinator/dashboard');
+        } else if (user?.role === 'INSTITUTION_HEAD') {
+          navigate('/head/dashboard');
+        } else if (user?.role === 'INSTITUTION_MODERATOR') {
+          navigate('/moderator/dashboard');
+        } else {
+          navigate('/donor/dashboard');
+        }
       } else {
-        navigate('/donor/dashboard');
+        setErrorMsg(res.message || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।');
       }
-    } else {
-      setErrorMsg(res.message || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।');
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'লগইন প্রক্রিয়া সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।');
     }
   };
 
@@ -196,18 +206,20 @@ export const Login: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-mainText mb-1.5">
-                মোবাইল নম্বর <span className="text-rose-500">*</span>
+                মোবাইল নম্বর বা ইউজার আইডি <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <Phone className="w-4 h-4" />
                 </div>
                 <input
-                  type="tel"
+                  type="text"
                   required
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  placeholder="01XXXXXXXXX"
+                  placeholder="01XXXXXXXXX অথবা superadmin"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText placeholder-slate-400 focus:bg-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                 />
               </div>

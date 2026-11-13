@@ -29,7 +29,7 @@ router.get(
 
 // Authorized personnel view change requests (scoped)
 router.get(
-  '/', 
+  ['/', '/requests'], 
   requireAuth, 
   requireRoles('SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR', 'INSTITUTION_HEAD', 'INSTITUTION_MODERATOR'), 
   getInstitutionChangeRequests

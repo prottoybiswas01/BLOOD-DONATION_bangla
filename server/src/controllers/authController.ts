@@ -56,9 +56,16 @@ export const ChangeFirstLoginPasswordSchema = z.object({
 
 /**
  * Clean phone to standardized local format 01XXXXXXXXX
+ * Supports Bengali digits conversion (০-৯ -> 0-9)
  */
 function normalizePhone(raw: string): string {
-  const cleaned = raw.replace(/\D/g, '');
+  if (!raw) return '';
+  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  let converted = String(raw).trim();
+  for (let i = 0; i < 10; i++) {
+    converted = converted.split(bengaliDigits[i]).join(String(i));
+  }
+  const cleaned = converted.replace(/\D/g, '');
   if (cleaned.startsWith('8801')) {
     return cleaned.substring(2);
   }
@@ -216,17 +223,30 @@ export async function register(req: Request, res: Response): Promise<void> {
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { phone: rawPhone, password } = req.body;
-  const phone = normalizePhone(rawPhone);
+  const rawIdentifier = String(rawPhone || '').trim();
+  const phone = normalizePhone(rawIdentifier);
 
-  let user = await dataStore.findUserByPhone(phone);
-  if (!user && rawPhone) {
-    const rawIdentifier = String(rawPhone).trim();
+  let user = phone ? await dataStore.findUserByPhone(phone) : undefined;
+  if (!user && rawIdentifier) {
     user = await dataStore.findUserById(rawIdentifier) ||
            dataStore.users.find(u => 
+             (u.phone && u.phone === rawIdentifier) ||
              (u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase()) ||
              (u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase()) ||
-             (rawIdentifier.toLowerCase() === 'superadmin' && u.role === 'SUPER_ADMIN')
+             ((rawIdentifier.toLowerCase() === 'superadmin' || rawIdentifier.toLowerCase() === 'admin') && u.role === 'SUPER_ADMIN')
            );
+
+    // If identifier matches super admin from ENV, auto-hydrate superadmin instantly
+    if (!user && ENV.SUPER_ADMIN_PHONE && (
+      phone === ENV.SUPER_ADMIN_PHONE || 
+      rawIdentifier === 'usr_superadmin' || 
+      rawIdentifier.toLowerCase() === 'superadmin' || 
+      rawIdentifier.toLowerCase() === 'admin' || 
+      (ENV.SUPER_ADMIN_EMAIL && rawIdentifier.toLowerCase() === ENV.SUPER_ADMIN_EMAIL.toLowerCase())
+    )) {
+      await dataStore.ensureSingleSuperAdmin();
+      user = dataStore.users.find(u => u._id === 'usr_superadmin' || u.phone === ENV.SUPER_ADMIN_PHONE);
+    }
 
     if (!user && isDatabaseConnected()) {
       try {
@@ -234,7 +254,8 @@ export async function login(req: Request, res: Response): Promise<void> {
           $or: [
             { _id: rawIdentifier },
             { email: rawIdentifier.toLowerCase() },
-            { phone: rawIdentifier }
+            { phone: rawIdentifier },
+            ...(phone ? [{ phone }] : [])
           ]
         }).lean();
         if (doc) user = doc as any;

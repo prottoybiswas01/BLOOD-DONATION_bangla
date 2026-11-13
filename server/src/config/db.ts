@@ -22,7 +22,18 @@ export async function connectDB(retries = 2): Promise<boolean> {
     return true;
   }
 
-  const uri = ENV.MONGO_URI;
+  let uri = ENV.MONGO_URI;
+
+  // Strict Test Environment Database Isolation:
+  // Never connect tests to production database 'bangladesh_blood_db'
+  const isTestEnv = process.env.NODE_ENV === 'test' || 
+                    Boolean(process.env.NODE_TEST_CONTEXT) || 
+                    process.execArgv.some(a => a.includes('--test')) ||
+                    process.argv.some(a => a.includes('.test.') || a.includes('test'));
+
+  if (isTestEnv && uri) {
+    uri = uri.replace(/\/([^/?]+)(\?|$)/, '/bangladesh_blood_test_db$2');
+  }
 
   if (!uri) {
     if (ENV.NODE_ENV === 'production') {

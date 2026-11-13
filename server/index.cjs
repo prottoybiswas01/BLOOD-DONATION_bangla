@@ -97586,7 +97586,11 @@ async function connectDB(retries = 2) {
     cached.conn = import_mongoose16.default;
     return true;
   }
-  const uri = ENV.MONGO_URI;
+  let uri = ENV.MONGO_URI;
+  const isTestEnv = process.env.NODE_ENV === "test" || Boolean(process.env.NODE_TEST_CONTEXT) || process.execArgv.some((a) => a.includes("--test")) || process.argv.some((a) => a.includes(".test.") || a.includes("test"));
+  if (isTestEnv && uri) {
+    uri = uri.replace(/\/([^/?]+)(\?|$)/, "/bangladesh_blood_test_db$2");
+  }
   if (!uri) {
     if (ENV.NODE_ENV === "production") {
       console.error("[Security Critical] MONGO_URI is missing from environment variables in production!");
@@ -104072,7 +104076,13 @@ var ChangeFirstLoginPasswordSchema = external_exports.object({
   newPassword: external_exports.string().min(6, "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EC \u0985\u0995\u09CD\u09B7\u09B0\u09C7\u09B0 \u09B9\u09A4\u09C7 \u09B9\u09AC\u09C7")
 });
 function normalizePhone(raw) {
-  const cleaned = raw.replace(/\D/g, "");
+  if (!raw) return "";
+  const bengaliDigits = ["\u09E6", "\u09E7", "\u09E8", "\u09E9", "\u09EA", "\u09EB", "\u09EC", "\u09ED", "\u09EE", "\u09EF"];
+  let converted = String(raw).trim();
+  for (let i = 0; i < 10; i++) {
+    converted = converted.split(bengaliDigits[i]).join(String(i));
+  }
+  const cleaned = converted.replace(/\D/g, "");
   if (cleaned.startsWith("8801")) {
     return cleaned.substring(2);
   }
@@ -104209,20 +104219,25 @@ async function register(req, res) {
 }
 async function login(req, res) {
   const { phone: rawPhone, password } = req.body;
-  const phone = normalizePhone(rawPhone);
-  let user = await dataStore.findUserByPhone(phone);
-  if (!user && rawPhone) {
-    const rawIdentifier = String(rawPhone).trim();
+  const rawIdentifier = String(rawPhone || "").trim();
+  const phone = normalizePhone(rawIdentifier);
+  let user = phone ? await dataStore.findUserByPhone(phone) : void 0;
+  if (!user && rawIdentifier) {
     user = await dataStore.findUserById(rawIdentifier) || dataStore.users.find(
-      (u) => u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase() || u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase() || rawIdentifier.toLowerCase() === "superadmin" && u.role === "SUPER_ADMIN"
+      (u) => u.phone && u.phone === rawIdentifier || u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase() || u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase() || (rawIdentifier.toLowerCase() === "superadmin" || rawIdentifier.toLowerCase() === "admin") && u.role === "SUPER_ADMIN"
     );
+    if (!user && ENV.SUPER_ADMIN_PHONE && (phone === ENV.SUPER_ADMIN_PHONE || rawIdentifier === "usr_superadmin" || rawIdentifier.toLowerCase() === "superadmin" || rawIdentifier.toLowerCase() === "admin" || ENV.SUPER_ADMIN_EMAIL && rawIdentifier.toLowerCase() === ENV.SUPER_ADMIN_EMAIL.toLowerCase())) {
+      await dataStore.ensureSingleSuperAdmin();
+      user = dataStore.users.find((u) => u._id === "usr_superadmin" || u.phone === ENV.SUPER_ADMIN_PHONE);
+    }
     if (!user && isDatabaseConnected()) {
       try {
         const doc = await UserModel.findOne({
           $or: [
             { _id: rawIdentifier },
             { email: rawIdentifier.toLowerCase() },
-            { phone: rawIdentifier }
+            { phone: rawIdentifier },
+            ...phone ? [{ phone }] : []
           ]
         }).lean();
         if (doc) user = doc;
@@ -107729,7 +107744,7 @@ router15.get(
   getMyInstitutionChangeRequest
 );
 router15.get(
-  "/",
+  ["/", "/requests"],
   requireAuth,
   requireRoles("SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_HEAD", "INSTITUTION_MODERATOR"),
   getInstitutionChangeRequests
@@ -107756,7 +107771,7 @@ router16.use("/reports", reportRoutes_default);
 router16.use("/locations", locationRoutes_default);
 router16.use("/notifications", notificationRoutes_default);
 router16.use("/institution-requests", institutionRequestRoutes_default);
-router16.use("/institution-change", institutionChangeRoutes_default);
+router16.use(["/institution-change", "/institution-changes"], institutionChangeRoutes_default);
 router16.use("/members", memberRoutes_default);
 router16.use("/moderators", moderatorRoutes_default);
 router16.use("/contact-requests", contactRequestRoutes_default);

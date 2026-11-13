@@ -39,7 +39,7 @@ router.use('/reports', reportRoutes);
 router.use('/locations', locationRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/institution-requests', institutionRequestRoutes);
-router.use('/institution-change', institutionChangeRoutes);
+router.use(['/institution-change', '/institution-changes'], institutionChangeRoutes);
 router.use('/members', memberRoutes);
 router.use('/moderators', moderatorRoutes);
 router.use('/contact-requests', contactRequestRoutes);

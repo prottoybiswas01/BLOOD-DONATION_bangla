@@ -97568,10 +97568,10 @@ var ENV = {
   CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : [],
   DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10),
-  SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || "01700000001",
-  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || "Admin@2026!Secure",
+  SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || "",
+  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || "",
   SUPER_ADMIN_NAME: process.env.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || "superadmin@bloodbd.org"
+  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || ""
 };
 
 // src/config/db.ts
@@ -97709,12 +97709,13 @@ var DataStore = class {
     }
   }
   seedInitialData() {
-    const defaultPasswordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-    const now = /* @__PURE__ */ new Date();
-    this.users = [
-      {
+    this.users = [];
+    if (ENV.SUPER_ADMIN_PHONE && ENV.SUPER_ADMIN_PASSWORD) {
+      const defaultPasswordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+      const now = /* @__PURE__ */ new Date();
+      this.users.push({
         _id: "usr_superadmin",
-        name: ENV.SUPER_ADMIN_NAME,
+        name: ENV.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
         phone: ENV.SUPER_ADMIN_PHONE,
         email: ENV.SUPER_ADMIN_EMAIL,
         passwordHash: defaultPasswordHash,
@@ -97725,8 +97726,8 @@ var DataStore = class {
         isPhoneVerified: true,
         createdAt: now,
         updatedAt: now
-      }
-    ];
+      });
+    }
     this.institutions = [];
     this.donorProfiles = [];
     this.bloodRequests = [];
@@ -97785,7 +97786,10 @@ var DataStore = class {
   async ensureSingleSuperAdmin() {
     const targetPhone = ENV.SUPER_ADMIN_PHONE;
     const targetPassword = ENV.SUPER_ADMIN_PASSWORD;
-    const targetName = ENV.SUPER_ADMIN_NAME;
+    if (!targetPhone || !targetPassword) {
+      return;
+    }
+    const targetName = ENV.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)";
     const targetEmail = ENV.SUPER_ADMIN_EMAIL;
     const passwordHash = bcryptjs_default.hashSync(targetPassword, 10);
     const now = /* @__PURE__ */ new Date();

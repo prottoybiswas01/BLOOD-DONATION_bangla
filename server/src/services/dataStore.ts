@@ -441,14 +441,15 @@ class DataStore {
   }
 
   seedInitialData() {
-    const defaultPasswordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-    const now = new Date();
+    this.users = [];
 
-    // 1. Initial Users: Exactly ONE authoritative Super Admin configured from ENV
-    this.users = [
-      {
+    // 1. Initial Users: Only initialize single Super Admin if explicitly configured via private .env
+    if (ENV.SUPER_ADMIN_PHONE && ENV.SUPER_ADMIN_PASSWORD) {
+      const defaultPasswordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+      const now = new Date();
+      this.users.push({
         _id: 'usr_superadmin',
-        name: ENV.SUPER_ADMIN_NAME,
+        name: ENV.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)',
         phone: ENV.SUPER_ADMIN_PHONE,
         email: ENV.SUPER_ADMIN_EMAIL,
         passwordHash: defaultPasswordHash,
@@ -459,8 +460,8 @@ class DataStore {
         isPhoneVerified: true,
         createdAt: now,
         updatedAt: now
-      }
-    ];
+      });
+    }
 
     // 2. All institutions start clean (0 pre-seeded institutions; only real registered institutions)
     this.institutions = [];
@@ -528,7 +529,13 @@ class DataStore {
   async ensureSingleSuperAdmin(): Promise<void> {
     const targetPhone = ENV.SUPER_ADMIN_PHONE;
     const targetPassword = ENV.SUPER_ADMIN_PASSWORD;
-    const targetName = ENV.SUPER_ADMIN_NAME;
+
+    // Strictly skip if not defined in private .env
+    if (!targetPhone || !targetPassword) {
+      return;
+    }
+
+    const targetName = ENV.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)';
     const targetEmail = ENV.SUPER_ADMIN_EMAIL;
     const passwordHash = bcrypt.hashSync(targetPassword, 10);
     const now = new Date();

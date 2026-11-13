@@ -14,9 +14,9 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [],
   DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || '5', 10),
-  SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || '01700000001',
-  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || 'Admin@2026!Secure',
+  SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || '',
+  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || '',
   SUPER_ADMIN_NAME: process.env.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)',
-  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || 'superadmin@bloodbd.org',
+  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || '',
 };
 

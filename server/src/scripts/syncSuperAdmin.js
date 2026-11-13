@@ -13,8 +13,13 @@ async function verify() {
   await mongoose.connect(uri);
   const db = mongoose.connection.db;
 
-  const superAdminPhone = process.env.SUPER_ADMIN_PHONE || '01700000001';
-  const superAdminPass = process.env.SUPER_ADMIN_PASSWORD || 'Admin@2026!Secure';
+  const superAdminPhone = process.env.SUPER_ADMIN_PHONE;
+  const superAdminPass = process.env.SUPER_ADMIN_PASSWORD;
+
+  if (!superAdminPhone || !superAdminPass) {
+    console.error('[Security] SUPER_ADMIN_PHONE and SUPER_ADMIN_PASSWORD must be configured in your private .env file.');
+    process.exit(1);
+  }
   const passwordHash = bcrypt.hashSync(superAdminPass, 10);
 
   // Remove any conflicting superadmins with different phone

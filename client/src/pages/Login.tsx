@@ -104,12 +104,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = (p: string, pass = 'password123') => {
-    setPhone(p);
-    setPassword(pass);
-    setErrorMsg(null);
-  };
-
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-page py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl w-full bg-surface rounded-3xl border border-appBorder shadow-card overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[620px]">

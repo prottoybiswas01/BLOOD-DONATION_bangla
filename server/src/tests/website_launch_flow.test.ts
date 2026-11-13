@@ -4,6 +4,7 @@ import http from 'node:http';
 import mongoose from 'mongoose';
 import app from '../app.js';
 import { dataStore } from '../services/dataStore.js';
+import { ENV } from '../config/env.js';
 
 after(async () => {
   await mongoose.disconnect();
@@ -50,7 +51,7 @@ test('Website Launch Flow Verification Suite', async (t) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: '01700000001',
+          phone: ENV.SUPER_ADMIN_PHONE || '01712345678',
           password: 'wrongpassword'
         })
       });

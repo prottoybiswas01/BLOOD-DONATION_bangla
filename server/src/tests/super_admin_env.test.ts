@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import mongoose from 'mongoose';
@@ -6,6 +6,11 @@ import app from '../app.js';
 import { dataStore } from '../services/dataStore.js';
 import { ENV } from '../config/env.js';
 import { connectDB } from '../config/db.js';
+
+after(async () => {
+  await new Promise(r => setTimeout(r, 500));
+  await mongoose.disconnect();
+});
 
 test('Single Authoritative Super Admin from ENV Configuration', async (t) => {
   await connectDB();
@@ -16,11 +21,8 @@ test('Single Authoritative Super Admin from ENV Configuration', async (t) => {
   const port = (server.address() as any).port;
   const baseUrl = `http://127.0.0.1:${port}/api/v1`;
 
-  t.after(async () => {
+  t.after(() => {
     server.close();
-    if (mongoose.connection && mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
   });
 
   await t.test('1. Exactly ONE Super Admin exists in dataStore', () => {

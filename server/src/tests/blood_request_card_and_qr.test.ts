@@ -165,7 +165,10 @@ test('Blood Request Card & QR Code Workflow', async (t) => {
     const data: any = await res.json();
 
     assert.equal(data.success, true);
+    assert.ok(data.bloodRequest, 'bloodRequest payload must be present');
+    assert.ok(data.data, 'data alias payload must be present for frontend compatibility');
     assert.equal(data.bloodRequest.publicId, createdPublicId);
+    assert.equal(data.data.publicId, createdPublicId);
     assert.equal(data.bloodRequest.unitsRequired, 3);
     assert.equal(data.bloodRequest.unitsRemaining, 3);
     assert.equal(data.bloodRequest.status, 'open');

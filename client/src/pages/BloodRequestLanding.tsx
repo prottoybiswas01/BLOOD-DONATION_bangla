@@ -47,10 +47,11 @@ export const BloodRequestLanding: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await api.getRequestById(requestId);
-      if (res && res.data) {
-        setRequest(res.data);
+      const reqData = res?.bloodRequest || res?.data;
+      if (reqData) {
+        setRequest(reqData);
       } else {
-        setError('আবেদনের তথ্য পাওয়া যায়নি।');
+        setError(res?.message || 'আবেদনের তথ্য পাওয়া যায়নি।');
       }
     } catch (err: any) {
       const msg = err?.message || 'অনুরোধ লোড করতে ব্যর্থ হয়েছে। সংযোগ পরীক্ষা করুন।';
@@ -75,8 +76,9 @@ export const BloodRequestLanding: React.FC = () => {
     try {
       setUpdating(true);
       const res = await api.updateRequestProgress(request._id, { unitsReceivedDelta: 1 });
-      if (res && res.data) {
-        setRequest(res.data);
+      const updated = res?.bloodRequest || res?.data;
+      if (updated) {
+        setRequest(updated);
         setActionSuccess('১ ব্যাগ রক্ত প্রাপ্তি সফলভাবে যুক্ত হয়েছে!');
         setTimeout(() => setActionSuccess(null), 3500);
       }
@@ -98,8 +100,9 @@ export const BloodRequestLanding: React.FC = () => {
         status: 'fulfilled',
         fulfillmentNotes: 'ব্যবহারকারী কর্তৃক সম্পূর্ণ সংগৃহীত চিহ্নিত করা হয়েছে।' 
       });
-      if (res && res.data) {
-        setRequest(res.data);
+      const updated = res?.bloodRequest || res?.data;
+      if (updated) {
+        setRequest(updated);
         setActionSuccess('আবেদন সফলভাবে সম্পন্ন চিহ্নিত করা হয়েছে!');
         setTimeout(() => setActionSuccess(null), 3500);
       }
@@ -121,8 +124,9 @@ export const BloodRequestLanding: React.FC = () => {
         status: 'cancelled',
         cancellationReason: reason
       });
-      if (res && res.data) {
-        setRequest(res.data);
+      const updated = res?.bloodRequest || res?.data;
+      if (updated) {
+        setRequest(updated);
         setActionSuccess('আবেদন সফলভাবে বাতিল করা হয়েছে।');
         setTimeout(() => setActionSuccess(null), 3500);
       }
@@ -368,11 +372,13 @@ export const BloodRequestLanding: React.FC = () => {
                 <span className="text-secondaryText">রক্তদানের সময়</span>
                 <span className="font-semibold text-amber-700 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
-                  {new Date(request.requiredDate).toLocaleDateString('bn-BD', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
+                  {request.requiredDate && !isNaN(new Date(request.requiredDate).getTime())
+                    ? new Date(request.requiredDate).toLocaleDateString('bn-BD', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })
+                    : 'জরুরি'}
                   {request.requiredWithin ? ` (${request.requiredWithin})` : ''}
                 </span>
               </div>

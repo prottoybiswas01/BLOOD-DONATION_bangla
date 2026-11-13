@@ -105,18 +105,21 @@ export async function getRequestById(req: Request, res: Response): Promise<void>
     statusMessage = `জরুরি রক্তের প্রয়োজন: অবিলম্বে ${request.unitsRequired} ব্যাগ ${request.bloodGroup} রক্ত প্রয়োজন।`;
   }
 
+  const requestPayload = {
+    ...request,
+    publicId,
+    canonicalUrl,
+    unitsRemaining,
+    statusMessage,
+    isFulfilled: request.status === 'fulfilled',
+    requesterName: requester?.name || 'ব্যবহারকারী',
+    institutionName: institution?.nameBn || institution?.name
+  };
+
   res.json({
     success: true,
-    bloodRequest: {
-      ...request,
-      publicId,
-      canonicalUrl,
-      unitsRemaining,
-      statusMessage,
-      isFulfilled: request.status === 'fulfilled',
-      requesterName: requester?.name || 'ব্যবহারকারী',
-      institutionName: institution?.nameBn || institution?.name
-    }
+    bloodRequest: requestPayload,
+    data: requestPayload
   });
 }
 
@@ -321,17 +324,20 @@ export async function updateRequestStatus(req: AuthRequest, res: Response): Prom
   const publicId = updated?.publicId || request.publicId || request._id;
   const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
 
+  const payload = {
+    ...updated,
+    publicId,
+    canonicalUrl,
+    unitsRemaining
+  };
+
   res.json({
     success: true,
     message: updated?.status === 'fulfilled' 
       ? 'রক্তের অনুরোধ সফলভাবে সম্পন্ন (Fulfilled) হিসেবে চিহ্নিত করা হয়েছে।' 
       : 'অনুরোধের অগ্রগতি সফলভাবে সংরক্ষিত হয়েছে।',
-    bloodRequest: {
-      ...updated,
-      publicId,
-      canonicalUrl,
-      unitsRemaining
-    }
+    bloodRequest: payload,
+    data: payload
   });
 }
 

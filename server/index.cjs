@@ -14096,11 +14096,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path) {
-      if (!path || typeof path !== "string") {
+    function lookup(path2) {
+      if (!path2 || typeof path2 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path).toLowerCase().substr(1);
+      var extension2 = extname("x." + path2).toLowerCase().substr(1);
       if (!extension2) {
         return false;
       }
@@ -17885,7 +17885,7 @@ var require_path_to_regexp = __commonJS({
   "node_modules/path-to-regexp/index.js"(exports2, module2) {
     module2.exports = pathToRegexp;
     var MATCHING_GROUP_REGEXP = /\\.|\((?:\?<(.*?)>)?(?!\?)/g;
-    function pathToRegexp(path, keys, options) {
+    function pathToRegexp(path2, keys, options) {
       options = options || {};
       keys = keys || [];
       var strict = options.strict;
@@ -17899,8 +17899,8 @@ var require_path_to_regexp = __commonJS({
       var pos = 0;
       var backtrack = "";
       var m;
-      if (path instanceof RegExp) {
-        while (m = MATCHING_GROUP_REGEXP.exec(path.source)) {
+      if (path2 instanceof RegExp) {
+        while (m = MATCHING_GROUP_REGEXP.exec(path2.source)) {
           if (m[0][0] === "\\") continue;
           keys.push({
             name: m[1] || name++,
@@ -17908,18 +17908,18 @@ var require_path_to_regexp = __commonJS({
             offset: m.index
           });
         }
-        return path;
+        return path2;
       }
-      if (Array.isArray(path)) {
-        path = path.map(function(value) {
+      if (Array.isArray(path2)) {
+        path2 = path2.map(function(value) {
           return pathToRegexp(value, keys, options).source;
         });
-        return new RegExp(path.join("|"), flags);
+        return new RegExp(path2.join("|"), flags);
       }
-      if (typeof path !== "string") {
+      if (typeof path2 !== "string") {
         throw new TypeError("path must be a string, array of strings, or regular expression");
       }
-      path = path.replace(
+      path2 = path2.replace(
         /\\.|(\/)?(\.)?:(\w+)(\(.*?\))?(\*)?(\?)?|[.*]|\/\(/g,
         function(match, slash, format, key, capture, star, optional, offset) {
           if (match[0] === "\\") {
@@ -17936,7 +17936,7 @@ var require_path_to_regexp = __commonJS({
           if (slash || format) {
             backtrack = "";
           } else {
-            backtrack += path.slice(pos, offset);
+            backtrack += path2.slice(pos, offset);
           }
           pos = offset + match.length;
           if (match === "*") {
@@ -17966,7 +17966,7 @@ var require_path_to_regexp = __commonJS({
           return result;
         }
       );
-      while (m = MATCHING_GROUP_REGEXP.exec(path)) {
+      while (m = MATCHING_GROUP_REGEXP.exec(path2)) {
         if (m[0][0] === "\\") continue;
         if (keysOffset + i === keys.length || keys[keysOffset + i].offset > m.index) {
           keys.splice(keysOffset + i, 0, {
@@ -17978,13 +17978,13 @@ var require_path_to_regexp = __commonJS({
         }
         i++;
       }
-      path += strict ? "" : path[path.length - 1] === "/" ? "?" : "/?";
+      path2 += strict ? "" : path2[path2.length - 1] === "/" ? "?" : "/?";
       if (end) {
-        path += "$";
-      } else if (path[path.length - 1] !== "/") {
-        path += lookahead ? "(?=/|$)" : "(?:/|$)";
+        path2 += "$";
+      } else if (path2[path2.length - 1] !== "/") {
+        path2 += lookahead ? "(?=/|$)" : "(?:/|$)";
       }
-      return new RegExp("^" + path, flags);
+      return new RegExp("^" + path2, flags);
     }
   }
 });
@@ -17997,19 +17997,19 @@ var require_layer = __commonJS({
     var debug = require_src()("express:router:layer");
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     module2.exports = Layer;
-    function Layer(path, options, fn) {
+    function Layer(path2, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path, options, fn);
+        return new Layer(path2, options, fn);
       }
-      debug("new %o", path);
+      debug("new %o", path2);
       var opts = options || {};
       this.handle = fn;
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.regexp = pathRegexp(path, this.keys = [], opts);
-      this.regexp.fast_star = path === "*";
-      this.regexp.fast_slash = path === "/" && opts.end === false;
+      this.regexp = pathRegexp(path2, this.keys = [], opts);
+      this.regexp.fast_star = path2 === "*";
+      this.regexp.fast_slash = path2 === "/" && opts.end === false;
     }
     Layer.prototype.handle_error = function handle_error(error, req, res, next) {
       var fn = this.handle;
@@ -18033,20 +18033,20 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path) {
+    Layer.prototype.match = function match(path2) {
       var match2;
-      if (path != null) {
+      if (path2 != null) {
         if (this.regexp.fast_slash) {
           this.params = {};
           this.path = "";
           return true;
         }
         if (this.regexp.fast_star) {
-          this.params = { "0": decode_param(path) };
-          this.path = path;
+          this.params = { "0": decode_param(path2) };
+          this.path = path2;
           return true;
         }
-        match2 = this.regexp.exec(path);
+        match2 = this.regexp.exec(path2);
       }
       if (!match2) {
         this.params = void 0;
@@ -18139,10 +18139,10 @@ var require_route = __commonJS({
     var slice = Array.prototype.slice;
     var toString = Object.prototype.toString;
     module2.exports = Route;
-    function Route(path) {
-      this.path = path;
+    function Route(path2) {
+      this.path = path2;
       this.stack = [];
-      debug("new %o", path);
+      debug("new %o", path2);
       this.methods = {};
     }
     Route.prototype._handles_method = function _handles_method(method) {
@@ -18354,8 +18354,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        var path = getPathname(req);
-        if (path == null) {
+        var path2 = getPathname(req);
+        if (path2 == null) {
           return done(layerError);
         }
         var layer;
@@ -18363,7 +18363,7 @@ var require_router = __commonJS({
         var route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path);
+          match = matchLayer(layer, path2);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -18401,18 +18401,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handle_request(req, res, next);
           } else {
-            trim_prefix(layer, layerError, layerPath, path);
+            trim_prefix(layer, layerError, layerPath, path2);
           }
           sync = 0;
         });
       }
-      function trim_prefix(layer, layerError, layerPath, path) {
+      function trim_prefix(layer, layerError, layerPath, path2) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path.slice(0, layerPath.length)) {
+          if (layerPath !== path2.slice(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          var c = path[layerPath.length];
+          var c = path2[layerPath.length];
           if (c && c !== "/" && c !== ".") return next(layerError);
           debug("trim prefix (%s) from url %s", layerPath, req.url);
           removed = layerPath;
@@ -18490,7 +18490,7 @@ var require_router = __commonJS({
     };
     proto.use = function use(fn) {
       var offset = 0;
-      var path = "/";
+      var path2 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -18498,7 +18498,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = fn;
+          path2 = fn;
         }
       }
       var callbacks = flatten(slice.call(arguments, offset));
@@ -18510,8 +18510,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("Router.use() requires a middleware function but got a " + gettype(fn));
         }
-        debug("use %o %s", path, fn.name || "<anonymous>");
-        var layer = new Layer(path, {
+        debug("use %o %s", path2, fn.name || "<anonymous>");
+        var layer = new Layer(path2, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -18521,9 +18521,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    proto.route = function route(path) {
-      var route2 = new Route(path);
-      var layer = new Layer(path, {
+    proto.route = function route(path2) {
+      var route2 = new Route(path2);
+      var layer = new Layer(path2, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -18533,8 +18533,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      proto[method] = function(path) {
-        var route = this.route(path);
+      proto[method] = function(path2) {
+        var route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -18570,9 +18570,9 @@ var require_router = __commonJS({
       }
       return toString.call(obj).replace(objectRegExp, "$1");
     }
-    function matchLayer(layer, path) {
+    function matchLayer(layer, path2) {
       try {
-        return layer.match(path);
+        return layer.match(path2);
       } catch (err) {
         return err;
       }
@@ -18690,13 +18690,13 @@ var require_view = __commonJS({
   "node_modules/express/lib/view.js"(exports2, module2) {
     "use strict";
     var debug = require_src()("express:view");
-    var path = require("path");
+    var path2 = require("path");
     var fs = require("fs");
-    var dirname = path.dirname;
-    var basename = path.basename;
-    var extname = path.extname;
-    var join = path.join;
-    var resolve = path.resolve;
+    var dirname = path2.dirname;
+    var basename = path2.basename;
+    var extname = path2.extname;
+    var join = path2.join;
+    var resolve = path2.resolve;
     module2.exports = View;
     function View(name, options) {
       var opts = options || {};
@@ -18725,17 +18725,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View.prototype.lookup = function lookup(name) {
-      var path2;
+      var path3;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path2; i++) {
+      for (var i = 0; i < roots.length && !path3; i++) {
         var root = roots[i];
         var loc = resolve(root, name);
         var dir = dirname(loc);
         var file = basename(loc);
-        path2 = this.resolve(dir, file);
+        path3 = this.resolve(dir, file);
       }
-      return path2;
+      return path3;
     };
     View.prototype.render = function render(options, callback) {
       debug('render "%s"', this.path);
@@ -18743,21 +18743,21 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve2(dir, file) {
       var ext = this.ext;
-      var path2 = join(dir, file);
-      var stat = tryStat(path2);
+      var path3 = join(dir, file);
+      var stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
-      path2 = join(dir, basename(file, ext), "index" + ext);
-      stat = tryStat(path2);
+      path3 = join(dir, basename(file, ext), "index" + ext);
+      stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
     };
-    function tryStat(path2) {
-      debug('stat "%s"', path2);
+    function tryStat(path3) {
+      debug('stat "%s"', path3);
       try {
-        return fs.statSync(path2);
+        return fs.statSync(path3);
       } catch (e) {
         return void 0;
       }
@@ -19111,7 +19111,7 @@ var require_types = __commonJS({
 // node_modules/mime/mime.js
 var require_mime = __commonJS({
   "node_modules/mime/mime.js"(exports2, module2) {
-    var path = require("path");
+    var path2 = require("path");
     var fs = require("fs");
     function Mime() {
       this.types = /* @__PURE__ */ Object.create(null);
@@ -19141,8 +19141,8 @@ var require_mime = __commonJS({
       this.define(map);
       this._loading = null;
     };
-    Mime.prototype.lookup = function(path2, fallback) {
-      var ext = path2.replace(/^.*[\.\/\\]/, "").toLowerCase();
+    Mime.prototype.lookup = function(path3, fallback) {
+      var ext = path3.replace(/^.*[\.\/\\]/, "").toLowerCase();
       return this.types[ext] || fallback || this.default_type;
     };
     Mime.prototype.extension = function(mimeType) {
@@ -19376,28 +19376,28 @@ var require_send = __commonJS({
     var ms = require_ms2();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path = require("path");
+    var path2 = require("path");
     var statuses = require_statuses();
     var Stream = require("stream");
     var util2 = require("util");
-    var extname = path.extname;
-    var join = path.join;
-    var normalize = path.normalize;
-    var resolve = path.resolve;
-    var sep = path.sep;
+    var extname = path2.extname;
+    var join = path2.join;
+    var normalize = path2.normalize;
+    var resolve = path2.resolve;
+    var sep = path2.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module2.exports = send;
     module2.exports.mime = mime;
-    function send(req, path2, options) {
-      return new SendStream(req, path2, options);
+    function send(req, path3, options) {
+      return new SendStream(req, path3, options);
     }
-    function SendStream(req, path2, options) {
+    function SendStream(req, path3, options) {
       Stream.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path2;
+      this.path = path3;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -19443,8 +19443,8 @@ var require_send = __commonJS({
       this._index = index2;
       return this;
     }, "send.index: pass index as option");
-    SendStream.prototype.root = function root(path2) {
-      this._root = resolve(String(path2));
+    SendStream.prototype.root = function root(path3) {
+      this._root = resolve(String(path3));
       debug("root %s", this._root);
       return this;
     };
@@ -19557,10 +19557,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path2) {
+    SendStream.prototype.redirect = function redirect(path3) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path2);
+        this.emit("directory", res, path3);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -19580,42 +19580,42 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe(res) {
       var root = this._root;
       this.res = res;
-      var path2 = decode(this.path);
-      if (path2 === -1) {
+      var path3 = decode(this.path);
+      if (path3 === -1) {
         this.error(400);
         return res;
       }
-      if (~path2.indexOf("\0")) {
+      if (~path3.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path2) {
-          path2 = normalize("." + sep + path2);
+        if (path3) {
+          path3 = normalize("." + sep + path3);
         }
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = path2.split(sep);
-        path2 = normalize(join(root, path2));
+        parts = path3.split(sep);
+        path3 = normalize(join(root, path3));
       } else {
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = normalize(path2).split(sep);
-        path2 = resolve(path2);
+        parts = normalize(path3).split(sep);
+        path3 = resolve(path3);
       }
       if (containsDotFile(parts)) {
         var access = this._dotfiles;
         if (access === void 0) {
           access = parts[parts.length - 1][0] === "." ? this._hidden ? "allow" : "ignore" : "allow";
         }
-        debug('%s dotfile "%s"', access, path2);
+        debug('%s dotfile "%s"', access, path3);
         switch (access) {
           case "allow":
             break;
@@ -19629,13 +19629,13 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path2);
+        this.sendIndex(path3);
         return res;
       }
-      this.sendFile(path2);
+      this.sendFile(path3);
       return res;
     };
-    SendStream.prototype.send = function send2(path2, stat) {
+    SendStream.prototype.send = function send2(path3, stat) {
       var len = stat.size;
       var options = this.options;
       var opts = {};
@@ -19647,9 +19647,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path2);
-      this.setHeader(path2, stat);
-      this.type(path2);
+      debug('pipe "%s"', path3);
+      this.setHeader(path3, stat);
+      this.type(path3);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -19698,26 +19698,26 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path2, opts);
+      this.stream(path3, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path2) {
+    SendStream.prototype.sendFile = function sendFile(path3) {
       var i = 0;
       var self2 = this;
-      debug('stat "%s"', path2);
-      fs.stat(path2, function onstat(err, stat) {
-        if (err && err.code === "ENOENT" && !extname(path2) && path2[path2.length - 1] !== sep) {
+      debug('stat "%s"', path3);
+      fs.stat(path3, function onstat(err, stat) {
+        if (err && err.code === "ENOENT" && !extname(path3) && path3[path3.length - 1] !== sep) {
           return next(err);
         }
         if (err) return self2.onStatError(err);
-        if (stat.isDirectory()) return self2.redirect(path2);
-        self2.emit("file", path2, stat);
-        self2.send(path2, stat);
+        if (stat.isDirectory()) return self2.redirect(path3);
+        self2.emit("file", path3, stat);
+        self2.send(path3, stat);
       });
       function next(err) {
         if (self2._extensions.length <= i) {
           return err ? self2.onStatError(err) : self2.error(404);
         }
-        var p = path2 + "." + self2._extensions[i++];
+        var p = path3 + "." + self2._extensions[i++];
         debug('stat "%s"', p);
         fs.stat(p, function(err2, stat) {
           if (err2) return next(err2);
@@ -19727,7 +19727,7 @@ var require_send = __commonJS({
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path2) {
+    SendStream.prototype.sendIndex = function sendIndex(path3) {
       var i = -1;
       var self2 = this;
       function next(err) {
@@ -19735,7 +19735,7 @@ var require_send = __commonJS({
           if (err) return self2.onStatError(err);
           return self2.error(404);
         }
-        var p = join(path2, self2._index[i]);
+        var p = join(path3, self2._index[i]);
         debug('stat "%s"', p);
         fs.stat(p, function(err2, stat) {
           if (err2) return next(err2);
@@ -19746,10 +19746,10 @@ var require_send = __commonJS({
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path2, options) {
+    SendStream.prototype.stream = function stream(path3, options) {
       var self2 = this;
       var res = this.res;
-      var stream2 = fs.createReadStream(path2, options);
+      var stream2 = fs.createReadStream(path3, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -19764,10 +19764,10 @@ var require_send = __commonJS({
         self2.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path2) {
+    SendStream.prototype.type = function type(path3) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var type2 = mime.lookup(path2);
+      var type2 = mime.lookup(path3);
       if (!type2) {
         debug("no content-type");
         return;
@@ -19776,9 +19776,9 @@ var require_send = __commonJS({
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2 + (charset ? "; charset=" + charset : ""));
     };
-    SendStream.prototype.setHeader = function setHeader(path2, stat) {
+    SendStream.prototype.setHeader = function setHeader(path3, stat) {
       var res = this.res;
-      this.emit("headers", res, path2, stat);
+      this.emit("headers", res, path3, stat);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -19837,9 +19837,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode(path2) {
+    function decode(path3) {
       try {
-        return decodeURIComponent(path2);
+        return decodeURIComponent(path3);
       } catch (err) {
         return -1;
       }
@@ -20764,10 +20764,10 @@ var require_utils2 = __commonJS({
     var querystring = require("querystring");
     exports2.etag = createETagGenerator({ weak: false });
     exports2.wetag = createETagGenerator({ weak: true });
-    exports2.isAbsolute = function(path) {
-      if ("/" === path[0]) return true;
-      if (":" === path[1] && ("\\" === path[2] || "/" === path[2])) return true;
-      if ("\\\\" === path.substring(0, 2)) return true;
+    exports2.isAbsolute = function(path2) {
+      if ("/" === path2[0]) return true;
+      if (":" === path2[1] && ("\\" === path2[2] || "/" === path2[2])) return true;
+      if ("\\\\" === path2.substring(0, 2)) return true;
     };
     exports2.flatten = deprecate.function(
       flatten,
@@ -20979,7 +20979,7 @@ var require_application = __commonJS({
     };
     app2.use = function use(fn) {
       var offset = 0;
-      var path = "/";
+      var path2 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -20987,7 +20987,7 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = fn;
+          path2 = fn;
         }
       }
       var fns = flatten(slice.call(arguments, offset));
@@ -20998,12 +20998,12 @@ var require_application = __commonJS({
       var router17 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router17.use(path, fn2);
+          return router17.use(path2, fn2);
         }
-        debug(".use app under %s", path);
-        fn2.mountpath = path;
+        debug(".use app under %s", path2);
+        fn2.mountpath = path2;
         fn2.parent = this;
-        router17.use(path, function mounted_app(req, res, next) {
+        router17.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -21015,9 +21015,9 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app2.route = function route(path) {
+    app2.route = function route(path2) {
       this.lazyrouter();
-      return this._router.route(path);
+      return this._router.route(path2);
     };
     app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21068,7 +21068,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app2.path = function path() {
+    app2.path = function path2() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app2.enabled = function enabled(setting) {
@@ -21084,19 +21084,19 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app2[method] = function(path) {
+      app2[method] = function(path2) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path);
+          return this.set(path2);
         }
         this.lazyrouter();
-        var route = this._router.route(path);
+        var route = this._router.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app2.all = function all(path) {
+    app2.all = function all(path2) {
       this.lazyrouter();
-      var route = this._router.route(path);
+      var route = this._router.route(path2);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -21855,7 +21855,7 @@ var require_request = __commonJS({
       var subdomains2 = !isIP2(hostname) ? hostname.split(".").reverse() : [hostname];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path() {
+    defineGetter(req, "path", function path2() {
       return parse(this).pathname;
     });
     defineGetter(req, "hostname", function hostname() {
@@ -22177,7 +22177,7 @@ var require_response = __commonJS({
     var http = require("http");
     var isAbsolute = require_utils2().isAbsolute;
     var onFinished = require_on_finished();
-    var path = require("path");
+    var path2 = require("path");
     var statuses = require_statuses();
     var merge = require_utils_merge();
     var sign = require_cookie_signature().sign;
@@ -22186,9 +22186,9 @@ var require_response = __commonJS({
     var setCharset = require_utils2().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname = path.extname;
+    var extname = path2.extname;
     var mime = send.mime;
-    var resolve = path.resolve;
+    var resolve = path2.resolve;
     var vary = require_vary();
     var res = Object.create(http.ServerResponse.prototype);
     module2.exports = res;
@@ -22365,26 +22365,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path2, options, callback) {
+    res.sendFile = function sendFile(path3, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path2) {
+      if (!path3) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path2 !== "string") {
+      if (typeof path3 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !isAbsolute(path2)) {
+      if (!opts.root && !isAbsolute(path3)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path2);
+      var pathname = encodeURI(path3);
       var file = send(req, pathname, opts);
       sendfile(res2, file, opts, function(err) {
         if (done) return done(err);
@@ -22394,7 +22394,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.sendfile = function(path2, options, callback) {
+    res.sendfile = function(path3, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
@@ -22404,7 +22404,7 @@ var require_response = __commonJS({
         done = options;
         opts = {};
       }
-      var file = send(req, path2, opts);
+      var file = send(req, path3, opts);
       sendfile(res2, file, opts, function(err) {
         if (done) return done(err);
         if (err && err.code === "EISDIR") return next();
@@ -22417,7 +22417,7 @@ var require_response = __commonJS({
       res.sendfile,
       "res.sendfile: Use res.sendFile instead"
     );
-    res.download = function download(path2, filename, options, callback) {
+    res.download = function download(path3, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -22434,7 +22434,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path2)
+        "Content-Disposition": contentDisposition(name || path3)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -22447,7 +22447,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve(path2) : path2;
+      var fullPath = !opts.root ? resolve(path3) : path3;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -22748,11 +22748,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path = parseUrl(req).pathname;
-        if (path === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path = "";
+        var path2 = parseUrl(req).pathname;
+        if (path2 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path2 = "";
         }
-        var stream = send(req, path, opts);
+        var stream = send(req, path2, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -26498,17 +26498,17 @@ var require_bson = __commonJS({
       index = index + size;
       return index;
     }
-    function serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path) {
-      if (path.has(value)) {
+    function serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2) {
+      if (path2.has(value)) {
         throw new BSONError("Cannot convert circular structure to BSON");
       }
-      path.add(value);
+      path2.add(value);
       buffer2[index++] = Array.isArray(value) ? BSON_DATA_ARRAY : BSON_DATA_OBJECT;
       const numberOfWrittenBytes = ByteUtils.encodeUTF8Into(buffer2, key, index);
       index = index + numberOfWrittenBytes;
       buffer2[index++] = 0;
-      const endIndex = serializeInto(buffer2, value, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined, path);
-      path.delete(value);
+      const endIndex = serializeInto(buffer2, value, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined, path2);
+      path2.delete(value);
       return endIndex;
     }
     function serializeDecimal128(buffer2, key, value, index) {
@@ -26560,7 +26560,7 @@ var require_bson = __commonJS({
       buffer2[index++] = 0;
       return index;
     }
-    function serializeCode(buffer2, key, value, index, checkKeys = false, depth = 0, serializeFunctions = false, ignoreUndefined = true, path) {
+    function serializeCode(buffer2, key, value, index, checkKeys = false, depth = 0, serializeFunctions = false, ignoreUndefined = true, path2) {
       if (value.scope && typeof value.scope === "object") {
         buffer2[index++] = BSON_DATA_CODE_W_SCOPE;
         const numberOfWrittenBytes = ByteUtils.encodeUTF8Into(buffer2, key, index);
@@ -26573,7 +26573,7 @@ var require_bson = __commonJS({
         NumberUtils.setInt32LE(buffer2, index, codeSize);
         buffer2[index + 4 + codeSize - 1] = 0;
         index = index + codeSize + 4;
-        const endIndex = serializeInto(buffer2, value.scope, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined, path);
+        const endIndex = serializeInto(buffer2, value.scope, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined, path2);
         index = endIndex - 1;
         const totalSize = endIndex - startIndex;
         startIndex += NumberUtils.setInt32LE(buffer2, startIndex, totalSize);
@@ -26629,7 +26629,7 @@ var require_bson = __commonJS({
       buffer2[index++] = 0;
       return index;
     }
-    function serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path) {
+    function serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path2) {
       buffer2[index++] = BSON_DATA_OBJECT;
       const numberOfWrittenBytes = ByteUtils.encodeUTF8Into(buffer2, key, index);
       index = index + numberOfWrittenBytes;
@@ -26643,13 +26643,13 @@ var require_bson = __commonJS({
         output.$db = value.db;
       }
       output = Object.assign(output, value.fields);
-      const endIndex = serializeInto(buffer2, output, false, index, depth + 1, serializeFunctions, true, path);
+      const endIndex = serializeInto(buffer2, output, false, index, depth + 1, serializeFunctions, true, path2);
       const size = endIndex - startIndex;
       startIndex += NumberUtils.setInt32LE(buffer2, index, size);
       return endIndex;
     }
-    function serializeInto(buffer2, object, checkKeys, startingIndex, depth, serializeFunctions, ignoreUndefined, path) {
-      if (path == null) {
+    function serializeInto(buffer2, object, checkKeys, startingIndex, depth, serializeFunctions, ignoreUndefined, path2) {
+      if (path2 == null) {
         if (object == null) {
           buffer2[0] = 5;
           buffer2[1] = 0;
@@ -26668,9 +26668,9 @@ var require_bson = __commonJS({
         } else if (isDate(object) || isRegExp(object) || isUint8Array(object) || isAnyArrayBuffer(object)) {
           throw new BSONError(`date, regexp, typedarray, and arraybuffer cannot be BSON documents`);
         }
-        path = /* @__PURE__ */ new Set();
+        path2 = /* @__PURE__ */ new Set();
       }
-      path.add(object);
+      path2.add(object);
       let index = startingIndex + 4;
       if (Array.isArray(object)) {
         for (let i = 0; i < object.length; i++) {
@@ -26700,7 +26700,7 @@ var require_bson = __commonJS({
             } else if (value instanceof RegExp || isRegExp(value)) {
               index = serializeRegExp(buffer2, key, value, index);
             } else {
-              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             }
           } else if (type === "object") {
             if (value[BSON_VERSION_SYMBOL] !== BSON_MAJOR_VERSION) {
@@ -26714,13 +26714,13 @@ var require_bson = __commonJS({
             } else if (value._bsontype === "Double") {
               index = serializeDouble(buffer2, key, value, index);
             } else if (value._bsontype === "Code") {
-              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             } else if (value._bsontype === "Binary") {
               index = serializeBinary(buffer2, key, value, index);
             } else if (value._bsontype === "BSONSymbol") {
               index = serializeSymbol(buffer2, key, value, index);
             } else if (value._bsontype === "DBRef") {
-              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path);
+              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path2);
             } else if (value._bsontype === "BSONRegExp") {
               index = serializeBSONRegExp(buffer2, key, value, index);
             } else if (value._bsontype === "Int32") {
@@ -26781,7 +26781,7 @@ var require_bson = __commonJS({
             } else if (value instanceof RegExp || isRegExp(value)) {
               index = serializeRegExp(buffer2, key, value, index);
             } else {
-              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             }
           } else if (type === "object") {
             if (value[BSON_VERSION_SYMBOL] !== BSON_MAJOR_VERSION) {
@@ -26795,13 +26795,13 @@ var require_bson = __commonJS({
             } else if (value._bsontype === "Double") {
               index = serializeDouble(buffer2, key, value, index);
             } else if (value._bsontype === "Code") {
-              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             } else if (value._bsontype === "Binary") {
               index = serializeBinary(buffer2, key, value, index);
             } else if (value._bsontype === "BSONSymbol") {
               index = serializeSymbol(buffer2, key, value, index);
             } else if (value._bsontype === "DBRef") {
-              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path);
+              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path2);
             } else if (value._bsontype === "BSONRegExp") {
               index = serializeBSONRegExp(buffer2, key, value, index);
             } else if (value._bsontype === "Int32") {
@@ -26861,7 +26861,7 @@ var require_bson = __commonJS({
             } else if (value instanceof RegExp || isRegExp(value)) {
               index = serializeRegExp(buffer2, key, value, index);
             } else {
-              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeObject(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             }
           } else if (type === "object") {
             if (value[BSON_VERSION_SYMBOL] !== BSON_MAJOR_VERSION) {
@@ -26875,13 +26875,13 @@ var require_bson = __commonJS({
             } else if (value._bsontype === "Double") {
               index = serializeDouble(buffer2, key, value, index);
             } else if (value._bsontype === "Code") {
-              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path);
+              index = serializeCode(buffer2, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined, path2);
             } else if (value._bsontype === "Binary") {
               index = serializeBinary(buffer2, key, value, index);
             } else if (value._bsontype === "BSONSymbol") {
               index = serializeSymbol(buffer2, key, value, index);
             } else if (value._bsontype === "DBRef") {
-              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path);
+              index = serializeDBRef(buffer2, key, value, index, depth, serializeFunctions, path2);
             } else if (value._bsontype === "BSONRegExp") {
               index = serializeBSONRegExp(buffer2, key, value, index);
             } else if (value._bsontype === "Int32") {
@@ -26896,7 +26896,7 @@ var require_bson = __commonJS({
           }
         }
       }
-      path.delete(object);
+      path2.delete(object);
       buffer2[index++] = 0;
       const size = index - startingIndex;
       startingIndex += NumberUtils.setInt32LE(buffer2, startingIndex, size);
@@ -36425,14 +36425,14 @@ var require_url_state_machine = __commonJS({
       return url.replace(/\u0009|\u000A|\u000D/ug, "");
     }
     function shortenPath(url) {
-      const { path } = url;
-      if (path.length === 0) {
+      const { path: path2 } = url;
+      if (path2.length === 0) {
         return;
       }
-      if (url.scheme === "file" && path.length === 1 && isNormalizedWindowsDriveLetter(path[0])) {
+      if (url.scheme === "file" && path2.length === 1 && isNormalizedWindowsDriveLetter(path2[0])) {
         return;
       }
-      path.pop();
+      path2.pop();
     }
     function includesCredentials(url) {
       return url.username !== "" || url.password !== "";
@@ -56739,13 +56739,13 @@ var require_cast = __commonJS({
     var MongooseError = require_mongooseError();
     var util2 = require("util");
     var CastError = class extends MongooseError {
-      constructor(type, value, path, reason, schemaType) {
+      constructor(type, value, path2, reason, schemaType) {
         if (arguments.length > 0) {
           const valueType = getValueType(value);
           const messageFormat = getMessageFormat(schemaType);
-          const msg = formatMessage(null, type, value, path, messageFormat, valueType, reason);
+          const msg = formatMessage(null, type, value, path2, messageFormat, valueType, reason);
           super(msg);
-          this.init(type, value, path, reason, schemaType);
+          this.init(type, value, path2, reason, schemaType);
         } else {
           super(formatMessage());
         }
@@ -56765,12 +56765,12 @@ var require_cast = __commonJS({
       /*!
        * ignore
        */
-      init(type, value, path, reason, schemaType) {
+      init(type, value, path2, reason, schemaType) {
         this.stringValue = getStringValue(value);
         this.messageFormat = getMessageFormat(schemaType);
         this.kind = type;
         this.value = value;
-        this.path = path;
+        this.path = path2;
         this.reason = reason;
         this.valueType = getValueType(value);
       }
@@ -56833,20 +56833,20 @@ var require_cast = __commonJS({
         return messageFormat;
       }
     }
-    function formatMessage(model, kind, value, path, messageFormat, valueType, reason) {
+    function formatMessage(model, kind, value, path2, messageFormat, valueType, reason) {
       if (typeof messageFormat === "string") {
         const stringValue = getStringValue(value);
-        let ret = messageFormat.replace("{KIND}", kind).replace("{VALUE}", stringValue).replace("{PATH}", path);
+        let ret = messageFormat.replace("{KIND}", kind).replace("{VALUE}", stringValue).replace("{PATH}", path2);
         if (model != null) {
           ret = ret.replace("{MODEL}", model.modelName);
         }
         return ret;
       } else if (typeof messageFormat === "function") {
-        return messageFormat(value, path, model, kind);
+        return messageFormat(value, path2, model, kind);
       } else {
         const stringValue = getStringValue(value);
         const valueTypeMsg = valueType ? " (type " + valueType + ")" : "";
-        let ret = "Cast to " + kind + " failed for value " + stringValue + valueTypeMsg + ' at path "' + path + '"';
+        let ret = "Cast to " + kind + " failed for value " + stringValue + valueTypeMsg + ' at path "' + path2 + '"';
         if (model != null) {
           ret += ' for model "' + model.modelName + '"';
         }
@@ -56952,15 +56952,15 @@ var require_validation = __commonJS({
       * @param {String|Error} error
       * @api private
       */
-      addError(path, error) {
+      addError(path2, error) {
         if (error instanceof _ValidationError) {
           const { errors } = error;
           for (const errorPath of Object.keys(errors)) {
-            this.addError(`${path}.${errorPath}`, errors[errorPath]);
+            this.addError(`${path2}.${errorPath}`, errors[errorPath]);
           }
           return;
         }
-        this.errors[path] = error;
+        this.errors[path2] = error;
         this.message = this._message + ": " + combinePathErrors(this);
       }
     };
@@ -57264,11 +57264,11 @@ var require_strict = __commonJS({
     "use strict";
     var MongooseError = require_mongooseError();
     var StrictModeError = class extends MongooseError {
-      constructor(path, msg, immutable) {
-        msg = msg || "Field `" + path + "` is not in schema and strict mode is set to throw.";
+      constructor(path2, msg, immutable) {
+        msg = msg || "Field `" + path2 + "` is not in schema and strict mode is set to throw.";
         super(msg);
         this.isImmutableError = !!immutable;
-        this.path = path;
+        this.path = path2;
       }
     };
     Object.defineProperty(StrictModeError.prototype, "name", {
@@ -57284,10 +57284,10 @@ var require_strictPopulate = __commonJS({
     "use strict";
     var MongooseError = require_mongooseError();
     var StrictPopulateError = class extends MongooseError {
-      constructor(path, msg) {
-        msg = msg || "Cannot populate path `" + path + "` because it is not in your schema. Set the `strictPopulate` option to false to override.";
+      constructor(path2, msg) {
+        msg = msg || "Cannot populate path `" + path2 + "` because it is not in your schema. Set the `strictPopulate` option to false to override.";
         super(msg);
-        this.path = path;
+        this.path = path2;
       }
     };
     Object.defineProperty(StrictPopulateError.prototype, "name", {
@@ -57371,7 +57371,7 @@ var require_boolean = __commonJS({
   "node_modules/mongoose/lib/cast/boolean.js"(exports2, module2) {
     "use strict";
     var CastError = require_cast();
-    module2.exports = function castBoolean(value, path) {
+    module2.exports = function castBoolean(value, path2) {
       if (module2.exports.convertToTrue.has(value)) {
         return true;
       }
@@ -57381,7 +57381,7 @@ var require_boolean = __commonJS({
       if (value == null) {
         return value;
       }
-      throw new CastError("boolean", value, path);
+      throw new CastError("boolean", value, path2);
     };
     module2.exports.convertToTrue = /* @__PURE__ */ new Set([true, "true", 1, "1", "yes"]);
     module2.exports.convertToFalse = /* @__PURE__ */ new Set([false, "false", 0, "0", "no"]);
@@ -57394,8 +57394,8 @@ var require_exists = __commonJS({
     "use strict";
     var castBoolean = require_boolean();
     module2.exports = function(val) {
-      const path = this != null ? this.path : null;
-      return castBoolean(val, path);
+      const path2 = this != null ? this.path : null;
+      return castBoolean(val, path2);
     };
   }
 });
@@ -57436,7 +57436,7 @@ var require_handleImmutable = __commonJS({
         delete schematype.$immutableSetter;
       }
     };
-    function createImmutableSetter(path, immutable) {
+    function createImmutableSetter(path2, immutable) {
       return function immutableSetter(v, _priorVal, _doc, options) {
         if (this == null || this.$__ == null) {
           return v;
@@ -57451,9 +57451,9 @@ var require_handleImmutable = __commonJS({
         if (!_immutable) {
           return v;
         }
-        const _value = this.$__.priorDoc != null ? this.$__.priorDoc.$__getValue(path) : this.$__getValue(path);
+        const _value = this.$__.priorDoc != null ? this.$__.priorDoc.$__getValue(path2) : this.$__getValue(path2);
         if (this.$__.strictMode === "throw" && v !== _value) {
-          throw new StrictModeError(path, "Path `" + path + "` is immutable and strict mode is set to throw.", true);
+          throw new StrictModeError(path2, "Path `" + path2 + "` is immutable and strict mode is set to throw.", true);
         }
         return _value;
       };
@@ -57657,7 +57657,7 @@ var require_lib7 = __commonJS({
   "node_modules/mpath/lib/index.js"(exports2) {
     var stringToParts = require_stringToParts();
     var ignoreProperties = ["__proto__", "constructor", "prototype"];
-    exports2.get = function(path, o, special, map) {
+    exports2.get = function(path2, o, special, map) {
       var lookup;
       if ("function" == typeof special) {
         if (special.length < 2) {
@@ -57669,7 +57669,7 @@ var require_lib7 = __commonJS({
         }
       }
       map || (map = K);
-      var parts = "string" == typeof path ? stringToParts(path) : path;
+      var parts = "string" == typeof path2 ? stringToParts(path2) : path2;
       if (!Array.isArray(parts)) {
         throw new TypeError("Invalid `path`. Must be either string or array");
       }
@@ -57695,8 +57695,8 @@ var require_lib7 = __commonJS({
       }
       return map(obj);
     };
-    exports2.has = function(path, o) {
-      var parts = typeof path === "string" ? stringToParts(path) : path;
+    exports2.has = function(path2, o) {
+      var parts = typeof path2 === "string" ? stringToParts(path2) : path2;
       if (!Array.isArray(parts)) {
         throw new TypeError("Invalid `path`. Must be either string or array");
       }
@@ -57713,8 +57713,8 @@ var require_lib7 = __commonJS({
       }
       return true;
     };
-    exports2.unset = function(path, o) {
-      var parts = typeof path === "string" ? stringToParts(path) : path;
+    exports2.unset = function(path2, o) {
+      var parts = typeof path2 === "string" ? stringToParts(path2) : path2;
       if (!Array.isArray(parts)) {
         throw new TypeError("Invalid `path`. Must be either string or array");
       }
@@ -57738,7 +57738,7 @@ var require_lib7 = __commonJS({
       }
       return true;
     };
-    exports2.set = function(path, val, o, special, map, _copying) {
+    exports2.set = function(path2, val, o, special, map, _copying) {
       var lookup;
       if ("function" == typeof special) {
         if (special.length < 2) {
@@ -57750,7 +57750,7 @@ var require_lib7 = __commonJS({
         }
       }
       map || (map = K);
-      var parts = "string" == typeof path ? stringToParts(path) : path;
+      var parts = "string" == typeof path2 ? stringToParts(path2) : path2;
       if (!Array.isArray(parts)) {
         throw new TypeError("Invalid `path`. Must be either string or array");
       }
@@ -57763,7 +57763,7 @@ var require_lib7 = __commonJS({
           return;
         }
       }
-      var copy = _copying || /\$/.test(path) && _copying !== false, obj = o, part;
+      var copy = _copying || /\$/.test(path2) && _copying !== false, obj = o, part;
       for (var i = 0, len = parts.length - 1; i < len; ++i) {
         part = parts[i];
         if ("$" == part) {
@@ -57998,22 +57998,22 @@ var require_stateMachine = __commonJS({
       ctor.prototype.constructor = ctor;
       ctor.prototype.stateNames = states;
       states.forEach(function(state) {
-        ctor.prototype[state] = function(path) {
-          this._changeState(path, state);
+        ctor.prototype[state] = function(path2) {
+          this._changeState(path2, state);
         };
       });
       return ctor;
     };
-    StateMachine.prototype._changeState = function _changeState(path, nextState) {
-      const prevState = this.paths[path];
+    StateMachine.prototype._changeState = function _changeState(path2, nextState) {
+      const prevState = this.paths[path2];
       if (prevState === nextState) {
         return;
       }
       const prevBucket = this.states[prevState];
-      if (prevBucket) delete prevBucket[path];
-      this.paths[path] = nextState;
+      if (prevBucket) delete prevBucket[path2];
+      this.paths[path2] = nextState;
       this.states[nextState] = this.states[nextState] || {};
-      this.states[nextState][path] = true;
+      this.states[nextState][path2] = true;
     };
     StateMachine.prototype.clear = function clear(state) {
       if (this.states[state] == null) {
@@ -58021,20 +58021,20 @@ var require_stateMachine = __commonJS({
       }
       const keys = Object.keys(this.states[state]);
       let i = keys.length;
-      let path;
+      let path2;
       while (i--) {
-        path = keys[i];
-        delete this.states[state][path];
-        delete this.paths[path];
+        path2 = keys[i];
+        delete this.states[state][path2];
+        delete this.paths[path2];
       }
     };
-    StateMachine.prototype.clearPath = function clearPath(path) {
-      const state = this.paths[path];
+    StateMachine.prototype.clearPath = function clearPath(path2) {
+      const state = this.paths[path2];
       if (!state) {
         return;
       }
-      delete this.paths[path];
-      delete this.states[state][path];
+      delete this.paths[path2];
+      delete this.states[state][path2];
     };
     StateMachine.prototype.getStatePaths = function getStatePaths(state) {
       if (this.states[state] != null) {
@@ -58064,8 +58064,8 @@ var require_stateMachine = __commonJS({
           }
           return paths2.concat(Object.keys(_this.states[state]));
         }, []);
-        return paths[iterMethod](function(path, i, paths2) {
-          return callback(path, i, paths2);
+        return paths[iterMethod](function(path2, i, paths2) {
+          return callback(path2, i, paths2);
         });
       };
     };
@@ -58138,10 +58138,10 @@ var require_buffer = __commonJS({
         val = 0;
       }
       let encoding;
-      let path;
+      let path2;
       let doc;
       if (Array.isArray(encode)) {
-        path = encode[0];
+        path2 = encode[0];
         doc = encode[1];
       } else {
         encoding = encode;
@@ -58154,7 +58154,7 @@ var require_buffer = __commonJS({
       }
       utils.decorate(buf, MongooseBuffer.mixin);
       buf.isMongooseBuffer = true;
-      buf[MongooseBuffer.pathSymbol] = path;
+      buf[MongooseBuffer.pathSymbol] = path2;
       buf[parentSymbol] = doc;
       buf._subtype = 0;
       return buf;
@@ -58323,7 +58323,7 @@ var require_mixed = __commonJS({
     var symbols = require_symbols2();
     var isObject = require_isObject();
     var utils = require_utils5();
-    function SchemaMixed(path, options, _schemaOptions, parentSchema) {
+    function SchemaMixed(path2, options, _schemaOptions, parentSchema) {
       if (options && options.default) {
         const def = options.default;
         if (Array.isArray(def) && def.length === 0) {
@@ -58334,7 +58334,7 @@ var require_mixed = __commonJS({
           };
         }
       }
-      SchemaType.call(this, path, options, "Mixed", parentSchema);
+      SchemaType.call(this, path2, options, "Mixed", parentSchema);
       this[symbols.schemaMixedSymbol] = true;
     }
     SchemaMixed.schemaName = "Mixed";
@@ -58380,10 +58380,10 @@ var require_objectExpected = __commonJS({
     "use strict";
     var MongooseError = require_mongooseError();
     var ObjectExpectedError = class extends MongooseError {
-      constructor(path, val) {
+      constructor(path2, val) {
         const typeDescription = Array.isArray(val) ? "array" : "primitive value";
-        super("Tried to set nested object field `" + path + `\` to ${typeDescription} \`` + val + "`");
-        this.path = path;
+        super("Tried to set nested object field `" + path2 + `\` to ${typeDescription} \`` + val + "`");
+        this.path = path2;
       }
     };
     Object.defineProperty(ObjectExpectedError.prototype, "name", {
@@ -58484,9 +58484,9 @@ var require_applyDefaults = __commonJS({
           continue;
         }
         const type = doc.$__schema.paths[p];
-        const path = type.splitPath();
-        const len = path.length;
-        if (path[len - 1] === "$*") {
+        const path2 = type.splitPath();
+        const len = path2.length;
+        if (path2[len - 1] === "$*") {
           continue;
         }
         let included = false;
@@ -58495,7 +58495,7 @@ var require_applyDefaults = __commonJS({
           if (doc_ == null) {
             break;
           }
-          const piece = path[j];
+          const piece = path2[j];
           curPath += (!curPath.length ? "" : ".") + piece;
           if (exclude === true) {
             if (curPath in fields) {
@@ -58586,7 +58586,7 @@ var require_applyDefaults = __commonJS({
 var require_cleanModifiedSubpaths = __commonJS({
   "node_modules/mongoose/lib/helpers/document/cleanModifiedSubpaths.js"(exports2, module2) {
     "use strict";
-    module2.exports = function cleanModifiedSubpaths(doc, path, options) {
+    module2.exports = function cleanModifiedSubpaths(doc, path2, options) {
       options = options || {};
       const skipDocArrays = options.skipDocArrays;
       let deleted = 0;
@@ -58600,7 +58600,7 @@ var require_cleanModifiedSubpaths = __commonJS({
             continue;
           }
         }
-        if (modifiedPath.startsWith(path + ".")) {
+        if (modifiedPath.startsWith(path2 + ".")) {
           doc.$__.activePaths.clearPath(modifiedPath);
           ++deleted;
           if (doc.$isSubdocument) {
@@ -58610,12 +58610,12 @@ var require_cleanModifiedSubpaths = __commonJS({
       }
       return deleted;
     };
-    function cleanParent(doc, path, seen = /* @__PURE__ */ new Set()) {
+    function cleanParent(doc, path2, seen = /* @__PURE__ */ new Set()) {
       if (seen.has(doc)) {
         throw new Error("Infinite subdocument loop: subdoc with _id " + doc._id + " is a parent of itself");
       }
       const parent = doc.$parent();
-      const newPath = doc.$__pathRelativeToParent(void 0, false) + "." + path;
+      const newPath = doc.$__pathRelativeToParent(void 0, false) + "." + path2;
       parent.$__.activePaths.clearPath(newPath);
       if (parent.$isSubdocument) {
         cleanParent(parent, newPath, seen);
@@ -58659,7 +58659,7 @@ var require_compile = __commonJS({
     }
     function defineKey({ prop, subprops, prototype, prefix, options }) {
       Document17 = Document17 || require_document2();
-      const path = (prefix ? prefix + "." : "") + prop;
+      const path2 = (prefix ? prefix + "." : "") + prop;
       prefix = prefix || "";
       const useGetOptions = prefix ? Object.freeze({}) : noDottedPathGetOptions;
       if (subprops) {
@@ -58671,12 +58671,12 @@ var require_compile = __commonJS({
             if (!this.$__.getters) {
               this.$__.getters = {};
             }
-            if (!this.$__.getters[path]) {
+            if (!this.$__.getters[path2]) {
               const nested = Object.create(Document17.prototype, getOwnPropertyDescriptors(this));
               if (!prefix) {
                 nested.$__[scopeSymbol] = this;
               }
-              nested.$__.nestedPath = path;
+              nested.$__.nestedPath = path2;
               Object.defineProperty(nested, "schema", {
                 enumerable: false,
                 configurable: true,
@@ -58700,7 +58700,7 @@ var require_compile = __commonJS({
                 configurable: true,
                 writable: false,
                 value: function() {
-                  return clone(_this.get(path, null, {
+                  return clone(_this.get(path2, null, {
                     virtuals: this && this.schema && this.schema.options && this.schema.options.toObject && this.schema.options.toObject.virtuals || null
                   }));
                 }
@@ -58710,7 +58710,7 @@ var require_compile = __commonJS({
                 configurable: true,
                 writable: false,
                 value: function() {
-                  return _this.get(path, null, {
+                  return _this.get(path2, null, {
                     virtuals: this && this.schema && this.schema.options && this.schema.options.toObject && this.schema.options.toObject.virtuals || null
                   });
                 }
@@ -58720,7 +58720,7 @@ var require_compile = __commonJS({
                 configurable: true,
                 writable: false,
                 value: function() {
-                  return _this.get(path, null, {
+                  return _this.get(path2, null, {
                     virtuals: this && this.schema && this.schema.options && this.schema.options.toJSON && this.schema.options.toJSON.virtuals || null
                   });
                 }
@@ -58736,7 +58736,7 @@ var require_compile = __commonJS({
                 configurable: true,
                 writable: false,
                 value: function() {
-                  return Object.keys(this.get(path, null, _isEmptyOptions) || {}).length === 0;
+                  return Object.keys(this.get(path2, null, _isEmptyOptions) || {}).length === 0;
                 }
               });
               Object.defineProperty(nested, "$__parent", {
@@ -58745,10 +58745,10 @@ var require_compile = __commonJS({
                 writable: false,
                 value: this
               });
-              compile(subprops, nested, path, options);
-              this.$__.getters[path] = nested;
+              compile(subprops, nested, path2, options);
+              this.$__.getters[path2] = nested;
             }
-            return this.$__.getters[path];
+            return this.$__.getters[path2];
           },
           set: function(v) {
             if (v != null && v.$__isNested) {
@@ -58757,7 +58757,7 @@ var require_compile = __commonJS({
               v = v.$toObject(internalToObjectOptions);
             }
             const doc = this.$__[scopeSymbol] || this;
-            doc.$set(path, v);
+            doc.$set(path2, v);
           }
         });
       } else {
@@ -58767,13 +58767,13 @@ var require_compile = __commonJS({
           get: function() {
             return this[getSymbol].call(
               this.$__[scopeSymbol] || this,
-              path,
+              path2,
               null,
               useGetOptions
             );
           },
           set: function(v) {
-            this.$set.call(this.$__[scopeSymbol] || this, path, v);
+            this.$set.call(this.$__[scopeSymbol] || this, path2, v);
           }
         });
       }
@@ -58828,7 +58828,7 @@ var require_common3 = __commonJS({
     var util2 = require("util");
     exports2.flatten = flatten;
     exports2.modifiedPaths = modifiedPaths;
-    function flatten(update, path, options, schema) {
+    function flatten(update, path2, options, schema) {
       let keys;
       if (update && isMongooseObject(update) && !Buffer.isBuffer(update)) {
         keys = Object.keys(update.toObject({ transform: false, virtuals: false }) || {});
@@ -58837,30 +58837,30 @@ var require_common3 = __commonJS({
       }
       const numKeys = keys.length;
       const result = {};
-      path = path ? path + "." : "";
+      path2 = path2 ? path2 + "." : "";
       for (let i = 0; i < numKeys; ++i) {
         const key = keys[i];
         const val = update[key];
-        result[path + key] = val;
-        const keySchema = schema && schema.path && schema.path(path + key);
-        const isNested = schema && schema.nested && schema.nested[path + key];
+        result[path2 + key] = val;
+        const keySchema = schema && schema.path && schema.path(path2 + key);
+        const isNested = schema && schema.nested && schema.nested[path2 + key];
         if (keySchema && keySchema.instance === "Mixed") continue;
         if (shouldFlatten(val)) {
           if (options && options.skipArrays && Array.isArray(val)) {
             continue;
           }
-          const flat = flatten(val, path + key, options, schema);
+          const flat = flatten(val, path2 + key, options, schema);
           for (const k in flat) {
             result[k] = flat[k];
           }
           if (Array.isArray(val)) {
-            result[path + key] = val;
+            result[path2 + key] = val;
           }
         }
         if (isNested) {
           const paths = Object.keys(schema.paths);
           for (const p of paths) {
-            if (p.startsWith(path + key + ".") && !Object.hasOwn(result, p)) {
+            if (p.startsWith(path2 + key + ".") && !Object.hasOwn(result, p)) {
               result[p] = void 0;
             }
           }
@@ -58868,13 +58868,13 @@ var require_common3 = __commonJS({
       }
       return result;
     }
-    function modifiedPaths(update, path, result, recursion = null) {
+    function modifiedPaths(update, path2, result, recursion = null) {
       if (update == null || typeof update !== "object") {
         return;
       }
       if (recursion == null) {
         recursion = {
-          raw: { update, path },
+          raw: { update, path: path2 },
           trace: /* @__PURE__ */ new WeakSet()
         };
       }
@@ -58887,17 +58887,17 @@ updatePath: '${recursion.raw.path}'`);
       const keys = Object.keys(update || {});
       const numKeys = keys.length;
       result = result || {};
-      path = path ? path + "." : "";
+      path2 = path2 ? path2 + "." : "";
       for (let i = 0; i < numKeys; ++i) {
         const key = keys[i];
         let val = update[key];
-        const _path = path + key;
+        const _path = path2 + key;
         result[_path] = true;
         if (!Buffer.isBuffer(val) && isMongooseObject(val)) {
           val = val.toObject({ transform: false, virtuals: false });
         }
         if (shouldFlatten(val)) {
-          modifiedPaths(val, path + key, result, recursion);
+          modifiedPaths(val, path2 + key, result, recursion);
         }
       }
       recursion.trace.delete(update);
@@ -58926,21 +58926,21 @@ var require_getDiscriminatorByKey = __commonJS({
 var require_get2 = __commonJS({
   "node_modules/mongoose/lib/helpers/get.js"(exports2, module2) {
     "use strict";
-    module2.exports = function get(obj, path, def) {
+    module2.exports = function get(obj, path2, def) {
       let parts;
       let isPathArray = false;
-      if (typeof path === "string") {
-        if (path.indexOf(".") === -1) {
-          const _v = getProperty(obj, path);
+      if (typeof path2 === "string") {
+        if (path2.indexOf(".") === -1) {
+          const _v = getProperty(obj, path2);
           if (_v == null) {
             return def;
           }
           return _v;
         }
-        parts = path.split(".");
+        parts = path2.split(".");
       } else {
         isPathArray = true;
-        parts = path;
+        parts = path2;
         if (parts.length === 1) {
           const _v = getProperty(obj, parts[0]);
           if (_v == null) {
@@ -58949,7 +58949,7 @@ var require_get2 = __commonJS({
           return _v;
         }
       }
-      let rest = path;
+      let rest = path2;
       let cur = obj;
       for (const part of parts) {
         if (cur == null) {
@@ -59027,10 +59027,10 @@ var require_getEmbeddedDiscriminatorPath = __commonJS({
     var getDiscriminatorByKey = require_getDiscriminatorByKey();
     var get = require_get2();
     var getSchemaDiscriminatorByValue = require_getSchemaDiscriminatorByValue();
-    module2.exports = function getEmbeddedDiscriminatorPath(doc, path, options) {
+    module2.exports = function getEmbeddedDiscriminatorPath(doc, path2, options) {
       options = options || {};
       const typeOnly = options.typeOnly;
-      const parts = Array.isArray(path) ? path : path.indexOf(".") === -1 ? [path] : path.split(".");
+      const parts = Array.isArray(path2) ? path2 : path2.indexOf(".") === -1 ? [path2] : path2.split(".");
       let schemaType = null;
       let type = "adhocOrUndefined";
       const schema = getSchemaDiscriminatorByValue(doc.schema, doc.get(doc.schema.options.discriminatorKey)) || doc.schema;
@@ -59065,8 +59065,8 @@ var require_getKeysInSchemaOrder = __commonJS({
   "node_modules/mongoose/lib/helpers/schema/getKeysInSchemaOrder.js"(exports2, module2) {
     "use strict";
     var get = require_get2();
-    module2.exports = function getKeysInSchemaOrder(schema, val, path) {
-      const schemaKeys = path != null ? Object.keys(get(schema.tree, path, {})) : Object.keys(schema.tree);
+    module2.exports = function getKeysInSchemaOrder(schema, val, path2) {
+      const schemaKeys = path2 != null ? Object.keys(get(schema.tree, path2, {})) : Object.keys(schema.tree);
       const valKeys = new Set(Object.keys(val));
       let keys;
       if (valKeys.size > 1) {
@@ -59197,26 +59197,26 @@ var require_isPathExcluded = __commonJS({
   "node_modules/mongoose/lib/helpers/projection/isPathExcluded.js"(exports2, module2) {
     "use strict";
     var isDefiningProjection = require_isDefiningProjection();
-    module2.exports = function isPathExcluded(projection, path) {
+    module2.exports = function isPathExcluded(projection, path2) {
       if (projection == null) {
         return false;
       }
-      if (path === "_id") {
+      if (path2 === "_id") {
         return projection._id === 0;
       }
       const paths = Object.keys(projection);
       let type = null;
       for (const _path of paths) {
         if (isDefiningProjection(projection[_path])) {
-          type = projection[path] === 1 ? "inclusive" : "exclusive";
+          type = projection[path2] === 1 ? "inclusive" : "exclusive";
           break;
         }
       }
       if (type === "inclusive") {
-        return projection[path] !== 1;
+        return projection[path2] !== 1;
       }
       if (type === "exclusive") {
-        return projection[path] === 0;
+        return projection[path2] === 0;
       }
       return false;
     };
@@ -59237,8 +59237,8 @@ var require_markArraySubdocsPopulated = __commonJS({
         if (item.isVirtual) {
           continue;
         }
-        const path = item.path;
-        const pieces = path.split(".");
+        const path2 = item.path;
+        const pieces = path2.split(".");
         for (let i = 0; i < pieces.length - 1; ++i) {
           const subpath = pieces.slice(0, i + 1).join(".");
           const rest = pieces.slice(i + 1).join(".");
@@ -59294,11 +59294,11 @@ var require_parentPaths = __commonJS({
   "node_modules/mongoose/lib/helpers/path/parentPaths.js"(exports2, module2) {
     "use strict";
     var dotRE = /\./g;
-    module2.exports = function parentPaths(path) {
-      if (path.indexOf(".") === -1) {
-        return [path];
+    module2.exports = function parentPaths(path2) {
+      if (path2.indexOf(".") === -1) {
+        return [path2];
       }
-      const pieces = path.split(dotRE);
+      const pieces = path2.split(dotRE);
       const len = pieces.length;
       const ret = new Array(len);
       let cur = "";
@@ -59315,9 +59315,9 @@ var require_parentPaths = __commonJS({
 var require_checkEmbeddedDiscriminatorKeyProjection = __commonJS({
   "node_modules/mongoose/lib/helpers/discriminator/checkEmbeddedDiscriminatorKeyProjection.js"(exports2, module2) {
     "use strict";
-    module2.exports = function checkEmbeddedDiscriminatorKeyProjection(userProjection, path, schema, selected, addedPaths) {
-      const userProjectedInPath = Object.keys(userProjection).reduce((cur, key) => cur || key.startsWith(path + "."), false);
-      const _discriminatorKey = path + "." + schema.options.discriminatorKey;
+    module2.exports = function checkEmbeddedDiscriminatorKeyProjection(userProjection, path2, schema, selected, addedPaths) {
+      const userProjectedInPath = Object.keys(userProjection).reduce((cur, key) => cur || key.startsWith(path2 + "."), false);
+      const _discriminatorKey = path2 + "." + schema.options.discriminatorKey;
       if (!userProjectedInPath && addedPaths.length === 1 && addedPaths[0] === _discriminatorKey) {
         selected.splice(selected.indexOf(_discriminatorKey), 1);
       }
@@ -59349,8 +59349,8 @@ var require_getDiscriminatorByValue = __commonJS({
 var require_isPathSelectedInclusive = __commonJS({
   "node_modules/mongoose/lib/helpers/projection/isPathSelectedInclusive.js"(exports2, module2) {
     "use strict";
-    module2.exports = function isPathSelectedInclusive(fields, path) {
-      const chunks = path.split(".");
+    module2.exports = function isPathSelectedInclusive(fields, path2) {
+      const chunks = path2.split(".");
       let cur = "";
       for (let i = 0; i < chunks.length; ++i) {
         cur += cur.length ? "." + chunks[i] : chunks[i];
@@ -59383,13 +59383,13 @@ var require_queryHelpers = __commonJS({
       }
       const session = query && query.options && query.options.session || null;
       if (session != null) {
-        pop.forEach((path) => {
-          if (path.options == null) {
-            path.options = { session };
+        pop.forEach((path2) => {
+          if (path2.options == null) {
+            path2.options = { session };
             return;
           }
-          if (!("session" in path.options)) {
-            path.options.session = session;
+          if (!("session" in path2.options)) {
+            path2.options.session = session;
           }
         });
       }
@@ -59481,13 +59481,13 @@ var require_queryHelpers = __commonJS({
           exclude = !field;
           break;
         }
-        for (const path of minusPaths) {
-          const type = schema.path(path);
+        for (const path2 of minusPaths) {
+          const type = schema.path(path2);
           if (!type || !type.selected || exclude !== false) {
-            fields[path] = 0;
+            fields[path2] = 0;
             exclude = true;
           } else if (type && type.selected && exclude === false) {
-            minusPathsToSkip.add(path);
+            minusPathsToSkip.add(path2);
           }
         }
       }
@@ -59542,29 +59542,29 @@ var require_queryHelpers = __commonJS({
         }
         stack.push(schema2);
         const addedPaths = [];
-        schema2.eachPath(function(path, type) {
-          if (prefix) path = prefix + "." + path;
-          if (type.$isSchemaMap || path.endsWith(".$*")) {
-            const plusPath = "+" + path;
+        schema2.eachPath(function(path2, type) {
+          if (prefix) path2 = prefix + "." + path2;
+          if (type.$isSchemaMap || path2.endsWith(".$*")) {
+            const plusPath = "+" + path2;
             const hasPlusPath = fields && plusPath in fields;
             if (type.options && type.options.select === false && !hasPlusPath) {
-              excluded.push(path);
+              excluded.push(path2);
             }
             return;
           }
-          let addedPath = analyzePath(path, type);
+          let addedPath = analyzePath(path2, type);
           if (addedPath == null && !Array.isArray(type) && type.$isMongooseArray && !type.$isMongooseDocumentArray) {
-            addedPath = analyzePath(path, type.caster);
+            addedPath = analyzePath(path2, type.caster);
           }
           if (addedPath != null) {
             addedPaths.push(addedPath);
           }
           if (type.schema) {
-            const _addedPaths = analyzeSchema(type.schema, path);
+            const _addedPaths = analyzeSchema(type.schema, path2);
             if (exclude === false) {
               checkEmbeddedDiscriminatorKeyProjection(
                 fields,
-                path,
+                path2,
                 type.schema,
                 selected,
                 _addedPaths
@@ -59575,39 +59575,39 @@ var require_queryHelpers = __commonJS({
         stack.pop();
         return addedPaths;
       }
-      function analyzePath(path, type) {
+      function analyzePath(path2, type) {
         if (fields == null) {
           return;
         }
         if (typeof type.selected !== "boolean") {
           return;
         }
-        if (type.selected === false && fields[path]) {
+        if (type.selected === false && fields[path2]) {
           if (sanitizeProjection) {
-            fields[path] = 0;
+            fields[path2] = 0;
           }
           return;
         }
-        if (!exclude && type.selected && path === schema.options.discriminatorKey && fields[path] != null && !fields[path]) {
-          delete fields[path];
+        if (!exclude && type.selected && path2 === schema.options.discriminatorKey && fields[path2] != null && !fields[path2]) {
+          delete fields[path2];
           return;
         }
-        if (exclude === false && type.selected && fields[path] != null && !fields[path]) {
-          delete fields[path];
+        if (exclude === false && type.selected && fields[path2] != null && !fields[path2]) {
+          delete fields[path2];
           return;
         }
-        const plusPath = "+" + path;
+        const plusPath = "+" + path2;
         const hasPlusPath = fields && plusPath in fields;
         if (hasPlusPath) {
           delete fields[plusPath];
-          if (exclude === false && keys.length > 1 && !~keys.indexOf(path) && !sanitizeProjection) {
-            fields[path] = 1;
+          if (exclude === false && keys.length > 1 && !~keys.indexOf(path2) && !sanitizeProjection) {
+            fields[path2] = 1;
           } else if (exclude == null && sanitizeProjection && type.selected === false) {
-            fields[path] = 0;
+            fields[path2] = 0;
           }
           return;
         }
-        const pieces = path.split(".");
+        const pieces = path2.split(".");
         let cur = "";
         for (let i = 0; i < pieces.length; ++i) {
           cur += cur.length ? "." + pieces[i] : pieces[i];
@@ -59625,13 +59625,13 @@ var require_queryHelpers = __commonJS({
             }
           }
         }
-        (type.selected ? selected : excluded).push(path);
-        return path;
+        (type.selected ? selected : excluded).push(path2);
+        return path2;
       }
-      function hasExcludedAncestor(fields2, path) {
+      function hasExcludedAncestor(fields2, path2) {
         let i = -1;
-        while ((i = path.indexOf(".", i + 1)) !== -1) {
-          if (fields2[path.slice(0, i)] === 0) {
+        while ((i = path2.indexOf(".", i + 1)) !== -1) {
+          if (fields2[path2.slice(0, i)] === 0) {
             return true;
           }
         }
@@ -59643,7 +59643,7 @@ var require_queryHelpers = __commonJS({
         option.options || (option.options = {});
         if (val != null && Array.isArray(val.virtuals)) {
           val = Object.assign({}, val);
-          val.virtuals = val.virtuals.filter((path) => typeof path === "string" && path.startsWith(option.path + ".")).map((path) => path.slice(option.path.length + 1));
+          val.virtuals = val.virtuals.filter((path2) => typeof path2 === "string" && path2.startsWith(option.path + ".")).map((path2) => path2.slice(option.path.length + 1));
         }
         option.options.lean = val;
       };
@@ -59757,11 +59757,11 @@ var require_subdocument = __commonJS({
         });
       });
     };
-    Subdocument.prototype.$__fullPath = function(path) {
+    Subdocument.prototype.$__fullPath = function(path2) {
       if (!this.$__.fullPath) {
         this.ownerDocument();
       }
-      return path ? this.$__.fullPath + "." + path : this.$__.fullPath;
+      return path2 ? this.$__.fullPath + "." + path2 : this.$__.fullPath;
     };
     Subdocument.prototype.$__pathRelativeToParent = function(p) {
       if (this.$pathRelativeToParent != null) {
@@ -59778,21 +59778,21 @@ var require_subdocument = __commonJS({
     Subdocument.prototype.$__save = function(fn) {
       return immediate(() => fn(null, this));
     };
-    Subdocument.prototype.$isValid = function(path) {
+    Subdocument.prototype.$isValid = function(path2) {
       const parent = this.$parent();
-      const fullPath = this.$__pathRelativeToParent(path);
+      const fullPath = this.$__pathRelativeToParent(path2);
       if (parent != null && fullPath != null) {
         return parent.$isValid(fullPath);
       }
-      return Document17.prototype.$isValid.call(this, path);
+      return Document17.prototype.$isValid.call(this, path2);
     };
-    Subdocument.prototype.markModified = function(path) {
-      Document17.prototype.markModified.call(this, path);
+    Subdocument.prototype.markModified = function(path2) {
+      Document17.prototype.markModified.call(this, path2);
       const parent = this.$parent();
       if (parent == null) {
         return;
       }
-      const pathToMark = this.$__pathRelativeToParent(path);
+      const pathToMark = this.$__pathRelativeToParent(path2);
       if (pathToMark == null) {
         return;
       }
@@ -59815,18 +59815,18 @@ var require_subdocument = __commonJS({
       }
       return Document17.prototype.isModified.call(this, paths, options, modifiedPaths);
     };
-    Subdocument.prototype.$markValid = function(path) {
-      Document17.prototype.$markValid.call(this, path);
+    Subdocument.prototype.$markValid = function(path2) {
+      Document17.prototype.$markValid.call(this, path2);
       const parent = this.$parent();
-      const fullPath = this.$__pathRelativeToParent(path);
+      const fullPath = this.$__pathRelativeToParent(path2);
       if (parent != null && fullPath != null) {
         parent.$markValid(fullPath);
       }
     };
-    Subdocument.prototype.invalidate = function(path, err, val) {
-      Document17.prototype.invalidate.call(this, path, err, val);
+    Subdocument.prototype.invalidate = function(path2, err, val) {
+      Document17.prototype.invalidate.call(this, path2, err, val);
       const parent = this.$parent();
-      const fullPath = this.$__pathRelativeToParent(path);
+      const fullPath = this.$__pathRelativeToParent(path2);
       if (parent != null && fullPath != null) {
         parent.invalidate(fullPath, err, val);
       } else if (err.kind === "cast" || err.name === "CastError" || fullPath == null) {
@@ -59834,10 +59834,10 @@ var require_subdocument = __commonJS({
       }
       return this.ownerDocument().$__.validationError;
     };
-    Subdocument.prototype.$ignore = function(path) {
-      Document17.prototype.$ignore.call(this, path);
+    Subdocument.prototype.$ignore = function(path2) {
+      Document17.prototype.$ignore.call(this, path2);
       const parent = this.$parent();
-      const fullPath = this.$__pathRelativeToParent(path);
+      const fullPath = this.$__pathRelativeToParent(path2);
       if (parent != null && fullPath != null) {
         parent.$ignore(fullPath);
       }
@@ -60013,7 +60013,7 @@ var require_arraySubdocument = __commonJS({
       }
       this.__parentArray.pull({ _id });
     };
-    ArraySubdocument.prototype.$__fullPath = function(path, skipIndex) {
+    ArraySubdocument.prototype.$__fullPath = function(path2, skipIndex) {
       if (this.__index == null) {
         return null;
       }
@@ -60021,21 +60021,21 @@ var require_arraySubdocument = __commonJS({
         this.ownerDocument();
       }
       if (skipIndex) {
-        return path ? this.$__.fullPath + "." + path : this.$__.fullPath;
+        return path2 ? this.$__.fullPath + "." + path2 : this.$__.fullPath;
       }
-      return path ? this.$__.fullPath + "." + this.__index + "." + path : this.$__.fullPath + "." + this.__index;
+      return path2 ? this.$__.fullPath + "." + this.__index + "." + path2 : this.$__.fullPath + "." + this.__index;
     };
-    ArraySubdocument.prototype.$__pathRelativeToParent = function(path, skipIndex) {
+    ArraySubdocument.prototype.$__pathRelativeToParent = function(path2, skipIndex) {
       if (this.__index == null || (!this.__parentArray || !this.__parentArray.$path)) {
         return null;
       }
       if (skipIndex) {
-        return path == null ? this.__parentArray.$path() : this.__parentArray.$path() + "." + path;
+        return path2 == null ? this.__parentArray.$path() : this.__parentArray.$path() + "." + path2;
       }
-      if (path == null) {
+      if (path2 == null) {
         return this.__parentArray.$path() + "." + this.__index;
       }
-      return this.__parentArray.$path() + "." + this.__index + "." + path;
+      return this.__parentArray.$path() + "." + this.__index + "." + path2;
     };
     ArraySubdocument.prototype.$parent = function() {
       return this[documentArrayParent];
@@ -60368,9 +60368,9 @@ var require_methods2 = __commonJS({
                   if (v == null || v.$__ == null) {
                     return ret;
                   }
-                  Object.keys(v.$__.activePaths.getStatePaths("default")).forEach((path) => {
-                    mpath.unset(path, ret);
-                    _minimizePath(ret, path);
+                  Object.keys(v.$__.activePaths.getStatePaths("default")).forEach((path2) => {
+                    mpath.unset(path2, ret);
+                    _minimizePath(ret, path2);
                   });
                   return ret;
                 },
@@ -60922,8 +60922,8 @@ var require_methods2 = __commonJS({
     function _depopulateIfNecessary(arr, docs) {
       const ref = arr == null ? null : arr[arraySchemaSymbol] && arr[arraySchemaSymbol].caster && arr[arraySchemaSymbol].caster.options && arr[arraySchemaSymbol].caster.options.ref || null;
       const parentDoc = arr[arrayParentSymbol];
-      const path = arr[arrayPathSymbol];
-      if (!ref || !parentDoc.populated(path)) {
+      const path2 = arr[arrayPathSymbol];
+      if (!ref || !parentDoc.populated(path2)) {
         return;
       }
       for (const doc of docs) {
@@ -60931,7 +60931,7 @@ var require_methods2 = __commonJS({
           continue;
         }
         if (typeof doc !== "object" || doc instanceof String || doc instanceof Number || doc instanceof Buffer || utils.isMongooseType(doc)) {
-          parentDoc.depopulate(path);
+          parentDoc.depopulate(path2);
           break;
         }
       }
@@ -60969,7 +60969,7 @@ var require_array = __commonJS({
     var arraySchemaSymbol = require_symbols().arraySchemaSymbol;
     var _basePush = Array.prototype.push;
     var numberRE = /^\d+$/;
-    function MongooseArray(values, path, doc, schematype) {
+    function MongooseArray(values, path2, doc, schematype) {
       let __array;
       if (Array.isArray(values)) {
         const len = values.length;
@@ -60993,7 +60993,7 @@ var require_array = __commonJS({
       const internals = {
         [arrayAtomicsSymbol]: {},
         [arrayAtomicsBackupSymbol]: void 0,
-        [arrayPathSymbol]: path,
+        [arrayPathSymbol]: path2,
         [arraySchemaSymbol]: schematype,
         [arrayParentSymbol]: void 0,
         isMongooseArray: true,
@@ -61005,7 +61005,7 @@ var require_array = __commonJS({
       }
       if (doc != null && doc.$__) {
         internals[arrayParentSymbol] = doc;
-        internals[arraySchemaSymbol] = schematype || doc.schema.path(path);
+        internals[arraySchemaSymbol] = schematype || doc.schema.path(path2);
       }
       const proxy = new Proxy(__array, {
         get: function(target, prop) {
@@ -61451,12 +61451,12 @@ var require_methods3 = __commonJS({
       const parent = arr[arrayParentSymbol];
       if (!parent || parent.$__.populated == null) return;
       const populatedPaths = Object.keys(parent.$__.populated).filter((p) => p.startsWith(arr[arrayPathSymbol] + "."));
-      for (const path of populatedPaths) {
-        const remnant = path.slice((arr[arrayPathSymbol] + ".").length);
-        if (!Array.isArray(parent.$__.populated[path].value)) {
+      for (const path2 of populatedPaths) {
+        const remnant = path2.slice((arr[arrayPathSymbol] + ".").length);
+        if (!Array.isArray(parent.$__.populated[path2].value)) {
           continue;
         }
-        parent.$__.populated[path].value = arr.map((val) => val.$populated(remnant));
+        parent.$__.populated[path2].value = arr.map((val) => val.$populated(remnant));
       }
     }
   }
@@ -61475,28 +61475,28 @@ var require_documentArray = __commonJS({
     var arraySchemaSymbol = require_symbols().arraySchemaSymbol;
     var _basePush = Array.prototype.push;
     var numberRE = /^\d+$/;
-    function MongooseDocumentArray(values, path, doc, schematype) {
+    function MongooseDocumentArray(values, path2, doc, schematype) {
       const __array = [];
       const internals = {
         [arrayAtomicsSymbol]: {},
         [arrayAtomicsBackupSymbol]: void 0,
-        [arrayPathSymbol]: path,
+        [arrayPathSymbol]: path2,
         [arraySchemaSymbol]: void 0,
         [arrayParentSymbol]: void 0
       };
       if (Array.isArray(values)) {
-        if (values[arrayPathSymbol] === path && values[arrayParentSymbol] === doc) {
+        if (values[arrayPathSymbol] === path2 && values[arrayParentSymbol] === doc) {
           internals[arrayAtomicsSymbol] = Object.assign({}, values[arrayAtomicsSymbol]);
         }
         values.forEach((v) => {
           _basePush.call(__array, v);
         });
       }
-      internals[arrayPathSymbol] = path;
+      internals[arrayPathSymbol] = path2;
       internals.__array = __array;
       if (doc && doc.$__) {
         internals[arrayParentSymbol] = doc;
-        internals[arraySchemaSymbol] = doc.$__schema.path(path);
+        internals[arraySchemaSymbol] = doc.$__schema.path(path2);
         while (internals[arraySchemaSymbol] != null && internals[arraySchemaSymbol].$isMongooseArray && !internals[arraySchemaSymbol].$isMongooseDocumentArray) {
           internals[arraySchemaSymbol] = internals[arraySchemaSymbol].casterConstructor;
         }
@@ -61648,8 +61648,8 @@ var require_document2 = __commonJS({
         this.$__.strictMode = schema.options.strict;
       }
       const requiredPaths = schema.requiredPaths(true);
-      for (const path of requiredPaths) {
-        this.$__.activePaths.require(path);
+      for (const path2 of requiredPaths) {
+        this.$__.activePaths.require(path2);
       }
       let exclude = null;
       if (utils.isPOJO(fields) && Object.keys(fields).length > 0) {
@@ -61772,17 +61772,17 @@ var require_document2 = __commonJS({
         this.$__.op = value;
       }
     });
-    function $applyDefaultsToNested(val, path, doc) {
+    function $applyDefaultsToNested(val, path2, doc) {
       if (val == null) {
         return;
       }
       const paths = Object.keys(doc.$__schema.paths);
       const plen = paths.length;
-      const pathPieces = path.indexOf(".") === -1 ? [path] : path.split(".");
+      const pathPieces = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
       for (let i = 0; i < plen; ++i) {
         let curPath = "";
         const p = paths[i];
-        if (!p.startsWith(path + ".")) {
+        if (!p.startsWith(path2 + ".")) {
           continue;
         }
         const type = doc.$__schema.paths[p];
@@ -61807,7 +61807,7 @@ var require_document2 = __commonJS({
                 cur[piece] = def;
               }
             } catch (err) {
-              doc.invalidate(path + "." + curPath, err);
+              doc.invalidate(path2 + "." + curPath, err);
               break;
             }
             break;
@@ -61833,14 +61833,14 @@ var require_document2 = __commonJS({
             continue;
           }
         }
-        const path = this.$__schema.paths[p].splitPath();
-        const len = path.length;
+        const path2 = this.$__schema.paths[p].splitPath();
+        const len = path2.length;
         const last = len - 1;
         let curPath = "";
         let doc_ = doc;
         let included = false;
         for (let i = 0; i < len; ++i) {
-          const piece = path[i];
+          const piece = path2[i];
           if (!curPath.length) {
             curPath = piece;
           } else {
@@ -61923,7 +61923,7 @@ var require_document2 = __commonJS({
       const keys = Object.keys(obj);
       const len = keys.length;
       let schemaType;
-      let path;
+      let path2;
       let i;
       const strict = self2.$__.strictMode;
       const docSchema = self2.$__schema;
@@ -61932,9 +61932,9 @@ var require_document2 = __commonJS({
         if (specialProperties.has(i)) {
           continue;
         }
-        path = prefix ? prefix + i : i;
-        schemaType = docSchema.path(path);
-        if (docSchema.$isRootDiscriminator && !self2.$__isSelected(path)) {
+        path2 = prefix ? prefix + i : i;
+        schemaType = docSchema.path(path2);
+        if (docSchema.$isRootDiscriminator && !self2.$__isSelected(path2)) {
           continue;
         }
         const value = obj[i];
@@ -61950,7 +61950,7 @@ var require_document2 = __commonJS({
               self2[i] = doc[i];
             }
           }
-          init(self2, value, doc[i], opts, path + ".");
+          init(self2, value, doc[i], opts, path2 + ".");
         } else if (!schemaType) {
           doc[i] = value;
           if (!strict && !prefix) {
@@ -61988,16 +61988,16 @@ var require_document2 = __commonJS({
             } else if (schemaType && opts.hydratedPopulatedDocs) {
               doc[i] = schemaType.cast(value, self2, true, void 0, { hydratedPopulatedDocs: true });
               if (doc[i] && doc[i].$__ && doc[i].$__.wasPopulated) {
-                self2.$populated(path, doc[i].$__.wasPopulated.value, doc[i].$__.wasPopulated.options);
+                self2.$populated(path2, doc[i].$__.wasPopulated.value, doc[i].$__.wasPopulated.options);
               } else if (Array.isArray(doc[i]) && doc[i].length && doc[i][0]?.$__?.wasPopulated) {
-                self2.$populated(path, doc[i].map((populatedDoc) => populatedDoc?.$__?.wasPopulated?.value).filter((val) => val != null), doc[i][0].$__.wasPopulated.options);
+                self2.$populated(path2, doc[i].map((populatedDoc) => populatedDoc?.$__?.wasPopulated?.value).filter((val) => val != null), doc[i][0].$__.wasPopulated.options);
               }
             } else {
               doc[i] = value;
             }
           }
-          if (!self2.$isModified(path)) {
-            self2.$__.activePaths.init(path);
+          if (!self2.$isModified(path2)) {
+            self2.$__.activePaths.init(path2);
           }
         }
       }
@@ -62084,7 +62084,7 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document17.prototype.$set = function $set(path, val, type, options) {
+    Document17.prototype.$set = function $set(path2, val, type, options) {
       if (utils.isPOJO(type)) {
         options = type;
         type = void 0;
@@ -62102,23 +62102,23 @@ var require_document2 = __commonJS({
       let strict = userSpecifiedStrict ? options.strict : this.$__.strictMode;
       if (adhoc) {
         adhocs = this.$__.adhocPaths || (this.$__.adhocPaths = {});
-        adhocs[path] = this.$__schema.interpretAsType(path, type, this.$__schema.options);
+        adhocs[path2] = this.$__schema.interpretAsType(path2, type, this.$__schema.options);
       }
-      if (path == null) {
-        [path, val] = [val, path];
-      } else if (typeof path !== "string") {
-        if (path instanceof Document17) {
-          if (path.$__isNested) {
-            path = path.toObject();
+      if (path2 == null) {
+        [path2, val] = [val, path2];
+      } else if (typeof path2 !== "string") {
+        if (path2 instanceof Document17) {
+          if (path2.$__isNested) {
+            path2 = path2.toObject();
           } else {
-            path = path.$__schema === this.$__schema ? applyVirtuals(path, { ...path._doc }) : path._doc;
+            path2 = path2.$__schema === this.$__schema ? applyVirtuals(path2, { ...path2._doc }) : path2._doc;
           }
         }
-        if (path == null) {
-          [path, val] = [val, path];
+        if (path2 == null) {
+          [path2, val] = [val, path2];
         }
         prefix = val ? val + "." : "";
-        keys = getKeysInSchemaOrder(this.$__schema, path);
+        keys = getKeysInSchemaOrder(this.$__schema, path2);
         const len = keys.length;
         const _skipMinimizeTopLevel = options && options._skipMinimizeTopLevel || false;
         if (len === 0 && _skipMinimizeTopLevel) {
@@ -62133,7 +62133,7 @@ var require_document2 = __commonJS({
           key = keys[i2];
           const pathName = prefix ? prefix + key : key;
           pathtype = this.$__schema.pathType(pathName);
-          const valForKey = path[key];
+          const valForKey = path2[key];
           if (type === true && !prefix && valForKey != null && pathtype === "nested" && this._doc[key] != null) {
             delete this._doc[key];
           }
@@ -62178,15 +62178,15 @@ var require_document2 = __commonJS({
         this._doc = Object.assign(orderedDoc, this._doc);
         return this;
       }
-      let pathType = this.$__schema.pathType(path);
+      let pathType = this.$__schema.pathType(path2);
       let parts = null;
       if (pathType === "adhocOrUndefined") {
-        parts = path.indexOf(".") === -1 ? [path] : path.split(".");
+        parts = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
         pathType = getEmbeddedDiscriminatorPath(this, parts, { typeOnly: true });
       }
       if (pathType === "adhocOrUndefined" && !userSpecifiedStrict) {
         if (parts == null) {
-          parts = path.indexOf(".") === -1 ? [path] : path.split(".");
+          parts = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
         }
         const subdocStrict = getSubdocumentStrictValue(this.$__schema, parts);
         if (subdocStrict !== void 0) {
@@ -62196,12 +62196,12 @@ var require_document2 = __commonJS({
       val = handleSpreadDoc(val, true);
       const priorVal = (() => {
         if (this.$__.priorDoc != null) {
-          return this.$__.priorDoc.$__getValue(path);
+          return this.$__.priorDoc.$__getValue(path2);
         }
         if (constructing) {
           return void 0;
         }
-        return this.$__getValue(path);
+        return this.$__getValue(path2);
       })();
       if (pathType === "nested" && val) {
         if (typeof val === "object" && val != null) {
@@ -62209,43 +62209,43 @@ var require_document2 = __commonJS({
             val = val.toObject(internalToObjectOptions);
           }
           if (val == null) {
-            this.invalidate(path, new MongooseError.CastError("Object", val, path));
+            this.invalidate(path2, new MongooseError.CastError("Object", val, path2));
             return this;
           }
-          const wasModified = this.$isModified(path);
-          const hasInitialVal = this.$__.savedState != null && Object.hasOwn(this.$__.savedState, path);
-          if (this.$__.savedState != null && !this.$isNew && !Object.hasOwn(this.$__.savedState, path)) {
-            const initialVal = this.$__getValue(path);
-            this.$__.savedState[path] = initialVal;
+          const wasModified = this.$isModified(path2);
+          const hasInitialVal = this.$__.savedState != null && Object.hasOwn(this.$__.savedState, path2);
+          if (this.$__.savedState != null && !this.$isNew && !Object.hasOwn(this.$__.savedState, path2)) {
+            const initialVal = this.$__getValue(path2);
+            this.$__.savedState[path2] = initialVal;
             const keys3 = Object.keys(initialVal || {});
             for (const key2 of keys3) {
-              this.$__.savedState[path + "." + key2] = initialVal[key2];
+              this.$__.savedState[path2 + "." + key2] = initialVal[key2];
             }
           }
           if (!merge) {
-            this.$__setValue(path, null);
-            cleanModifiedSubpaths(this, path);
+            this.$__setValue(path2, null);
+            cleanModifiedSubpaths(this, path2);
           } else {
-            return this.$set(val, path, constructing, options);
+            return this.$set(val, path2, constructing, options);
           }
-          const keys2 = getKeysInSchemaOrder(this.$__schema, val, path);
-          this.$__setValue(path, {});
+          const keys2 = getKeysInSchemaOrder(this.$__schema, val, path2);
+          this.$__setValue(path2, {});
           for (const key2 of keys2) {
-            this.$set(path + "." + key2, val[key2], constructing, { ...options, _skipMarkModified: true });
+            this.$set(path2 + "." + key2, val[key2], constructing, { ...options, _skipMarkModified: true });
           }
-          if (priorVal != null && (!wasModified || hasInitialVal) && utils.deepEqual(hasInitialVal ? this.$__.savedState[path] : priorVal, val)) {
-            this.unmarkModified(path);
+          if (priorVal != null && (!wasModified || hasInitialVal) && utils.deepEqual(hasInitialVal ? this.$__.savedState[path2] : priorVal, val)) {
+            this.unmarkModified(path2);
           } else {
-            this.markModified(path);
+            this.markModified(path2);
           }
           return this;
         }
-        this.invalidate(path, new MongooseError.CastError("Object", val, path));
+        this.invalidate(path2, new MongooseError.CastError("Object", val, path2));
         return this;
       }
       let schema;
       if (parts == null) {
-        parts = path.indexOf(".") === -1 ? [path] : path.split(".");
+        parts = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
       }
       if (typeof this.$__schema.aliases[parts[0]] === "string") {
         parts[0] = this.$__schema.aliases[parts[0]];
@@ -62255,7 +62255,7 @@ var require_document2 = __commonJS({
         for (i = 0; i < parts.length; ++i) {
           const subpath = parts.slice(0, i + 1).join(".");
           if (i + 1 < parts.length && this.$__schema.pathType(subpath) === "virtual") {
-            mpath.set(path, val, this);
+            mpath.set(path2, val, this);
             return this;
           }
           schema = this.$__schema.path(subpath);
@@ -62272,20 +62272,20 @@ var require_document2 = __commonJS({
           }
         }
         if (schema == null) {
-          schema = getEmbeddedDiscriminatorPath(this, path);
+          schema = getEmbeddedDiscriminatorPath(this, path2);
         }
         if (!mixed && !schema) {
           if (strict === "throw") {
-            throw new StrictModeError(path);
+            throw new StrictModeError(path2);
           }
           return this;
         }
       } else if (pathType === "virtual") {
-        schema = this.$__schema.virtualpath(path);
+        schema = this.$__schema.virtualpath(path2);
         schema.applySetters(val, this);
         return this;
       } else {
-        schema = this.$__path(path);
+        schema = this.$__path(path2);
       }
       let cur = this._doc;
       let curPath = "";
@@ -62302,7 +62302,7 @@ var require_document2 = __commonJS({
       }
       let pathToMark;
       if (parts.length <= 1) {
-        pathToMark = path;
+        pathToMark = path2;
       } else {
         const len = parts.length;
         for (i = 0; i < len; ++i) {
@@ -62313,18 +62313,18 @@ var require_document2 = __commonJS({
           }
         }
         if (!pathToMark) {
-          pathToMark = path;
+          pathToMark = path2;
         }
       }
       if (!schema) {
-        this.$__set(pathToMark, path, options, constructing, parts, schema, val, priorVal);
+        this.$__set(pathToMark, path2, options, constructing, parts, schema, val, priorVal);
         if (pathType === "nested" && val == null) {
-          cleanModifiedSubpaths(this, path);
+          cleanModifiedSubpaths(this, path2);
         }
         return this;
       }
       if (schema.$isSingleNested || schema.$isMongooseArray) {
-        _markValidSubpaths(this, path);
+        _markValidSubpaths(this, path2);
       }
       if (val != null && merge && schema.$isSingleNested) {
         if (val instanceof Document17) {
@@ -62332,7 +62332,7 @@ var require_document2 = __commonJS({
         }
         const keys2 = Object.keys(val);
         for (const key2 of keys2) {
-          this.$set(path + "." + key2, val[key2], constructing, options);
+          this.$set(path2 + "." + key2, val[key2], constructing, options);
         }
         return this;
       }
@@ -62361,7 +62361,7 @@ var require_document2 = __commonJS({
         let didPopulate = false;
         if (refMatches && val instanceof Document17 && (!val.$__.wasPopulated || utils.deepEqual(val.$__.wasPopulated.value, val._doc._id))) {
           const unpopulatedValue = schema && schema.$isSingleNested ? schema.cast(val, this) : val._doc._id;
-          this.$populated(path, unpopulatedValue, { [populateModelSymbol]: val.constructor });
+          this.$populated(path2, unpopulatedValue, { [populateModelSymbol]: val.constructor });
           val.$__.wasPopulated = { value: unpopulatedValue };
           didPopulate = true;
         }
@@ -62369,7 +62369,7 @@ var require_document2 = __commonJS({
         const typeKey = this.$__schema.options.typeKey;
         if (schema.options && Array.isArray(schema.options[typeKey]) && schema.options[typeKey].length && schema.options[typeKey][0] && schema.options[typeKey][0].ref && _isManuallyPopulatedArray(val, schema.options[typeKey][0].ref)) {
           popOpts = { [populateModelSymbol]: val[0].constructor };
-          this.$populated(path, val.map(function(v) {
+          this.$populated(path2, val.map(function(v) {
             return v._doc._id;
           }), popOpts);
           for (const doc of val) {
@@ -62379,20 +62379,20 @@ var require_document2 = __commonJS({
         }
         if (!refMatches || !schema.$isSingleNested || !val.$__) {
           let setterContext = this;
-          if (this.$__schema.singleNestedPaths[path] != null && parts.length > 1) {
+          if (this.$__schema.singleNestedPaths[path2] != null && parts.length > 1) {
             setterContext = getDeepestSubdocumentForPath(this, parts, this.schema);
           }
           if (options != null && options.overwriteImmutable) {
-            val = schema.applySetters(val, setterContext, false, priorVal, { path, overwriteImmutable: true });
+            val = schema.applySetters(val, setterContext, false, priorVal, { path: path2, overwriteImmutable: true });
           } else {
-            val = schema.applySetters(val, setterContext, false, priorVal, { path });
+            val = schema.applySetters(val, setterContext, false, priorVal, { path: path2 });
           }
         }
         if (Array.isArray(val) && !Array.isArray(schema) && schema.$isMongooseDocumentArray && val.length !== 0 && val[0] != null && val[0].$__ != null && val[0].$__.populated != null) {
           const populatedPaths = Object.keys(val[0].$__.populated);
           for (const populatedPath of populatedPaths) {
             this.$populated(
-              path + "." + populatedPath,
+              path2 + "." + populatedPath,
               val.map((v) => v.$populated(populatedPath)),
               val[0].$__.populated[populatedPath].options
             );
@@ -62400,34 +62400,34 @@ var require_document2 = __commonJS({
           didPopulate = true;
         }
         if (!didPopulate && this.$__.populated) {
-          if (Array.isArray(val) && this.$__.populated[path]) {
+          if (Array.isArray(val) && this.$__.populated[path2]) {
             for (let i2 = 0; i2 < val.length; ++i2) {
               if (val[i2] instanceof Document17) {
                 val.set(i2, val[i2]._doc._id, true);
               }
             }
           }
-          delete this.$__.populated[path];
+          delete this.$__.populated[path2];
         }
         if (val != null && schema.$isSingleNested) {
           _checkImmutableSubpaths(val, schema, priorVal);
         }
-        this.$markValid(path);
+        this.$markValid(path2);
       } catch (e) {
         if (e instanceof MongooseError.StrictModeError && e.isImmutableError) {
-          this.invalidate(path, e);
+          this.invalidate(path2, e);
         } else if (e instanceof MongooseError.CastError) {
           this.invalidate(e.path, e);
           if (e.$originalErrorPath) {
             this.invalidate(
-              path,
-              new MongooseError.CastError(schema.instance, val, path, e.$originalErrorPath)
+              path2,
+              new MongooseError.CastError(schema.instance, val, path2, e.$originalErrorPath)
             );
           }
         } else {
           this.invalidate(
-            path,
-            new MongooseError.CastError(schema.instance, val, path, e)
+            path2,
+            new MongooseError.CastError(schema.instance, val, path2, e)
           );
         }
         shouldSet = false;
@@ -62438,20 +62438,20 @@ var require_document2 = __commonJS({
         if (!constructing) {
           const doc = this.$isSubdocument ? this.ownerDocument() : this;
           savedState = doc.$__.savedState;
-          savedStatePath = this.$isSubdocument ? this.$__.fullPath + "." + path : path;
+          savedStatePath = this.$isSubdocument ? this.$__.fullPath + "." + path2 : path2;
           doc.$__saveInitialState(savedStatePath);
         }
-        this.$__set(pathToMark, path, options, constructing, parts, schema, val, priorVal);
+        this.$__set(pathToMark, path2, options, constructing, parts, schema, val, priorVal);
         const isInTransaction = !!this.$__.session?.transaction;
         const isModifiedWithinTransaction = this.$__.session && this.$__.session[sessionNewDocuments] && this.$__.session[sessionNewDocuments].has(this) && this.$__.session[sessionNewDocuments].get(this).modifiedPaths && !this.$__.session[sessionNewDocuments].get(this).modifiedPaths.has(savedStatePath);
         if (savedState != null && Object.hasOwn(savedState, savedStatePath) && (!isInTransaction || isModifiedWithinTransaction) && utils.deepEqual(val, savedState[savedStatePath])) {
-          this.unmarkModified(path);
+          this.unmarkModified(path2);
         }
       }
-      if (schema.$isSingleNested && (this.isDirectModified(path) || val == null)) {
-        cleanModifiedSubpaths(this, path);
+      if (schema.$isSingleNested && (this.isDirectModified(path2) || val == null)) {
+        cleanModifiedSubpaths(this, path2);
       } else if (schema.$isSchemaMap && val == null) {
-        cleanModifiedSubpaths(this, path);
+        cleanModifiedSubpaths(this, path2);
       }
       return this;
     };
@@ -62477,38 +62477,38 @@ var require_document2 = __commonJS({
       return true;
     }
     Document17.prototype.set = Document17.prototype.$set;
-    Document17.prototype.$__shouldModify = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
+    Document17.prototype.$__shouldModify = function(pathToMark, path2, options, constructing, parts, schema, val, priorVal) {
       if (options && options._skipMarkModified) {
         return false;
       }
       if (this.$isNew) {
         return true;
       }
-      if (path in this.$__.activePaths.getStatePaths("modify")) {
+      if (path2 in this.$__.activePaths.getStatePaths("modify")) {
         return true;
       }
-      if (val === void 0 && !this.$__isSelected(path)) {
+      if (val === void 0 && !this.$__isSelected(path2)) {
         return true;
       }
-      if (val === void 0 && path in this.$__.activePaths.getStatePaths("default")) {
+      if (val === void 0 && path2 in this.$__.activePaths.getStatePaths("default")) {
         return false;
       }
-      if (this.$populated(path) && val instanceof Document17 && deepEqual(val._doc._id, priorVal)) {
+      if (this.$populated(path2) && val instanceof Document17 && deepEqual(val._doc._id, priorVal)) {
         return false;
       }
-      if (!deepEqual(val, priorVal !== void 0 ? priorVal : utils.getValue(path, this))) {
+      if (!deepEqual(val, priorVal !== void 0 ? priorVal : utils.getValue(path2, this))) {
         return true;
       }
-      if (!constructing && val !== null && val !== void 0 && path in this.$__.activePaths.getStatePaths("default") && deepEqual(val, schema.getDefault(this, constructing))) {
+      if (!constructing && val !== null && val !== void 0 && path2 in this.$__.activePaths.getStatePaths("default") && deepEqual(val, schema.getDefault(this, constructing))) {
         return true;
       }
       return false;
     };
-    Document17.prototype.$__set = function(pathToMark, path, options, constructing, parts, schema, val, priorVal) {
+    Document17.prototype.$__set = function(pathToMark, path2, options, constructing, parts, schema, val, priorVal) {
       Embedded = Embedded || require_arraySubdocument();
       const shouldModify = this.$__shouldModify(
         pathToMark,
-        path,
+        path2,
         options,
         constructing,
         parts,
@@ -62517,8 +62517,8 @@ var require_document2 = __commonJS({
         priorVal
       );
       if (shouldModify) {
-        if (this.$__.primitiveAtomics && this.$__.primitiveAtomics[path]) {
-          delete this.$__.primitiveAtomics[path];
+        if (this.$__.primitiveAtomics && this.$__.primitiveAtomics[path2]) {
+          delete this.$__.primitiveAtomics[path2];
           if (Object.keys(this.$__.primitiveAtomics).length === 0) {
             delete this.$__.primitiveAtomics;
           }
@@ -62599,34 +62599,34 @@ var require_document2 = __commonJS({
         }
       }
     };
-    Document17.prototype.$__getValue = function(path) {
-      if (typeof path !== "string" && !Array.isArray(path)) {
+    Document17.prototype.$__getValue = function(path2) {
+      if (typeof path2 !== "string" && !Array.isArray(path2)) {
         throw new TypeError(
-          `Invalid \`path\`. Must be either string or array. Got "${path}" (type ${typeof path})`
+          `Invalid \`path\`. Must be either string or array. Got "${path2}" (type ${typeof path2})`
         );
       }
-      return utils.getValue(path, this._doc);
+      return utils.getValue(path2, this._doc);
     };
-    Document17.prototype.$inc = function $inc(path, val) {
+    Document17.prototype.$inc = function $inc(path2, val) {
       if (val == null) {
         val = 1;
       }
-      if (Array.isArray(path)) {
-        path.forEach((p) => this.$inc(p, val));
+      if (Array.isArray(path2)) {
+        path2.forEach((p) => this.$inc(p, val));
         return this;
       }
-      const schemaType = this.$__path(path);
+      const schemaType = this.$__path(path2);
       if (schemaType == null) {
         if (this.$__.strictMode === "throw") {
-          throw new StrictModeError(path);
+          throw new StrictModeError(path2);
         } else if (this.$__.strictMode === true) {
           return this;
         }
       } else if (schemaType.instance !== "Number") {
-        this.invalidate(path, new MongooseError.CastError(schemaType.instance, val, path));
+        this.invalidate(path2, new MongooseError.CastError(schemaType.instance, val, path2));
         return this;
       }
-      const currentValue = this.$__getValue(path) || 0;
+      const currentValue = this.$__getValue(path2) || 0;
       let shouldSet = false;
       let valToSet = null;
       let valToInc = val;
@@ -62636,42 +62636,42 @@ var require_document2 = __commonJS({
         valToInc = valToSet - currentValue;
         shouldSet = true;
       } catch (err) {
-        this.invalidate(path, new MongooseError.CastError("number", val, path, err));
+        this.invalidate(path2, new MongooseError.CastError("number", val, path2, err));
       }
       if (shouldSet) {
         this.$__.primitiveAtomics = this.$__.primitiveAtomics || {};
-        if (this.$__.primitiveAtomics[path] == null) {
-          this.$__.primitiveAtomics[path] = { $inc: valToInc };
+        if (this.$__.primitiveAtomics[path2] == null) {
+          this.$__.primitiveAtomics[path2] = { $inc: valToInc };
         } else {
-          this.$__.primitiveAtomics[path].$inc += valToInc;
+          this.$__.primitiveAtomics[path2].$inc += valToInc;
         }
-        this.markModified(path);
-        this.$__setValue(path, valToSet);
+        this.markModified(path2);
+        this.$__setValue(path2, valToSet);
       }
       return this;
     };
-    Document17.prototype.$__setValue = function(path, val) {
-      utils.setValue(path, val, this._doc);
+    Document17.prototype.$__setValue = function(path2, val) {
+      utils.setValue(path2, val, this._doc);
       return this;
     };
-    Document17.prototype.get = function(path, type, options) {
+    Document17.prototype.get = function(path2, type, options) {
       let adhoc;
       if (options == null) {
         options = {};
       }
       if (type) {
-        adhoc = this.$__schema.interpretAsType(path, type, this.$__schema.options);
+        adhoc = this.$__schema.interpretAsType(path2, type, this.$__schema.options);
       }
       const noDottedPath = options.noDottedPath;
-      let schema = noDottedPath ? Object.hasOwn(this.$__schema.paths, path) ? this.$__schema.paths[path] : void 0 : this.$__path(path);
+      let schema = noDottedPath ? Object.hasOwn(this.$__schema.paths, path2) ? this.$__schema.paths[path2] : void 0 : this.$__path(path2);
       if (schema == null) {
-        schema = this.$__schema.virtualpath(path);
+        schema = this.$__schema.virtualpath(path2);
         if (schema != null) {
           return schema.applyGetters(void 0, this);
         }
       }
       if (noDottedPath) {
-        let obj2 = Object.hasOwn(this._doc, path) ? this._doc[path] : void 0;
+        let obj2 = Object.hasOwn(this._doc, path2) ? this._doc[path2] : void 0;
         if (adhoc) {
           obj2 = adhoc.cast(obj2);
         }
@@ -62681,14 +62681,14 @@ var require_document2 = __commonJS({
         return obj2;
       }
       if (schema != null && schema.instance === "Mixed") {
-        const virtual = this.$__schema.virtualpath(path);
+        const virtual = this.$__schema.virtualpath(path2);
         if (virtual != null) {
           schema = virtual;
         }
       }
-      const hasDot = path.indexOf(".") !== -1;
+      const hasDot = path2.indexOf(".") !== -1;
       let obj = this._doc;
-      const pieces = hasDot ? path.split(".") : [path];
+      const pieces = hasDot ? path2.split(".") : [path2];
       if (typeof this.$__schema.aliases[pieces[0]] === "string") {
         pieces[0] = this.$__schema.aliases[pieces[0]];
       }
@@ -62714,32 +62714,32 @@ var require_document2 = __commonJS({
       }
       if (schema != null && options.getters !== false) {
         obj = schema.applyGetters(obj, this);
-      } else if (Object.hasOwn(this.$__schema.nested, path) && options.virtuals) {
-        return applyVirtuals(this, clone(obj) || {}, { path });
+      } else if (Object.hasOwn(this.$__schema.nested, path2) && options.virtuals) {
+        return applyVirtuals(this, clone(obj) || {}, { path: path2 });
       }
       return obj;
     };
     Document17.prototype[getSymbol] = Document17.prototype.get;
     Document17.prototype.$get = Document17.prototype.get;
-    Document17.prototype.$__path = function(path) {
+    Document17.prototype.$__path = function(path2) {
       const adhocs = this.$__.adhocPaths;
-      const adhocType = adhocs && Object.hasOwn(adhocs, path) ? adhocs[path] : null;
+      const adhocType = adhocs && Object.hasOwn(adhocs, path2) ? adhocs[path2] : null;
       if (adhocType) {
         return adhocType;
       }
-      return this.$__schema.path(path);
+      return this.$__schema.path(path2);
     };
-    Document17.prototype.markModified = function(path, scope) {
-      this.$__saveInitialState(path);
-      this.$__.activePaths.modify(path);
+    Document17.prototype.markModified = function(path2, scope) {
+      this.$__saveInitialState(path2);
+      this.$__.activePaths.modify(path2);
       if (scope != null && !this.$isSubdocument) {
         this.$__.pathsToScopes = this.$__pathsToScopes || {};
-        this.$__.pathsToScopes[path] = scope;
+        this.$__.pathsToScopes[path2] = scope;
       }
     };
-    Document17.prototype.$__saveInitialState = function $__saveInitialState(path) {
+    Document17.prototype.$__saveInitialState = function $__saveInitialState(path2) {
       const savedState = this.$__.savedState;
-      const savedStatePath = path;
+      const savedStatePath = path2;
       if (savedState != null) {
         const firstDot = savedStatePath.indexOf(".");
         const topLevelPath = firstDot === -1 ? savedStatePath : savedStatePath.slice(0, firstDot);
@@ -62748,19 +62748,19 @@ var require_document2 = __commonJS({
         }
       }
     };
-    Document17.prototype.unmarkModified = function(path) {
-      this.$__.activePaths.init(path);
+    Document17.prototype.unmarkModified = function(path2) {
+      this.$__.activePaths.init(path2);
       if (this.$__.pathsToScopes != null) {
-        delete this.$__.pathsToScopes[path];
+        delete this.$__.pathsToScopes[path2];
       }
     };
-    Document17.prototype.$ignore = function(path) {
-      this.$__.activePaths.ignore(path);
+    Document17.prototype.$ignore = function(path2) {
+      this.$__.activePaths.ignore(path2);
     };
     Document17.prototype.directModifiedPaths = function() {
       return Object.keys(this.$__.activePaths.getStatePaths("modify"));
     };
-    Document17.prototype.$isEmpty = function(path) {
+    Document17.prototype.$isEmpty = function(path2) {
       const isEmptyOptions = {
         minimize: true,
         virtuals: false,
@@ -62768,7 +62768,7 @@ var require_document2 = __commonJS({
         transform: false
       };
       if (arguments.length !== 0) {
-        const v = this.$get(path);
+        const v = this.$get(path2);
         if (v == null) {
           return true;
         }
@@ -62804,8 +62804,8 @@ var require_document2 = __commonJS({
       let j = 0;
       const len = directModifiedPaths.length;
       for (i = 0; i < len; ++i) {
-        const path = directModifiedPaths[i];
-        const parts = parentPaths(path);
+        const path2 = directModifiedPaths[i];
+        const parts = parentPaths(path2);
         const pLen = parts.length;
         for (j = 0; j < pLen; ++j) {
           result.add(parts[j]);
@@ -62814,7 +62814,7 @@ var require_document2 = __commonJS({
           continue;
         }
         let ii = 0;
-        let cur = this.$get(path);
+        let cur = this.$get(path2);
         if (typeof cur === "object" && cur !== null) {
           if (cur._doc) {
             cur = cur._doc;
@@ -62822,7 +62822,7 @@ var require_document2 = __commonJS({
           const len2 = cur.length;
           if (Array.isArray(cur)) {
             for (ii = 0; ii < len2; ++ii) {
-              const subPath = path + "." + ii;
+              const subPath = path2 + "." + ii;
               if (!result.has(subPath)) {
                 result.add(subPath);
                 if (cur[ii] != null && cur[ii].$__) {
@@ -62840,7 +62840,7 @@ var require_document2 = __commonJS({
             let ii2 = 0;
             const len3 = keys.length;
             for (ii2 = 0; ii2 < len3; ++ii2) {
-              result.add(path + "." + keys[ii2]);
+              result.add(path2 + "." + keys[ii2]);
             }
           }
         }
@@ -62858,28 +62858,28 @@ var require_document2 = __commonJS({
         if (typeof paths === "string") {
           paths = paths.indexOf(" ") === -1 ? [paths] : paths.split(" ");
         }
-        for (const path of paths) {
-          if (directModifiedPathsObj[path] != null) {
+        for (const path2 of paths) {
+          if (directModifiedPathsObj[path2] != null) {
             return true;
           }
         }
         const modified = modifiedPaths || this[documentModifiedPaths]();
-        const isModifiedChild = paths.some(function(path) {
-          return !!~modified.indexOf(path);
+        const isModifiedChild = paths.some(function(path2) {
+          return !!~modified.indexOf(path2);
         });
         let directModifiedPaths = Object.keys(directModifiedPathsObj);
         if (ignoreAtomics) {
-          directModifiedPaths = directModifiedPaths.filter((path) => {
-            const value = this.$__getValue(path);
+          directModifiedPaths = directModifiedPaths.filter((path2) => {
+            const value = this.$__getValue(path2);
             if (value != null && value[arrayAtomicsSymbol] != null && value[arrayAtomicsSymbol].$set === void 0) {
               return false;
             }
             return true;
           });
         }
-        return isModifiedChild || paths.some(function(path) {
+        return isModifiedChild || paths.some(function(path2) {
           return directModifiedPaths.some(function(mod) {
-            return mod === path || path.startsWith(mod + ".");
+            return mod === path2 || path2.startsWith(mod + ".");
           });
         });
       }
@@ -62887,18 +62887,18 @@ var require_document2 = __commonJS({
     };
     Document17.prototype.$isModified = Document17.prototype.isModified;
     Document17.prototype[documentIsModified] = Document17.prototype.isModified;
-    Document17.prototype.$isDefault = function(path) {
-      if (path == null) {
+    Document17.prototype.$isDefault = function(path2) {
+      if (path2 == null) {
         return this.$__.activePaths.some("default");
       }
-      if (typeof path === "string" && path.indexOf(" ") === -1) {
-        return Object.hasOwn(this.$__.activePaths.getStatePaths("default"), path);
+      if (typeof path2 === "string" && path2.indexOf(" ") === -1) {
+        return Object.hasOwn(this.$__.activePaths.getStatePaths("default"), path2);
       }
-      let paths = path;
+      let paths = path2;
       if (!Array.isArray(paths)) {
         paths = paths.split(" ");
       }
-      return paths.some((path2) => Object.hasOwn(this.$__.activePaths.getStatePaths("default"), path2));
+      return paths.some((path3) => Object.hasOwn(this.$__.activePaths.getStatePaths("default"), path3));
     };
     Document17.prototype.$isDeleted = function(val) {
       if (arguments.length === 0) {
@@ -62907,16 +62907,16 @@ var require_document2 = __commonJS({
       this.$__.isDeleted = !!val;
       return this;
     };
-    Document17.prototype.isDirectModified = function(path) {
-      if (path == null) {
+    Document17.prototype.isDirectModified = function(path2) {
+      if (path2 == null) {
         return this.$__.activePaths.some("modify");
       }
-      if (typeof path === "string" && path.indexOf(" ") === -1) {
-        const res = Object.hasOwn(this.$__.activePaths.getStatePaths("modify"), path);
-        if (res || path.indexOf(".") === -1) {
+      if (typeof path2 === "string" && path2.indexOf(" ") === -1) {
+        const res = Object.hasOwn(this.$__.activePaths.getStatePaths("modify"), path2);
+        if (res || path2.indexOf(".") === -1) {
           return res;
         }
-        const pieces = path.split(".");
+        const pieces = path2.split(".");
         for (let i = 0; i < pieces.length - 1; ++i) {
           const subpath = pieces.slice(0, i + 1).join(".");
           const subdoc = this.$get(subpath);
@@ -62926,40 +62926,40 @@ var require_document2 = __commonJS({
         }
         return false;
       }
-      let paths = path;
+      let paths = path2;
       if (typeof paths === "string") {
         paths = paths.split(" ");
       }
-      return paths.some((path2) => this.isDirectModified(path2));
+      return paths.some((path3) => this.isDirectModified(path3));
     };
-    Document17.prototype.isInit = function(path) {
-      if (path == null) {
+    Document17.prototype.isInit = function(path2) {
+      if (path2 == null) {
         return this.$__.activePaths.some("init");
       }
-      if (typeof path === "string" && path.indexOf(" ") === -1) {
-        return Object.hasOwn(this.$__.activePaths.getStatePaths("init"), path);
+      if (typeof path2 === "string" && path2.indexOf(" ") === -1) {
+        return Object.hasOwn(this.$__.activePaths.getStatePaths("init"), path2);
       }
-      let paths = path;
+      let paths = path2;
       if (!Array.isArray(paths)) {
         paths = paths.split(" ");
       }
-      return paths.some((path2) => Object.hasOwn(this.$__.activePaths.getStatePaths("init"), path2));
+      return paths.some((path3) => Object.hasOwn(this.$__.activePaths.getStatePaths("init"), path3));
     };
-    Document17.prototype.isSelected = function isSelected(path) {
+    Document17.prototype.isSelected = function isSelected(path2) {
       if (this.$__.selected == null) {
         return true;
       }
-      if (!path) {
+      if (!path2) {
         return false;
       }
-      if (path === "_id") {
+      if (path2 === "_id") {
         return this.$__.selected._id !== 0;
       }
-      if (path.indexOf(" ") !== -1) {
-        path = path.split(" ");
+      if (path2.indexOf(" ") !== -1) {
+        path2 = path2.split(" ");
       }
-      if (Array.isArray(path)) {
-        return path.some((p) => this.$__isSelected(p));
+      if (Array.isArray(path2)) {
+        return path2.some((p) => this.$__isSelected(p));
       }
       const paths = Object.keys(this.$__.selected);
       let inclusive = null;
@@ -62979,10 +62979,10 @@ var require_document2 = __commonJS({
       if (inclusive === null) {
         return true;
       }
-      if (path in this.$__.selected) {
+      if (path2 in this.$__.selected) {
         return inclusive;
       }
-      const pathDot = path + ".";
+      const pathDot = path2 + ".";
       for (const cur of paths) {
         if (cur === "_id") {
           continue;
@@ -62997,18 +62997,18 @@ var require_document2 = __commonJS({
       return !inclusive;
     };
     Document17.prototype.$__isSelected = Document17.prototype.isSelected;
-    Document17.prototype.isDirectSelected = function isDirectSelected(path) {
+    Document17.prototype.isDirectSelected = function isDirectSelected(path2) {
       if (this.$__.selected == null) {
         return true;
       }
-      if (path === "_id") {
+      if (path2 === "_id") {
         return this.$__.selected._id !== 0;
       }
-      if (path.indexOf(" ") !== -1) {
-        path = path.split(" ");
+      if (path2.indexOf(" ") !== -1) {
+        path2 = path2.split(" ");
       }
-      if (Array.isArray(path)) {
-        return path.some((p) => this.isDirectSelected(p));
+      if (Array.isArray(path2)) {
+        return path2.some((p) => this.isDirectSelected(p));
       }
       const paths = Object.keys(this.$__.selected);
       let inclusive = null;
@@ -63028,7 +63028,7 @@ var require_document2 = __commonJS({
       if (inclusive === null) {
         return true;
       }
-      if (Object.hasOwn(this.$__.selected, path)) {
+      if (Object.hasOwn(this.$__.selected, path2)) {
         return inclusive;
       }
       return !inclusive;
@@ -63072,14 +63072,14 @@ var require_document2 = __commonJS({
       let i = 0;
       const len = requiredFields.length;
       for (i = 0; i < len; ++i) {
-        const path = requiredFields[i];
-        const p = doc.$__schema.path(path);
+        const path2 = requiredFields[i];
+        const p = doc.$__schema.path(path2);
         if (p != null && typeof p.originalRequiredValue === "function") {
           doc.$__.cachedRequired = doc.$__.cachedRequired || {};
           try {
-            doc.$__.cachedRequired[path] = p.originalRequiredValue.call(doc, doc);
+            doc.$__.cachedRequired[path2] = p.originalRequiredValue.call(doc, doc);
           } catch (err) {
-            doc.invalidate(path, err);
+            doc.invalidate(path2, err);
           }
         }
       }
@@ -63087,15 +63087,15 @@ var require_document2 = __commonJS({
     function _getPathsToValidate(doc, pathsToValidate, pathsToSkip, isNestedValidate) {
       const doValidateOptions = {};
       _evaluateRequiredFunctions(doc);
-      let paths = new Set(Object.keys(doc.$__.activePaths.getStatePaths("require")).filter(function(path) {
-        if (!doc.$__isSelected(path) && !doc.$isModified(path)) {
+      let paths = new Set(Object.keys(doc.$__.activePaths.getStatePaths("require")).filter(function(path2) {
+        if (!doc.$__isSelected(path2) && !doc.$isModified(path2)) {
           return false;
         }
-        if (path.endsWith(".$*")) {
+        if (path2.endsWith(".$*")) {
           return false;
         }
-        if (doc.$__.cachedRequired != null && path in doc.$__.cachedRequired) {
-          return doc.$__.cachedRequired[path];
+        if (doc.$__.cachedRequired != null && path2 in doc.$__.cachedRequired) {
+          return doc.$__.cachedRequired[path2];
         }
         return true;
       }));
@@ -63110,15 +63110,15 @@ var require_document2 = __commonJS({
       }
       if (!isNestedValidate) {
         const topLevelSubdocs = [];
-        for (const path of Object.keys(doc.$__schema.paths)) {
-          const schemaType = doc.$__schema.path(path);
+        for (const path2 of Object.keys(doc.$__schema.paths)) {
+          const schemaType = doc.$__schema.path(path2);
           if (schemaType.$isSingleNested) {
-            const subdoc = doc.$get(path);
+            const subdoc = doc.$get(path2);
             if (subdoc) {
               topLevelSubdocs.push(subdoc);
             }
           } else if (schemaType.$isMongooseDocumentArray) {
-            const arr = doc.$get(path);
+            const arr = doc.$get(path2);
             if (arr && arr.length) {
               for (const subdoc of arr) {
                 if (subdoc) {
@@ -63155,8 +63155,8 @@ var require_document2 = __commonJS({
           }
         }
       }
-      for (const path of paths) {
-        const _pathType = doc.$__schema.path(path);
+      for (const path2 of paths) {
+        const _pathType = doc.$__schema.path(path2);
         if (!_pathType) {
           continue;
         }
@@ -63168,12 +63168,12 @@ var require_document2 = __commonJS({
           }
         }
         if (!_pathType.caster && _pathType.validators.length === 0 && !_pathType.$parentSchemaDocArray) {
-          paths.delete(path);
+          paths.delete(path2);
         } else if (_pathType.$isMongooseArray && !_pathType.$isMongooseDocumentArray && // Skip document arrays...
         !_pathType.$embeddedSchemaType.$isMongooseArray && // and arrays of arrays
         _pathType.validators.length === 0 && // and arrays with top-level validators
         _pathType.$embeddedSchemaType.validators.length === 0) {
-          paths.delete(path);
+          paths.delete(path2);
         }
       }
       if (Array.isArray(pathsToValidate)) {
@@ -63191,15 +63191,15 @@ var require_document2 = __commonJS({
           }
           const flat = flatten(_v, pathToCheck, flattenOptions, doc.$__schema);
           const singleNestedPaths = doc.$__schema.singleNestedPaths;
-          for (const path of Object.keys(flat)) {
-            if (!Object.hasOwn(singleNestedPaths, path)) {
-              addToPaths(path);
+          for (const path2 of Object.keys(flat)) {
+            if (!Object.hasOwn(singleNestedPaths, path2)) {
+              addToPaths(path2);
             }
           }
         }
       }
-      for (const path of paths) {
-        const _pathType = doc.$__schema.path(path);
+      for (const path2 of paths) {
+        const _pathType = doc.$__schema.path(path2);
         if (!_pathType) {
           continue;
         }
@@ -63209,20 +63209,20 @@ var require_document2 = __commonJS({
         if (!_pathType.$isSchemaMap) {
           continue;
         }
-        const val = doc.$__getValue(path);
+        const val = doc.$__getValue(path2);
         if (val == null) {
           continue;
         }
         for (const key of val.keys()) {
-          paths.add(path + "." + key);
+          paths.add(path2 + "." + key);
         }
       }
       paths = Array.from(paths);
       return [paths, doValidateOptions];
     }
     function _addArrayPathsToValidate(doc, paths) {
-      for (const path of paths) {
-        const _pathType = doc.$__schema.path(path);
+      for (const path2 of paths) {
+        const _pathType = doc.$__schema.path(path2);
         if (!_pathType) {
           continue;
         }
@@ -63237,18 +63237,18 @@ var require_document2 = __commonJS({
         _pathType.$embeddedSchemaType.validators.length === 0) {
           continue;
         }
-        const val = doc.$__getValue(path);
-        _pushNestedArrayPaths(val, paths, path);
+        const val = doc.$__getValue(path2);
+        _pushNestedArrayPaths(val, paths, path2);
       }
     }
-    function _pushNestedArrayPaths(val, paths, path) {
+    function _pushNestedArrayPaths(val, paths, path2) {
       if (val != null) {
         const numElements = val.length;
         for (let j = 0; j < numElements; ++j) {
           if (Array.isArray(val[j])) {
-            _pushNestedArrayPaths(val[j], paths, path + "." + j);
+            _pushNestedArrayPaths(val[j], paths, path2 + "." + j);
           } else {
-            paths.add(path + "." + j);
+            paths.add(path2 + "." + j);
           }
         }
       }
@@ -63316,22 +63316,22 @@ var require_document2 = __commonJS({
       let doValidateOptionsByPath;
       if (validateAllPaths) {
         paths = new Set(Object.keys(this.$__schema.paths));
-        for (const path of paths) {
-          const schemaType = this.$__schema.path(path);
+        for (const path2 of paths) {
+          const schemaType = this.$__schema.path(path2);
           if (!schemaType || !schemaType.$isMongooseArray) {
             continue;
           }
-          const val = this.$__getValue(path);
+          const val = this.$__getValue(path2);
           if (!val) {
             continue;
           }
-          _pushNestedArrayPaths(val, paths, path);
+          _pushNestedArrayPaths(val, paths, path2);
         }
         paths = [...paths];
         doValidateOptionsByPath = {};
       } else {
         const pathDetails = _getPathsToValidate(this, pathsToValidate, pathsToSkip, options && options._nestedValidate);
-        paths = shouldValidateModifiedOnly ? pathDetails[0].filter((path) => this.$isModified(path)) : pathDetails[0];
+        paths = shouldValidateModifiedOnly ? pathDetails[0].filter((path2) => this.$isModified(path2)) : pathDetails[0];
         doValidateOptionsByPath = pathDetails[1];
       }
       if (typeof pathsToValidate === "string") {
@@ -63353,46 +63353,46 @@ var require_document2 = __commonJS({
       let pathsToSave = this.$__.saveOptions?.pathsToSave;
       if (Array.isArray(pathsToSave)) {
         pathsToSave = new Set(pathsToSave);
-        for (const path of paths) {
-          if (!pathsToSave.has(path)) {
+        for (const path2 of paths) {
+          if (!pathsToSave.has(path2)) {
             continue;
           }
-          validatePath(path);
+          validatePath(path2);
         }
       } else {
-        for (const path of paths) {
-          validatePath(path);
+        for (const path2 of paths) {
+          validatePath(path2);
         }
       }
-      function validatePath(path) {
-        if (path == null || validated[path]) {
+      function validatePath(path2) {
+        if (path2 == null || validated[path2]) {
           return;
         }
-        validated[path] = true;
+        validated[path2] = true;
         total++;
         immediate(function() {
-          const schemaType = _this.$__schema.path(path);
+          const schemaType = _this.$__schema.path(path2);
           if (!schemaType) {
             return --total || complete();
           }
-          if (!_this.$isValid(path)) {
+          if (!_this.$isValid(path2)) {
             --total || complete();
             return;
           }
-          if (schemaType[schemaMixedSymbol] != null && path !== schemaType.path) {
+          if (schemaType[schemaMixedSymbol] != null && path2 !== schemaType.path) {
             return --total || complete();
           }
-          let val = _this.$__getValue(path);
+          let val = _this.$__getValue(path2);
           let pop;
-          if (pop = _this.$populated(path)) {
+          if (pop = _this.$populated(path2)) {
             val = pop;
           } else if (val != null && val.$__ != null && val.$__.wasPopulated) {
             val = val._doc._id;
           }
-          const scope = _this.$__.pathsToScopes != null && path in _this.$__.pathsToScopes ? _this.$__.pathsToScopes[path] : _this;
+          const scope = _this.$__.pathsToScopes != null && path2 in _this.$__.pathsToScopes ? _this.$__.pathsToScopes[path2] : _this;
           const doValidateOptions = {
-            ...doValidateOptionsByPath[path],
-            path,
+            ...doValidateOptionsByPath[path2],
+            path: path2,
             validateAllPaths,
             _nestedValidate: true
           };
@@ -63402,7 +63402,7 @@ var require_document2 = __commonJS({
               if (isSubdoc && err instanceof ValidationError2) {
                 return --total || complete();
               }
-              _this.invalidate(path, err, void 0, true);
+              _this.invalidate(path2, err, void 0, true);
             }
             --total || complete();
           }, scope, doValidateOptions);
@@ -63421,23 +63421,23 @@ var require_document2 = __commonJS({
     function _handlePathsToValidate(paths, pathsToValidate) {
       const _pathsToValidate = new Set(pathsToValidate);
       const parentPaths2 = /* @__PURE__ */ new Map([]);
-      for (const path of pathsToValidate) {
-        if (path.indexOf(".") === -1) {
+      for (const path2 of pathsToValidate) {
+        if (path2.indexOf(".") === -1) {
           continue;
         }
-        const pieces = path.split(".");
+        const pieces = path2.split(".");
         let cur = pieces[0];
         for (let i = 1; i < pieces.length; ++i) {
-          parentPaths2.set(cur, path);
+          parentPaths2.set(cur, path2);
           cur = cur + "." + pieces[i];
         }
       }
       const ret = /* @__PURE__ */ new Set();
-      for (const path of paths) {
-        if (_pathsToValidate.has(path)) {
-          ret.add(path);
-        } else if (parentPaths2.has(path)) {
-          ret.add(parentPaths2.get(path));
+      for (const path2 of paths) {
+        if (_pathsToValidate.has(path2)) {
+          ret.add(path2);
+        } else if (parentPaths2.has(path2)) {
+          ret.add(parentPaths2.get(path2));
         }
       }
       return ret;
@@ -63480,42 +63480,42 @@ var require_document2 = __commonJS({
       let skipSchemaValidators;
       if (validateAllPaths) {
         paths = new Set(Object.keys(this.$__schema.paths));
-        for (const path of paths) {
-          const schemaType = this.$__schema.path(path);
+        for (const path2 of paths) {
+          const schemaType = this.$__schema.path(path2);
           if (!schemaType || !schemaType.$isMongooseArray) {
             continue;
           }
-          const val = this.$__getValue(path);
+          const val = this.$__getValue(path2);
           if (!val) {
             continue;
           }
-          _pushNestedArrayPaths(val, paths, path);
+          _pushNestedArrayPaths(val, paths, path2);
         }
         paths = [...paths];
         skipSchemaValidators = {};
       } else {
         const pathDetails = _getPathsToValidate(this, pathsToValidate, pathsToSkip);
-        paths = shouldValidateModifiedOnly ? pathDetails[0].filter((path) => this.$isModified(path)) : pathDetails[0];
+        paths = shouldValidateModifiedOnly ? pathDetails[0].filter((path2) => this.$isModified(path2)) : pathDetails[0];
         skipSchemaValidators = pathDetails[1];
       }
       const validating = {};
       for (let i = 0, len = paths.length; i < len; ++i) {
-        const path = paths[i];
-        if (validating[path]) {
+        const path2 = paths[i];
+        if (validating[path2]) {
           continue;
         }
-        validating[path] = true;
-        const p = _this.$__schema.path(path);
+        validating[path2] = true;
+        const p = _this.$__schema.path(path2);
         if (!p) {
           continue;
         }
-        if (!_this.$isValid(path)) {
+        if (!_this.$isValid(path2)) {
           continue;
         }
-        const val = _this.$__getValue(path);
+        const val = _this.$__getValue(path2);
         const err2 = p.doValidateSync(val, _this, {
-          skipSchemaValidators: skipSchemaValidators[path],
-          path,
+          skipSchemaValidators: skipSchemaValidators[path2],
+          path: path2,
           validateModifiedOnly: shouldValidateModifiedOnly,
           validateAllPaths
         });
@@ -63524,7 +63524,7 @@ var require_document2 = __commonJS({
           if (isSubdoc && err2 instanceof ValidationError2) {
             continue;
           }
-          _this.invalidate(path, err2, void 0, true);
+          _this.invalidate(path2, err2, void 0, true);
         }
       }
       const err = _this.$__.validationError;
@@ -63540,16 +63540,16 @@ var require_document2 = __commonJS({
       }
       return err;
     };
-    Document17.prototype.invalidate = function(path, err, val, kind) {
+    Document17.prototype.invalidate = function(path2, err, val, kind) {
       if (!this.$__.validationError) {
         this.$__.validationError = new ValidationError2(this);
       }
-      if (this.$__.validationError.errors[path]) {
+      if (this.$__.validationError.errors[path2]) {
         return;
       }
       if (!err || typeof err === "string") {
         err = new ValidatorError({
-          path,
+          path: path2,
           message: err,
           type: kind || "user defined",
           value: val
@@ -63558,25 +63558,25 @@ var require_document2 = __commonJS({
       if (this.$__.validationError === err) {
         return this.$__.validationError;
       }
-      this.$__.validationError.addError(path, err);
+      this.$__.validationError.addError(path2, err);
       return this.$__.validationError;
     };
-    Document17.prototype.$markValid = function(path) {
-      if (!this.$__.validationError || !this.$__.validationError.errors[path]) {
+    Document17.prototype.$markValid = function(path2) {
+      if (!this.$__.validationError || !this.$__.validationError.errors[path2]) {
         return;
       }
-      delete this.$__.validationError.errors[path];
+      delete this.$__.validationError.errors[path2];
       if (Object.keys(this.$__.validationError.errors).length === 0) {
         this.$__.validationError = null;
       }
     };
-    function _markValidSubpaths(doc, path) {
+    function _markValidSubpaths(doc, path2) {
       if (!doc.$__.validationError) {
         return;
       }
       const keys = Object.keys(doc.$__.validationError.errors);
       for (const key of keys) {
-        if (key.startsWith(path + ".")) {
+        if (key.startsWith(path2 + ".")) {
           delete doc.$__.validationError.errors[key];
         }
       }
@@ -63590,28 +63590,28 @@ var require_document2 = __commonJS({
         return;
       }
       for (const key of Object.keys(schema.paths)) {
-        const path = schema.paths[key];
-        if (path.$immutableSetter == null) {
+        const path2 = schema.paths[key];
+        if (path2.$immutableSetter == null) {
           continue;
         }
         const oldVal = priorVal == null ? void 0 : priorVal.$__getValue(key);
-        path.$immutableSetter.call(subdoc, oldVal);
+        path2.$immutableSetter.call(subdoc, oldVal);
       }
     }
-    Document17.prototype.$isValid = function(path) {
+    Document17.prototype.$isValid = function(path2) {
       if (this.$__.validationError == null || Object.keys(this.$__.validationError.errors).length === 0) {
         return true;
       }
-      if (path == null) {
+      if (path2 == null) {
         return false;
       }
-      if (path.indexOf(" ") !== -1) {
-        path = path.split(" ");
+      if (path2.indexOf(" ") !== -1) {
+        path2 = path2.split(" ");
       }
-      if (Array.isArray(path)) {
-        return path.some((p) => this.$__.validationError.errors[p] == null);
+      if (Array.isArray(path2)) {
+        return path2.some((p) => this.$__.validationError.errors[p] == null);
       }
-      return this.$__.validationError.errors[path] == null;
+      return this.$__.validationError.errors[path2] == null;
     };
     Document17.prototype.$__reset = function reset() {
       let _this = this;
@@ -63642,8 +63642,8 @@ var require_document2 = __commonJS({
       this.$__.validationError = void 0;
       this.$errors = void 0;
       _this = this;
-      this.$__schema.requiredPaths().forEach(function(path) {
-        _this.$__.activePaths.require(path);
+      this.$__schema.requiredPaths().forEach(function(path2) {
+        _this.$__.activePaths.require(path2);
       });
       return this;
     };
@@ -63669,21 +63669,21 @@ var require_document2 = __commonJS({
     };
     Document17.prototype.$__dirty = function() {
       const _this = this;
-      let all = this.$__.activePaths.map("modify", function(path) {
+      let all = this.$__.activePaths.map("modify", function(path2) {
         return {
-          path,
-          value: _this.$__getValue(path),
-          schema: _this.$__path(path)
+          path: path2,
+          value: _this.$__getValue(path2),
+          schema: _this.$__path(path2)
         };
       });
-      all = all.concat(this.$__.activePaths.map("default", function(path) {
-        if (path === "_id" || _this.$__getValue(path) == null) {
+      all = all.concat(this.$__.activePaths.map("default", function(path2) {
+        if (path2 === "_id" || _this.$__getValue(path2) == null) {
           return;
         }
         return {
-          path,
-          value: _this.$__getValue(path),
-          schema: _this.$__path(path)
+          path: path2,
+          value: _this.$__getValue(path2),
+          schema: _this.$__path(path2)
         };
       }));
       const allPaths = new Map(all.filter((el) => el != null).map((el) => [el.path, el.value]));
@@ -63837,15 +63837,15 @@ var require_document2 = __commonJS({
         ret = this.$__toObjectShallow(schemaFieldsOnly);
       } else if (schemaFieldsOnly) {
         ret = {};
-        for (const path of Object.keys(this.$__schema.paths)) {
-          const value = this.$__getValue(path);
+        for (const path2 of Object.keys(this.$__schema.paths)) {
+          const value = this.$__getValue(path2);
           if (value === void 0) {
             continue;
           }
-          let pathToSet = path;
+          let pathToSet = path2;
           let objToSet = ret;
-          if (path.indexOf(".") !== -1) {
-            const segments = path.split(".");
+          if (path2.indexOf(".") !== -1) {
+            const segments = path2.split(".");
             pathToSet = segments[segments.length - 1];
             for (let i = 0; i < segments.length - 1; ++i) {
               objToSet[segments[i]] = objToSet[segments[i]] ?? {};
@@ -63920,7 +63920,7 @@ var require_document2 = __commonJS({
       const paths = Object.keys(virtuals);
       let i = paths.length;
       const numPaths = i;
-      let path;
+      let path2;
       let assignPath;
       let cur = self2._doc;
       let v;
@@ -63941,22 +63941,22 @@ var require_document2 = __commonJS({
         return json;
       }
       for (i = 0; i < numPaths; ++i) {
-        path = paths[i];
-        if (virtualsToApply != null && !virtualsToApply.has(path)) {
+        path2 = paths[i];
+        if (virtualsToApply != null && !virtualsToApply.has(path2)) {
           continue;
         }
-        if (!aliases && Object.hasOwn(schema.aliases, path)) {
+        if (!aliases && Object.hasOwn(schema.aliases, path2)) {
           continue;
         }
-        assignPath = path;
+        assignPath = path2;
         if (options.path != null) {
-          if (!path.startsWith(options.path + ".")) {
+          if (!path2.startsWith(options.path + ".")) {
             continue;
           }
-          assignPath = path.substring(options.path.length + 1);
+          assignPath = path2.substring(options.path.length + 1);
         }
-        if (assignPath.indexOf(".") === -1 && assignPath === path) {
-          v = virtuals[path].applyGetters(void 0, self2);
+        if (assignPath.indexOf(".") === -1 && assignPath === path2) {
+          v = virtuals[path2].applyGetters(void 0, self2);
           if (v === void 0) {
             continue;
           }
@@ -63965,7 +63965,7 @@ var require_document2 = __commonJS({
           continue;
         }
         const parts = assignPath.split(".");
-        v = clone(self2.get(path), options);
+        v = clone(self2.get(path2), options);
         if (v === void 0) {
           continue;
         }
@@ -63983,21 +63983,21 @@ var require_document2 = __commonJS({
       const schema = self2.$__schema;
       const paths = Object.keys(schema.paths);
       let i = paths.length;
-      let path;
+      let path2;
       let cur = self2._doc;
       let v;
       if (!cur) {
         return json;
       }
       while (i--) {
-        path = paths[i];
-        const parts = path.split(".");
+        path2 = paths[i];
+        const parts = path2.split(".");
         const plen = parts.length;
         const last = plen - 1;
         let branch = json;
         let part;
         cur = self2._doc;
-        if (!self2.$__isSelected(path)) {
+        if (!self2.$__isSelected(path2)) {
           continue;
         }
         for (let ii = 0; ii < plen; ++ii) {
@@ -64006,13 +64006,13 @@ var require_document2 = __commonJS({
           if (branch != null && typeof branch !== "object") {
             break;
           } else if (ii === last) {
-            branch[part] = schema.paths[path].applyGetters(
+            branch[part] = schema.paths[path2].applyGetters(
               branch[part],
               self2
             );
-            if (Array.isArray(branch[part]) && schema.paths[path].$embeddedSchemaType) {
+            if (Array.isArray(branch[part]) && schema.paths[path2].$embeddedSchemaType) {
               for (let i2 = 0; i2 < branch[part].length; ++i2) {
-                branch[part][i2] = schema.paths[path].$embeddedSchemaType.applyGetters(
+                branch[part][i2] = schema.paths[path2].$embeddedSchemaType.applyGetters(
                   branch[part][i2],
                   self2
                 );
@@ -64038,20 +64038,20 @@ var require_document2 = __commonJS({
       if (!cur) {
         return json;
       }
-      for (const path of paths) {
-        const schematype = schema.paths[path];
+      for (const path2 of paths) {
+        const schematype = schema.paths[path2];
         const topLevelTransformFunction = schematype.options.transform ?? schematype.constructor?.defaultOptions?.transform;
         const embeddedSchemaTypeTransformFunction = schematype.$embeddedSchemaType?.options?.transform ?? schematype.$embeddedSchemaType?.constructor?.defaultOptions?.transform;
         if (typeof topLevelTransformFunction === "function") {
-          const val = self2.$get(path);
+          const val = self2.$get(path2);
           if (val === void 0) {
             continue;
           }
           const transformedValue = topLevelTransformFunction.call(self2, val);
-          throwErrorIfPromise(path, transformedValue);
-          utils.setValue(path, transformedValue, json);
+          throwErrorIfPromise(path2, transformedValue);
+          utils.setValue(path2, transformedValue, json);
         } else if (typeof embeddedSchemaTypeTransformFunction === "function") {
-          const val = self2.$get(path);
+          const val = self2.$get(path2);
           if (val === void 0) {
             continue;
           }
@@ -64059,16 +64059,16 @@ var require_document2 = __commonJS({
           for (let i = 0; i < vals.length; ++i) {
             const transformedValue = embeddedSchemaTypeTransformFunction.call(self2, vals[i]);
             vals[i] = transformedValue;
-            throwErrorIfPromise(path, transformedValue);
+            throwErrorIfPromise(path2, transformedValue);
           }
-          json[path] = vals;
+          json[path2] = vals;
         }
       }
       return json;
     }
-    function throwErrorIfPromise(path, transformedValue) {
+    function throwErrorIfPromise(path2, transformedValue) {
       if (isPromise(transformedValue)) {
-        throw new Error("`transform` function must be synchronous, but the transform on path `" + path + "` returned a promise.");
+        throw new Error("`transform` function must be synchronous, but the transform on path `" + path2 + "` returned a promise.");
       }
     }
     function omitDeselectedFields(self2, json) {
@@ -64086,9 +64086,9 @@ var require_document2 = __commonJS({
       if (selected == null || Object.keys(selected).length === 0) {
         return json;
       }
-      for (const path of paths) {
-        if (selected[path] != null && !selected[path]) {
-          delete json[path];
+      for (const path2 of paths) {
+        if (selected[path2] != null && !selected[path2]) {
+          delete json[path2];
         }
       }
       return json;
@@ -64167,13 +64167,13 @@ var require_document2 = __commonJS({
       }
       if (this.$session() != null) {
         const session = this.$session();
-        paths.forEach((path) => {
-          if (path.options == null) {
-            path.options = { session };
+        paths.forEach((path2) => {
+          if (path2.options == null) {
+            path2.options = { session };
             return;
           }
-          if (!("session" in path.options)) {
-            path.options.session = session;
+          if (!("session" in path2.options)) {
+            path2.options.session = session;
           }
         });
       }
@@ -64198,15 +64198,15 @@ var require_document2 = __commonJS({
       }
       return result;
     };
-    Document17.prototype.populated = function(path, val, options) {
+    Document17.prototype.populated = function(path2, val, options) {
       if (val == null || val === true) {
         if (!this.$__.populated) {
           return void 0;
         }
-        if (typeof path !== "string") {
+        if (typeof path2 !== "string") {
           return void 0;
         }
-        const _path = path.endsWith(".$*") ? path.replace(/\.\$\*$/, "") : path;
+        const _path = path2.endsWith(".$*") ? path2.replace(/\.\$\*$/, "") : path2;
         const v = this.$__.populated[_path];
         if (v) {
           return val === true ? v : v.value;
@@ -64214,8 +64214,8 @@ var require_document2 = __commonJS({
         return void 0;
       }
       this.$__.populated || (this.$__.populated = {});
-      this.$__.populated[path] = { value: val, options };
-      const pieces = path.split(".");
+      this.$__.populated[path2] = { value: val, options };
+      const pieces = path2.split(".");
       for (let i = 0; i < pieces.length - 1; ++i) {
         const subpath = pieces.slice(0, i + 1).join(".");
         const subdoc = this.$get(subpath);
@@ -64228,22 +64228,22 @@ var require_document2 = __commonJS({
       return val;
     };
     Document17.prototype.$populated = Document17.prototype.populated;
-    Document17.prototype.$assertPopulated = function $assertPopulated(path, values) {
-      if (Array.isArray(path)) {
-        path.forEach((p) => this.$assertPopulated(p, values));
+    Document17.prototype.$assertPopulated = function $assertPopulated(path2, values) {
+      if (Array.isArray(path2)) {
+        path2.forEach((p) => this.$assertPopulated(p, values));
         return this;
       }
       if (arguments.length > 1) {
         this.$set(values);
       }
-      if (!this.$populated(path)) {
-        throw new MongooseError(`Expected path "${path}" to be populated`);
+      if (!this.$populated(path2)) {
+        throw new MongooseError(`Expected path "${path2}" to be populated`);
       }
       return this;
     };
-    Document17.prototype.depopulate = function(path) {
-      if (typeof path === "string") {
-        path = path.indexOf(" ") === -1 ? [path] : path.split(" ");
+    Document17.prototype.depopulate = function(path2) {
+      if (typeof path2 === "string") {
+        path2 = path2.indexOf(" ") === -1 ? [path2] : path2.split(" ");
       }
       let populatedIds;
       const virtualKeys = this.$$populatedVirtuals ? Object.keys(this.$$populatedVirtuals) : [];
@@ -64281,7 +64281,7 @@ var require_document2 = __commonJS({
         }
         return this;
       }
-      for (const singlePath of path) {
+      for (const singlePath of path2) {
         populatedIds = this.$populated(singlePath);
         delete populated[singlePath];
         if (virtualKeys.indexOf(singlePath) !== -1) {
@@ -64309,8 +64309,8 @@ var require_document2 = __commonJS({
       }
       return this;
     };
-    Document17.prototype.$__fullPath = function(path) {
-      return path || "";
+    Document17.prototype.$__fullPath = function(path2) {
+      return path2 || "";
     };
     Document17.prototype.getChanges = function() {
       const delta = this.$__delta();
@@ -64324,7 +64324,7 @@ var require_document2 = __commonJS({
         if (Array.isArray(optimisticConcurrency)) {
           const optCon = new Set(optimisticConcurrency);
           const modPaths = this.modifiedPaths();
-          if (modPaths.find((path) => optCon.has(path))) {
+          if (modPaths.find((path2) => optCon.has(path2))) {
             this.$__.version = dirty.length ? VERSION_ALL : VERSION_WHERE;
           }
         } else {
@@ -64371,7 +64371,7 @@ var require_document2 = __commonJS({
             continue;
           }
           const pathsToCheck = parentPaths(data.path);
-          if (pathsToCheck.find((path) => isPathExcluded(this.$__.isSelected, path))) {
+          if (pathsToCheck.find((path2) => isPathExcluded(this.$__.isSelected, path2))) {
             continue;
           }
         }
@@ -64414,10 +64414,10 @@ var require_document2 = __commonJS({
       }
       return [where, delta];
     };
-    function checkDivergentArray(doc, path, array) {
-      const pop = doc.$populated(path, true);
+    function checkDivergentArray(doc, path2, array) {
+      const pop = doc.$populated(path2, true);
       if (!pop && doc.$__.selected) {
-        const top = path.split(".")[0];
+        const top = path2.split(".")[0];
         if (doc.$__.selected[top + ".$"]) {
           return top;
         }
@@ -64430,7 +64430,7 @@ var require_document2 = __commonJS({
       if (check) {
         const atomics = array[arrayAtomicsSymbol];
         if (Object.keys(atomics).length === 0 || atomics.$set || atomics.$pop) {
-          return path;
+          return path2;
         }
       }
     }
@@ -64523,11 +64523,11 @@ var require_document2 = __commonJS({
         operand(self2, where, delta, data, val, op);
       }
     }
-    function shouldSkipVersioning(self2, path) {
+    function shouldSkipVersioning(self2, path2) {
       const skipVersioning = self2.$__schema.options.skipVersioning;
       if (!skipVersioning) return false;
-      path = path.replace(/\.\d+\./, ".");
-      return skipVersioning[path];
+      path2 = path2.replace(/\.\d+\./, ".");
+      return skipVersioning[path2];
     }
     Document17.prototype.$clone = function() {
       const Model = this.constructor;
@@ -64796,7 +64796,7 @@ var require_utils5 = __commonJS({
       }
       return val;
     };
-    exports2.merge = function merge(to, from, options, path) {
+    exports2.merge = function merge(to, from, options, path2) {
       options = options || {};
       const keys = Object.keys(from);
       let i = 0;
@@ -64805,14 +64805,14 @@ var require_utils5 = __commonJS({
       if (from[trustedSymbol]) {
         to[trustedSymbol] = from[trustedSymbol];
       }
-      path = path || "";
+      path2 = path2 || "";
       const omitNested = options.omitNested || {};
       while (i < len) {
         key = keys[i++];
         if (options.omit && options.omit[key]) {
           continue;
         }
-        if (omitNested[path]) {
+        if (omitNested[path2]) {
           continue;
         }
         if (specialProperties.has(key)) {
@@ -64839,7 +64839,7 @@ var require_utils5 = __commonJS({
               continue;
             }
           }
-          merge(to[key], from[key], options, path ? path + "." + key : key);
+          merge(to[key], from[key], options, path2 ? path2 + "." + key : key);
         } else if (options.overwrite) {
           to[key] = from[key];
         }
@@ -64928,33 +64928,33 @@ var require_utils5 = __commonJS({
       object.expireAfterSeconds = typeof object.expires !== "string" ? object.expires : Math.round(ms(object.expires) / 1e3);
       delete object.expires;
     };
-    exports2.populate = function populate(path, select, model, match, options, subPopulate, justOne, count) {
+    exports2.populate = function populate(path2, select, model, match, options, subPopulate, justOne, count) {
       let obj = null;
       if (arguments.length === 1) {
-        if (path instanceof PopulateOptions) {
-          path._docs = {};
-          path._childDocs = [];
-          return [path];
+        if (path2 instanceof PopulateOptions) {
+          path2._docs = {};
+          path2._childDocs = [];
+          return [path2];
         }
-        if (Array.isArray(path)) {
-          const singles = makeSingles(path);
+        if (Array.isArray(path2)) {
+          const singles = makeSingles(path2);
           return singles.map((o) => exports2.populate(o)[0]);
         }
-        if (exports2.isObject(path)) {
-          obj = Object.assign({}, path);
+        if (exports2.isObject(path2)) {
+          obj = Object.assign({}, path2);
         } else {
-          obj = { path };
+          obj = { path: path2 };
         }
       } else if (typeof model === "object") {
         obj = {
-          path,
+          path: path2,
           select,
           match: model,
           options: match
         };
       } else {
         obj = {
-          path,
+          path: path2,
           select,
           model,
           match,
@@ -64965,7 +64965,7 @@ var require_utils5 = __commonJS({
         };
       }
       if (typeof obj.path !== "string" && !(Array.isArray(obj.path) && obj.path.every((el) => typeof el === "string"))) {
-        throw new TypeError("utils.populate: invalid path. Expected string or array of strings. Got typeof `" + typeof path + "`");
+        throw new TypeError("utils.populate: invalid path. Expected string or array of strings. Got typeof `" + typeof path2 + "`");
       }
       return _populateObj(obj);
       function makeSingles(arr) {
@@ -65009,13 +65009,13 @@ var require_utils5 = __commonJS({
       if (obj.options != null) {
         obj.options = clone(obj.options);
       }
-      for (const path of paths) {
-        ret.push(new PopulateOptions(Object.assign({}, obj, { path })));
+      for (const path2 of paths) {
+        ret.push(new PopulateOptions(Object.assign({}, obj, { path: path2 })));
       }
       return ret;
     }
-    exports2.getValue = function(path, obj, map) {
-      return mpath.get(path, obj, getValueLookup, map);
+    exports2.getValue = function(path2, obj, map) {
+      return mpath.get(path2, obj, getValueLookup, map);
     };
     var mapGetterOptions = Object.freeze({ getters: false });
     function getValueLookup(obj, part) {
@@ -65028,8 +65028,8 @@ var require_utils5 = __commonJS({
       }
       return _from instanceof Map ? _from.get(part, mapGetterOptions) : _from[part];
     }
-    exports2.setValue = function(path, val, obj, map, _copying) {
-      mpath.set(path, val, obj, "_doc", map, _copying);
+    exports2.setValue = function(path2, val, obj, map, _copying) {
+      mpath.set(path2, val, obj, "_doc", map, _copying);
     };
     exports2.object = {};
     exports2.object.vals = function vals(o) {
@@ -65278,9 +65278,9 @@ var require_schemaType = __commonJS({
     var CastError = MongooseError.CastError;
     var ValidatorError = MongooseError.ValidatorError;
     var setOptionsForDefaults = { _skipMarkModified: true };
-    function SchemaType(path, options, instance, parentSchema) {
+    function SchemaType(path2, options, instance, parentSchema) {
       this[schemaTypeSymbol] = true;
-      this.path = path;
+      this.path = path2;
       this.instance = instance;
       this.schemaName = this.constructor.schemaName;
       this.validators = [];
@@ -65681,7 +65681,7 @@ var require_schemaType = __commonJS({
     };
     SchemaType.prototype.doValidate = function(value, fn, scope, options) {
       let err = false;
-      const path = this.path;
+      const path2 = this.path;
       if (typeof fn !== "function") {
         throw new TypeError(`Must pass callback function to doValidate(), got ${typeof fn}`);
       }
@@ -65698,7 +65698,7 @@ var require_schemaType = __commonJS({
         const validator = v.validator;
         let ok;
         const validatorProperties = isSimpleValidator(v) ? Object.assign({}, v) : clone(v);
-        validatorProperties.path = options && options.path ? options.path : path;
+        validatorProperties.path = options && options.path ? options.path : path2;
         validatorProperties.fullPath = this.$fullPath;
         validatorProperties.value = value;
         if (typeof value === "string") {
@@ -65773,7 +65773,7 @@ var require_schemaType = __commonJS({
       }
     }
     SchemaType.prototype.doValidateSync = function(value, scope, options) {
-      const path = this.path;
+      const path2 = this.path;
       const count = this.validators.length;
       if (!count) {
         return null;
@@ -65796,7 +65796,7 @@ var require_schemaType = __commonJS({
         }
         const validator = v.validator;
         const validatorProperties = isSimpleValidator(v) ? Object.assign({}, v) : clone(v);
-        validatorProperties.path = options && options.path ? options.path : path;
+        validatorProperties.path = options && options.path ? options.path : path2;
         validatorProperties.fullPath = this.$fullPath;
         validatorProperties.value = value;
         if (typeof value === "string") {
@@ -65836,9 +65836,9 @@ var require_schemaType = __commonJS({
     SchemaType._isRef = function(self2, value, doc, init) {
       let ref = init && self2.options && (self2.options.ref || self2.options.refPath);
       if (!ref && doc && doc.$__ != null) {
-        const path = doc.$__fullPath(self2.path, true);
+        const path2 = doc.$__fullPath(self2.path, true);
         const owner = doc.ownerDocument();
-        ref = path != null && owner.$populated(path) || doc.$populated(self2.path);
+        ref = path2 != null && owner.$populated(path2) || doc.$populated(self2.path);
       }
       if (ref) {
         if (value == null) {
@@ -65866,11 +65866,11 @@ var require_schemaType = __commonJS({
         }
         throw new CastError(this.instance, value, this.path, null, this);
       }
-      const path = doc.$__fullPath(this.path, true);
+      const path2 = doc.$__fullPath(this.path, true);
       const owner = doc.ownerDocument();
-      const pop = owner.$populated(path, true);
+      const pop = owner.$populated(path2, true);
       let ret = value;
-      if (!doc.$__.populated || !doc.$__.populated[path] || !doc.$__.populated[path].options || !doc.$__.populated[path].options.options || !doc.$__.populated[path].options.options.lean) {
+      if (!doc.$__.populated || !doc.$__.populated[path2] || !doc.$__.populated[path2].options || !doc.$__.populated[path2].options.options || !doc.$__.populated[path2].options.options.lean) {
         const PopulatedModel = pop ? pop.options[populateModelSymbol] : doc.constructor.db.model(this.options.ref);
         ret = PopulatedModel.hydrate(value, null, options);
         ret.$__.wasPopulated = { value: ret._doc._id, options: { [populateModelSymbol]: PopulatedModel } };
@@ -66003,7 +66003,7 @@ var require_virtualOptions = __commonJS({
 var require_lookupLocalFields = __commonJS({
   "node_modules/mongoose/lib/helpers/populate/lookupLocalFields.js"(exports2, module2) {
     "use strict";
-    module2.exports = function lookupLocalFields(cur, path, val) {
+    module2.exports = function lookupLocalFields(cur, path2, val) {
       if (cur == null) {
         return cur;
       }
@@ -66018,19 +66018,19 @@ var require_lookupLocalFields = __commonJS({
           return void 0;
         }
         if (cur instanceof Map) {
-          cur.set(path, val);
+          cur.set(path2, val);
         } else {
-          cur[path] = val;
+          cur[path2] = val;
         }
         return val;
       }
-      if (path === "$*") {
+      if (path2 === "$*") {
         return cur instanceof Map ? Array.from(cur.values()) : Object.keys(cur).map((key) => cur[key]);
       }
       if (cur instanceof Map) {
-        return cur.get(path);
+        return cur.get(path2);
       }
-      return cur[path];
+      return cur[path2];
     };
   }
 });
@@ -66107,8 +66107,8 @@ var require_virtualType = __commonJS({
       if (this.getters.length > 0 || this.setters.length > 0) {
         return;
       }
-      const path = this.path;
-      const internalProperty = "$" + path;
+      const path2 = this.path;
+      const internalProperty = "$" + path2;
       this.getters.push(function() {
         return this.$locals[internalProperty];
       });
@@ -66216,34 +66216,34 @@ var require_getIndexes = __commonJS({
         prefix = prefix || "";
         const keys = Object.keys(schema2.paths);
         for (const key of keys) {
-          const path = schema2.paths[key];
+          const path2 = schema2.paths[key];
           if (baseSchema != null && baseSchema.paths[key]) {
             continue;
           }
-          if (path._duplicateKeyErrorMessage != null) {
+          if (path2._duplicateKeyErrorMessage != null) {
             schema2._duplicateKeyErrorMessagesByPath = schema2._duplicateKeyErrorMessagesByPath || {};
-            schema2._duplicateKeyErrorMessagesByPath[key] = path._duplicateKeyErrorMessage;
+            schema2._duplicateKeyErrorMessagesByPath[key] = path2._duplicateKeyErrorMessage;
           }
-          if (path.$isMongooseDocumentArray || path.$isSingleNested) {
-            if (get(path, "options.excludeIndexes") !== true && get(path, "schemaOptions.excludeIndexes") !== true && get(path, "schema.options.excludeIndexes") !== true) {
-              collectIndexes(path.schema, prefix + key + ".");
+          if (path2.$isMongooseDocumentArray || path2.$isSingleNested) {
+            if (get(path2, "options.excludeIndexes") !== true && get(path2, "schemaOptions.excludeIndexes") !== true && get(path2, "schema.options.excludeIndexes") !== true) {
+              collectIndexes(path2.schema, prefix + key + ".");
             }
-            if (path.schema.discriminators != null) {
-              const discriminators = path.schema.discriminators;
+            if (path2.schema.discriminators != null) {
+              const discriminators = path2.schema.discriminators;
               const discriminatorKeys = Object.keys(discriminators);
               for (const discriminatorKey of discriminatorKeys) {
                 collectIndexes(
                   discriminators[discriminatorKey],
                   prefix + key + ".",
-                  path.schema
+                  path2.schema
                 );
               }
             }
-            if (path.$isMongooseDocumentArray) {
+            if (path2.$isMongooseDocumentArray) {
               continue;
             }
           }
-          const index = path._index || path.caster && path.caster._index;
+          const index = path2._index || path2.caster && path2.caster._index;
           if (index !== false && index !== null && index !== void 0) {
             const field = {};
             const isObject = helperIsObject(index);
@@ -66425,8 +66425,8 @@ var require_setPopulatedVirtualValue = __commonJS({
 var require_cleanPositionalOperators = __commonJS({
   "node_modules/mongoose/lib/helpers/schema/cleanPositionalOperators.js"(exports2, module2) {
     "use strict";
-    module2.exports = function cleanPositionalOperators(path) {
-      return path.replace(/\.\$(\[[^\]]*\])?(?=\.)/g, ".0").replace(/\.\$(\[[^\]]*\])?$/g, ".0");
+    module2.exports = function cleanPositionalOperators(path2) {
+      return path2.replace(/\.\$(\[[^\]]*\])?(?=\.)/g, ".0").replace(/\.\$(\[[^\]]*\])?$/g, ".0");
     };
   }
 });
@@ -66560,8 +66560,8 @@ var require_applyTimestampsToChildren = __commonJS({
     }
     function applyTimestampsToUpdateKey(schema, key, update, now) {
       const keyToSearch = cleanPositionalOperators(key);
-      const path = schema.path(keyToSearch);
-      if (!path) {
+      const path2 = schema.path(keyToSearch);
+      if (!path2) {
         return;
       }
       const parentSchemaTypes = [];
@@ -66572,10 +66572,10 @@ var require_applyTimestampsToChildren = __commonJS({
           parentSchemaTypes.push({ parentPath: key.split(".").slice(0, i).join("."), parentSchemaType: s });
         }
       }
-      if (Array.isArray(update[key]) && path.$isMongooseDocumentArray) {
-        applyTimestampsToDocumentArray(update[key], path, now);
-      } else if (update[key] && path.$isSingleNested) {
-        applyTimestampsToSingleNested(update[key], path, now);
+      if (Array.isArray(update[key]) && path2.$isMongooseDocumentArray) {
+        applyTimestampsToDocumentArray(update[key], path2, now);
+      } else if (update[key] && path2.$isSingleNested) {
+        applyTimestampsToSingleNested(update[key], path2, now);
       } else if (parentSchemaTypes.length > 0) {
         for (const item of parentSchemaTypes) {
           const parentPath = item.parentPath;
@@ -66598,8 +66598,8 @@ var require_applyTimestampsToChildren = __commonJS({
             update[parentPath + "." + childPath + "." + updatedAt] = now;
           }
         }
-      } else if (path.schema != null && path.schema != schema && update[key]) {
-        const timestamps = path.schema.options.timestamps;
+      } else if (path2.schema != null && path2.schema != schema && update[key]) {
+        const timestamps = path2.schema.options.timestamps;
         const createdAt = handleTimestampOption(timestamps, "createdAt");
         const updatedAt = handleTimestampOption(timestamps, "updatedAt");
         if (!timestamps) {
@@ -66846,14 +66846,14 @@ var require_validateRef = __commonJS({
     var MongooseError = require_mongooseError();
     var util2 = require("util");
     module2.exports = validateRef;
-    function validateRef(ref, path) {
+    function validateRef(ref, path2) {
       if (typeof ref === "string") {
         return;
       }
       if (typeof ref === "function") {
         return;
       }
-      throw new MongooseError('Invalid ref at path "' + path + '". Got ' + util2.inspect(ref, { depth: 0 }));
+      throw new MongooseError('Invalid ref at path "' + path2 + '". Got ' + util2.inspect(ref, { depth: 0 }));
     }
   }
 });
@@ -67040,20 +67040,20 @@ var require_map = __commonJS({
     var cleanModifiedSubpaths = require_cleanModifiedSubpaths();
     var populateModelSymbol = require_symbols().populateModelSymbol;
     var MongooseMap = class extends Map {
-      constructor(v, path, doc, schemaType, options) {
+      constructor(v, path2, doc, schemaType, options) {
         if (getConstructorName(v) === "Object") {
           v = Object.keys(v).reduce((arr, key) => arr.concat([[key, v[key]]]), []);
         }
         super(v);
         this.$__parent = doc != null && doc.$__ != null ? doc : null;
         if (this.$__parent?.$isSingleNested && this.$__parent.$basePath) {
-          this.$__path = this.$__parent.$basePath + "." + path;
-          this.$__pathRelativeToParent = path;
+          this.$__path = this.$__parent.$basePath + "." + path2;
+          this.$__pathRelativeToParent = path2;
         } else if (options?.path) {
           this.$__path = options.path;
           this.$__pathRelativeToParent = null;
         } else {
-          this.$__path = path;
+          this.$__path = path2;
           this.$__pathRelativeToParent = null;
         }
         this.$__schemaType = schemaType;
@@ -67623,12 +67623,12 @@ var require_cast_expr = __commonJS({
       }
     }
     function castIn(val, schema, strictQuery) {
-      const path = val[1];
-      if (!isPath(path)) {
+      const path2 = val[1];
+      if (!isPath(path2)) {
         return val;
       }
       const search = val[0];
-      const schematype = schema.path(path.slice(1));
+      const schematype = schema.path(path2.slice(1));
       if (schematype === null) {
         if (strictQuery === false) {
           return val;
@@ -67642,7 +67642,7 @@ var require_cast_expr = __commonJS({
       }
       return [
         schematype.$isMongooseDocumentArray ? schematype.$embeddedSchemaType.cast(search) : schematype.caster.cast(search),
-        path
+        path2
       ];
     }
     function castArithmetic(val) {
@@ -67674,19 +67674,19 @@ var require_cast_expr = __commonJS({
       val[0] = _castExpression(val[0], schema, strictQuery);
       const lhs = val[0];
       if (isLiteral(val[1])) {
-        let path = null;
+        let path2 = null;
         let schematype = null;
         let caster = null;
         if (isPath(lhs)) {
-          path = lhs.slice(1);
-          schematype = schema.path(path);
+          path2 = lhs.slice(1);
+          schematype = schema.path(path2);
         } else if (typeof lhs === "object" && lhs != null) {
           for (const key of Object.keys(lhs)) {
             if (dateOperators.has(key) && isPath(lhs[key])) {
-              path = lhs[key].slice(1) + "." + key;
+              path2 = lhs[key].slice(1) + "." + key;
               caster = castNumber;
             } else if (arrayElementOperators.has(key) && isPath(lhs[key])) {
-              path = lhs[key].slice(1) + "." + key;
+              path2 = lhs[key].slice(1) + "." + key;
               schematype = schema.path(lhs[key].slice(1));
               if (schematype != null) {
                 if (schematype.$isMongooseDocumentArray) {
@@ -67710,19 +67710,19 @@ var require_cast_expr = __commonJS({
             try {
               val[1] = { $literal: caster(val[1].$literal) };
             } catch (err) {
-              throw new CastError(caster.name.replace(/^cast/, ""), val[1], path + ".$literal");
+              throw new CastError(caster.name.replace(/^cast/, ""), val[1], path2 + ".$literal");
             }
           } else {
             try {
               val[1] = caster(val[1]);
             } catch (err) {
-              throw new CastError(caster.name.replace(/^cast/, ""), val[1], path);
+              throw new CastError(caster.name.replace(/^cast/, ""), val[1], path2);
             }
           }
-        } else if (path != null && strictQuery === true) {
+        } else if (path2 != null && strictQuery === true) {
           return void 0;
-        } else if (path != null && strictQuery === "throw") {
-          throw new StrictModeError(path);
+        } else if (path2 != null && strictQuery === "throw") {
+          throw new StrictModeError(path2);
         }
       } else {
         val[1] = _castExpression(val[1], schema, strictQuery);
@@ -67749,7 +67749,7 @@ var require_string = __commonJS({
   "node_modules/mongoose/lib/cast/string.js"(exports2, module2) {
     "use strict";
     var CastError = require_cast();
-    module2.exports = function castString(value, path) {
+    module2.exports = function castString(value, path2) {
       if (value == null) {
         return value;
       }
@@ -67759,7 +67759,7 @@ var require_string = __commonJS({
       if (value.toString && value.toString !== Object.prototype.toString && !Array.isArray(value)) {
         return value.toString();
       }
-      throw new CastError("string", value, path);
+      throw new CastError("string", value, path2);
     };
   }
 });
@@ -67771,26 +67771,26 @@ var require_text2 = __commonJS({
     var CastError = require_cast();
     var castBoolean = require_boolean();
     var castString = require_string();
-    module2.exports = function castTextSearch(val, path) {
+    module2.exports = function castTextSearch(val, path2) {
       if (val == null || typeof val !== "object") {
-        throw new CastError("$text", val, path);
+        throw new CastError("$text", val, path2);
       }
       if (val.$search != null) {
-        val.$search = castString(val.$search, path + ".$search");
+        val.$search = castString(val.$search, path2 + ".$search");
       }
       if (val.$language != null) {
-        val.$language = castString(val.$language, path + ".$language");
+        val.$language = castString(val.$language, path2 + ".$language");
       }
       if (val.$caseSensitive != null) {
         val.$caseSensitive = castBoolean(
           val.$caseSensitive,
-          path + ".$castSensitive"
+          path2 + ".$castSensitive"
         );
       }
       if (val.$diacriticSensitive != null) {
         val.$diacriticSensitive = castBoolean(
           val.$diacriticSensitive,
-          path + ".$diacriticSensitive"
+          path2 + ".$diacriticSensitive"
         );
       }
       return val;
@@ -67807,8 +67807,8 @@ var require_isOperator = __commonJS({
       "$id",
       "$db"
     ]);
-    module2.exports = function isOperator(path) {
-      return path[0] === "$" && !specialKeys.has(path);
+    module2.exports = function isOperator(path2) {
+      return path2[0] === "$" && !specialKeys.has(path2);
     };
   }
 });
@@ -67848,20 +67848,20 @@ var require_cast2 = __commonJS({
       let any$conditionals;
       let schematype;
       let nested;
-      let path;
+      let path2;
       let type;
       let val;
       options = options || {};
       while (i--) {
-        path = paths[i];
-        val = obj[path];
-        if (path === "$or" || path === "$nor" || path === "$and") {
+        path2 = paths[i];
+        val = obj[path2];
+        if (path2 === "$or" || path2 === "$nor" || path2 === "$and") {
           if (!Array.isArray(val)) {
-            throw new CastError("Array", val, path);
+            throw new CastError("Array", val, path2);
           }
           for (let k = val.length - 1; k >= 0; k--) {
             if (val[k] == null || typeof val[k] !== "object") {
-              throw new CastError("Object", val[k], path + "." + k);
+              throw new CastError("Object", val[k], path2 + "." + k);
             }
             const beforeCastKeysLength = Object.keys(val[k]).length;
             const discriminatorValue = val[k][schema.options.discriminatorKey];
@@ -67876,34 +67876,34 @@ var require_cast2 = __commonJS({
             }
           }
           if (val.length === 0) {
-            delete obj[path];
+            delete obj[path2];
           }
-        } else if (path === "$where") {
+        } else if (path2 === "$where") {
           type = typeof val;
           if (type !== "string" && type !== "function") {
             throw new Error("Must have a string or function for $where");
           }
           if (type === "function") {
-            obj[path] = val.toString();
+            obj[path2] = val.toString();
           }
           continue;
-        } else if (path === "$expr") {
+        } else if (path2 === "$expr") {
           val = cast$expr(val, schema);
           continue;
-        } else if (path === "$elemMatch") {
+        } else if (path2 === "$elemMatch") {
           val = cast(schema, val, options, context);
-        } else if (path === "$text") {
-          val = castTextSearch(val, path);
-        } else if (path === "$comment" && !Object.hasOwn(schema.paths, "$comment")) {
-          val = castString(val, path);
-          obj[path] = val;
+        } else if (path2 === "$text") {
+          val = castTextSearch(val, path2);
+        } else if (path2 === "$comment" && !Object.hasOwn(schema.paths, "$comment")) {
+          val = castString(val, path2);
+          obj[path2] = val;
         } else {
           if (!schema) {
             continue;
           }
-          schematype = schema.path(path);
+          schematype = schema.path(path2);
           if (!schematype) {
-            const split = path.split(".");
+            const split = path2.split(".");
             let j = split.length;
             while (j--) {
               const pathFirstHalf = split.slice(0, j).join(".");
@@ -67924,7 +67924,7 @@ var require_cast2 = __commonJS({
             }
           }
           if (!schematype) {
-            const split = path.split(".");
+            const split = path2.split(".");
             let j = split.length;
             let pathFirstHalf;
             let pathLastHalf;
@@ -67943,12 +67943,12 @@ var require_cast2 = __commonJS({
                 remainingConds[pathLastHalf] = val;
                 const ret = cast(schematype.caster.schema, remainingConds, options, context)[pathLastHalf];
                 if (ret === void 0) {
-                  delete obj[path];
+                  delete obj[path2];
                 } else {
-                  obj[path] = ret;
+                  obj[path2] = ret;
                 }
               } else {
-                obj[path] = val;
+                obj[path2] = val;
               }
               continue;
             }
@@ -68033,28 +68033,28 @@ var require_cast2 = __commonJS({
                 continue;
               }
             }
-            if (schema.nested[path]) {
+            if (schema.nested[path2]) {
               continue;
             }
             const strict = "strict" in options ? options.strict : schema.options.strict;
             const strictQuery = getStrictQuery(options, schema._userProvidedOptions, schema.options, context);
             if (options.upsert && strict) {
               if (strict === "throw") {
-                throw new StrictModeError(path);
+                throw new StrictModeError(path2);
               }
-              throw new StrictModeError(path, 'Path "' + path + '" is not in schema, strict mode is `true`, and upsert is `true`.');
+              throw new StrictModeError(path2, 'Path "' + path2 + '" is not in schema, strict mode is `true`, and upsert is `true`.');
             }
             if (strictQuery === "throw") {
-              throw new StrictModeError(path, 'Path "' + path + `" is not in schema and strictQuery is 'throw'.`);
+              throw new StrictModeError(path2, 'Path "' + path2 + `" is not in schema and strictQuery is 'throw'.`);
             } else if (strictQuery) {
-              delete obj[path];
+              delete obj[path2];
             }
           } else if (val == null) {
             continue;
           } else if (utils.isPOJO(val)) {
             any$conditionals = Object.keys(val).some(isOperator);
             if (!any$conditionals) {
-              obj[path] = schematype.castForQuery(
+              obj[path2] = schematype.castForQuery(
                 null,
                 val,
                 context
@@ -68119,9 +68119,9 @@ var require_cast2 = __commonJS({
                 context
               ));
             }
-            obj[path] = { $in: casted };
+            obj[path2] = { $in: casted };
           } else {
-            obj[path] = schematype.castForQuery(
+            obj[path2] = schematype.castForQuery(
               null,
               val,
               context
@@ -68224,10 +68224,10 @@ var require_bitwise = __commonJS({
       }
       return _castNumber(_this.path, val);
     }
-    function _castNumber(path, num) {
+    function _castNumber(path2, num) {
       const v = Number(num);
       if (isNaN(v)) {
-        throw new CastError("number", num, path);
+        throw new CastError("number", num, path2);
       }
       return v;
     }
@@ -68607,11 +68607,11 @@ var require_array2 = __commonJS({
           this.casterConstructor[isNestedArraySymbol] = true;
         }
         if (typeof caster === "function" && !caster.$isArraySubdocument && !caster.$isSchemaMap) {
-          const path = this.caster instanceof EmbeddedDoc ? null : key;
+          const path2 = this.caster instanceof EmbeddedDoc ? null : key;
           if (caster === SchemaArray) {
-            this.caster = new caster(path, castOptions, schemaOptions, null, parentSchema);
+            this.caster = new caster(path2, castOptions, schemaOptions, null, parentSchema);
           } else {
-            this.caster = new caster(path, castOptions, schemaOptions, parentSchema);
+            this.caster = new caster(path2, castOptions, schemaOptions, parentSchema);
           }
         } else {
           this.caster = caster;
@@ -68729,11 +68729,11 @@ var require_array2 = __commonJS({
         }
         options = options || emptyOpts;
         let rawValue = utils.isMongooseArray(value) ? value.__array : value;
-        let path = options.path || this.path;
+        let path2 = options.path || this.path;
         if (options.arrayPathIndex != null) {
-          path += "." + options.arrayPathIndex;
+          path2 += "." + options.arrayPathIndex;
         }
-        value = MongooseArray(rawValue, path, doc, this);
+        value = MongooseArray(rawValue, path2, doc, this);
         rawValue = value.__array;
         if (init && doc != null && doc.$__ != null && doc.$populated(this.path)) {
           return value;
@@ -69012,8 +69012,8 @@ var require_bigint2 = __commonJS({
     var SchemaType = require_schemaType();
     var castBigInt = require_bigint();
     var createJSONSchemaTypeDefinition = require_createJSONSchemaTypeDefinition();
-    function SchemaBigInt(path, options, _schemaOptions, parentSchema) {
-      SchemaType.call(this, path, options, "BigInt", parentSchema);
+    function SchemaBigInt(path2, options, _schemaOptions, parentSchema) {
+      SchemaType.call(this, path2, options, "BigInt", parentSchema);
     }
     SchemaBigInt.schemaName = "BigInt";
     SchemaBigInt.defaultOptions = {};
@@ -69114,8 +69114,8 @@ var require_boolean2 = __commonJS({
     var SchemaType = require_schemaType();
     var castBoolean = require_boolean();
     var createJSONSchemaTypeDefinition = require_createJSONSchemaTypeDefinition();
-    function SchemaBoolean(path, options, _schemaOptions, parentSchema) {
-      SchemaType.call(this, path, options, "Boolean", parentSchema);
+    function SchemaBoolean(path2, options, _schemaOptions, parentSchema) {
+      SchemaType.call(this, path2, options, "Boolean", parentSchema);
     }
     SchemaBoolean.schemaName = "Boolean";
     SchemaBoolean.defaultOptions = {};
@@ -69966,20 +69966,20 @@ var require_trackTransaction = __commonJS({
       const pathToAtomics = /* @__PURE__ */ new Map();
       previous = previous || /* @__PURE__ */ new Map();
       const pathsToCheck = Object.keys(doc.$__.activePaths.init).concat(Object.keys(doc.$__.activePaths.modify));
-      for (const path of pathsToCheck) {
-        const val = doc.$__getValue(path);
+      for (const path2 of pathsToCheck) {
+        const val = doc.$__getValue(path2);
         if (val != null && Array.isArray(val) && utils.isMongooseDocumentArray(val) && val.length && val[arrayAtomicsSymbol] != null && Object.keys(val[arrayAtomicsSymbol]).length !== 0) {
-          const existing = previous.get(path) || {};
-          pathToAtomics.set(path, mergeAtomics(existing, val[arrayAtomicsSymbol]));
+          const existing = previous.get(path2) || {};
+          pathToAtomics.set(path2, mergeAtomics(existing, val[arrayAtomicsSymbol]));
         }
       }
       const dirty = doc.$__dirty();
       for (const dirt of dirty) {
-        const path = dirt.path;
+        const path2 = dirt.path;
         const val = dirt.value;
         if (val != null && val[arrayAtomicsSymbol] != null && Object.keys(val[arrayAtomicsSymbol]).length !== 0) {
-          const existing = previous.get(path) || {};
-          pathToAtomics.set(path, mergeAtomics(existing, val[arrayAtomicsSymbol]));
+          const existing = previous.get(path2) || {};
+          pathToAtomics.set(path2, mergeAtomics(existing, val[arrayAtomicsSymbol]));
         }
       }
       return pathToAtomics;
@@ -70080,12 +70080,12 @@ var require_mergeDiscriminatorSchema = __commonJS({
     var ObjectId2 = require_objectid();
     var SchemaType = require_schemaType();
     var isObject = require_isObject();
-    module2.exports = function mergeDiscriminatorSchema(to, from, path, seen) {
+    module2.exports = function mergeDiscriminatorSchema(to, from, path2, seen) {
       const keys = Object.keys(from);
       let i = 0;
       const len = keys.length;
       let key;
-      path = path || "";
+      path2 = path2 || "";
       seen = seen || /* @__PURE__ */ new WeakSet();
       if (seen.has(from)) {
         return;
@@ -70093,12 +70093,12 @@ var require_mergeDiscriminatorSchema = __commonJS({
       seen.add(from);
       while (i < len) {
         key = keys[i++];
-        if (!path) {
+        if (!path2) {
           if (key === "discriminators" || key === "base" || key === "_applyDiscriminators" || key === "_userProvidedOptions" || key === "options" || key === "tree") {
             continue;
           }
         }
-        if (path === "tree" && from != null && from.instanceOfSchema) {
+        if (path2 === "tree" && from != null && from.instanceOfSchema) {
           continue;
         }
         if (specialProperties.has(key)) {
@@ -70135,7 +70135,7 @@ var require_mergeDiscriminatorSchema = __commonJS({
               }
             }
           }
-          mergeDiscriminatorSchema(to[key], from[key], path ? path + "." + key : key, seen);
+          mergeDiscriminatorSchema(to[key], from[key], path2 ? path2 + "." + key : key, seen);
         }
       }
       if (from != null && from.instanceOfSchema) {
@@ -70171,12 +70171,12 @@ var require_discriminator = __commonJS({
         allNestedPaths(parentSchema),
         allNestedPaths(childSchema)
       );
-      for (const path of allSharedNestedPaths) {
-        if (parentSchema._hasEncryptedField(path) && childSchema._hasEncryptedField(path)) {
-          throw new Error(`encrypted fields cannot be declared on both the base schema and the child schema in a discriminator. path=${path}`);
+      for (const path2 of allSharedNestedPaths) {
+        if (parentSchema._hasEncryptedField(path2) && childSchema._hasEncryptedField(path2)) {
+          throw new Error(`encrypted fields cannot be declared on both the base schema and the child schema in a discriminator. path=${path2}`);
         }
-        if (parentSchema._hasEncryptedField(path) || childSchema._hasEncryptedField(path)) {
-          throw new Error(`encrypted fields cannot have the same path as a non-encrypted field for discriminators. path=${path}`);
+        if (parentSchema._hasEncryptedField(path2) || childSchema._hasEncryptedField(path2)) {
+          throw new Error(`encrypted fields cannot have the same path as a non-encrypted field for discriminators. path=${path2}`);
         }
       }
       function allNestedPaths(schema) {
@@ -70248,20 +70248,20 @@ var require_discriminator = __commonJS({
         }
         const baseSchemaPaths = Object.keys(baseSchema.paths);
         const conflictingPaths = [];
-        for (const path of baseSchemaPaths) {
-          if (schema2.nested[path]) {
-            conflictingPaths.push(path);
+        for (const path2 of baseSchemaPaths) {
+          if (schema2.nested[path2]) {
+            conflictingPaths.push(path2);
             continue;
           }
-          if (path.indexOf(".") === -1) {
+          if (path2.indexOf(".") === -1) {
             continue;
           }
-          const sp = path.split(".").slice(0, -1);
+          const sp = path2.split(".").slice(0, -1);
           let cur = "";
           for (const piece of sp) {
             cur += (cur.length ? "." : "") + piece;
             if (schema2.paths[cur] instanceof Mixed || schema2.singleNestedPaths[cur] instanceof Mixed) {
-              conflictingPaths.push(path);
+              conflictingPaths.push(path2);
             }
           }
         }
@@ -70435,9 +70435,9 @@ var require_subdocument2 = __commonJS({
     var InvalidSchemaOptionError = require_invalidSchemaOption();
     var SubdocumentType;
     module2.exports = SchemaSubdocument;
-    function SchemaSubdocument(schema, path, options, parentSchema) {
+    function SchemaSubdocument(schema, path2, options, parentSchema) {
       if (schema.options.timeseries) {
-        throw new InvalidSchemaOptionError(path, "timeseries");
+        throw new InvalidSchemaOptionError(path2, "timeseries");
       }
       const schemaTypeIdOption = SchemaSubdocument.defaultOptions && SchemaSubdocument.defaultOptions._id;
       if (schemaTypeIdOption != null) {
@@ -70446,19 +70446,19 @@ var require_subdocument2 = __commonJS({
       }
       schema = handleIdOption(schema, options);
       this.caster = _createConstructor(schema, null, options);
-      this.caster.path = path;
-      this.caster.prototype.$basePath = path;
+      this.caster.path = path2;
+      this.caster.prototype.$basePath = path2;
       this.schema = schema;
       this.$isSingleNested = true;
       this.base = schema.base;
-      SchemaType.call(this, path, options, "Embedded", parentSchema);
+      SchemaType.call(this, path2, options, "Embedded", parentSchema);
     }
     SchemaSubdocument.prototype = Object.create(SchemaType.prototype);
     SchemaSubdocument.prototype.constructor = SchemaSubdocument;
     SchemaSubdocument.prototype.OptionsConstructor = SchemaSubdocumentOptions;
     function _createConstructor(schema, baseClass, options) {
       SubdocumentType || (SubdocumentType = require_subdocument());
-      const _embedded = function SingleNested(value, path, parent) {
+      const _embedded = function SingleNested(value, path2, parent) {
         this.$__parent = parent;
         SubdocumentType.apply(this, arguments);
         if (parent == null) {
@@ -70517,11 +70517,11 @@ var require_subdocument2 = __commonJS({
       const Constructor = getConstructor(this.caster, val, defaultDiscriminatorValue);
       let subdoc;
       const parentSelected = doc && doc.$__ && doc.$__.selected;
-      const path = this.path;
+      const path2 = this.path;
       const selected = parentSelected == null ? null : Object.keys(parentSelected).reduce((obj, key) => {
-        if (key.startsWith(path + ".")) {
+        if (key.startsWith(path2 + ".")) {
           obj = obj || {};
-          obj[key.substring(path.length + 1)] = parentSelected[key];
+          obj[key.substring(path2.length + 1)] = parentSelected[key];
         }
         return obj;
       }, null);
@@ -70658,13 +70658,13 @@ var require_documentArrayElement = __commonJS({
     var SchemaType = require_schemaType();
     var SchemaSubdocument = require_subdocument2();
     var getConstructor = require_getConstructor();
-    function SchemaDocumentArrayElement(path, options, _schemaOptions, parentSchema) {
+    function SchemaDocumentArrayElement(path2, options, _schemaOptions, parentSchema) {
       this.$parentSchemaType = options && options.$parentSchemaType;
       if (!this.$parentSchemaType) {
         throw new MongooseError("Cannot create DocumentArrayElement schematype without a parent");
       }
       delete options.$parentSchemaType;
-      SchemaType.call(this, path, options, "DocumentArrayElement", parentSchema);
+      SchemaType.call(this, path2, options, "DocumentArrayElement", parentSchema);
       this.$isMongooseDocumentArrayElement = true;
     }
     SchemaDocumentArrayElement.schemaName = "DocumentArrayElement";
@@ -70954,24 +70954,24 @@ var require_documentArray2 = __commonJS({
       let selected;
       let subdoc;
       options = options || {};
-      const path = options.path || this.path;
+      const path2 = options.path || this.path;
       if (!Array.isArray(value)) {
         if (!init && !SchemaDocumentArray.options.castNonArrays) {
           throw new CastError("DocumentArray", value, this.path, null, this);
         }
         if (!!doc && init) {
-          doc.markModified(path);
+          doc.markModified(path2);
         }
         return this.cast([value], doc, init, prev, options);
       }
       if (!options.skipDocumentArrayCast || utils.isMongooseDocumentArray(value)) {
-        value = new MongooseDocumentArray(value, path, doc, this);
+        value = new MongooseDocumentArray(value, path2, doc, this);
       }
       if (prev != null) {
         value[arrayAtomicsSymbol] = prev[arrayAtomicsSymbol] || {};
       }
       if (options.arrayPathIndex != null) {
-        value[arrayPathSymbol] = path + "." + options.arrayPathIndex;
+        value[arrayPathSymbol] = path2 + "." + options.arrayPathIndex;
       }
       const rawArray = utils.isMongooseDocumentArray(value) ? value.__array : value;
       const len = rawArray.length;
@@ -71065,7 +71065,7 @@ var require_documentArray2 = __commonJS({
       if (!(init && fields)) {
         return void 0;
       }
-      const path = array.path + ".";
+      const path2 = array.path + ".";
       const keys = Object.keys(fields);
       let i = keys.length;
       const selected = {};
@@ -71074,8 +71074,8 @@ var require_documentArray2 = __commonJS({
       let sub;
       while (i--) {
         key = keys[i];
-        if (key.startsWith(path)) {
-          sub = key.substring(path.length);
+        if (key.startsWith(path2)) {
+          sub = key.substring(path2.length);
           if (sub === "$") {
             continue;
           }
@@ -71176,8 +71176,8 @@ var require_double3 = __commonJS({
     var SchemaType = require_schemaType();
     var castDouble = require_double2();
     var createJSONSchemaTypeDefinition = require_createJSONSchemaTypeDefinition();
-    function SchemaDouble(path, options, _schemaOptions, parentSchema) {
-      SchemaType.call(this, path, options, "Double", parentSchema);
+    function SchemaDouble(path2, options, _schemaOptions, parentSchema) {
+      SchemaType.call(this, path2, options, "Double", parentSchema);
     }
     SchemaDouble.schemaName = "Double";
     SchemaDouble.defaultOptions = {};
@@ -71286,8 +71286,8 @@ var require_int322 = __commonJS({
     var castInt32 = require_int32();
     var createJSONSchemaTypeDefinition = require_createJSONSchemaTypeDefinition();
     var handleBitwiseOperator = require_bitwise();
-    function SchemaInt32(path, options, _schemaOptions, parentSchema) {
-      SchemaType.call(this, path, options, "Int32", parentSchema);
+    function SchemaInt32(path2, options, _schemaOptions, parentSchema) {
+      SchemaType.call(this, path2, options, "Int32", parentSchema);
     }
     SchemaInt32.schemaName = "Int32";
     SchemaInt32.defaultOptions = {};
@@ -71447,9 +71447,9 @@ var require_map2 = __commonJS({
         if (val instanceof MongooseMap) {
           return val;
         }
-        const path = this.path;
+        const path2 = this.path;
         if (init) {
-          const map = new MongooseMap({}, path, doc, this.$__schemaType, options);
+          const map = new MongooseMap({}, path2, doc, this.$__schemaType, options);
           const mapPath = map.$__pathRelativeToParent != null ? map.$__pathRelativeToParent : map.$__path;
           if (val instanceof global.Map) {
             for (const key of val.keys()) {
@@ -71474,7 +71474,7 @@ var require_map2 = __commonJS({
           }
           return map;
         }
-        return new MongooseMap(val, path, doc, this.$__schemaType, options);
+        return new MongooseMap(val, path2, doc, this.$__schemaType, options);
       }
       /**
        * Creates a copy of this map schema type.
@@ -71523,8 +71523,8 @@ var require_map2 = __commonJS({
     SchemaMap.schemaName = "Map";
     SchemaMap.prototype.OptionsConstructor = SchemaMapOptions;
     SchemaMap.defaultOptions = {};
-    SchemaMap.prototype._createNestedSchemaType = function _createNestedSchemaType(schema, path, obj, options) {
-      const mapPath = path + ".$*";
+    SchemaMap.prototype._createNestedSchemaType = function _createNestedSchemaType(schema, path2, obj, options) {
+      const mapPath = path2 + ".$*";
       let _mapType = { type: {} };
       if (utils.hasUserDefinedProperty(obj, "of")) {
         const isInlineSchema = utils.isPOJO(obj.of) && Object.keys(obj.of).length > 0 && !utils.hasUserDefinedProperty(obj.of, schema.options.typeKey);
@@ -71539,7 +71539,7 @@ var require_map2 = __commonJS({
           const subdocumentSchema = _mapType[schema.options.typeKey];
           subdocumentSchema.eachPath((subpath, type) => {
             if (type.options.select === true || type.options.select === false) {
-              throw new MongooseError('Cannot use schema-level projections (`select: true` or `select: false`) within maps at path "' + path + "." + subpath + '"');
+              throw new MongooseError('Cannot use schema-level projections (`select: true` or `select: false`) within maps at path "' + path2 + "." + subpath + '"');
             }
           });
         }
@@ -72450,12 +72450,12 @@ var require_schema2 = __commonJS({
       this.setupTimestamp(this.options.timestamps);
     }
     function aliasFields(schema, paths) {
-      for (const path of Object.keys(paths)) {
+      for (const path2 of Object.keys(paths)) {
         let alias = null;
-        if (paths[path] != null) {
-          alias = paths[path];
+        if (paths[path2] != null) {
+          alias = paths[path2];
         } else {
-          const options = get(schema.paths[path], "options");
+          const options = get(schema.paths[path2], "options");
           if (options == null) {
             continue;
           }
@@ -72464,7 +72464,7 @@ var require_schema2 = __commonJS({
         if (!alias) {
           continue;
         }
-        const prop = schema.paths[path].path;
+        const prop = schema.paths[path2].path;
         if (Array.isArray(alias)) {
           for (const a of alias) {
             if (typeof a !== "string") {
@@ -72554,8 +72554,8 @@ var require_schema2 = __commonJS({
       s.nested = clone(this.nested);
       s.subpaths = clone(this.subpaths);
       s.mapPaths = [];
-      for (const [path, schemaType] of Object.entries(s.paths)) {
-        const mapPath = path + ".$*";
+      for (const [path2, schemaType] of Object.entries(s.paths)) {
+        const mapPath = path2 + ".$*";
         if (!schemaType.$isSchemaMap || !Object.hasOwn(s.paths, mapPath)) {
           continue;
         }
@@ -72564,18 +72564,18 @@ var require_schema2 = __commonJS({
       }
       for (const schemaType of Object.values(s.paths)) {
         if (schemaType.$isSingleNested) {
-          const path = schemaType.path;
+          const path2 = schemaType.path;
           for (const key of Object.keys(schemaType.schema.paths)) {
-            s.singleNestedPaths[path + "." + key] = schemaType.schema.paths[key];
+            s.singleNestedPaths[path2 + "." + key] = schemaType.schema.paths[key];
           }
           for (const key of Object.keys(schemaType.schema.singleNestedPaths)) {
-            s.singleNestedPaths[path + "." + key] = schemaType.schema.singleNestedPaths[key];
+            s.singleNestedPaths[path2 + "." + key] = schemaType.schema.singleNestedPaths[key];
           }
           for (const key of Object.keys(schemaType.schema.subpaths)) {
-            s.singleNestedPaths[path + "." + key] = schemaType.schema.subpaths[key];
+            s.singleNestedPaths[path2 + "." + key] = schemaType.schema.subpaths[key];
           }
           for (const key of Object.keys(schemaType.schema.nested)) {
-            s.singleNestedPaths[path + "." + key] = "nested";
+            s.singleNestedPaths[path2 + "." + key] = "nested";
           }
         }
       }
@@ -72604,24 +72604,24 @@ var require_schema2 = __commonJS({
       if (!Array.isArray(paths)) {
         throw new MongooseError('Schema#pick() only accepts an array argument, got "' + typeof paths + '"');
       }
-      for (const path of paths) {
-        if (this._hasEncryptedField(path)) {
-          const encrypt = this.encryptedFields[path];
-          const schemaType = this.path(path);
+      for (const path2 of paths) {
+        if (this._hasEncryptedField(path2)) {
+          const encrypt = this.encryptedFields[path2];
+          const schemaType = this.path(path2);
           newSchema.add({
-            [path]: {
+            [path2]: {
               encrypt,
               [this.options.typeKey]: schemaType
             }
           });
-        } else if (this.nested[path]) {
-          newSchema.add({ [path]: get(this.tree, path) });
+        } else if (this.nested[path2]) {
+          newSchema.add({ [path2]: get(this.tree, path2) });
         } else {
-          const schematype = this.path(path);
+          const schematype = this.path(path2);
           if (schematype == null) {
-            throw new MongooseError("Path `" + path + "` is not in the schema");
+            throw new MongooseError("Path `" + path2 + "` is not in the schema");
           }
-          newSchema.add({ [path]: schematype });
+          newSchema.add({ [path2]: schematype });
         }
       }
       if (!this._hasEncryptedFields()) {
@@ -72693,15 +72693,15 @@ var require_schema2 = __commonJS({
       return this;
     };
     Schema17.prototype._defaultToObjectOptions = function(json) {
-      const path = json ? "toJSON" : "toObject";
-      if (this._defaultToObjectOptionsMap && this._defaultToObjectOptionsMap[path]) {
-        return this._defaultToObjectOptionsMap[path];
+      const path2 = json ? "toJSON" : "toObject";
+      if (this._defaultToObjectOptionsMap && this._defaultToObjectOptionsMap[path2]) {
+        return this._defaultToObjectOptionsMap[path2];
       }
-      const baseOptions = this.base && this.base.options && this.base.options[path] || {};
-      const schemaOptions = this.options[path] || {};
+      const baseOptions = this.base && this.base.options && this.base.options[path2] || {};
+      const schemaOptions = this.options[path2] || {};
       const defaultOptions = Object.assign({}, baseOptions, schemaOptions);
       this._defaultToObjectOptionsMap = this._defaultToObjectOptionsMap || {};
-      this._defaultToObjectOptionsMap[path] = defaultOptions;
+      this._defaultToObjectOptionsMap[path2] = defaultOptions;
       return defaultOptions;
     };
     Schema17.prototype.encryptionType = function encryptionType(encryptionType) {
@@ -72815,8 +72815,8 @@ var require_schema2 = __commonJS({
             throw new Error("encryptionType of a nested schema must match the encryption type of the parent schema.");
           }
           for (const [encryptedField, encryptedFieldConfig] of Object.entries(val.encryptedFields)) {
-            const path = fullPath + "." + encryptedField;
-            this._addEncryptedField(path, encryptedFieldConfig);
+            const path2 = fullPath + "." + encryptedField;
+            this._addEncryptedField(path2, encryptedFieldConfig);
           }
         } else if (typeof val === "object" && "encrypt" in val) {
           const { encrypt } = val;
@@ -72834,35 +72834,35 @@ var require_schema2 = __commonJS({
       aliasFields(this, aliasObj);
       return this;
     };
-    Schema17.prototype._addEncryptedField = function _addEncryptedField(path, fieldConfig) {
-      const type = this.path(path).autoEncryptionType();
+    Schema17.prototype._addEncryptedField = function _addEncryptedField(path2, fieldConfig) {
+      const type = this.path(path2).autoEncryptionType();
       if (type == null) {
-        throw new Error(`Invalid BSON type for FLE field: '${path}'`);
+        throw new Error(`Invalid BSON type for FLE field: '${path2}'`);
       }
-      this.encryptedFields[path] = clone(fieldConfig);
+      this.encryptedFields[path2] = clone(fieldConfig);
     };
-    Schema17.prototype._removeEncryptedField = function _removeEncryptedField(path) {
-      delete this.encryptedFields[path];
+    Schema17.prototype._removeEncryptedField = function _removeEncryptedField(path2) {
+      delete this.encryptedFields[path2];
     };
     Schema17.prototype._hasEncryptedFields = function _hasEncryptedFields() {
       return Object.keys(this.encryptedFields).length > 0;
     };
-    Schema17.prototype._hasEncryptedField = function _hasEncryptedField(path) {
-      return path in this.encryptedFields;
+    Schema17.prototype._hasEncryptedField = function _hasEncryptedField(path2) {
+      return path2 in this.encryptedFields;
     };
     Schema17.prototype._buildEncryptedFields = function() {
       const fields = Object.entries(this.encryptedFields).map(
-        ([path, config]) => {
-          const bsonType = this.path(path).autoEncryptionType();
-          return { path, bsonType, ...config };
+        ([path2, config]) => {
+          const bsonType = this.path(path2).autoEncryptionType();
+          return { path: path2, bsonType, ...config };
         }
       );
       return { fields };
     };
     Schema17.prototype._buildSchemaMap = function() {
-      function buildNestedPath(path, object, value) {
-        let i = 0, component = path[i];
-        for (; i < path.length - 1; ++i, component = path[i]) {
+      function buildNestedPath(path2, object, value) {
+        let i = 0, component = path2[i];
+        for (; i < path2.length - 1; ++i, component = path2[i]) {
           object[component] = object[component] == null ? {
             bsonType: "object",
             properties: {}
@@ -72871,9 +72871,9 @@ var require_schema2 = __commonJS({
         }
         object[component] = value;
       }
-      const schemaMapPropertyReducer = (accum, [path, propertyConfig]) => {
-        const bsonType = this.path(path).autoEncryptionType();
-        const pathComponents = path.split(".");
+      const schemaMapPropertyReducer = (accum, [path2, propertyConfig]) => {
+        const bsonType = this.path(path2).autoEncryptionType();
+        const pathComponents = path2.split(".");
         const configuration = { encrypt: { ...propertyConfig, bsonType } };
         buildNestedPath(pathComponents, accum, configuration);
         return accum;
@@ -72887,8 +72887,8 @@ var require_schema2 = __commonJS({
         properties
       };
     };
-    Schema17.prototype.alias = function alias(path, alias) {
-      aliasFields(this, { [path]: alias });
+    Schema17.prototype.alias = function alias(path2, alias) {
+      aliasFields(this, { [path2]: alias });
       return this;
     };
     Schema17.prototype.removeIndex = function removeIndex(index) {
@@ -72928,17 +72928,17 @@ var require_schema2 = __commonJS({
     reserved.emit = reserved.listeners = reserved.removeListener = // document properties and functions
     reserved.collection = reserved.errors = reserved.get = reserved.init = reserved.isModified = reserved.isNew = reserved.populated = reserved.remove = reserved.save = reserved.toObject = reserved.validate = 1;
     reserved.collection = 1;
-    Schema17.prototype.path = function(path, obj) {
+    Schema17.prototype.path = function(path2, obj) {
       if (obj === void 0) {
-        if (Object.hasOwn(this.paths, path)) {
-          return this.paths[path];
+        if (Object.hasOwn(this.paths, path2)) {
+          return this.paths[path2];
         }
-        const cleanPath = _pathToPositionalSyntax(path);
-        let schematype = _getPath(this, path, cleanPath);
+        const cleanPath = _pathToPositionalSyntax(path2);
+        let schematype = _getPath(this, path2, cleanPath);
         if (schematype != null) {
           return schematype;
         }
-        const mapPath = getMapPath(this, path);
+        const mapPath = getMapPath(this, path2);
         if (mapPath != null) {
           return mapPath;
         }
@@ -72946,9 +72946,9 @@ var require_schema2 = __commonJS({
         if (schematype != null) {
           return schematype;
         }
-        return hasNumericSubpathRegex.test(path) ? getPositionalPath(this, path, cleanPath) : void 0;
+        return hasNumericSubpathRegex.test(path2) ? getPositionalPath(this, path2, cleanPath) : void 0;
       }
-      const subpaths = path.indexOf(".") === -1 ? [path] : path.split(".");
+      const subpaths = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
       const last = subpaths.pop();
       if (utils.specialProperties.has(last)) {
         throw new Error("Cannot set special property `" + last + "` on a schema");
@@ -72959,7 +72959,7 @@ var require_schema2 = __commonJS({
         utils.warn(errorMessage);
       }
       if (typeof obj === "object" && utils.hasUserDefinedProperty(obj, "ref")) {
-        validateRef(obj.ref, path);
+        validateRef(obj.ref, path2);
       }
       let branch = this.tree;
       let fullPath = "";
@@ -72973,39 +72973,39 @@ var require_schema2 = __commonJS({
           branch[sub] = {};
         }
         if (typeof branch[sub] !== "object") {
-          const msg = "Cannot set nested path `" + path + "`. Parent path `" + fullPath + "` already set to type " + branch[sub].name + ".";
+          const msg = "Cannot set nested path `" + path2 + "`. Parent path `" + fullPath + "` already set to type " + branch[sub].name + ".";
           throw new Error(msg);
         }
         branch = branch[sub];
       }
       branch[last] = clone(obj);
-      this.paths[path] = this.interpretAsType(path, obj, this.options);
-      const schemaType = this.paths[path];
-      this.childSchemas = this.childSchemas.filter((childSchema) => childSchema.path !== path);
+      this.paths[path2] = this.interpretAsType(path2, obj, this.options);
+      const schemaType = this.paths[path2];
+      this.childSchemas = this.childSchemas.filter((childSchema) => childSchema.path !== path2);
       if (schemaType.$isSchemaMap) {
-        const mapPath = path + ".$*";
+        const mapPath = path2 + ".$*";
         this.paths[mapPath] = schemaType.$__schemaType;
         this.mapPaths.push(this.paths[mapPath]);
         if (schemaType.$__schemaType.$isSingleNested) {
           this.childSchemas.push({
             schema: schemaType.$__schemaType.schema,
             model: schemaType.$__schemaType.caster,
-            path
+            path: path2
           });
         }
       }
       if (schemaType.$isSingleNested) {
         for (const key of Object.keys(schemaType.schema.paths)) {
-          this.singleNestedPaths[path + "." + key] = schemaType.schema.paths[key];
+          this.singleNestedPaths[path2 + "." + key] = schemaType.schema.paths[key];
         }
         for (const key of Object.keys(schemaType.schema.singleNestedPaths)) {
-          this.singleNestedPaths[path + "." + key] = schemaType.schema.singleNestedPaths[key];
+          this.singleNestedPaths[path2 + "." + key] = schemaType.schema.singleNestedPaths[key];
         }
         for (const key of Object.keys(schemaType.schema.subpaths)) {
-          this.singleNestedPaths[path + "." + key] = schemaType.schema.subpaths[key];
+          this.singleNestedPaths[path2 + "." + key] = schemaType.schema.subpaths[key];
         }
         for (const key of Object.keys(schemaType.schema.nested)) {
-          this.singleNestedPaths[path + "." + key] = "nested";
+          this.singleNestedPaths[path2 + "." + key] = "nested";
         }
         Object.defineProperty(schemaType.schema, "base", {
           configurable: true,
@@ -73017,7 +73017,7 @@ var require_schema2 = __commonJS({
         this.childSchemas.push({
           schema: schemaType.schema,
           model: schemaType.caster,
-          path
+          path: path2
         });
       } else if (schemaType.$isMongooseDocumentArray) {
         Object.defineProperty(schemaType.schema, "base", {
@@ -73030,22 +73030,22 @@ var require_schema2 = __commonJS({
         this.childSchemas.push({
           schema: schemaType.schema,
           model: schemaType.casterConstructor,
-          path
+          path: path2
         });
       }
       if (schemaType.$isMongooseArray && schemaType.caster instanceof SchemaType) {
-        let arrayPath = path;
+        let arrayPath = path2;
         let _schemaType = schemaType;
         const toAdd = [];
         while (_schemaType.$isMongooseArray) {
           arrayPath = arrayPath + ".$";
           if (_schemaType.$isMongooseDocumentArray) {
             _schemaType.$embeddedSchemaType._arrayPath = arrayPath;
-            _schemaType.$embeddedSchemaType._arrayParentPath = path;
+            _schemaType.$embeddedSchemaType._arrayParentPath = path2;
             _schemaType = _schemaType.$embeddedSchemaType;
           } else {
             _schemaType.caster._arrayPath = arrayPath;
-            _schemaType.caster._arrayParentPath = path;
+            _schemaType.caster._arrayParentPath = path2;
             _schemaType = _schemaType.caster;
           }
           this.subpaths[arrayPath] = _schemaType;
@@ -73057,21 +73057,21 @@ var require_schema2 = __commonJS({
       if (schemaType.$isMongooseDocumentArray) {
         for (const key of Object.keys(schemaType.schema.paths)) {
           const _schemaType = schemaType.schema.paths[key];
-          this.subpaths[path + "." + key] = _schemaType;
+          this.subpaths[path2 + "." + key] = _schemaType;
           if (typeof _schemaType === "object" && _schemaType != null && _schemaType.$parentSchemaDocArray == null) {
             _schemaType.$parentSchemaDocArray = schemaType;
           }
         }
         for (const key of Object.keys(schemaType.schema.subpaths)) {
           const _schemaType = schemaType.schema.subpaths[key];
-          this.subpaths[path + "." + key] = _schemaType;
+          this.subpaths[path2 + "." + key] = _schemaType;
           if (typeof _schemaType === "object" && _schemaType != null && _schemaType.$parentSchemaDocArray == null) {
             _schemaType.$parentSchemaDocArray = schemaType;
           }
         }
         for (const key of Object.keys(schemaType.schema.singleNestedPaths)) {
           const _schemaType = schemaType.schema.singleNestedPaths[key];
-          this.subpaths[path + "." + key] = _schemaType;
+          this.subpaths[path2 + "." + key] = _schemaType;
           if (typeof _schemaType === "object" && _schemaType != null && _schemaType.$parentSchemaDocArray == null) {
             _schemaType.$parentSchemaDocArray = schemaType;
           }
@@ -73081,31 +73081,31 @@ var require_schema2 = __commonJS({
     };
     Schema17.prototype._gatherChildSchemas = function _gatherChildSchemas() {
       const childSchemas = [];
-      for (const path of Object.keys(this.paths)) {
-        if (typeof path !== "string") {
+      for (const path2 of Object.keys(this.paths)) {
+        if (typeof path2 !== "string") {
           continue;
         }
-        const schematype = this.paths[path];
+        const schematype = this.paths[path2];
         if (schematype.$isMongooseDocumentArray || schematype.$isSingleNested) {
           childSchemas.push({
             schema: schematype.schema,
             model: schematype.caster,
-            path
+            path: path2
           });
         } else if (schematype.$isSchemaMap && schematype.$__schemaType.$isSingleNested) {
           childSchemas.push({
             schema: schematype.$__schemaType.schema,
             model: schematype.$__schemaType.caster,
-            path
+            path: path2
           });
         }
       }
       this.childSchemas = childSchemas;
       return childSchemas;
     };
-    function _getPath(schema, path, cleanPath) {
-      if (Object.hasOwn(schema.paths, path)) {
-        return schema.paths[path];
+    function _getPath(schema, path2, cleanPath) {
+      if (Object.hasOwn(schema.paths, path2)) {
+        return schema.paths[path2];
       }
       if (Object.hasOwn(schema.subpaths, cleanPath)) {
         const subpath = schema.subpaths[cleanPath];
@@ -73123,26 +73123,26 @@ var require_schema2 = __commonJS({
       }
       return null;
     }
-    function _pathToPositionalSyntax(path) {
-      if (!/\.\d+/.test(path)) {
-        return path;
+    function _pathToPositionalSyntax(path2) {
+      if (!/\.\d+/.test(path2)) {
+        return path2;
       }
-      return path.replace(/\.\d+\./g, ".$.").replace(/\.\d+$/, ".$");
+      return path2.replace(/\.\d+\./g, ".$.").replace(/\.\d+$/, ".$");
     }
-    function getMapPath(schema, path) {
+    function getMapPath(schema, path2) {
       if (schema.mapPaths.length === 0) {
         return null;
       }
       for (const val of schema.mapPaths) {
         const cleanPath = val.path.replace(/\.\$\*/g, "");
-        if (path === cleanPath || path.startsWith(cleanPath + ".") && path.slice(cleanPath.length + 1).indexOf(".") === -1) {
+        if (path2 === cleanPath || path2.startsWith(cleanPath + ".") && path2.slice(cleanPath.length + 1).indexOf(".") === -1) {
           return val;
-        } else if (val.schema && path.startsWith(cleanPath + ".")) {
-          let remnant = path.slice(cleanPath.length + 1);
+        } else if (val.schema && path2.startsWith(cleanPath + ".")) {
+          let remnant = path2.slice(cleanPath.length + 1);
           remnant = remnant.slice(remnant.indexOf(".") + 1);
           return val.schema.path(remnant);
-        } else if (val.$isSchemaMap && path.startsWith(cleanPath + ".")) {
-          let remnant = path.slice(cleanPath.length + 1);
+        } else if (val.$isSchemaMap && path2.startsWith(cleanPath + ".")) {
+          let remnant = path2.slice(cleanPath.length + 1);
           remnant = remnant.slice(remnant.indexOf(".") + 1);
           const presplitPath = val.$__schemaType._presplitPath;
           if (remnant.indexOf(".") === -1 && presplitPath[presplitPath.length - 1] === "$*") {
@@ -73160,13 +73160,13 @@ var require_schema2 = __commonJS({
       writable: true,
       value: null
     });
-    Schema17.prototype.interpretAsType = function(path, obj, options) {
+    Schema17.prototype.interpretAsType = function(path2, obj, options) {
       if (obj instanceof SchemaType) {
-        if (obj.path === path) {
+        if (obj.path === path2) {
           return obj;
         }
         const clone2 = obj.clone();
-        clone2.path = path;
+        clone2.path = path2;
         return clone2;
       }
       const MongooseTypes2 = this.base != null ? this.base.Schema.Types : Schema17.Types;
@@ -73181,16 +73181,16 @@ var require_schema2 = __commonJS({
       }
       let type = obj[options.typeKey] && (obj[options.typeKey] instanceof Function || options.typeKey !== "type" || !obj.type.type) ? obj[options.typeKey] : {};
       if (type instanceof SchemaType) {
-        if (type.path === path) {
+        if (type.path === path2) {
           return type;
         }
         const clone2 = type.clone();
-        clone2.path = path;
+        clone2.path = path2;
         return clone2;
       }
       let name;
       if (utils.isPOJO(type) || type === "mixed") {
-        return new MongooseTypes2.Mixed(path, obj, null, this);
+        return new MongooseTypes2.Mixed(path2, obj, null, this);
       }
       if (Array.isArray(type) || type === Array || type === "array" || type === MongooseTypes2.Array) {
         let cast = type === Array || type === "array" ? obj.cast || obj.of : type[0];
@@ -73199,27 +73199,27 @@ var require_schema2 = __commonJS({
             if (this.options._isMerging) {
               cast = new Schema17(cast);
             } else {
-              throw new TypeError("Schema for array path `" + path + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path}: new Schema(...)`);
+              throw new TypeError("Schema for array path `" + path2 + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path2}: new Schema(...)`);
             }
           }
-          return new MongooseTypes2.DocumentArray(path, cast, obj, null, this);
+          return new MongooseTypes2.DocumentArray(path2, cast, obj, null, this);
         }
         if (cast && cast[options.typeKey] && cast[options.typeKey].instanceOfSchema) {
           if (!(cast[options.typeKey] instanceof Schema17)) {
             if (this.options._isMerging) {
               cast[options.typeKey] = new Schema17(cast[options.typeKey]);
             } else {
-              throw new TypeError("Schema for array path `" + path + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path}: new Schema(...)`);
+              throw new TypeError("Schema for array path `" + path2 + `\` is from a different copy of the Mongoose module. Please make sure you're using the same version of Mongoose everywhere with \`npm list mongoose\`. If you are still getting this error, please add \`new Schema()\` around the path: ${path2}: new Schema(...)`);
             }
           }
-          return new MongooseTypes2.DocumentArray(path, cast[options.typeKey], obj, cast, this);
+          return new MongooseTypes2.DocumentArray(path2, cast[options.typeKey], obj, cast, this);
         }
         if (typeof cast !== "undefined") {
           if (Array.isArray(cast) || cast.type === Array || cast.type == "Array") {
             if (cast && cast.type == "Array") {
               cast.type = Array;
             }
-            return new MongooseTypes2.Array(path, this.interpretAsType(path, cast, options), obj, null, this);
+            return new MongooseTypes2.Array(path2, this.interpretAsType(path2, cast, options), obj, null, this);
           }
         }
         const castFromTypeKey = cast != null && cast[options.typeKey] && (options.typeKey !== "type" || !cast.type.type) ? cast[options.typeKey] : cast;
@@ -73250,34 +73250,34 @@ var require_schema2 = __commonJS({
             }
             const childSchema = new Schema17(castFromTypeKey, childSchemaOptions);
             childSchema.$implicitlyCreated = true;
-            return new MongooseTypes2.DocumentArray(path, childSchema, obj, null, this);
+            return new MongooseTypes2.DocumentArray(path2, childSchema, obj, null, this);
           } else {
-            return new MongooseTypes2.Array(path, MongooseTypes2.Mixed, obj, null, this);
+            return new MongooseTypes2.Array(path2, MongooseTypes2.Mixed, obj, null, this);
           }
         }
         if (cast) {
           type = cast[options.typeKey] && (options.typeKey !== "type" || !cast.type.type) ? cast[options.typeKey] : cast;
           if (Array.isArray(type)) {
-            return new MongooseTypes2.Array(path, this.interpretAsType(path, type, options), obj, null, this);
+            return new MongooseTypes2.Array(path2, this.interpretAsType(path2, type, options), obj, null, this);
           }
           name = typeof type === "string" ? type : type.schemaName || utils.getFunctionName(type);
           if (name === "ClockDate") {
             name = "Date";
           }
           if (name === void 0) {
-            throw new TypeError(`Invalid schema configuration: Could not determine the embedded type for array \`${path}\`. See https://mongoosejs.com/docs/guide.html#definition for more info on supported schema syntaxes.`);
+            throw new TypeError(`Invalid schema configuration: Could not determine the embedded type for array \`${path2}\`. See https://mongoosejs.com/docs/guide.html#definition for more info on supported schema syntaxes.`);
           }
           if (!Object.hasOwn(MongooseTypes2, name)) {
-            throw new TypeError(`Invalid schema configuration: \`${name}\` is not a valid type within the array \`${path}\`.See https://bit.ly/mongoose-schematypes for a list of valid schema types.`);
+            throw new TypeError(`Invalid schema configuration: \`${name}\` is not a valid type within the array \`${path2}\`.See https://bit.ly/mongoose-schematypes for a list of valid schema types.`);
           }
           if (name === "Union" && typeof cast === "object") {
             cast.parentSchema = this;
           }
         }
-        return new MongooseTypes2.Array(path, cast || MongooseTypes2.Mixed, obj, options, this);
+        return new MongooseTypes2.Array(path2, cast || MongooseTypes2.Mixed, obj, options, this);
       }
       if (type && type.instanceOfSchema) {
-        return new MongooseTypes2.Subdocument(type, path, obj, this);
+        return new MongooseTypes2.Subdocument(type, path2, obj, this);
       }
       if (Buffer.isBuffer(type)) {
         name = "Buffer";
@@ -73300,12 +73300,12 @@ var require_schema2 = __commonJS({
         name = "Date";
       }
       if (name === void 0) {
-        throw new TypeError(`Invalid schema configuration: \`${path}\` schematype definition is invalid. See https://mongoosejs.com/docs/guide.html#definition for more info on supported schema syntaxes.`);
+        throw new TypeError(`Invalid schema configuration: \`${path2}\` schematype definition is invalid. See https://mongoosejs.com/docs/guide.html#definition for more info on supported schema syntaxes.`);
       }
       if (MongooseTypes2[name] == null) {
-        throw new TypeError(`Invalid schema configuration: \`${name}\` is not a valid type at path \`${path}\`. See https://bit.ly/mongoose-schematypes for a list of valid schema types.`);
+        throw new TypeError(`Invalid schema configuration: \`${name}\` is not a valid type at path \`${path2}\`. See https://bit.ly/mongoose-schematypes for a list of valid schema types.`);
       }
-      const schemaType = new MongooseTypes2[name](path, obj, options, this);
+      const schemaType = new MongooseTypes2[name](path2, obj, options, this);
       return schemaType;
     };
     Schema17.prototype.eachPath = function(fn) {
@@ -73324,9 +73324,9 @@ var require_schema2 = __commonJS({
       let i = paths.length;
       const ret = [];
       while (i--) {
-        const path = paths[i];
-        if (this.paths[path].isRequired) {
-          ret.push(path);
+        const path2 = paths[i];
+        if (this.paths[path2].isRequired) {
+          ret.push(path2);
         }
       }
       this._requiredpaths = ret;
@@ -73339,40 +73339,40 @@ var require_schema2 = __commonJS({
       this._indexedpaths = this.indexes();
       return this._indexedpaths;
     };
-    Schema17.prototype.pathType = function(path) {
-      if (Object.hasOwn(this.paths, path)) {
+    Schema17.prototype.pathType = function(path2) {
+      if (Object.hasOwn(this.paths, path2)) {
         return "real";
       }
-      if (Object.hasOwn(this.virtuals, path)) {
+      if (Object.hasOwn(this.virtuals, path2)) {
         return "virtual";
       }
-      if (Object.hasOwn(this.nested, path)) {
+      if (Object.hasOwn(this.nested, path2)) {
         return "nested";
       }
-      const cleanPath = _pathToPositionalSyntax(path);
-      if (Object.hasOwn(this.subpaths, cleanPath) || Object.hasOwn(this.subpaths, path)) {
+      const cleanPath = _pathToPositionalSyntax(path2);
+      if (Object.hasOwn(this.subpaths, cleanPath) || Object.hasOwn(this.subpaths, path2)) {
         return "real";
       }
-      const singleNestedPath = Object.hasOwn(this.singleNestedPaths, cleanPath) || Object.hasOwn(this.singleNestedPaths, path);
+      const singleNestedPath = Object.hasOwn(this.singleNestedPaths, cleanPath) || Object.hasOwn(this.singleNestedPaths, path2);
       if (singleNestedPath) {
         return singleNestedPath === "nested" ? "nested" : "real";
       }
-      const mapPath = getMapPath(this, path);
+      const mapPath = getMapPath(this, path2);
       if (mapPath != null) {
         return "real";
       }
-      if (/\.\d+\.|\.\d+$/.test(path)) {
-        return getPositionalPathType(this, path, cleanPath);
+      if (/\.\d+\.|\.\d+$/.test(path2)) {
+        return getPositionalPathType(this, path2, cleanPath);
       }
       return "adhocOrUndefined";
     };
-    Schema17.prototype.hasMixedParent = function(path) {
-      const subpaths = path.split(/\./g);
-      path = "";
+    Schema17.prototype.hasMixedParent = function(path2) {
+      const subpaths = path2.split(/\./g);
+      path2 = "";
       for (let i = 0; i < subpaths.length; ++i) {
-        path = i > 0 ? path + "." + subpaths[i] : subpaths[i];
-        if (Object.hasOwn(this.paths, path) && this.paths[path] instanceof MongooseTypes.Mixed) {
-          return this.paths[path];
+        path2 = i > 0 ? path2 + "." + subpaths[i] : subpaths[i];
+        if (Object.hasOwn(this.paths, path2) && this.paths[path2] instanceof MongooseTypes.Mixed) {
+          return this.paths[path2];
         }
       }
       return null;
@@ -73380,8 +73380,8 @@ var require_schema2 = __commonJS({
     Schema17.prototype.setupTimestamp = function(timestamps) {
       return setupTimestamps(this, timestamps);
     };
-    function getPositionalPathType(self2, path, cleanPath) {
-      const subpaths = path.split(/\.(\d+)\.|\.(\d+)$/).filter(Boolean);
+    function getPositionalPathType(self2, path2, cleanPath) {
+      const subpaths = path2.split(/\.(\d+)\.|\.(\d+)$/).filter(Boolean);
       if (subpaths.length < 2) {
         return Object.hasOwn(self2.paths, subpaths[0]) ? self2.paths[subpaths[0]] : "adhocOrUndefined";
       }
@@ -73427,8 +73427,8 @@ var require_schema2 = __commonJS({
       }
       return "adhocOrUndefined";
     }
-    function getPositionalPath(self2, path, cleanPath) {
-      getPositionalPathType(self2, path, cleanPath);
+    function getPositionalPath(self2, path2, cleanPath) {
+      getPositionalPathType(self2, path2, cleanPath);
       return self2.subpaths[cleanPath];
     }
     Schema17.prototype.queue = function(name, args) {
@@ -73714,11 +73714,11 @@ var require_schema2 = __commonJS({
         return mem[part];
       }, this.tree);
       if (options && options.applyToArray && parts.length > 1) {
-        const path = this.path(parts.slice(0, -1).join("."));
-        if (path && path.$isMongooseArray) {
-          return path.virtual(parts[parts.length - 1], options);
+        const path2 = this.path(parts.slice(0, -1).join("."));
+        if (path2 && path2.$isMongooseArray) {
+          return path2.virtual(parts[parts.length - 1], options);
         } else {
-          throw new MongooseError(`Path "${path}" is not an array`);
+          throw new MongooseError(`Path "${path2}" is not an array`);
         }
       }
       return virtuals[name];
@@ -73726,22 +73726,22 @@ var require_schema2 = __commonJS({
     Schema17.prototype.virtualpath = function(name) {
       return Object.hasOwn(this.virtuals, name) ? this.virtuals[name] : null;
     };
-    Schema17.prototype.remove = function(path) {
-      if (typeof path === "string") {
-        path = [path];
+    Schema17.prototype.remove = function(path2) {
+      if (typeof path2 === "string") {
+        path2 = [path2];
       }
-      if (Array.isArray(path)) {
-        path.forEach(function(name) {
+      if (Array.isArray(path2)) {
+        path2.forEach(function(name) {
           if (this.path(name) == null && !this.nested[name]) {
             return;
           }
           if (this.nested[name]) {
             const allKeys = Object.keys(this.paths).concat(Object.keys(this.nested));
-            for (const path2 of allKeys) {
-              if (path2.startsWith(name + ".")) {
-                delete this.paths[path2];
-                delete this.nested[path2];
-                _deletePath(this, path2);
+            for (const path3 of allKeys) {
+              if (path3.startsWith(name + ".")) {
+                delete this.paths[path3];
+                delete this.nested[path3];
+                _deletePath(this, path3);
               }
             }
             this.mapPaths = this.mapPaths.filter(
@@ -73778,17 +73778,17 @@ var require_schema2 = __commonJS({
       }
       delete branch[last];
     }
-    Schema17.prototype.removeVirtual = function(path) {
-      if (typeof path === "string") {
-        path = [path];
+    Schema17.prototype.removeVirtual = function(path2) {
+      if (typeof path2 === "string") {
+        path2 = [path2];
       }
-      if (Array.isArray(path)) {
-        for (const virtual of path) {
+      if (Array.isArray(path2)) {
+        for (const virtual of path2) {
           if (this.virtuals[virtual] == null) {
             throw new MongooseError(`Attempting to remove virtual "${virtual}" that does not exist.`);
           }
         }
-        for (const virtual of path) {
+        for (const virtual of path2) {
           delete this.paths[virtual];
           delete this.virtuals[virtual];
           if (virtual.indexOf(".") !== -1) {
@@ -73841,12 +73841,12 @@ var require_schema2 = __commonJS({
       }, this);
       return this;
     };
-    Schema17.prototype._getSchema = function(path) {
+    Schema17.prototype._getSchema = function(path2) {
       const _this = this;
-      const pathschema = _this.path(path);
+      const pathschema = _this.path(path2);
       const resultPath = [];
       if (pathschema) {
-        pathschema.$fullPath = path;
+        pathschema.$fullPath = path2;
         return pathschema;
       }
       function search(parts2, schema) {
@@ -73906,7 +73906,7 @@ var require_schema2 = __commonJS({
           }
         }
       }
-      const parts = path.split(".");
+      const parts = path2.split(".");
       for (let i = 0; i < parts.length; ++i) {
         if (parts[i] === "$" || isArrayFilter(parts[i])) {
           parts[i] = "0";
@@ -73917,9 +73917,9 @@ var require_schema2 = __commonJS({
       }
       return search(parts, _this);
     };
-    Schema17.prototype._getPathType = function(path) {
+    Schema17.prototype._getPathType = function(path2) {
       const _this = this;
-      const pathschema = _this.path(path);
+      const pathschema = _this.path(path2);
       if (pathschema) {
         return "real";
       }
@@ -73954,7 +73954,7 @@ var require_schema2 = __commonJS({
         }
         return { schema: foundschema || schema, pathType: "undefined" };
       }
-      return search(path.split("."), _this);
+      return search(path2.split("."), _this);
     };
     Schema17.prototype._transformDuplicateKeyError = function _transformDuplicateKeyError(error) {
       if (!this._duplicateKeyErrorMessagesByPath) {
@@ -73986,8 +73986,8 @@ var require_schema2 = __commonJS({
     Schema17.prototype.toJSONSchema = function toJSONSchema(options) {
       const useBsonType = options?.useBsonType ?? false;
       const result = useBsonType ? { required: [], properties: {} } : { type: "object", required: [], properties: {} };
-      for (const path of Object.keys(this.paths)) {
-        const schemaType = this.paths[path];
+      for (const path2 of Object.keys(this.paths)) {
+        const schemaType = this.paths[path2];
         if (schemaType._presplitPath.indexOf("$*") !== -1) {
           continue;
         }
@@ -74010,7 +74010,7 @@ var require_schema2 = __commonJS({
         }
         const lastSubpath = schemaType._presplitPath[schemaType._presplitPath.length - 1];
         let isRequired = false;
-        if (path === "_id") {
+        if (path2 === "_id") {
           if (!jsonSchemaForPath.required) {
             jsonSchemaForPath.required = [];
           }
@@ -74109,8 +74109,8 @@ var require_applyPlugins = __commonJS({
       options = Object.assign({}, options);
       delete options.skipTopLevel;
       if (options.applyPluginsToChildSchemas !== false) {
-        for (const path of Object.keys(schema.paths)) {
-          const type = schema.paths[path];
+        for (const path2 of Object.keys(schema.paths)) {
+          const type = schema.paths[path2];
           if (type.schema != null) {
             applyPlugins(type.schema, plugins, options, cacheKey);
             type.caster.prototype.$__setSchema(type.schema);
@@ -74222,17 +74222,17 @@ var require_updatedPathsByArrayFilter = __commonJS({
         return {};
       }
       const updatedPaths = modifiedPaths(update);
-      return Object.keys(updatedPaths).reduce((cur, path) => {
-        const matches = path.match(/\$\[[^\]]+\]/g);
+      return Object.keys(updatedPaths).reduce((cur, path2) => {
+        const matches = path2.match(/\$\[[^\]]+\]/g);
         if (matches == null) {
           return cur;
         }
         for (const match of matches) {
-          const firstMatch = path.indexOf(match);
-          if (firstMatch !== path.lastIndexOf(match)) {
-            throw new Error(`Path '${path}' contains the same array filter multiple times`);
+          const firstMatch = path2.indexOf(match);
+          if (firstMatch !== path2.lastIndexOf(match)) {
+            throw new Error(`Path '${path2}' contains the same array filter multiple times`);
           }
-          cur[match.substring(2, match.length - 1)] = path.substring(0, firstMatch - 1).replace(/\$\[[^\]]+\]/g, "0");
+          cur[match.substring(2, match.length - 1)] = path2.substring(0, firstMatch - 1).replace(/\$\[[^\]]+\]/g, "0");
         }
         return cur;
       }, {});
@@ -74248,8 +74248,8 @@ var require_getEmbeddedDiscriminatorPath2 = __commonJS({
     var get = require_get2();
     var getDiscriminatorByValue = require_getDiscriminatorByValue();
     var updatedPathsByArrayFilter = require_updatedPathsByArrayFilter();
-    module2.exports = function getEmbeddedDiscriminatorPath(schema, update, filter, path, options) {
-      const parts = path.indexOf(".") === -1 ? [path] : path.split(".");
+    module2.exports = function getEmbeddedDiscriminatorPath(schema, update, filter, path2, options) {
+      const parts = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
       let schematype = null;
       let type = "adhocOrUndefined";
       filter = filter || {};
@@ -74368,16 +74368,16 @@ var require_moveImmutableProperties = __commonJS({
         const isDollarKey = key.startsWith("$");
         if (key === "$set") {
           const updatedPaths = Object.keys(update[key]);
-          for (const path of updatedPaths) {
-            _walkUpdatePath(schema, update[key], path, update, ctx);
+          for (const path2 of updatedPaths) {
+            _walkUpdatePath(schema, update[key], path2, update, ctx);
           }
         } else if (!isDollarKey) {
           _walkUpdatePath(schema, update, key, update, ctx);
         }
       }
     };
-    function _walkUpdatePath(schema, op, path, update, ctx) {
-      const schematype = schema.path(path);
+    function _walkUpdatePath(schema, op, path2, update, ctx) {
+      const schematype = schema.path(path2);
       if (schematype == null) {
         return;
       }
@@ -74392,8 +74392,8 @@ var require_moveImmutableProperties = __commonJS({
         return;
       }
       update.$setOnInsert = update.$setOnInsert || {};
-      update.$setOnInsert[path] = op[path];
-      delete op[path];
+      update.$setOnInsert[path2] = op[path2];
+      delete op[path2];
     }
   }
 });
@@ -74403,15 +74403,15 @@ var require_setDottedPath = __commonJS({
   "node_modules/mongoose/lib/helpers/path/setDottedPath.js"(exports2, module2) {
     "use strict";
     var specialProperties = require_specialProperties();
-    module2.exports = function setDottedPath(obj, path, val) {
-      if (path.indexOf(".") === -1) {
-        if (specialProperties.has(path)) {
+    module2.exports = function setDottedPath(obj, path2, val) {
+      if (path2.indexOf(".") === -1) {
+        if (specialProperties.has(path2)) {
           return;
         }
-        obj[path] = val;
+        obj[path2] = val;
         return;
       }
-      const parts = path.split(".");
+      const parts = path2.split(".");
       const last = parts.pop();
       let cur = obj;
       for (const part of parts) {
@@ -74800,13 +74800,13 @@ var require_castUpdate = __commonJS({
       $set: 1,
       $setOnInsert: 1
     };
-    function castUpdateVal(schema, val, op, $conditional, context, path) {
+    function castUpdateVal(schema, val, op, $conditional, context, path2) {
       if (!schema) {
         if (op in numberOps) {
           try {
             return castNumber(val);
           } catch (err) {
-            throw new CastError("number", val, path);
+            throw new CastError("number", val, path2);
           }
         }
         return val;
@@ -74939,8 +74939,8 @@ var require_setDefaultsOnInsert = __commonJS({
       const paths = Object.keys(filter);
       const numPaths = paths.length;
       for (let i = 0; i < numPaths; ++i) {
-        const path = paths[i];
-        const condition = filter[path];
+        const path2 = paths[i];
+        const condition = filter[path2];
         if (condition && typeof condition === "object") {
           const conditionKeys = Object.keys(condition);
           const numConditionKeys = conditionKeys.length;
@@ -74955,14 +74955,14 @@ var require_setDefaultsOnInsert = __commonJS({
             continue;
           }
         }
-        updatedKeys[path] = true;
-        if (path.indexOf(".") === -1) {
+        updatedKeys[path2] = true;
+        if (path2.indexOf(".") === -1) {
           continue;
         }
-        const pieces = schema.paths[path] ? (
+        const pieces = schema.paths[path2] ? (
           // If the SchemaType already split for us, use that to avoid the extra overhead
-          schema.paths[path].splitPath()
-        ) : path.split(".");
+          schema.paths[path2].splitPath()
+        ) : path2.split(".");
         let cur = pieces[0];
         for (let j = 1; j < pieces.length; ++j) {
           updatedKeys[cur] = true;
@@ -74972,7 +74972,7 @@ var require_setDefaultsOnInsert = __commonJS({
       if (options && options.overwrite && !hasDollarUpdate) {
         return castedDoc;
       }
-      schema.eachPath(function(path, schemaType) {
+      schema.eachPath(function(path2, schemaType) {
         if (schemaType.path === "_id" && schemaType.options.auto) {
           return;
         }
@@ -74984,20 +74984,20 @@ var require_setDefaultsOnInsert = __commonJS({
         if (pathPieces.includes("$*")) {
           return;
         }
-        if (isModified(castedDoc, updatedKeys, path, pathPieces, hasDollarUpdate)) {
+        if (isModified(castedDoc, updatedKeys, path2, pathPieces, hasDollarUpdate)) {
           return;
         }
         castedDoc = castedDoc || {};
         castedDoc.$setOnInsert = castedDoc.$setOnInsert || {};
-        if (get(castedDoc, path) == null) {
-          castedDoc.$setOnInsert[path] = def;
+        if (get(castedDoc, path2) == null) {
+          castedDoc.$setOnInsert[path2] = def;
         }
-        updatedValues[path] = def;
+        updatedValues[path2] = def;
       });
       return castedDoc;
     };
-    function isModified(castedDoc, updatedKeys, path, pathPieces, hasDollarUpdate) {
-      if (updatedKeys[path]) {
+    function isModified(castedDoc, updatedKeys, path2, pathPieces, hasDollarUpdate) {
+      if (updatedKeys[path2]) {
         return true;
       }
       let cur = pathPieces[0];
@@ -75010,13 +75010,13 @@ var require_setDefaultsOnInsert = __commonJS({
       if (hasDollarUpdate) {
         for (const key in castedDoc) {
           if (key.charAt(0) === "$") {
-            if (pathExistsInUpdate(castedDoc[key], path, pathPieces)) {
+            if (pathExistsInUpdate(castedDoc[key], path2, pathPieces)) {
               return true;
             }
           }
         }
       } else {
-        if (pathExistsInUpdate(castedDoc, path, pathPieces)) {
+        if (pathExistsInUpdate(castedDoc, path2, pathPieces)) {
           return true;
         }
       }
@@ -75666,20 +75666,20 @@ var require_connection2 = __commonJS({
         if (state.modifiedPaths.length > 0 && doc.$__.activePaths.states.modify == null) {
           doc.$__.activePaths.states.modify = {};
         }
-        for (const path of state.modifiedPaths) {
-          const currentState = doc.$__.activePaths.paths[path];
+        for (const path2 of state.modifiedPaths) {
+          const currentState = doc.$__.activePaths.paths[path2];
           if (currentState != null) {
-            delete doc.$__.activePaths[currentState][path];
+            delete doc.$__.activePaths[currentState][path2];
           }
-          doc.$__.activePaths.paths[path] = "modify";
-          doc.$__.activePaths.states.modify[path] = true;
+          doc.$__.activePaths.paths[path2] = "modify";
+          doc.$__.activePaths.states.modify[path2] = true;
         }
-        for (const path of state.atomics.keys()) {
-          const val = doc.$__getValue(path);
+        for (const path2 of state.atomics.keys()) {
+          const val = doc.$__getValue(path2);
           if (val == null) {
             continue;
           }
-          val[arrayAtomicsSymbol] = state.atomics.get(path);
+          val[arrayAtomicsSymbol] = state.atomics.get(path2);
         }
       }
     }
@@ -77414,12 +77414,12 @@ var require_getPath = __commonJS({
     "use strict";
     var getDiscriminatorByKey = require_getDiscriminatorByKey();
     var numberRE = /^\d+$/;
-    module2.exports = function getPath(schema, path, discriminatorValueMap) {
-      let schematype = schema.path(path);
+    module2.exports = function getPath(schema, path2, discriminatorValueMap) {
+      let schematype = schema.path(path2);
       if (schematype != null) {
         return schematype;
       }
-      const pieces = path.split(".");
+      const pieces = path2.split(".");
       let cur = "";
       let isArray = false;
       for (const piece of pieces) {
@@ -78858,14 +78858,14 @@ var require_mquery = __commonJS({
     };
     Query.prototype.equals = function equals(val) {
       this._ensurePath("equals");
-      const path = this._path;
-      this._conditions[path] = val;
+      const path2 = this._path;
+      this._conditions[path2] = val;
       return this;
     };
     Query.prototype.eq = function eq(val) {
       this._ensurePath("eq");
-      const path = this._path;
-      this._conditions[path] = val;
+      const path2 = this._path;
+      this._conditions[path2] = val;
       return this;
     };
     Query.prototype.or = function or(array) {
@@ -78888,82 +78888,82 @@ var require_mquery = __commonJS({
     };
     "gt gte lt lte ne in nin all regex size maxDistance minDistance".split(" ").forEach(function($conditional) {
       Query.prototype[$conditional] = function() {
-        let path, val;
+        let path2, val;
         if (1 === arguments.length) {
           this._ensurePath($conditional);
           val = arguments[0];
-          path = this._path;
+          path2 = this._path;
         } else {
           val = arguments[1];
-          path = arguments[0];
+          path2 = arguments[0];
         }
-        const existing = getOwnCondition(this._conditions, path);
-        const conds = existing === null || typeof existing === "object" ? existing : this._conditions[path] = {};
+        const existing = getOwnCondition(this._conditions, path2);
+        const conds = existing === null || typeof existing === "object" ? existing : this._conditions[path2] = {};
         conds["$" + $conditional] = val;
         return this;
       };
     });
     Query.prototype.mod = function() {
-      let val, path;
+      let val, path2;
       if (1 === arguments.length) {
         this._ensurePath("mod");
         val = arguments[0];
-        path = this._path;
+        path2 = this._path;
       } else if (2 === arguments.length && !Array.isArray(arguments[1])) {
         this._ensurePath("mod");
         val = [arguments[0], arguments[1]];
-        path = this._path;
+        path2 = this._path;
       } else if (3 === arguments.length) {
         val = [arguments[1], arguments[2]];
-        path = arguments[0];
+        path2 = arguments[0];
       } else {
         val = arguments[1];
-        path = arguments[0];
+        path2 = arguments[0];
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds.$mod = val;
       return this;
     };
     Query.prototype.exists = function() {
-      let path, val;
+      let path2, val;
       if (0 === arguments.length) {
         this._ensurePath("exists");
-        path = this._path;
+        path2 = this._path;
         val = true;
       } else if (1 === arguments.length) {
         if ("boolean" === typeof arguments[0]) {
           this._ensurePath("exists");
-          path = this._path;
+          path2 = this._path;
           val = arguments[0];
         } else {
-          path = arguments[0];
+          path2 = arguments[0];
           val = true;
         }
       } else if (2 === arguments.length) {
-        path = arguments[0];
+        path2 = arguments[0];
         val = arguments[1];
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds.$exists = val;
       return this;
     };
     Query.prototype.elemMatch = function() {
       if (null == arguments[0])
         throw new TypeError("Invalid argument");
-      let fn, path, criteria;
+      let fn, path2, criteria;
       if ("function" === typeof arguments[0]) {
         this._ensurePath("elemMatch");
-        path = this._path;
+        path2 = this._path;
         fn = arguments[0];
       } else if (utils.isObject(arguments[0])) {
         this._ensurePath("elemMatch");
-        path = this._path;
+        path2 = this._path;
         criteria = arguments[0];
       } else if ("function" === typeof arguments[1]) {
-        path = arguments[0];
+        path2 = arguments[0];
         fn = arguments[1];
       } else if (arguments[1] && utils.isObject(arguments[1])) {
-        path = arguments[0];
+        path2 = arguments[0];
         criteria = arguments[1];
       } else {
         throw new TypeError("Invalid argument");
@@ -78973,7 +78973,7 @@ var require_mquery = __commonJS({
         fn(criteria);
         criteria = criteria._conditions;
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds.$elemMatch = criteria;
       return this;
     };
@@ -79002,50 +79002,50 @@ var require_mquery = __commonJS({
       throw new TypeError("Invalid argument");
     };
     Query.prototype.box = function() {
-      let path, box;
+      let path2, box;
       if (3 === arguments.length) {
-        path = arguments[0];
+        path2 = arguments[0];
         box = [arguments[1], arguments[2]];
       } else if (2 === arguments.length) {
         this._ensurePath("box");
-        path = this._path;
+        path2 = this._path;
         box = [arguments[0], arguments[1]];
       } else {
         throw new TypeError("Invalid argument");
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds[this._geoComparison || $withinCmd] = { $box: box };
       return this;
     };
     Query.prototype.polygon = function() {
-      let val, path;
+      let val, path2;
       if ("string" == typeof arguments[0]) {
         val = Array.from(arguments);
-        path = val.shift();
+        path2 = val.shift();
       } else {
         this._ensurePath("polygon");
-        path = this._path;
+        path2 = this._path;
         val = Array.from(arguments);
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds[this._geoComparison || $withinCmd] = { $polygon: val };
       return this;
     };
     Query.prototype.circle = function() {
-      let path, val;
+      let path2, val;
       if (1 === arguments.length) {
         this._ensurePath("circle");
-        path = this._path;
+        path2 = this._path;
         val = arguments[0];
       } else if (2 === arguments.length) {
-        path = arguments[0];
+        path2 = arguments[0];
         val = arguments[1];
       } else {
         throw new TypeError("Invalid argument");
       }
       if (!("radius" in val && val.center))
         throw new Error("center and radius are required");
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       const type = val.spherical ? "$centerSphere" : "$center";
       const wKey = this._geoComparison || $withinCmd;
       conds[wKey] = {};
@@ -79055,16 +79055,16 @@ var require_mquery = __commonJS({
       return this;
     };
     Query.prototype.near = function near() {
-      let path, val;
+      let path2, val;
       this._geoComparison = "$near";
       if (0 === arguments.length) {
         return this;
       } else if (1 === arguments.length) {
         this._ensurePath("near");
-        path = this._path;
+        path2 = this._path;
         val = arguments[0];
       } else if (2 === arguments.length) {
-        path = arguments[0];
+        path2 = arguments[0];
         val = arguments[1];
       } else {
         throw new TypeError("Invalid argument");
@@ -79072,7 +79072,7 @@ var require_mquery = __commonJS({
       if (!val.center) {
         throw new Error("center is required");
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       const type = val.spherical ? "$nearSphere" : "$near";
       if (Array.isArray(val.center)) {
         conds[type] = val.center;
@@ -79112,10 +79112,10 @@ var require_mquery = __commonJS({
       if (!("$within" == this._geoComparison || "$geoWithin" == this._geoComparison || "$near" == this._geoComparison || "$geoIntersects" == this._geoComparison)) {
         throw new Error("geometry() must come after `within()`, `intersects()`, or `near()");
       }
-      let val, path;
+      let val, path2;
       if (1 === arguments.length) {
         this._ensurePath("geometry");
-        path = this._path;
+        path2 = this._path;
         val = arguments[0];
       } else {
         throw new TypeError("Invalid argument");
@@ -79123,7 +79123,7 @@ var require_mquery = __commonJS({
       if (!(val.type && Array.isArray(val.coordinates))) {
         throw new TypeError("Invalid argument");
       }
-      const conds = getOwnCondition(this._conditions, path) || (this._conditions[path] = {});
+      const conds = getOwnCondition(this._conditions, path2) || (this._conditions[path2] = {});
       conds[this._geoComparison] = { $geometry: val };
       return this;
     };
@@ -79166,7 +79166,7 @@ var require_mquery = __commonJS({
       if (0 === arguments.length)
         return this;
       this._validate("slice");
-      let path, val;
+      let path2, val;
       if (1 === arguments.length) {
         const arg = arguments[0];
         if (typeof arg === "object" && !Array.isArray(arg)) {
@@ -79181,24 +79181,24 @@ var require_mquery = __commonJS({
           return this;
         }
         this._ensurePath("slice");
-        path = this._path;
+        path2 = this._path;
         val = arguments[0];
       } else if (2 === arguments.length) {
         if ("number" === typeof arguments[0]) {
           this._ensurePath("slice");
-          path = this._path;
+          path2 = this._path;
           val = [arguments[0], arguments[1]];
         } else {
-          path = arguments[0];
+          path2 = arguments[0];
           val = arguments[1];
         }
       } else if (3 === arguments.length) {
-        path = arguments[0];
+        path2 = arguments[0];
         val = [arguments[1], arguments[2]];
       }
-      assertSafePath(path);
+      assertSafePath(path2);
       const myFields = this._fields || (this._fields = {});
-      myFields[path] = { $slice: val };
+      myFields[path2] = { $slice: val };
       return this;
     };
     Query.prototype.sort = function(arg) {
@@ -79707,13 +79707,13 @@ var require_mquery = __commonJS({
         throw new Error(msg);
       }
     };
-    function getOwnCondition(conditions, path) {
-      assertSafePath(path);
-      return Object.prototype.hasOwnProperty.call(conditions, path) ? conditions[path] : void 0;
+    function getOwnCondition(conditions, path2) {
+      assertSafePath(path2);
+      return Object.prototype.hasOwnProperty.call(conditions, path2) ? conditions[path2] : void 0;
     }
-    function assertSafePath(path) {
-      if (path != null && utils.specialProperties.indexOf(String(path)) !== -1) {
-        throw new Error("Cannot use `" + path + "` as a query path");
+    function assertSafePath(path2) {
+      if (path2 != null && utils.specialProperties.indexOf(String(path2)) !== -1) {
+        throw new Error("Cannot use `" + path2 + "` as a query path");
       }
     }
     Query.permissions = require_permissions();
@@ -79898,13 +79898,13 @@ var require_selectPopulatedFields = __commonJS({
       const paths = Object.keys(populateOptions);
       userProvidedFields = userProvidedFields || {};
       if (isInclusive(fields)) {
-        for (const path of paths) {
-          if (!isPathInFields(userProvidedFields, path)) {
-            fields[path] = 1;
-          } else if (userProvidedFields[path] === 0) {
-            delete fields[path];
+        for (const path2 of paths) {
+          if (!isPathInFields(userProvidedFields, path2)) {
+            fields[path2] = 1;
+          } else if (userProvidedFields[path2] === 0) {
+            delete fields[path2];
           }
-          const refPath = populateOptions[path]?.refPath;
+          const refPath = populateOptions[path2]?.refPath;
           if (typeof refPath === "string") {
             if (!isPathInFields(userProvidedFields, refPath)) {
               fields[refPath] = 1;
@@ -79914,19 +79914,19 @@ var require_selectPopulatedFields = __commonJS({
           }
         }
       } else if (isExclusive(fields)) {
-        for (const path of paths) {
-          if (userProvidedFields[path] == null) {
-            delete fields[path];
+        for (const path2 of paths) {
+          if (userProvidedFields[path2] == null) {
+            delete fields[path2];
           }
-          const refPath = populateOptions[path]?.refPath;
+          const refPath = populateOptions[path2]?.refPath;
           if (typeof refPath === "string" && userProvidedFields[refPath] == null) {
             delete fields[refPath];
           }
         }
       }
     };
-    function isPathInFields(userProvidedFields, path) {
-      const pieces = path.split(".");
+    function isPathInFields(userProvidedFields, path2) {
+      const pieces = path2.split(".");
       const len = pieces.length;
       let cur = pieces[0];
       for (let i = 1; i < len; ++i) {
@@ -80052,8 +80052,8 @@ var require_updateValidators = __commonJS({
             });
           } else {
             validatorsToExecute.push(function(callback2) {
-              for (const path of alreadyValidated) {
-                if (updates[i2].startsWith(path + ".")) {
+              for (const path2 of alreadyValidated) {
+                if (updates[i2].startsWith(path2 + ".")) {
                   return callback2(null);
                 }
               }
@@ -80351,9 +80351,9 @@ var require_query2 = __commonJS({
       q._mongooseOptions = this._mongooseOptions;
       return q;
     };
-    Query.prototype.where = function where(path) {
-      if (typeof path === "string" && specialProperties.has(path)) {
-        throw new MongooseError(`Cannot use \`${path}\` as a query path`);
+    Query.prototype.where = function where(path2) {
+      if (typeof path2 === "string" && specialProperties.has(path2)) {
+        throw new MongooseError(`Cannot use \`${path2}\` as a query path`);
       }
       return Query.base.where.apply(this, arguments);
     };
@@ -80362,7 +80362,7 @@ var require_query2 = __commonJS({
         return this;
       }
       this._validate("slice");
-      let path;
+      let path2;
       let val;
       if (arguments.length === 1) {
         const arg = arguments[0];
@@ -80375,23 +80375,23 @@ var require_query2 = __commonJS({
           return this;
         }
         this._ensurePath("slice");
-        path = this._path;
+        path2 = this._path;
         val = arguments[0];
       } else if (arguments.length === 2) {
         if ("number" === typeof arguments[0]) {
           this._ensurePath("slice");
-          path = this._path;
+          path2 = this._path;
           val = [arguments[0], arguments[1]];
         } else {
-          path = arguments[0];
+          path2 = arguments[0];
           val = arguments[1];
         }
       } else if (arguments.length === 3) {
-        path = arguments[0];
+        path2 = arguments[0];
         val = [arguments[1], arguments[2]];
       }
       const p = {};
-      p[path] = { $slice: val };
+      p[path2] = { $slice: val };
       this.select(p);
       return this;
     };
@@ -80403,26 +80403,26 @@ var require_query2 = __commonJS({
     };
     Query.prototype.mod = function() {
       let val;
-      let path;
+      let path2;
       if (arguments.length === 1) {
         this._ensurePath("mod");
         val = arguments[0];
-        path = this._path;
+        path2 = this._path;
       } else if (arguments.length === 2 && !Array.isArray(arguments[1])) {
         this._ensurePath("mod");
         val = [arguments[0], arguments[1]];
-        path = this._path;
+        path2 = this._path;
       } else if (arguments.length === 3) {
         val = [arguments[1], arguments[2]];
-        path = arguments[0];
+        path2 = arguments[0];
       } else {
         val = arguments[1];
-        path = arguments[0];
+        path2 = arguments[0];
       }
-      if (path != null && specialProperties.has(String(path))) {
-        throw new MongooseError(`Cannot use \`${path}\` as a query path`);
+      if (path2 != null && specialProperties.has(String(path2))) {
+        throw new MongooseError(`Cannot use \`${path2}\` as a query path`);
       }
-      const conds = Object.hasOwn(this._conditions, path) && this._conditions[path] || (this._conditions[path] = {});
+      const conds = Object.hasOwn(this._conditions, path2) && this._conditions[path2] || (this._conditions[path2] = {});
       conds.$mod = val;
       return this;
     };
@@ -80844,36 +80844,36 @@ var require_query2 = __commonJS({
       this._mongooseOptions.lean = arguments.length ? v : true;
       return this;
     };
-    Query.prototype.set = function(path, val) {
-      if (typeof path === "object") {
-        const keys = Object.keys(path);
+    Query.prototype.set = function(path2, val) {
+      if (typeof path2 === "object") {
+        const keys = Object.keys(path2);
         for (const key of keys) {
-          this.set(key, path[key]);
+          this.set(key, path2[key]);
         }
         return this;
       }
       this._update = this._update || {};
-      if (path in this._update) {
-        delete this._update[path];
+      if (path2 in this._update) {
+        delete this._update[path2];
       }
       this._update.$set = this._update.$set || {};
-      this._update.$set[path] = val;
+      this._update.$set[path2] = val;
       return this;
     };
-    Query.prototype.get = function get(path) {
+    Query.prototype.get = function get(path2) {
       const update = this._update;
       if (update == null) {
         return void 0;
       }
       const $set = update.$set;
       if ($set == null) {
-        return update[path];
+        return update[path2];
       }
-      if (utils.hasUserDefinedProperty(update, path)) {
-        return update[path];
+      if (utils.hasUserDefinedProperty(update, path2)) {
+        return update[path2];
       }
-      if (utils.hasUserDefinedProperty($set, path)) {
-        return $set[path];
+      if (utils.hasUserDefinedProperty($set, path2)) {
+        return $set[path2];
       }
       return void 0;
     };
@@ -81650,11 +81650,11 @@ var require_query2 = __commonJS({
       }
       return def;
     }
-    function _completeOneLean(schema, doc, path, res, opts, callback) {
+    function _completeOneLean(schema, doc, path2, res, opts, callback) {
       if (opts.lean && typeof opts.lean.transform === "function") {
         opts.lean.transform(doc);
         for (let i = 0; i < schema.childSchemas.length; i++) {
-          const childPath = path ? path + "." + schema.childSchemas[i].model.path : schema.childSchemas[i].model.path;
+          const childPath = path2 ? path2 + "." + schema.childSchemas[i].model.path : schema.childSchemas[i].model.path;
           const _schema = schema.childSchemas[i].schema;
           const obj = mpath.get(childPath, doc);
           if (obj == null) {
@@ -81680,13 +81680,13 @@ var require_query2 = __commonJS({
       }
       return callback(null, doc);
     }
-    function _completeManyLean(schema, docs, path, opts) {
+    function _completeManyLean(schema, docs, path2, opts) {
       if (opts.lean && typeof opts.lean.transform === "function") {
         for (const doc of docs) {
           opts.lean.transform(doc);
         }
         for (let i = 0; i < schema.childSchemas.length; i++) {
-          const childPath = path ? path + "." + schema.childSchemas[i].model.path : schema.childSchemas[i].model.path;
+          const childPath = path2 ? path2 + "." + schema.childSchemas[i].model.path : schema.childSchemas[i].model.path;
           const _schema = schema.childSchemas[i].schema;
           let doc = mpath.get(childPath, docs);
           if (doc == null) {
@@ -81942,8 +81942,8 @@ var require_query2 = __commonJS({
       }
       return err;
     }
-    Query.prototype.isPathSelectedInclusive = function(path) {
-      return isPathSelectedInclusive(this._fields, path);
+    Query.prototype.isPathSelectedInclusive = function(path2) {
+      return isPathSelectedInclusive(this._fields, path2);
     };
     Query.prototype.exec = async function exec(op) {
       if (typeof op === "function" || arguments.length >= 2 && typeof arguments[1] === "function") {
@@ -82123,9 +82123,9 @@ var require_query2 = __commonJS({
       }
       const pop = opts.populate;
       for (const populateOptions of res) {
-        const path = populateOptions.path;
-        if (pop[path] && pop[path].populate && populateOptions.populate) {
-          populateOptions.populate = pop[path].populate.concat(populateOptions.populate);
+        const path2 = populateOptions.path;
+        if (pop[path2] && pop[path2].populate && populateOptions.populate) {
+          populateOptions.populate = pop[path2].populate.concat(populateOptions.populate);
         }
         pop[populateOptions.path] = populateOptions;
       }
@@ -82134,12 +82134,12 @@ var require_query2 = __commonJS({
     Query.prototype.getPopulatedPaths = function getPopulatedPaths() {
       const obj = this._mongooseOptions.populate || {};
       const ret = Object.keys(obj);
-      for (const path of Object.keys(obj)) {
-        const pop = obj[path];
+      for (const path2 of Object.keys(obj)) {
+        const pop = obj[path2];
         if (!Array.isArray(pop.populate)) {
           continue;
         }
-        _getPopulatedPaths(ret, pop.populate, path + ".");
+        _getPopulatedPaths(ret, pop.populate, path2 + ".");
       }
       return ret;
     };
@@ -83118,14 +83118,14 @@ var require_applyDefaultsToPOJO = __commonJS({
         let curPath = "";
         const p = paths[i];
         const type = schema.paths[p];
-        const path = type.splitPath();
-        const len = path.length;
+        const path2 = type.splitPath();
+        const len = path2.length;
         let doc_ = doc;
         for (let j = 0; j < len; ++j) {
           if (doc_ == null) {
             break;
           }
-          const piece = path[j];
+          const piece = path2[j];
           curPath += (!curPath.length ? "" : ".") + piece;
           if (j === len - 1) {
             if (typeof doc_[piece] !== "undefined") {
@@ -83167,8 +83167,8 @@ var require_applyEmbeddedDiscriminators = __commonJS({
         return;
       }
       seen.add(schema);
-      for (const path of Object.keys(schema.paths)) {
-        const schemaType = schema.paths[path];
+      for (const path2 of Object.keys(schema.paths)) {
+        const schemaType = schema.paths[path2];
         if (!schemaType.schema) {
           continue;
         }
@@ -85005,8 +85005,8 @@ var require_getSchemaTypes = __commonJS({
     var leanPopulateMap = require_leanPopulateMap();
     var mpath = require_mpath();
     var populateModelSymbol = require_symbols().populateModelSymbol;
-    module2.exports = function getSchemaTypes(model, schema, doc, path) {
-      const pathschema = schema.path(path);
+    module2.exports = function getSchemaTypes(model, schema, doc, path2) {
+      const pathschema = schema.path(path2);
       const topLevelDoc = doc;
       if (pathschema) {
         return pathschema;
@@ -85019,7 +85019,7 @@ var require_getSchemaTypes = __commonJS({
         } else if (model.discriminators != null) {
           return Object.keys(model.discriminators).reduce((arr, name) => {
             const disc = model.discriminators[name];
-            return arr.concat(getSchemaTypes(disc, disc.schema, null, path));
+            return arr.concat(getSchemaTypes(disc, disc.schema, null, path2));
           }, []);
         }
       }
@@ -85161,7 +85161,7 @@ var require_getSchemaTypes = __commonJS({
           return foundschema;
         }
       }
-      const parts = path.split(".");
+      const parts = path2.split(".");
       for (let i = 0; i < parts.length; ++i) {
         if (parts[i] === "$") {
           parts[i] = "0";
@@ -85968,15 +85968,15 @@ var require_parallelLimit = __commonJS({
 var require_pushNestedArrayPaths = __commonJS({
   "node_modules/mongoose/lib/helpers/model/pushNestedArrayPaths.js"(exports2, module2) {
     "use strict";
-    module2.exports = function pushNestedArrayPaths(paths, nestedArray, path) {
+    module2.exports = function pushNestedArrayPaths(paths, nestedArray, path2) {
       if (nestedArray == null) {
         return;
       }
       for (let i = 0; i < nestedArray.length; ++i) {
         if (Array.isArray(nestedArray[i])) {
-          pushNestedArrayPaths(paths, nestedArray[i], path + "." + i);
+          pushNestedArrayPaths(paths, nestedArray[i], path2 + "." + i);
         } else {
-          paths.push(path + "." + i);
+          paths.push(path2 + "." + i);
         }
       }
     };
@@ -87114,7 +87114,7 @@ var require_model = __commonJS({
       }
       return mq.distinct(field, conditions);
     };
-    Model.where = function where(path, val) {
+    Model.where = function where(path2, val) {
       _checkContext(this, "where");
       void val;
       const mq = new this.Query({}, {}, this, this.$__collection).find({});
@@ -87834,25 +87834,25 @@ var require_model = __commonJS({
         schema = getSchemaDiscriminatorByValue(schema, obj[discriminatorKey]) || schema;
       }
       const paths = Object.keys(schema.paths);
-      for (const path of paths) {
-        const schemaType = schema.path(path);
+      for (const path2 of paths) {
+        const schemaType = schema.path(path2);
         if (!schemaType || !schemaType.$isMongooseArray) {
           continue;
         }
-        const val = get(obj, path);
-        pushNestedArrayPaths(paths, val, path);
+        const val = get(obj, path2);
+        pushNestedArrayPaths(paths, val, path2);
       }
       let error = null;
-      for (const path of paths) {
-        const schemaType = schema.path(path);
+      for (const path2 of paths) {
+        const schemaType = schema.path(path2);
         if (schemaType == null) {
           continue;
         }
-        let val = get(obj, path, void 0);
+        let val = get(obj, path2, void 0);
         if (val == null) {
           continue;
         }
-        const pieces = path.indexOf(".") === -1 ? [path] : path.split(".");
+        const pieces = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
         let cur = ret;
         for (let i = 0; i < pieces.length - 1; ++i) {
           if (cur[pieces[i]] == null) {
@@ -87866,7 +87866,7 @@ var require_model = __commonJS({
             if (!castNonArraysOption) {
               if (!options.ignoreCastErrors) {
                 error = error || new ValidationError2();
-                error.addError(path, new ObjectExpectedError(path, val));
+                error.addError(path2, new ObjectExpectedError(path2, val));
               }
             } else {
               cur[pieces[pieces.length - 1]] = [
@@ -87882,7 +87882,7 @@ var require_model = __commonJS({
           } catch (err) {
             if (!options.ignoreCastErrors) {
               error = error || new ValidationError2();
-              error.addError(path, err);
+              error.addError(path2, err);
             }
             continue;
           }
@@ -87895,7 +87895,7 @@ var require_model = __commonJS({
         } catch (err) {
           if (!options.ignoreCastErrors) {
             error = error || new ValidationError2();
-            error.addError(path, err);
+            error.addError(path2, err);
           }
           continue;
         }
@@ -88053,13 +88053,13 @@ var require_model = __commonJS({
           return _pathsToValidate.has(p);
         });
       }
-      for (const path of paths) {
-        const schemaType = schema.path(path);
+      for (const path2 of paths) {
+        const schemaType = schema.path(path2);
         if (!schemaType || !schemaType.$isMongooseArray || schemaType.$isMongooseDocumentArray) {
           continue;
         }
-        const val = get(obj, path);
-        pushNestedArrayPaths(paths, val, path);
+        const val = get(obj, path2);
+        pushNestedArrayPaths(paths, val, path2);
       }
       let error = null;
       paths = new Set(paths);
@@ -88076,25 +88076,25 @@ var require_model = __commonJS({
         if (remaining === 0) {
           return settle();
         }
-        for (const path of paths) {
-          const schemaType = schema.path(path);
+        for (const path2 of paths) {
+          const schemaType = schema.path(path2);
           if (schemaType == null) {
             _checkDone();
             continue;
           }
-          const pieces = path.indexOf(".") === -1 ? [path] : path.split(".");
+          const pieces = path2.indexOf(".") === -1 ? [path2] : path2.split(".");
           let cur = obj;
           for (let i = 0; i < pieces.length - 1; ++i) {
             cur = cur[pieces[i]];
           }
-          const val = get(obj, path, void 0);
+          const val = get(obj, path2, void 0);
           schemaType.doValidate(val, (err) => {
             if (err) {
               error = error || new ValidationError2();
-              error.addError(path, err);
+              error.addError(path2, err);
             }
             _checkDone();
-          }, context, { path });
+          }, context, { path: path2 });
         }
         function settle() {
           if (error) {
@@ -88120,13 +88120,13 @@ var require_model = __commonJS({
         return docs;
       }
       if (paths.find((p) => p.ordered)) {
-        for (const path of paths) {
-          await _populatePath(this, docs, path);
+        for (const path2 of paths) {
+          await _populatePath(this, docs, path2);
         }
       } else {
         const promises = [];
-        for (const path of paths) {
-          promises.push(_populatePath(this, docs, path));
+        for (const path2 of paths) {
+          promises.push(_populatePath(this, docs, path2));
         }
         await Promise.all(promises);
       }
@@ -89368,7 +89368,7 @@ var require_mongoose2 = __commonJS({
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports2, module2) {
     var fs = require("fs");
-    var path = require("path");
+    var path2 = require("path");
     var os2 = require("os");
     var crypto4 = require("crypto");
     var TIPS = [
@@ -89507,7 +89507,7 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path2.resolve(process.cwd(), ".env.vault");
       }
       if (fs.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
@@ -89515,7 +89515,7 @@ var require_main = __commonJS({
       return null;
     }
     function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path.join(os2.homedir(), envPath.slice(1)) : envPath;
+      return envPath[0] === "~" ? path2.join(os2.homedir(), envPath.slice(1)) : envPath;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -89532,7 +89532,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path.resolve(process.cwd(), ".env");
+      const dotenvPath = path2.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -89560,13 +89560,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path2 of optionPaths) {
+      for (const path3 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs.readFileSync(path2, { encoding }));
+          const parsed = DotenvModule.parse(fs.readFileSync(path3, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e) {
           if (debug) {
-            _debug(`failed to load ${path2} ${e.message}`);
+            _debug(`failed to load ${path3} ${e.message}`);
           }
           lastError = e;
         }
@@ -89579,7 +89579,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path.relative(process.cwd(), filePath);
+            const relative = path2.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e) {
             if (debug) {
@@ -97553,7 +97553,9 @@ var import_mongoose16 = __toESM(require_mongoose2());
 
 // src/config/env.ts
 var import_dotenv = __toESM(require_main());
+var import_node_path = __toESM(require("node:path"));
 import_dotenv.default.config();
+import_dotenv.default.config({ path: import_node_path.default.resolve(process.cwd(), "server/.env") });
 var ENV = {
   PORT: process.env.PORT || "5000",
   NODE_ENV: process.env.NODE_ENV || "development",
@@ -97631,7 +97633,56 @@ function isDatabaseConnected() {
 function escapeRegex(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
+var CONFIRMED_DEMO_USER_IDS = /* @__PURE__ */ new Set([
+  "usr_coordinator_dhaka",
+  "usr_coordinator_ctg",
+  "usr_moderator_du",
+  "usr_head",
+  "usr_donor_1",
+  "usr_donor_2",
+  "usr_donor_3",
+  "usr_donor_4",
+  "usr_requester_1",
+  "usr_blocked_demo",
+  "usr_sync_v2_1794563476694"
+]);
+var CONFIRMED_DEMO_DONOR_IDS = /* @__PURE__ */ new Set([
+  "donor_prof_1",
+  "donor_prof_2",
+  "donor_prof_3",
+  "donor_prof_4",
+  "donor_prof_1794563476796kd5ko"
+]);
+var CONFIRMED_DEMO_REQUEST_IDS = /* @__PURE__ */ new Set([
+  "req_1",
+  "req_2",
+  "req_3",
+  "req_179456347713833s9v",
+  "req_1794563477775sywcg"
+]);
+var CONFIRMED_DEMO_PUBLIC_IDS = /* @__PURE__ */ new Set([
+  "BR-RD02-7365",
+  "BR-RDHR-Q1FE"
+]);
+function isConfirmedDemoDonor(d) {
+  if (!d) return false;
+  const id = String(d._id || "");
+  const userId = String(d.userId || "");
+  return CONFIRMED_DEMO_DONOR_IDS.has(id) || CONFIRMED_DEMO_USER_IDS.has(userId);
+}
+function isConfirmedDemoRequest(r) {
+  if (!r) return false;
+  const id = String(r._id || "");
+  const publicId = String(r.publicId || "");
+  const requesterId = String(r.requesterId || "");
+  if (r.unitsFulfilled > 0 || r.statusHistory && r.statusHistory.length > 1 || r.status === "partially_fulfilled") {
+    return false;
+  }
+  return CONFIRMED_DEMO_REQUEST_IDS.has(id) || CONFIRMED_DEMO_PUBLIC_IDS.has(publicId) || CONFIRMED_DEMO_USER_IDS.has(requesterId);
+}
 var DataStore = class {
+  // Website launch suppression: stops returning confirmed demo data in public lists and direct URLs
+  suppressDemoData = ENV.NODE_ENV === "production" || Boolean(process.env.VERCEL) || process.env.SUPPRESS_DEMO_DATA === "true";
   users = [];
   donorProfiles = [];
   bloodRequests = [];
@@ -97649,7 +97700,9 @@ var DataStore = class {
   passwordRecoveryAudits = [];
   institutionChangeRequests = [];
   constructor() {
-    this.seedInitialData();
+    if (ENV.NODE_ENV !== "production" && !process.env.VERCEL) {
+      this.seedInitialData();
+    }
   }
   seedInitialData() {
     const defaultPasswordHash = bcryptjs_default.hashSync("password123", 10);
@@ -97682,745 +97735,58 @@ var DataStore = class {
         isPhoneVerified: true,
         createdAt: now,
         updatedAt: now
-      },
-      {
-        _id: "usr_coordinator_dhaka",
-        name: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8 (\u09A2\u09BE\u0995\u09BE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
-        phone: "01700000002",
-        email: "dhaka.coordinator@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "DIVISION_COORDINATOR",
-        accountStatus: "active",
-        gender: "male",
-        assignedDivision: "dhaka",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_coordinator_ctg",
-        name: "\u09AB\u09BE\u09B0\u09B9\u09BE\u09A8\u09BE \u0986\u09B9\u09AE\u09C7\u09A6 (\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09B8\u09AE\u09A8\u09CD\u09AC\u09AF\u09BC\u0995)",
-        phone: "01700000003",
-        email: "ctg.coordinator@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "DIVISION_COORDINATOR",
-        accountStatus: "active",
-        gender: "female",
-        assignedDivision: "chattogram",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_moderator_du",
-        name: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8 (\u09A2\u09BE\u09AC\u09BF \u09AE\u09A1\u09BE\u09B0\u09C7\u099F\u09B0)",
-        phone: "01700000004",
-        email: "mamun.du@bloodbd.org",
-        passwordHash: defaultPasswordHash,
-        role: "INSTITUTION_MODERATOR",
-        accountStatus: "active",
-        gender: "male",
-        assignedInstitution: "inst_du",
-        assignedInstitutions: ["inst_du"],
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_head",
-        name: "\u0985\u09A7\u09CD\u09AF\u09BE\u09AA\u0995 \u09A1. \u09AB\u099C\u09B2\u09C1\u09B2 \u09B9\u0995 (\u09A2\u09BE\u09AC\u09BF \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8)",
-        phone: "01700000008",
-        email: "head@du.ac.bd",
-        passwordHash: defaultPasswordHash,
-        role: "INSTITUTION_HEAD",
-        accountStatus: "active",
-        gender: "male",
-        assignedInstitution: "inst_du",
-        assignedInstitutions: ["inst_du"],
-        division: "dhaka",
-        district: "dhaka",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_1",
-        name: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        phone: "01711111111",
-        email: "rafiqul@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "mirpur",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_2",
-        name: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        phone: "01722222222",
-        email: "tanveer@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "dhanmondi",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_3",
-        name: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
-        phone: "01733333333",
-        email: "nusrat@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "female",
-        femaleSafetyAcknowledged: true,
-        femalePublicPhoneConsent: false,
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_donor_4",
-        name: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
-        phone: "01744444444",
-        email: "sakib@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "boalia",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_requester_1",
-        name: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
-        phone: "01755555555",
-        email: "mahbub@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "active",
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        isActive: true,
-        isPhoneVerified: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "usr_blocked_demo",
-        name: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
-        phone: "01799999999",
-        email: "faruk@example.com",
-        passwordHash: defaultPasswordHash,
-        role: "MEMBER",
-        accountStatus: "temporarily_blocked",
-        blockReason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        blockedBy: "usr_coordinator_dhaka",
-        blockedAt: new Date(Date.now() - 864e5 * 2),
-        gender: "male",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "savar",
-        isActive: false,
-        isPhoneVerified: true,
-        createdAt: new Date(Date.now() - 864e5 * 10),
-        updatedAt: now
       }
     ];
-    this.institutions = [
-      {
-        _id: "inst_du",
-        name: "University of Dhaka",
-        nameBn: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "DU-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        address: "Nilkhet Rd, Dhaka 1000",
-        website: "https://www.du.ac.bd",
-        email: "bloodclub@du.ac.bd",
-        phone: "01811112233",
-        status: "approved",
-        assignedModeratorId: "usr_moderator_du",
-        assignedModeratorIds: ["usr_moderator_du"],
-        totalRegisteredDonors: 142,
-        description: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u098F\u09AC\u0982 \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_buet",
-        name: "Bangladesh University of Engineering and Technology",
-        nameBn: "\u09AC\u09BE\u0982\u09B2\u09BE\u09A6\u09C7\u09B6 \u09AA\u09CD\u09B0\u0995\u09CC\u09B6\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09C1\u09AF\u09BC\u09C7\u099F)",
-        code: "BUET-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        address: "Palashi, Dhaka 1000",
-        website: "https://www.buet.ac.bd",
-        email: "blooddonor@buet.ac.bd",
-        phone: "01822223344",
-        status: "approved",
-        totalRegisteredDonors: 85,
-        description: "\u09AC\u09C1\u09AF\u09BC\u09C7\u099F \u09AC\u09CD\u09B2\u09BE\u09A1 \u09A1\u09CB\u09A8\u09BE\u09B0\u09CD\u09B8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7 \u09B8\u09A6\u09BE \u099C\u09BE\u0997\u09CD\u09B0\u09A4\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_cmc",
-        name: "Chittagong Medical College",
-        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C",
-        code: "CMC-BD",
-        type: "medical_college",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        address: "57 K.B. Fazlul Kader Rd, Chattogram 4203",
-        website: "https://www.cmc.edu.bd",
-        email: "bloodbank@cmc.edu.bd",
-        phone: "01833334455",
-        status: "approved",
-        totalRegisteredDonors: 96,
-        description: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B8\u09A8\u09CD\u09A7\u09BE\u09A8\u09C0 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B8\u0982\u09B8\u09CD\u09A5\u09BE \u0987\u0989\u09A8\u09BF\u099F\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_ru",
-        name: "Rajshahi University",
-        nameBn: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "RU-BD",
-        type: "university",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "motihar",
-        address: "Motihar, Rajshahi 6205",
-        website: "https://www.ru.ac.bd",
-        email: "bloodclub@ru.ac.bd",
-        phone: "01844445566",
-        status: "approved",
-        totalRegisteredDonors: 64,
-        description: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B6\u09BE\u0996\u09BE \u0993 \u09B2\u09BE\u09B2 \u0997\u09CB\u09B2\u09BE\u09AA \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09AF\u09BC \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "inst_sust",
-        name: "Shahjalal University of Science and Technology",
-        nameBn: "\u09B6\u09BE\u09B9\u099C\u09BE\u09B2\u09BE\u09B2 \u09AC\u09BF\u099C\u09CD\u099E\u09BE\u09A8 \u0993 \u09AA\u09CD\u09B0\u09AF\u09C1\u0995\u09CD\u09A4\u09BF \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "SUST-BD",
-        type: "university",
-        division: "sylhet",
-        district: "sylhet",
-        upazila: "sylhet_sadar",
-        address: "Kumargaon, Sylhet 3114",
-        website: "https://www.sust.edu",
-        email: "blood@sust.edu",
-        phone: "01855556677",
-        status: "pending",
-        totalRegisteredDonors: 12,
-        description: "\u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u0993 \u09B8\u09BF\u09B2\u09C7\u099F \u0985\u099E\u09CD\u099A\u09B2\u09C7\u09B0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u09B8\u09AE\u09CD\u09AA\u09CD\u09B0\u09B8\u09BE\u09B0\u09A3 \u09AB\u09CB\u09B0\u09BE\u09AE\u0964",
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-    this.donorProfiles = [
-      {
-        _id: "donor_prof_1",
-        userId: "usr_donor_1",
-        displayName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        bloodGroup: "O+",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "mirpur",
-        addressDetails: "\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0 \u09E7\u09E6, \u09A2\u09BE\u0995\u09BE",
-        dateOfBirth: /* @__PURE__ */ new Date("1998-05-14"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-05-10"),
-        totalDonations: 6,
-        institutionId: "inst_du",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09B0\u09BF\u0964 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_2",
-        userId: "usr_donor_2",
-        displayName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        bloodGroup: "A+",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "dhanmondi",
-        addressDetails: "\u09A7\u09BE\u09A8\u09AE\u09A8\u09CD\u09A1\u09BF \u09E8\u09ED, \u09A2\u09BE\u0995\u09BE",
-        dateOfBirth: /* @__PURE__ */ new Date("2000-08-20"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-06-01"),
-        totalDonations: 4,
-        institutionId: "inst_buet",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09B8\u099A\u09C7\u09A4\u09A8 \u09A5\u09BE\u0995\u09C1\u09A8, \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09B0\u0995\u09CD\u09A4 \u09A6\u09BF\u09A8\u0964 \u09B0\u09CB\u0997\u09C0\u09B0 \u09B8\u09C7\u09AC\u09BE\u09AF\u09BC \u09B8\u09B0\u09CD\u09AC\u09A6\u09BE \u09A8\u09BF\u09AF\u09BC\u09CB\u099C\u09BF\u09A4\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_3",
-        userId: "usr_donor_3",
-        displayName: "\u09A8\u09C1\u09B8\u09B0\u09BE\u09A4 \u099C\u09BE\u09B9\u09BE\u09A8",
-        bloodGroup: "B+",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        addressDetails: "\u09AA\u09CD\u09B0\u09AC\u09B0\u09CD\u09A4\u0995 \u09AE\u09CB\u09A1\u09BC, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-        dateOfBirth: /* @__PURE__ */ new Date("1999-11-12"),
-        gender: "female",
-        availabilityStatus: "recently_donated",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-09-25"),
-        totalDonations: 3,
-        institutionId: "inst_cmc",
-        institutionMembershipVerified: true,
-        consentToShareContact: false,
-        // Default private for female safety
-        preferredContactMethod: "platform",
-        bio: "\u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0\u0964 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u098F\u0995\u099F\u09BF \u09AA\u09AC\u09BF\u09A4\u09CD\u09B0 \u09A6\u09BE\u09AF\u09BC\u09BF\u09A4\u09CD\u09AC\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: false,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        _id: "donor_prof_4",
-        userId: "usr_donor_4",
-        displayName: "\u09B8\u09BE\u0995\u09BF\u09AC \u09AE\u09BE\u09B9\u09AE\u09C1\u09A6",
-        bloodGroup: "AB+",
-        division: "rajshahi",
-        district: "rajshahi",
-        upazila: "boalia",
-        addressDetails: "\u09B8\u09BE\u09B9\u09C7\u09AC \u09AC\u09BE\u099C\u09BE\u09B0, \u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0",
-        dateOfBirth: /* @__PURE__ */ new Date("1997-03-05"),
-        gender: "male",
-        availabilityStatus: "available",
-        lastDonationDate: /* @__PURE__ */ new Date("2026-04-12"),
-        totalDonations: 5,
-        institutionId: "inst_ru",
-        institutionMembershipVerified: true,
-        consentToShareContact: true,
-        preferredContactMethod: "phone",
-        bio: "\u09B0\u09BE\u099C\u09B6\u09BE\u09B9\u09C0 \u09B6\u09B9\u09B0\u09C7\u09B0 \u09AF\u09C7\u0995\u09CB\u09A8\u09CB \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C7 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964",
-        isPubliclyListed: true,
-        emergencyAvailable: true,
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-    this.bloodRequests = [
-      {
-        _id: "req_1",
-        publicId: "BR-2026-DH01",
-        requesterId: "usr_requester_1",
-        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE (\u09EC\u09EB)",
-        bloodGroup: "O+",
-        unitsRequired: 2,
-        unitsFulfilled: 1,
-        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        hospitalAddress: "\u099C\u09B0\u09C1\u09B0\u09BF \u09AC\u09BF\u09AD\u09BE\u0997, \u0993\u099F\u09BF \u09AD\u09AC\u09A8, \u09E9\u09AF\u09BC \u09A4\u09B2\u09BE, \u09A2\u09BE\u0995\u09BE",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        requiredDate: new Date(Date.now() + 864e5 * 2),
-        urgencyLevel: "emergency",
-        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8 \u0993 \u09B9\u09BF\u09AE\u09CB\u0997\u09CD\u09B2\u09CB\u09AC\u09BF\u09A8 \u09B8\u09CD\u09AC\u09B2\u09CD\u09AA\u09A4\u09BE\u09B0 \u0995\u09BE\u09B0\u09A3\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u099C\u09B0\u09C1\u09B0\u09BF \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01755555555",
-        alternativeContactNumber: "01855555555",
-        status: "partially_fulfilled",
-        expiresAt: new Date(Date.now() + 864e5 * 4),
-        createdAt: new Date(Date.now() - 36e5 * 5),
-        updatedAt: now
-      },
-      {
-        _id: "req_2",
-        publicId: "BR-2026-DH02",
-        requesterId: "usr_requester_1",
-        patientName: "\u0986\u09B0\u09BF\u09AB\u09C1\u09B2 \u09B9\u0995 (\u09E8\u09EE)",
-        bloodGroup: "A+",
-        unitsRequired: 1,
-        unitsFulfilled: 0,
-        hospitalName: "\u09AC\u0999\u09CD\u0997\u09AC\u09A8\u09CD\u09A7\u09C1 \u09B6\u09C7\u0996 \u09AE\u09C1\u099C\u09BF\u09AC \u09AE\u09C7\u09A1\u09BF\u0995\u09CD\u09AF\u09BE\u09B2 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (\u09AC\u09BF\u098F\u09B8\u098F\u09AE\u098F\u09AE\u0987\u0989)",
-        hospitalAddress: "\u0995\u09C7\u09AC\u09BF\u09A8 \u09AC\u09CD\u09B2\u0995, \u09B6\u09BE\u09B9\u09AC\u09BE\u0997, \u09A2\u09BE\u0995\u09BE",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "shahbagh",
-        requiredDate: new Date(Date.now() + 864e5),
-        urgencyLevel: "emergency",
-        reason: "\u09A5\u09CD\u09AF\u09BE\u09B2\u09BE\u09B8\u09C7\u09AE\u09BF\u09AF\u09BC\u09BE \u09A8\u09BF\u09AF\u09BC\u09AE\u09BF\u09A4 \u09AC\u09CD\u09B2\u09BE\u09A1 \u099F\u09CD\u09B0\u09BE\u09A8\u09CD\u09B8\u09AB\u09BF\u0989\u09B6\u09A8\u0964 \u09A6\u09CD\u09B0\u09C1\u09A4 \u09E7 \u09AC\u09CD\u09AF\u09BE\u0997 \u098F \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01755555555",
-        status: "open",
-        expiresAt: new Date(Date.now() + 864e5 * 3),
-        createdAt: new Date(Date.now() - 36e5 * 12),
-        updatedAt: now
-      },
-      {
-        _id: "req_3",
-        publicId: "BR-2026-CT01",
-        requesterId: "usr_donor_1",
-        patientName: "\u09B6\u09BE\u09AE\u09B8\u09C1\u09B2 \u0986\u09B2\u09AE (\u09EB\u09E6)",
-        bloodGroup: "B+",
-        unitsRequired: 2,
-        unitsFulfilled: 0,
-        hospitalName: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        hospitalAddress: "\u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF \u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09A8\u0982 \u09E7\u09E8, \u09AA\u09BE\u0981\u099A\u09B2\u09BE\u0987\u09B6, \u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "panchlaish",
-        requiredDate: new Date(Date.now() + 864e5 * 3),
-        urgencyLevel: "urgent",
-        reason: "\u09AA\u09BE\u0995\u09B8\u09CD\u09A5\u09B2\u09C0 \u0985\u09AA\u09BE\u09B0\u09C7\u09B6\u09A8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        contactNumber: "01711111111",
-        status: "open",
-        expiresAt: new Date(Date.now() + 864e5 * 5),
-        createdAt: new Date(Date.now() - 36e5 * 24),
-        updatedAt: now
-      }
-    ];
-    this.institutionRequests = [
-      {
-        _id: "inst_req_1",
-        name: "Jahangirnagar University",
-        nameBn: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "JU-BD",
-        type: "university",
-        division: "dhaka",
-        district: "dhaka",
-        upazila: "savar",
-        address: "Savar, Dhaka 1342",
-        applicantName: "\u09AE\u09CB: \u09B9\u09BE\u09B8\u09BF\u09AC\u09C1\u09B0 \u09B0\u09B9\u09AE\u09BE\u09A8",
-        applicantPhone: "01788881111",
-        applicantEmail: "hasib.ju@example.com",
-        applicantRole: "\u09B8\u09BE\u09A7\u09BE\u09B0\u09A3 \u09B8\u09AE\u09CD\u09AA\u09BE\u09A6\u0995, \u09AC\u09BE\u0981\u09A7\u09A8 \u099C\u09BE\u09AC\u09BF \u0987\u0989\u09A8\u09BF\u099F",
-        supportingDetails: "\u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09AC\u09BE\u0981\u09A7\u09A8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u09B6\u09BE\u0996\u09BE\u09B0 \u09AE\u09BE\u09A7\u09CD\u09AF\u09AE\u09C7 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09BE\u09B0\u09CD\u09AF\u0995\u09CD\u09B0\u09AE \u09AA\u09B0\u09BF\u099A\u09BE\u09B2\u09A8\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u0964",
-        status: "pending_review",
-        createdAt: new Date(Date.now() - 864e5 * 2),
-        updatedAt: new Date(Date.now() - 864e5 * 2)
-      },
-      {
-        _id: "inst_req_2",
-        name: "University of Chittagong",
-        nameBn: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        code: "CU-BD",
-        type: "university",
-        division: "chattogram",
-        district: "chattogram",
-        upazila: "hathazari",
-        address: "Fatehpur, Hathazari, Chattogram 4331",
-        applicantName: "\u09A8\u09BE\u09B8\u09B0\u09BF\u09A8 \u09B8\u09C1\u09B2\u09A4\u09BE\u09A8\u09BE",
-        applicantPhone: "01788882222",
-        applicantEmail: "nasrin.cu@example.com",
-        applicantRole: "\u09B8\u09AD\u09BE\u09AA\u09A4\u09BF, \u09B0\u09CB\u09AD\u09BE\u09B0 \u09B8\u09CD\u0995\u09BE\u0989\u099F \u099A\u09AC\u09BF",
-        supportingDetails: "\u099A\u099F\u09CD\u099F\u0997\u09CD\u09B0\u09BE\u09AE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u09B6\u09BF\u0995\u09CD\u09B7\u09BE\u09B0\u09CD\u09A5\u09C0 \u0993 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u09C0\u09AF\u09BC\u09A4\u09BE\u09AF\u09BC \u09A4\u09BE\u09CE\u0995\u09CD\u09B7\u09A3\u09BF\u0995 \u09B8\u09BE\u09A1\u09BC\u09BE\u09B0 \u099C\u09A8\u09CD\u09AF \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
-        status: "pending_review",
-        createdAt: new Date(Date.now() - 864e5 * 3),
-        updatedAt: new Date(Date.now() - 864e5 * 3)
-      }
-    ];
-    this.moderatorActivities = [
-      {
-        _id: "act_1",
-        actorId: "usr_moderator_du",
-        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
-        actorRole: "INSTITUTION_MODERATOR",
-        action: "MEMBER_CREATED",
-        targetRecordId: "usr_donor_1",
-        targetRecordType: "User",
-        institutionScope: "inst_du",
-        divisionScope: "dhaka",
-        reason: "\u09A2\u09BE\u09AC\u09BF \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8 \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09C7\u0987\u09A8 \u09A5\u09C7\u0995\u09C7 \u09A8\u09A4\u09C1\u09A8 \u09B8\u09CD\u09AC\u09C7\u099A\u09CD\u099B\u09BE\u09B8\u09C7\u09AC\u09C0 \u09B8\u09A6\u09B8\u09CD\u09AF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4\u09BF\u0964",
-        result: "\u09B8\u09AB\u09B2",
-        createdAt: new Date(Date.now() - 864e5 * 5)
-      },
-      {
-        _id: "act_2",
-        actorId: "usr_moderator_du",
-        actorName: "\u0986\u09AC\u09CD\u09A6\u09C1\u09B2\u09CD\u09B2\u09BE\u09B9 \u0986\u09B2 \u09AE\u09BE\u09AE\u09C1\u09A8",
-        actorRole: "INSTITUTION_MODERATOR",
-        action: "MEMBER_EDITED",
-        targetRecordId: "donor_prof_1",
-        targetRecordType: "DonorProfile",
-        institutionScope: "inst_du",
-        divisionScope: "dhaka",
-        reason: "\u09B8\u09A6\u09B8\u09CD\u09AF\u09C7\u09B0 \u09B8\u09B0\u09CD\u09AC\u09B6\u09C7\u09B7 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7\u09B0 \u09A4\u09BE\u09B0\u09BF\u0996 \u0993 \u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09A4 \u09A8\u09AE\u09CD\u09AC\u09B0 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6\u0964",
-        result: "\u09B8\u09AB\u09B2",
-        createdAt: new Date(Date.now() - 864e5 * 3)
-      },
-      {
-        _id: "act_3",
-        actorId: "usr_coordinator_dhaka",
-        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
-        actorRole: "DIVISION_COORDINATOR",
-        action: "MEMBER_BLOCKED",
-        targetRecordId: "usr_blocked_demo",
-        targetRecordType: "User",
-        divisionScope: "dhaka",
-        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        result: "\u09B8\u09CD\u09A5\u0997\u09BF\u09A4",
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.contactRequests = [
-      {
-        _id: "cr_1",
-        requesterId: "usr_requester_1",
-        requesterName: "\u09AE\u09BE\u09B9\u09AC\u09C1\u09AC \u0986\u09B2\u09AE",
-        requesterPhone: "01755555555",
-        institutionId: "inst_du",
-        targetBloodGroup: "O+",
-        patientName: "\u09AB\u09B0\u09BF\u09A6\u09BE \u09AC\u09C7\u0997\u09AE",
-        hospitalName: "\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2 \u0995\u09B2\u09C7\u099C \u09B9\u09BE\u09B8\u09AA\u09BE\u09A4\u09BE\u09B2",
-        unitsRequired: 2,
-        urgency: "emergency",
-        reason: "\u09B9\u09BF\u09AA \u09AB\u09CD\u09B0\u09CD\u09AF\u09BE\u0995\u099A\u09BE\u09B0 \u09B8\u09BE\u09B0\u09CD\u099C\u09BE\u09B0\u09BF\u09B0 \u099C\u09A8\u09CD\u09AF \u099C\u09B0\u09C1\u09B0\u09BF \u09AD\u09BF\u09A4\u09CD\u09A4\u09BF\u09A4\u09C7 \u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u0993 \u09AA\u099C\u09BF\u099F\u09BF\u09AD \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964",
-        status: "pending",
-        assignedModeratorId: "usr_moderator_du",
-        createdAt: new Date(Date.now() - 36e5 * 3),
-        updatedAt: new Date(Date.now() - 36e5 * 3)
-      }
-    ];
-    this.accountStatusHistories = [
-      {
-        _id: "ash_1",
-        userId: "usr_blocked_demo",
-        targetUserName: "\u09AB\u09BE\u09B0\u09C1\u0995 \u09B9\u09CB\u09B8\u09C7\u09A8 (\u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B8\u09A6\u09B8\u09CD\u09AF)",
-        targetUserPhone: "01799999999",
-        oldStatus: "active",
-        newStatus: "temporarily_blocked",
-        actorId: "usr_coordinator_dhaka",
-        actorName: "\u09AE\u09CB: \u0995\u09BE\u09AE\u09B0\u09C1\u09B2 \u09B9\u09BE\u09B8\u09BE\u09A8",
-        actorRole: "DIVISION_COORDINATOR",
-        reason: "\u09AD\u09C1\u09AF\u09BC\u09BE \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u09AC\u0982 \u09AC\u09BE\u09A3\u09BF\u099C\u09CD\u09AF\u09BF\u0995 \u09B8\u09C1\u09AC\u09BF\u09A7\u09BE\u09B0 \u0985\u09AD\u09BF\u09AF\u09CB\u0997\u09C7 \u09B8\u09CD\u09A5\u0997\u09BF\u09A4 \u09B0\u09BE\u0996\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.reports = [
-      {
-        _id: "rep_1",
-        reportedBy: "usr_donor_1",
-        targetType: "blood_request",
-        targetId: "req_3",
-        targetTitle: "\u09B0\u09CB\u0997\u09C0: \u09B8\u09BE\u09B2\u09AE\u09BE \u09AC\u09C7\u0997\u09AE (\u09A2\u09BE\u0995\u09BE \u09AE\u09C7\u09A1\u09BF\u0995\u09C7\u09B2)",
-        division: "dhaka",
-        institutionId: "inst_du",
-        reason: "false_information",
-        description: "\u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997 \u09A8\u09AE\u09CD\u09AC\u09B0\u09C7 \u09AB\u09CB\u09A8 \u09A6\u09BF\u09B2\u09C7 \u09A4\u09BE\u09B0\u09BE \u09AC\u09B2\u09C7 \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8 \u09AE\u09BF\u099F\u09C7 \u0997\u09C7\u099B\u09C7 \u0995\u09BF\u09A8\u09CD\u09A4\u09C1 \u09AA\u09CB\u09B8\u09CD\u099F \u098F\u0996\u09A8\u09CB \u0993\u09AA\u09C7\u09A8 \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 4),
-        updatedAt: now
-      }
-    ];
-    this.notifications = [
-      {
-        _id: "notif_1",
-        userId: "usr_moderator_du",
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09BE\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u09BF\u0995 \u09AF\u09CB\u0997\u09BE\u09AF\u09CB\u0997\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7",
-        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8\u09C7\u09B0 \u099C\u09A8\u09CD\u09AF O+ \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09E7\u099F\u09BF \u099C\u09B0\u09C1\u09B0\u09BF \u0986\u09AC\u09C7\u09A6\u09A8 \u098F\u09B8\u09C7\u099B\u09C7\u0964",
-        type: "contact_request",
-        link: "/moderator/dashboard",
-        isRead: false,
-        createdAt: new Date(Date.now() - 36e5 * 3)
-      },
-      {
-        _id: "notif_2",
-        userId: "usr_coordinator_dhaka",
-        title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8 \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8 \u0986\u09AC\u09C7\u09A6\u09A8",
-        message: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09AD\u09BE\u0997\u09C7\u09B0 \u0985\u09A7\u09C0\u09A8\u09C7 \u099C\u09BE\u09B9\u09BE\u0999\u09CD\u0997\u09C0\u09B0\u09A8\u0997\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC (JU-BD) \u09A8\u09BF\u09AC\u09A8\u09CD\u09A7\u09A8\u09C7\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u099C\u09AE\u09BE \u09A6\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-        type: "institution_update",
-        link: "/coordinator/dashboard",
-        isRead: false,
-        createdAt: new Date(Date.now() - 864e5 * 2)
-      }
-    ];
-    this.phoneChangeRequests = [
-      {
-        _id: "pcr_1",
-        userId: "usr_donor_1",
-        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        userRole: "DONOR",
-        currentPhone: "01711111111",
-        newPhone: "01711999888",
-        reason: "\u0986\u09AE\u09BE\u09B0 \u09AA\u09C2\u09B0\u09CD\u09AC\u09C7\u09B0 \u09B8\u09BF\u09AE\u099F\u09BF \u09B9\u09BE\u09B0\u09BF\u09AF\u09BC\u09C7 \u09AF\u09BE\u0993\u09AF\u09BC\u09BE\u09AF\u09BC \u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0995\u09B2 \u09AA\u09C7\u09A4\u09C7 \u098F\u0987 \u09A8\u09A4\u09C1\u09A8 \u09B8\u099A\u09B2 \u09A8\u09AE\u09CD\u09AC\u09B0\u099F\u09BF \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u0995\u09B0\u09BE\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u0995\u09B0\u099B\u09BF\u0964",
-        division: "dhaka",
-        district: "dhaka",
-        institutionId: "inst_du",
-        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 2),
-        updatedAt: now
-      }
-    ];
-    this.passwordRecoveryRequests = [
-      {
-        _id: "prr_1",
-        userId: "usr_donor_2",
-        userName: "\u09A4\u09BE\u09A8\u09AD\u09C0\u09B0 \u0986\u09B9\u09AE\u09C7\u09A6",
-        phone: "01722222222",
-        userRole: "DONOR",
-        division: "dhaka",
-        district: "dhaka",
-        institutionId: "inst_du",
-        institutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        status: "pending",
-        reason: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AE\u09A8\u09C7 \u09A8\u09C7\u0987, \u09A6\u09AF\u09BC\u09BE \u0995\u09B0\u09C7 \u09B8\u09BE\u09AE\u09AF\u09BC\u09BF\u0995 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09CD\u09B0\u09A6\u09BE\u09A8 \u0995\u09B0\u09C7 \u09B8\u09BE\u09B9\u09BE\u09AF\u09CD\u09AF \u0995\u09B0\u09C1\u09A8\u0964",
-        isUsed: false,
-        createdAt: new Date(Date.now() - 36e5 * 4),
-        updatedAt: now
-      }
-    ];
-    this.institutionChangeRequests = [
-      {
-        _id: "icr_1",
-        userId: "usr_donor_1",
-        userName: "\u09B0\u09AB\u09BF\u0995\u09C1\u09B2 \u0987\u09B8\u09B2\u09BE\u09AE",
-        phone: "01711111111",
-        userRole: "DONOR",
-        currentInstitutionId: void 0,
-        currentInstitutionName: void 0,
-        targetInstitutionId: "inst_du",
-        targetInstitutionName: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC",
-        division: "dhaka",
-        district: "dhaka",
-        studentOrStaffId: "DU-CSE-2022-019",
-        department: "\u0995\u09AE\u09CD\u09AA\u09BF\u0989\u099F\u09BE\u09B0 \u09B8\u09BE\u09AF\u09BC\u09C7\u09A8\u09CD\u09B8",
-        reason: "\u09A2\u09BE\u0995\u09BE \u09AC\u09BF\u09B6\u09CD\u09AC\u09AC\u09BF\u09A6\u09CD\u09AF\u09BE\u09B2\u09AF\u09BC\u09C7 \u0985\u09A7\u09CD\u09AF\u09AF\u09BC\u09A8\u09B0\u09A4 \u09A5\u09BE\u0995\u09BE\u09AF\u09BC \u0995\u09CD\u09AF\u09BE\u09AE\u09CD\u09AA\u09BE\u09B8 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09C1\u09B2\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4 \u09B9\u09A4\u09C7 \u099A\u09BE\u0987\u0964",
-        status: "pending",
-        createdAt: new Date(Date.now() - 36e5 * 5),
-        updatedAt: now
-      }
-    ];
+    this.institutions = [];
+    this.donorProfiles = [];
+    this.bloodRequests = [];
+    this.institutionRequests = [];
+    this.moderatorActivities = [];
+    this.contactRequests = [];
+    this.accountStatusHistories = [];
+    this.reports = [];
+    this.notifications = [];
+    this.phoneChangeRequests = [];
+    this.passwordRecoveryRequests = [];
+    this.passwordRecoveryAudits = [];
+    this.institutionChangeRequests = [];
+    this.contactAccessLogs = [];
+    this.otps = [];
   }
   // --- MongoDB Atlas Synchronization & Persistence ---
   async syncWithMongoDB() {
     try {
       if (!isDatabaseConnected()) return;
-      const userCount = await UserModel.countDocuments();
-      if (userCount === 0) {
-        console.log("[Database] Fresh MongoDB Atlas cluster detected. Auto-seeding initial data...");
-        for (const u of this.users) await UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true });
-        for (const i of this.institutions) await InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true });
-        for (const d of this.donorProfiles) await DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true });
-        for (const r of this.bloodRequests) await BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true });
-        for (const ir of this.institutionRequests) await InstitutionRequestModel.findOneAndUpdate({ _id: ir._id }, ir, { upsert: true });
-        for (const cr of this.contactRequests) await ContactRequestModel.findOneAndUpdate({ _id: cr._id }, cr, { upsert: true });
-        for (const ash of this.accountStatusHistories) await AccountStatusHistoryModel.findOneAndUpdate({ _id: ash._id }, ash, { upsert: true });
-        for (const ma of this.moderatorActivities) await ModeratorActivityModel.findOneAndUpdate({ _id: ma._id }, ma, { upsert: true });
-        for (const n of this.notifications) await NotificationModel.findOneAndUpdate({ _id: n._id }, n, { upsert: true });
-        for (const pcr of this.phoneChangeRequests) await PhoneChangeRequestModel.findOneAndUpdate({ _id: pcr._id }, pcr, { upsert: true });
-        for (const prr of this.passwordRecoveryRequests) await PasswordRecoveryRequestModel.findOneAndUpdate({ _id: prr._id }, prr, { upsert: true });
-        for (const icr of this.institutionChangeRequests) await InstitutionChangeRequestModel.findOneAndUpdate({ _id: icr._id }, icr, { upsert: true });
-        console.log("[Database] Auto-seeding completed successfully in MongoDB Atlas!");
-      } else {
-        console.log("[Database] Loading existing data from MongoDB Atlas...");
-        const dbUsers = await UserModel.find().lean();
-        if (dbUsers.length > 0) {
-          const dbUserIds = new Set(dbUsers.map((u) => String(u._id)));
-          for (const u of this.users) {
-            if (!dbUserIds.has(String(u._id))) {
-              dbUsers.push(u);
-              UserModel.findOneAndUpdate({ _id: u._id }, u, { upsert: true }).catch(() => {
-              });
-            }
-          }
-          this.users = dbUsers;
-        }
-        const dbDonors = await DonorProfileModel.find().lean();
-        if (dbDonors.length > 0) {
-          const dbDonorIds = new Set(dbDonors.map((d) => String(d._id)));
-          for (const d of this.donorProfiles) {
-            if (!dbDonorIds.has(String(d._id))) {
-              dbDonors.push(d);
-              DonorProfileModel.findOneAndUpdate({ _id: d._id }, d, { upsert: true }).catch(() => {
-              });
-            }
-          }
-          this.donorProfiles = dbDonors;
-        }
-        const dbInsts = await InstitutionModel.find().lean();
-        if (dbInsts.length > 0) {
-          const dbInstIds = new Set(dbInsts.map((i) => String(i._id)));
-          for (const i of this.institutions) {
-            if (!dbInstIds.has(String(i._id))) {
-              dbInsts.push(i);
-              InstitutionModel.findOneAndUpdate({ _id: i._id }, i, { upsert: true }).catch(() => {
-              });
-            }
-          }
-          this.institutions = dbInsts;
-        }
-        const dbRequests = await BloodRequestModel.find().lean();
-        if (dbRequests.length > 0) {
-          const dbReqIds = new Set(dbRequests.map((r) => String(r._id)));
-          for (const r of this.bloodRequests) {
-            if (!dbReqIds.has(String(r._id))) {
-              dbRequests.push(r);
-              BloodRequestModel.findOneAndUpdate({ _id: r._id }, r, { upsert: true }).catch(() => {
-              });
-            }
-          }
-          this.bloodRequests = dbRequests;
-        }
-        const dbInstReqs = await InstitutionRequestModel.find().lean();
-        if (dbInstReqs.length > 0) this.institutionRequests = dbInstReqs;
-        const dbContactReqs = await ContactRequestModel.find().lean();
-        if (dbContactReqs.length > 0) this.contactRequests = dbContactReqs;
-        const dbActivities = await ModeratorActivityModel.find().lean();
-        if (dbActivities.length > 0) this.moderatorActivities = dbActivities;
-        const dbHistories = await AccountStatusHistoryModel.find().lean();
-        if (dbHistories.length > 0) this.accountStatusHistories = dbHistories;
-        const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
-        if (dbPhoneReqs.length > 0) this.phoneChangeRequests = dbPhoneReqs;
-        const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
-        if (dbRecoveryReqs.length > 0) this.passwordRecoveryRequests = dbRecoveryReqs;
-        const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
-        if (dbChangeReqs.length > 0) this.institutionChangeRequests = dbChangeReqs;
-        console.log(`[Database] Hydrated ${this.users.length} users and ${this.institutions.length} institutions from MongoDB Atlas.`);
-      }
+      console.log("[Database] Loading authoritative live data from MongoDB Atlas...");
+      const dbUsers = await UserModel.find().lean();
+      this.users = dbUsers || [];
+      const dbDonors = await DonorProfileModel.find().lean();
+      this.donorProfiles = dbDonors || [];
+      const dbInsts = await InstitutionModel.find().lean();
+      this.institutions = dbInsts || [];
+      const dbRequests = await BloodRequestModel.find().lean();
+      this.bloodRequests = dbRequests || [];
+      const dbInstReqs = await InstitutionRequestModel.find().lean();
+      this.institutionRequests = dbInstReqs || [];
+      const dbContactReqs = await ContactRequestModel.find().lean();
+      this.contactRequests = dbContactReqs || [];
+      const dbActivities = await ModeratorActivityModel.find().lean();
+      this.moderatorActivities = dbActivities || [];
+      const dbHistories = await AccountStatusHistoryModel.find().lean();
+      this.accountStatusHistories = dbHistories || [];
+      const dbPhoneReqs = await PhoneChangeRequestModel.find().lean();
+      this.phoneChangeRequests = dbPhoneReqs || [];
+      const dbRecoveryReqs = await PasswordRecoveryRequestModel.find().lean();
+      this.passwordRecoveryRequests = dbRecoveryReqs || [];
+      const dbChangeReqs = await InstitutionChangeRequestModel.find().lean();
+      this.institutionChangeRequests = dbChangeReqs || [];
+      const dbReports = await ReportModel.find().lean();
+      this.reports = dbReports || [];
+      const dbNotifs = await NotificationModel.find().lean();
+      this.notifications = dbNotifs || [];
+      const dbLogs = await ContactAccessLogModel.find().lean();
+      this.contactAccessLogs = dbLogs || [];
+      console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err) {
       console.warn("[Database Sync Warning]:", err.message);
     }
@@ -98801,6 +98167,7 @@ var DataStore = class {
   }
   async findDonorProfileById(id) {
     if (!id) return void 0;
+    let prof;
     if (isDatabaseConnected()) {
       try {
         const doc = await DonorProfileModel.findOne({ _id: id }).lean();
@@ -98809,16 +98176,24 @@ var DataStore = class {
           const idx = this.donorProfiles.findIndex((d) => d._id === id);
           if (idx >= 0) this.donorProfiles[idx] = profile;
           else this.donorProfiles.push(profile);
-          return profile;
+          prof = profile;
         }
       } catch (e) {
         console.warn("[DataStore] findDonorProfileById DB error:", e?.message);
       }
     }
-    return this.findDonorProfileByIdSync(id);
+    if (!prof) prof = this.findDonorProfileByIdSync(id);
+    if (this.suppressDemoData && prof && isConfirmedDemoDonor(prof)) {
+      return void 0;
+    }
+    return prof;
   }
   findDonorProfileByIdSync(id) {
-    return this.donorProfiles.find((d) => String(d._id) === String(id));
+    const prof = this.donorProfiles.find((d) => String(d._id) === String(id));
+    if (this.suppressDemoData && prof && isConfirmedDemoDonor(prof)) {
+      return void 0;
+    }
+    return prof;
   }
   createDonorProfileSync(data) {
     this.assertWritable();
@@ -98907,7 +98282,7 @@ var DataStore = class {
         const instIds = profiles.map((p) => p.institutionId).filter(Boolean);
         const insts = await InstitutionModel.find({ _id: { $in: instIds } }).lean();
         const instMap = new Map(insts.map((i) => [String(i._id), i.nameBn || i.name]));
-        const safeDonors = profiles.filter((p) => activeUserMap.has(String(p.userId))).map((p) => {
+        let safeDonors = profiles.filter((p) => activeUserMap.has(String(p.userId))).map((p) => {
           const isPublicContactAllowed = Boolean(p.consentToShareContact);
           return {
             _id: p._id,
@@ -98929,15 +98304,30 @@ var DataStore = class {
             createdAt: p.createdAt
           };
         });
+        if (this.suppressDemoData) {
+          safeDonors = safeDonors.filter((p) => !isConfirmedDemoDonor(p));
+        }
+        const effectiveTotal = this.suppressDemoData ? safeDonors.length : total;
         return {
           donors: safeDonors,
-          total,
+          total: effectiveTotal,
           page,
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.ceil(effectiveTotal / limit)
         };
       } catch (e) {
         console.warn("[DataStore] searchDonors DB error:", e?.message);
+        if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+          const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+          err.statusCode = 503;
+          err.code = "DATABASE_UNAVAILABLE";
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+      const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+      err.statusCode = 503;
+      err.code = "DATABASE_UNAVAILABLE";
+      throw err;
     }
     return this.searchDonorsSync(filters);
   }
@@ -98946,6 +98336,9 @@ var DataStore = class {
       const user = this.findUserByIdSync(d.userId);
       return d.isPubliclyListed && user && user.accountStatus === "active" && user.isActive;
     });
+    if (this.suppressDemoData) {
+      result = result.filter((d) => !isConfirmedDemoDonor(d));
+    }
     if (filters.bloodGroup) {
       result = result.filter((d) => d.bloodGroup.toLowerCase() === filters.bloodGroup?.toLowerCase());
     }
@@ -99004,6 +98397,7 @@ var DataStore = class {
   async findBloodRequestById(idOrPublicId) {
     if (!idOrPublicId) return void 0;
     const target = String(idOrPublicId).trim();
+    let req;
     if (isDatabaseConnected()) {
       try {
         const doc = await BloodRequestModel.findOne({
@@ -99018,20 +98412,28 @@ var DataStore = class {
           const idx = this.bloodRequests.findIndex((r) => r._id === stored._id);
           if (idx >= 0) this.bloodRequests[idx] = stored;
           else this.bloodRequests.unshift(stored);
-          return stored;
+          req = stored;
         }
       } catch (e) {
         console.warn("[DataStore] findBloodRequestById DB error:", e?.message);
       }
     }
-    return this.findBloodRequestByIdSync(target);
+    if (!req) req = this.findBloodRequestByIdSync(target);
+    if (this.suppressDemoData && req && isConfirmedDemoRequest(req)) {
+      return void 0;
+    }
+    return req;
   }
   findBloodRequestByIdSync(idOrPublicId) {
     if (!idOrPublicId) return void 0;
     const target = String(idOrPublicId).toLowerCase().trim();
-    return this.bloodRequests.find(
+    const req = this.bloodRequests.find(
       (r) => String(r._id).toLowerCase() === target || r.publicId && String(r.publicId).toLowerCase() === target
     );
+    if (this.suppressDemoData && req && isConfirmedDemoRequest(req)) {
+      return void 0;
+    }
+    return req;
   }
   createBloodRequestSync(data) {
     this.assertWritable();
@@ -99136,26 +98538,44 @@ var DataStore = class {
           requiredDate: 1
         }).skip(skip).limit(limit).lean();
         const now = /* @__PURE__ */ new Date();
-        const results = docs.map((r) => {
+        let results = docs.map((r) => {
           if ((r.status === "open" || r.status === "partially_fulfilled") && new Date(r.expiresAt) < now) {
             r.status = "expired";
           }
           return r;
         });
+        if (this.suppressDemoData) {
+          results = results.filter((r) => !isConfirmedDemoRequest(r));
+        }
+        const effectiveTotal = this.suppressDemoData ? results.length : total;
         return {
           requests: results,
-          total,
+          total: effectiveTotal,
           page,
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.ceil(effectiveTotal / limit)
         };
       } catch (e) {
         console.warn("[DataStore] searchBloodRequests DB error:", e?.message);
+        if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+          const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+          err.statusCode = 503;
+          err.code = "DATABASE_UNAVAILABLE";
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+      const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+      err.statusCode = 503;
+      err.code = "DATABASE_UNAVAILABLE";
+      throw err;
     }
     return this.searchBloodRequestsSync(filters);
   }
   searchBloodRequestsSync(filters) {
     let result = [...this.bloodRequests];
+    if (this.suppressDemoData) {
+      result = result.filter((r) => !isConfirmedDemoRequest(r));
+    }
     const now = /* @__PURE__ */ new Date();
     result.forEach((r) => {
       if ((r.status === "open" || r.status === "partially_fulfilled") && new Date(r.expiresAt) < now) {
@@ -99242,7 +98662,18 @@ var DataStore = class {
         return docs;
       } catch (e) {
         console.warn("[DataStore] getInstitutions DB error:", e?.message);
+        if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+          const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+          err.statusCode = 503;
+          err.code = "DATABASE_UNAVAILABLE";
+          throw err;
+        }
       }
+    } else if (ENV.NODE_ENV === "production" || process.env.VERCEL) {
+      const err = new Error("\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964");
+      err.statusCode = 503;
+      err.code = "DATABASE_UNAVAILABLE";
+      throw err;
     }
     return this.getInstitutionsSync(filters);
   }
@@ -100876,8 +100307,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path, errorMaps, issueData } = params;
-  const fullPath = [...path, ...issueData.path || []];
+  const { data, path: path2, errorMaps, issueData } = params;
+  const fullPath = [...path2, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -100993,11 +100424,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path, key) {
+  constructor(parent, value, path2, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path;
+    this._path = path2;
     this._key = key;
   }
   get path() {
@@ -106254,18 +105685,20 @@ async function getRequestById(req, res) {
   } else {
     statusMessage = `\u099C\u09B0\u09C1\u09B0\u09BF \u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8: \u0985\u09AC\u09BF\u09B2\u09AE\u09CD\u09AC\u09C7 ${request.unitsRequired} \u09AC\u09CD\u09AF\u09BE\u0997 ${request.bloodGroup} \u09B0\u0995\u09CD\u09A4 \u09AA\u09CD\u09B0\u09AF\u09BC\u09CB\u099C\u09A8\u0964`;
   }
+  const requestPayload = {
+    ...request,
+    publicId,
+    canonicalUrl,
+    unitsRemaining,
+    statusMessage,
+    isFulfilled: request.status === "fulfilled",
+    requesterName: requester?.name || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0",
+    institutionName: institution?.nameBn || institution?.name
+  };
   res.json({
     success: true,
-    bloodRequest: {
-      ...request,
-      publicId,
-      canonicalUrl,
-      unitsRemaining,
-      statusMessage,
-      isFulfilled: request.status === "fulfilled",
-      requesterName: requester?.name || "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0",
-      institutionName: institution?.nameBn || institution?.name
-    }
+    bloodRequest: requestPayload,
+    data: requestPayload
   });
 }
 async function createRequest(req, res) {
@@ -106427,15 +105860,17 @@ async function updateRequestStatus(req, res) {
   const unitsRemaining = Math.max(0, (updated?.unitsRequired || request.unitsRequired) - (updated?.unitsFulfilled || 0));
   const publicId = updated?.publicId || request.publicId || request._id;
   const canonicalUrl = `https://blood-donationbangla.vercel.app/blood-request/${publicId}`;
+  const payload = {
+    ...updated,
+    publicId,
+    canonicalUrl,
+    unitsRemaining
+  };
   res.json({
     success: true,
     message: updated?.status === "fulfilled" ? "\u09B0\u0995\u09CD\u09A4\u09C7\u09B0 \u0985\u09A8\u09C1\u09B0\u09CB\u09A7 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8 (Fulfilled) \u09B9\u09BF\u09B8\u09C7\u09AC\u09C7 \u099A\u09BF\u09B9\u09CD\u09A8\u09BF\u09A4 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964" : "\u0985\u09A8\u09C1\u09B0\u09CB\u09A7\u09C7\u09B0 \u0985\u0997\u09CD\u09B0\u0997\u09A4\u09BF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
-    bloodRequest: {
-      ...updated,
-      publicId,
-      canonicalUrl,
-      unitsRemaining
-    }
+    bloodRequest: payload,
+    data: payload
   });
 }
 async function getMyRequests(req, res) {
@@ -106493,23 +105928,40 @@ async function getInstitutions(req, res) {
     search,
     status: targetStatus
   });
-  const safeInstitutions = institutions.map((i) => ({
-    _id: i._id,
-    name: i.name,
-    nameBn: i.nameBn,
-    code: i.code,
-    type: i.type,
-    division: i.division,
-    district: i.district,
-    upazila: i.upazila,
-    address: i.address,
-    website: i.website,
-    email: i.email,
-    phone: i.phone,
-    totalRegisteredDonors: i.totalRegisteredDonors,
-    description: i.description,
-    status: i.status
-  }));
+  let donorCounts = [];
+  if (isDatabaseConnected()) {
+    try {
+      donorCounts = await DonorProfileModel.aggregate([
+        { $match: { institutionId: { $ne: null } } },
+        { $group: { _id: "$institutionId", count: { $sum: 1 } } }
+      ]);
+    } catch (e) {
+    }
+  }
+  const countMap = new Map(donorCounts.map((dc) => [String(dc._id), dc.count]));
+  const safeInstitutions = institutions.map((i) => {
+    let actualDonors = countMap.get(String(i._id));
+    if (actualDonors === void 0) {
+      actualDonors = dataStore.donorProfiles.filter((d) => String(d.institutionId) === String(i._id)).length;
+    }
+    return {
+      _id: i._id,
+      name: i.name,
+      nameBn: i.nameBn,
+      code: i.code,
+      type: i.type,
+      division: i.division,
+      district: i.district,
+      upazila: i.upazila,
+      address: i.address,
+      website: i.website,
+      email: i.email,
+      phone: i.phone,
+      totalRegisteredDonors: actualDonors || 0,
+      description: i.description,
+      status: i.status
+    };
+  });
   res.json({
     success: true,
     institutions: safeInstitutions
@@ -106522,9 +105974,22 @@ async function getInstitutionById(req, res) {
     res.status(404).json({ success: false, message: "\u09AA\u09CD\u09B0\u09A4\u09BF\u09B7\u09CD\u09A0\u09BE\u09A8\u099F\u09BF \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }
+  let realDonorCount = 0;
+  if (isDatabaseConnected()) {
+    try {
+      realDonorCount = await DonorProfileModel.countDocuments({ institutionId: institution._id });
+    } catch (e) {
+      realDonorCount = 0;
+    }
+  } else {
+    realDonorCount = dataStore.donorProfiles.filter((d) => String(d.institutionId) === String(institution._id)).length;
+  }
   res.json({
     success: true,
-    institution
+    institution: {
+      ...institution,
+      totalRegisteredDonors: realDonorCount
+    }
   });
 }
 async function createInstitution(req, res) {
@@ -108243,17 +107708,48 @@ router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
     let districtsCovered = 0;
     let totalInstitutions = 0;
     if (isDatabaseConnected()) {
-      totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
-      availableDonors = await DonorProfileModel.countDocuments({
-        isPubliclyListed: true,
-        availabilityStatus: "available"
-      });
-      activeRequests = await BloodRequestModel.countDocuments({
-        status: { $in: ["open", "partially_fulfilled"] }
-      });
-      const districtList = await DonorProfileModel.distinct("district", { isPubliclyListed: true });
-      districtsCovered = districtList.filter(Boolean).length;
+      if (dataStore.suppressDemoData) {
+        totalDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        availableDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          availabilityStatus: "available",
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        activeRequests = await BloodRequestModel.countDocuments({
+          status: { $in: ["open", "partially_fulfilled"] },
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
+          publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
+        });
+        const districtList = await DonorProfileModel.distinct("district", {
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+        });
+        districtsCovered = districtList.filter(Boolean).length;
+      } else {
+        totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
+        availableDonors = await DonorProfileModel.countDocuments({
+          isPubliclyListed: true,
+          availabilityStatus: "available"
+        });
+        activeRequests = await BloodRequestModel.countDocuments({
+          status: { $in: ["open", "partially_fulfilled"] }
+        });
+        const districtList = await DonorProfileModel.distinct("district", { isPubliclyListed: true });
+        districtsCovered = districtList.filter(Boolean).length;
+      }
       totalInstitutions = await InstitutionModel.countDocuments();
+    } else if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+      return res.status(503).json({
+        success: false,
+        code: "DATABASE_UNAVAILABLE",
+        message: "\u09A1\u09BE\u099F\u09BE\u09AC\u09C7\u099C \u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0\u09C7\u09B0 \u09B8\u09BE\u09A5\u09C7 \u09B8\u0982\u09AF\u09CB\u0997 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u0995\u09BF\u099B\u09C1\u0995\u09CD\u09B7\u09A3 \u09AA\u09B0 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
+      });
     } else {
       const activeDonors = dataStore.donorProfiles.filter((d) => {
         const u = dataStore.findUserByIdSync(d.userId);
@@ -108292,7 +107788,10 @@ var currentAppRelease = {
   minSupportedVersion: process.env.MIN_SUPPORTED_APP_VERSION || "1.0.0",
   forceUpdate: process.env.APP_FORCE_UPDATE === "true",
   fileSizeMb: 60,
+  fileSizeBytes: 62911392,
   releaseDate: "2026-11-02",
+  sha256Checksum: "3f4066c1ed0e29fa244c04bf597eb91bf3b653e785e73ff2b590d2aa23910ca2",
+  certificateSha256: "2A:52:02:9C:E4:F3:11:D2:11:F7:EB:E8:2A:0D:C5:D2:5B:38:CC:B3:EB:7B:B7:01:DD:72:55:74:26:86:99:FA",
   downloadUrl: process.env.APP_DOWNLOAD_URL || "https://github.com/prottoybiswas01/BLOOD-DONATION_bangla/releases/download/v1.0.0/blood-donation-bangla.apk",
   directDownloadPath: "/downloads/blood-donation-bangla.apk",
   releaseNotes: process.env.APP_RELEASE_NOTES || "\u0985\u09AB\u09BF\u09B8\u09BF\u09DF\u09BE\u09B2 \u09B8\u09CD\u099F\u09CD\u09AF\u09BE\u09A8\u09CD\u09A1\u0985\u09CD\u09AF\u09BE\u09B2\u09CB\u09A8 \u09B0\u09BF\u09B2\u09BF\u099C \u09E7.\u09E6.\u09E6 (Build 1): \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u0985\u09AB\u09B2\u09BE\u0987\u09A8 \u0993 \u09AA\u09CD\u09B0\u09CB\u09A1\u09BE\u0995\u09B6\u09A8 \u09B0\u09C7\u09A1\u09BF\u0964"

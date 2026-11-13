@@ -75,3 +75,4 @@ purgeAllTestData()
     console.error('Error during purge:', err);
     process.exit(1);
   });
+

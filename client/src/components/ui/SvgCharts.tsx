@@ -9,6 +9,10 @@ export interface BloodGroupItem {
 export const BloodGroupBarChart: React.FC<{ data: BloodGroupItem[]; title?: string; totalDonors?: number }> = ({ data, title, totalDonors }) => {
   const total = totalDonors !== undefined ? totalDonors : data.reduce((a, b) => a + b.count, 0);
 
+  // Filter to show groups that actually have donors if any exist, or show empty state if 0
+  const activeGroups = data.filter(item => item.count > 0);
+  const displayItems = activeGroups.length > 0 ? activeGroups : data;
+
   return (
     <div className="bg-surface rounded-2xl border border-appBorder p-5 shadow-soft">
       {title && (
@@ -17,32 +21,38 @@ export const BloodGroupBarChart: React.FC<{ data: BloodGroupItem[]; title?: stri
           <span className="text-xs text-subText font-medium">নিবন্ধিত রক্তদাতা: {total} জন</span>
         </div>
       )}
-      <div className="space-y-3">
-        {data.map((item) => {
-          const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
-          return (
-            <div key={item.group} className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="flex items-center gap-1.5 text-mainText">
-                  <span className="w-6 h-6 rounded-md bg-red-50 text-primary text-[11px] font-extrabold flex items-center justify-center border border-red-100">
-                    {item.group}
+      {total === 0 ? (
+        <div className="py-8 text-center text-xs text-slate-400">
+          ডাটাবেসে বর্তমানে কোনো নিবন্ধিত রক্তদাতা নেই।
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {displayItems.map((item) => {
+            const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+            return (
+              <div key={item.group} className="space-y-1">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 text-mainText">
+                    <span className="w-6 h-6 rounded-md bg-red-50 text-primary text-[11px] font-extrabold flex items-center justify-center border border-red-100">
+                      {item.group}
+                    </span>
+                    <span>{item.group} রক্তদাতা</span>
                   </span>
-                  <span>{item.group} রক্তদাতা</span>
-                </span>
-                <span className="text-subText font-mono font-medium">
-                  {item.count} জন ({pct}%)
-                </span>
+                  <span className="text-subText font-mono font-medium">
+                    {item.count} জন ({pct}%)
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-red-500 to-primary rounded-full transition-all duration-500"
+                    style={{ width: `${item.count > 0 ? Math.max(pct, 2) : 0}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-red-500 to-primary rounded-full transition-all duration-500"
-                  style={{ width: `${item.count > 0 ? Math.max(pct, 2) : 0}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

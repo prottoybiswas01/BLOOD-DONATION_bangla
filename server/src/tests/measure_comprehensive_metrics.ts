@@ -74,7 +74,7 @@ async function measureMetrics() {
     }
     const avgLazy = lazyTimes.reduce((a, b) => a + b, 0) / lazyTimes.length;
     console.log(`Legacy Eager Mount (5 network calls): ${eagerTime.toFixed(2)}ms`);
-    console.log(`Optimized Lazy Mount (2 network calls): Avg=${avgLazy.toFixed(2)}ms (Runs: ${lazyTimes.map(t=>t.toFixed(1)+'ms').join(', ')})`);
+    console.log(`Optimized Lazy Mount (2 network calls): Avg=${avgLazy.toFixed(2)}ms (Runs: ${lazyTimes.map(t => t.toFixed(1) + 'ms').join(', ')})`);
     console.log(`Initial Profile Load Improvement: ${(((eagerTime - avgLazy) / eagerTime) * 100).toFixed(1)}%\n`);
 
     // -------------------------------------------------------------
@@ -89,7 +89,7 @@ async function measureMetrics() {
     // METRIC 3: /api/v1/stats Cache Hit/Miss & Invalidation
     // -------------------------------------------------------------
     console.log('--- METRIC 3: /api/v1/stats 30-Second Shared Cache & Invalidation ---');
-    
+
     // Test 10 consecutive calls
     const statsTimes: number[] = [];
     let coldMissTime = 0;

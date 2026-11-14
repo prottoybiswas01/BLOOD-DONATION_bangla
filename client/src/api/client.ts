@@ -242,6 +242,12 @@ export const api = {
     return fetchWithAuth(`/admin/donors?${query.toString()}`);
   },
 
+  toggleAdminDonorAvailability: (id: string, availabilityStatus: string) =>
+    fetchWithAuth(`/admin/donors/${id}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ availabilityStatus })
+    }),
+
   getAdminUsers: (params: Record<string, any> = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {

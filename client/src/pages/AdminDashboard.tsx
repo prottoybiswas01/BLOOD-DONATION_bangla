@@ -229,6 +229,7 @@ export const AdminDashboard: React.FC = () => {
         case 'donors':
           res = await api.getAdminDonors({
             bloodGroup: donorBloodGroupFilter || undefined,
+            availabilityStatus: donorAvailabilityFilter || undefined,
             availability: donorAvailabilityFilter || undefined,
             page: donorPage,
             limit: donorsPerPage
@@ -360,6 +361,24 @@ export const AdminDashboard: React.FC = () => {
       loadTabData('donors', true);
     }
   }, [donorBloodGroupFilter, donorAvailabilityFilter, donorPage]);
+
+  const handleToggleDonorAvailability = async (donorId: string, newStatus: string) => {
+    try {
+      const res = await api.toggleAdminDonorAvailability(donorId, newStatus);
+      if (res?.success) {
+        setAdminDonors(prev => prev.map(d => d._id === donorId ? {
+          ...d,
+          availabilityStatus: newStatus,
+          isAvailable: newStatus === 'available' && d.isPubliclyListed !== false
+        } : d));
+        setMsg({ text: res.message || 'রক্তদাতার প্রাপ্যতা সফলভাবে হালনাগাদ করা হয়েছে।', type: 'success' });
+      } else {
+        setMsg({ text: res?.message || 'প্রাপ্যতা পরিবর্তন করা যায়নি।', type: 'error' });
+      }
+    } catch (err: any) {
+      setMsg({ text: err?.message || 'সার্ভার সমস্যা।', type: 'error' });
+    }
+  };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     setMsg(null);
@@ -751,19 +770,23 @@ export const AdminDashboard: React.FC = () => {
     };
   });
 
+  const getDynamicLast6Months = () => {
+    const BENGALI_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const now = new Date();
+    const list = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      list.push({ label: BENGALI_MONTHS[d.getMonth()], value: 0 });
+    }
+    return list;
+  };
+
   const trendChartData = stats?.monthlyTrends && stats.monthlyTrends.length > 0
     ? stats.monthlyTrends.map((t: any) => ({
         label: t.label,
         value: Number(t.value) || 0
       }))
-    : [
-        { label: 'মে', value: 0 },
-        { label: 'জুন', value: 0 },
-        { label: 'জুলাই', value: 0 },
-        { label: 'আগস্ট', value: 0 },
-        { label: 'সেপ্টেম্বর', value: 0 },
-        { label: 'অক্টোবর', value: 0 },
-      ];
+    : getDynamicLast6Months();
 
   const activeAccountsCount = stats?.activeAccounts ?? 0;
   const blockedAccountsCount = stats?.blockedUsersCount ?? 0;
@@ -1493,29 +1516,42 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : adminDonors.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    {donorBloodGroupFilter || donorAvailabilityFilter
-                      ? 'এই ফিল্টারের শর্তে কোনো রক্তদাতা পাওয়া যায়নি।'
-                      : 'বর্তমানে ডাটাবেসে কোনো রক্তদাতা প্রোফাইল নিবন্ধিত নেই।'}
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto">
+                      <Heart className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো রক্তদাতা পাওয়া যায়নি</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      {donorBloodGroupFilter || donorAvailabilityFilter
+                        ? 'এই ফিল্টারের শর্তে কোনো রক্তদাতা পাওয়া যায়নি। ফিল্টার রিসেট করে পুনরায় চেষ্টা করুন।'
+                        : 'বর্তমানে প্ল্যাটফর্মে কোনো রক্তদাতা নিবন্ধিত নেই। নতুন রক্তদাতা প্রোফাইল তৈরি হলে এখানে প্রদর্শিত হবে।'}
+                    </p>
                   </div>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {adminDonors.map((d: any) => {
                         const loc = getReadableLocation(d.division, d.district, d.upazila);
-                        const isAvail = d.isAvailable && d.availabilityStatus === 'available';
+                        const isAvail = d.isAvailable !== undefined 
+                          ? d.isAvailable 
+                          : (d.availabilityStatus === 'available' && d.isPubliclyListed !== false);
+                        const donorName = d.name || d.displayName || 'অজ্ঞাত রক্তদাতা';
+                        const donorRole = d.role || d.userRole || 'MEMBER';
+                        const donorAccountStatus = d.accountStatus || d.userAccountStatus || 'active';
+                        const donorInst = d.institution || d.institutionName;
+
                         const roleBadgeVariant = 
-                          d.role === 'SUPER_ADMIN' ? 'danger' :
-                          d.role === 'ADMIN' ? 'primary' :
-                          d.role === 'DIVISION_COORDINATOR' ? 'teal' :
-                          d.role === 'INSTITUTION_HEAD' || d.role === 'INSTITUTION_MODERATOR' ? 'teal' :
+                          donorRole === 'SUPER_ADMIN' ? 'danger' :
+                          donorRole === 'ADMIN' ? 'primary' :
+                          donorRole === 'DIVISION_COORDINATOR' ? 'teal' :
+                          donorRole === 'INSTITUTION_HEAD' || donorRole === 'INSTITUTION_MODERATOR' ? 'teal' :
                           'neutral';
                         const roleLabel =
-                          d.role === 'SUPER_ADMIN' ? 'সুপার অ্যাডমিন' :
-                          d.role === 'ADMIN' ? 'অ্যাডমিন' :
-                          d.role === 'DIVISION_COORDINATOR' ? 'সমন্বয়ক' :
-                          d.role === 'INSTITUTION_HEAD' ? 'প্রতিষ্ঠান প্রধান' :
-                          d.role === 'INSTITUTION_MODERATOR' ? 'মডারেটর' :
+                          donorRole === 'SUPER_ADMIN' ? 'সুপার অ্যাডমিন' :
+                          donorRole === 'ADMIN' ? 'অ্যাডমিন' :
+                          donorRole === 'DIVISION_COORDINATOR' ? 'সমন্বয়ক' :
+                          donorRole === 'INSTITUTION_HEAD' ? 'প্রতিষ্ঠান প্রধান' :
+                          donorRole === 'INSTITUTION_MODERATOR' ? 'মডারেটর' :
                           'সাধারণ সদস্য';
 
                         return (
@@ -1526,13 +1562,13 @@ export const AdminDashboard: React.FC = () => {
                                   {d.bloodGroup}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-sm text-mainText">{d.name}</p>
+                                  <p className="font-bold text-sm text-mainText">{donorName}</p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <Badge variant={roleBadgeVariant} size="sm">
                                       {roleLabel}
                                     </Badge>
                                     <span className="text-[10px] text-slate-400 font-mono">
-                                      {d.accountStatus === 'active' ? 'সক্রিয়' : 'স্থগিত'}
+                                      {donorAccountStatus === 'active' ? 'সক্রিয়' : 'স্থগিত'}
                                     </span>
                                   </div>
                                 </div>
@@ -1545,21 +1581,36 @@ export const AdminDashboard: React.FC = () => {
                             <div className="text-xs text-subText space-y-1 pt-1 border-t border-slate-100">
                               <p className="font-mono text-slate-600 flex items-center gap-1">
                                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                <span>{d.phone}</span>
+                                <span>{d.phone || 'অনুল্লিখিত'}</span>
                               </p>
                               <p className="text-slate-600 flex items-center gap-1">
                                 <span className="text-slate-400">📍</span>
                                 <span>{loc.displayText || `${d.district || ''}, ${d.division || ''}`}</span>
                               </p>
-                              {d.institution && (
+                              {donorInst && (
                                 <p className="text-teal-700 flex items-center gap-1">
                                   <Building2 className="w-3.5 h-3.5" />
-                                  <span>{d.institution}</span>
+                                  <span>{donorInst}</span>
                                 </p>
                               )}
                               <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400">
                                 <span>রক্তদান সংখ্যা: <strong className="text-mainText">{d.totalDonations || 0}</strong> বার</span>
                                 <span>{d.consentToShareContact ? 'নম্বর উন্মুক্ত' : 'নম্বর গোপন'}</span>
+                              </div>
+
+                              {/* Administrative Quick Availability Toggle */}
+                              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-medium text-slate-500">
+                                  রক্তদান প্রাপ্যতা:
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant={isAvail ? 'outline' : 'primary'}
+                                  className={`text-xs px-2.5 py-1 h-auto ${isAvail ? 'text-amber-700 border-amber-300 hover:bg-amber-50' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
+                                  onClick={() => handleToggleDonorAvailability(d._id, isAvail ? 'temporarily_unavailable' : 'available')}
+                                >
+                                  {isAvail ? 'রক্তদান সাময়িক বন্ধ করুন' : 'রক্তদানে সক্রিয় করুন'}
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -1629,8 +1680,14 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : phoneRequests.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    বর্তমানে কোনো নম্বর পরিবর্তনের আবেদন নেই।
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                      <Phone className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো অপেক্ষমাণ নম্বর পরিবর্তন আবেদন নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      কোনো সদস্য তার প্রোফাইল সেটিংস থেকে ফোন নম্বর পরিবর্তনের আবেদন জমা দিলে তা এখানে পর্যালোচনার জন্য প্রদর্শিত হবে।
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1729,8 +1786,14 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : blockedUsers.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    বর্তমানে কোনো স্থগিত বা ব্লককৃত অ্যাকাউন্ট নেই।
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো স্থগিত বা ব্লককৃত অ্যাকাউন্ট নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      প্ল্যাটফর্মের সকল সদস্যের অ্যাকাউন্ট বর্তমানে সম্পূর্ণ সক্রিয় ও নিরাপদ রয়েছে। কোনো অ্যাকাউন্ট নীতিমালার কারণে স্থগিত হলে এখানে প্রদর্শিত হবে।
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1820,7 +1883,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : institutions.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো অনুমোদিত শিক্ষা প্রতিষ্ঠান পাওয়া যায়নি।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো অনুমোদিত প্রতিষ্ঠান নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      উপরে থাকা 'নতুন প্রতিষ্ঠান যুক্ত করুন' বাটনে ক্লিক করে সরাসরি শিক্ষা প্রতিষ্ঠান বা রক্তদান ক্লাব যুক্ত করতে পারেন।
+                    </p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {institutions.map(inst => (
@@ -1888,7 +1959,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : institutionRequests.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো প্রাতিষ্ঠানিক আবেদন জমা নেই।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো প্রতিষ্ঠান নিবন্ধন আবেদন জমা নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      শিক্ষা প্রতিষ্ঠান বা রক্তদান ক্লাব প্রতিনিধিরা নতুন প্রতিষ্ঠান হিসেবে যুক্ত হতে আবেদন করলে এখানে পর্যালোচনার জন্য জমা হবে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">
@@ -1978,7 +2057,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : statusHistories.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো স্ট্যাটাস পরিবর্তনের রেকর্ড নেই।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                      <History className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো স্ট্যাটাস পরিবর্তনের রেকর্ড নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      সদস্যদের অ্যাকাউন্ট সক্রিয়, স্থগিত বা ব্লক করার প্রতিটি প্রশাসনিক সিদ্ধান্তের লগ এখানে সংরক্ষিত থাকবে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">
@@ -2048,7 +2135,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : contactLogs.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো ফোন নম্বর উন্মুক্তকরণের রেকর্ড পাওয়া যায়নি।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                      <Eye className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো যোগাযোগ নম্বর উন্মুক্তকরণের রেকর্ড নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      জরুরি প্রয়োজনে রক্তদাতার গোপন মোবাইল নম্বর প্রকাশের প্রতিটি অডিট লগ এখানে সংরক্ষিত থাকে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">
@@ -2114,7 +2209,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : auditLogs.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো প্রশাসনিক অডিট লগ পাওয়া যায়নি।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো প্রশাসনিক অডিট লগ পাওয়া যায়নি</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      প্ল্যাটফর্মের ভূমিকা পরিবর্তন, ব্লক ও অনুমোদন সংক্রান্ত প্রতিটি গুরুত্বপূর্ণ পদক্ষেপের অপরিবর্তনীয় অডিট লগ এখানে প্রদর্শিত হবে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">
@@ -2177,7 +2280,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : recoveryRequests.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো পাসওয়ার্ড রিকভারি আবেদন অপেক্ষমাণ নেই।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                      <KeyRound className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো পাসওয়ার্ড রিকভারি আবেদন অপেক্ষমাণ নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      লগইন করতে না পেরে কোনো সদস্য এককালীন সিকিউর পাসওয়ার্ড ইস্যুর আবেদন জমা দিলে তা এখানে পর্যালোচনা ও অনুমোদনের জন্য প্রদর্শিত হবে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">
@@ -2280,7 +2391,15 @@ export const AdminDashboard: React.FC = () => {
                     </Button>
                   </div>
                 ) : instChanges.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">কোনো ক্যাম্পাস পরিবর্তন আবেদন অপেক্ষমাণ নেই।</div>
+                  <div className="bg-slate-50/70 rounded-2xl border border-dashed border-appBorder p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-mainText text-sm">কোনো প্রতিষ্ঠান পরিবর্তন আবেদন অপেক্ষমাণ নেই</h4>
+                    <p className="text-xs text-subText max-w-sm mx-auto">
+                      সদস্যরা তাদের বর্তমান শিক্ষা প্রতিষ্ঠান বা কর্মস্থল পরিবর্তনের আবেদন জমা দিলে তা এখানে পর্যালোচনার জন্য জমা হবে।
+                    </p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
                     <table className="w-full text-left text-xs">

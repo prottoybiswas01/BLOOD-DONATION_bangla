@@ -6,7 +6,8 @@ import {
   CONFIRMED_DEMO_USER_IDS, 
   CONFIRMED_DEMO_DONOR_IDS, 
   CONFIRMED_DEMO_REQUEST_IDS, 
-  isConfirmedDemoDonor 
+  isConfirmedDemoDonor,
+  notifyStatsChanged
 } from '../services/dataStore.js';
 import { inMemoryAuditLogs, logAuditEvent } from '../services/auditService.js';
 import { isDatabaseConnected } from '../config/db.js';
@@ -20,6 +21,7 @@ import { PasswordRecoveryRequestModel } from '../models/PasswordRecoveryRequest.
 import { InstitutionChangeRequestModel } from '../models/InstitutionChangeRequest.js';
 import { ReportModel } from '../models/Report.js';
 import { ContactAccessLogModel } from '../models/ContactAccessLog.js';
+import { AuditLogModel } from '../models/AuditLog.js';
 
 export function getBangladeshLast6Months(): { label: string; year: number; month: number; start: Date; end: Date }[] {
   const BENGALI_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
@@ -235,6 +237,7 @@ export async function getAdminOverview(req: AuthRequest, res: Response): Promise
 export async function getAdminDonors(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { bloodGroup, availabilityStatus, search, page, limit } = req.query;
+    const statusFilter = (availabilityStatus || req.query.availability) as string;
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
@@ -242,7 +245,7 @@ export async function getAdminDonors(req: AuthRequest, res: Response): Promise<v
     if (isDatabaseConnected()) {
       const query: any = {};
       if (bloodGroup) query.bloodGroup = bloodGroup;
-      if (availabilityStatus) query.availabilityStatus = availabilityStatus;
+      if (statusFilter) query.availabilityStatus = statusFilter;
       if (dataStore.suppressDemoData) {
         query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
         query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
@@ -268,22 +271,27 @@ export async function getAdminDonors(req: AuthRequest, res: Response): Promise<v
         return {
           _id: p._id,
           userId: p.userId,
-          displayName: p.displayName || u?.name,
+          name: p.displayName || u?.name || 'অজ্ঞাত রক্তদাতা',
+          displayName: p.displayName || u?.name || 'অজ্ঞাত রক্তদাতা',
           bloodGroup: p.bloodGroup,
           division: p.division,
           district: p.district,
           upazila: p.upazila,
-          availabilityStatus: p.availabilityStatus,
+          isAvailable: p.availabilityStatus === 'available' && p.isPubliclyListed !== false,
+          availabilityStatus: p.availabilityStatus || 'available',
           lastDonationDate: p.lastDonationDate,
-          totalDonations: p.totalDonations,
+          totalDonations: p.totalDonations || 0,
           institutionId: p.institutionId,
+          institution: p.institutionId ? instMap.get(String(p.institutionId)) : undefined,
           institutionName: p.institutionId ? instMap.get(String(p.institutionId)) : undefined,
           institutionMembershipVerified: p.institutionMembershipVerified,
           emergencyAvailable: p.emergencyAvailable,
           consentToShareContact: p.consentToShareContact,
-          isPubliclyListed: p.isPubliclyListed,
-          phone: u?.phone,
+          isPubliclyListed: p.isPubliclyListed !== false,
+          phone: u?.phone || '',
+          role: u?.role || 'MEMBER',
           userRole: u?.role || 'MEMBER',
+          accountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
           userAccountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
           isActive: u?.isActive !== false,
           gender: p.gender || u?.gender,
@@ -312,22 +320,27 @@ export async function getAdminDonors(req: AuthRequest, res: Response): Promise<v
       return {
         _id: p._id,
         userId: p.userId,
-        displayName: p.displayName || u?.name,
+        name: p.displayName || u?.name || 'অজ্ঞাত রক্তদাতা',
+        displayName: p.displayName || u?.name || 'অজ্ঞাত রক্তদাতা',
         bloodGroup: p.bloodGroup,
         division: p.division,
         district: p.district,
         upazila: p.upazila,
-        availabilityStatus: p.availabilityStatus,
+        isAvailable: p.availabilityStatus === 'available' && p.isPubliclyListed !== false,
+        availabilityStatus: p.availabilityStatus || 'available',
         lastDonationDate: p.lastDonationDate,
-        totalDonations: p.totalDonations,
+        totalDonations: p.totalDonations || 0,
         institutionId: p.institutionId,
+        institution: inst?.nameBn || inst?.name,
         institutionName: inst?.nameBn || inst?.name,
         institutionMembershipVerified: p.institutionMembershipVerified,
         emergencyAvailable: p.emergencyAvailable,
         consentToShareContact: p.consentToShareContact,
-        isPubliclyListed: p.isPubliclyListed,
-        phone: u?.phone,
+        isPubliclyListed: p.isPubliclyListed !== false,
+        phone: u?.phone || '',
+        role: u?.role || 'MEMBER',
         userRole: u?.role || 'MEMBER',
+        accountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
         userAccountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
         isActive: u?.isActive !== false,
         gender: p.gender || u?.gender,
@@ -339,7 +352,7 @@ export async function getAdminDonors(req: AuthRequest, res: Response): Promise<v
       list = list.filter(d => !isConfirmedDemoDonor(d));
     }
     if (bloodGroup) list = list.filter(d => d.bloodGroup === bloodGroup);
-    if (availabilityStatus) list = list.filter(d => d.availabilityStatus === availabilityStatus);
+    if (statusFilter) list = list.filter(d => d.availabilityStatus === statusFilter);
     if (search) {
       const q = String(search).toLowerCase();
       list = list.filter(d => (d.displayName && d.displayName.toLowerCase().includes(q)) || (d.phone && d.phone.includes(q)));
@@ -360,6 +373,62 @@ export async function getAdminDonors(req: AuthRequest, res: Response): Promise<v
       success: false,
       message: 'রক্তদাতা তালিকা লোড করতে ব্যর্থ হয়েছে।'
     });
+  }
+}
+
+export async function toggleDonorAvailabilityByAdmin(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { availabilityStatus } = req.body;
+    const validStatuses = ['available', 'unavailable', 'temporarily_unavailable'];
+    const newStatus = validStatuses.includes(availabilityStatus) ? availabilityStatus : 'available';
+
+    if (isDatabaseConnected()) {
+      const donor = await DonorProfileModel.findById(id);
+      if (!donor) {
+        res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল খুঁজে পাওয়া যায়নি।' });
+        return;
+      }
+      donor.availabilityStatus = newStatus as any;
+      await donor.save();
+
+      await AuditLogModel.create({
+        action: 'UPDATE_DONOR_AVAILABILITY',
+        actorId: req.user?.userId,
+        actorRole: req.user?.role,
+        targetType: 'DONOR_PROFILE',
+        targetId: String(donor._id),
+        details: { newStatus }
+      });
+
+      notifyStatsChanged();
+
+      res.json({
+        success: true,
+        message: `রক্তদাতার প্রাপ্যতা সফলভাবে '${newStatus === 'available' ? 'রক্তদানে প্রস্তুত' : 'সাময়িক বিরতি'}' করা হয়েছে।`,
+        donor: {
+          _id: donor._id,
+          availabilityStatus: donor.availabilityStatus,
+          isAvailable: donor.availabilityStatus === 'available' && donor.isPubliclyListed !== false
+        }
+      });
+      return;
+    }
+
+    const donor = dataStore.donorProfiles.find(d => String(d._id) === String(id));
+    if (!donor) {
+      res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল পাওয়া যায়নি।' });
+      return;
+    }
+    donor.availabilityStatus = newStatus as any;
+    notifyStatsChanged();
+    res.json({
+      success: true,
+      message: `রক্তদাতার প্রাপ্যতা সফলভাবে '${newStatus === 'available' ? 'রক্তদানে প্রস্তুত' : 'সাময়িক বিরতি'}' করা হয়েছে।`,
+      donor
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err?.message || 'সার্ভার সমস্যা।' });
   }
 }
 

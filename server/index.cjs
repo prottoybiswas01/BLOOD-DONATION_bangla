@@ -106661,13 +106661,14 @@ async function getAdminOverview(req, res) {
 async function getAdminDonors(req, res) {
   try {
     const { bloodGroup, availabilityStatus, search, page, limit } = req.query;
+    const statusFilter = availabilityStatus || req.query.availability;
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
     const skip = (pageNum - 1) * limitNum;
     if (isDatabaseConnected()) {
       const query = {};
       if (bloodGroup) query.bloodGroup = bloodGroup;
-      if (availabilityStatus) query.availabilityStatus = availabilityStatus;
+      if (statusFilter) query.availabilityStatus = statusFilter;
       if (dataStore.suppressDemoData) {
         query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
         query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
@@ -106685,22 +106686,27 @@ async function getAdminDonors(req, res) {
         return {
           _id: p._id,
           userId: p.userId,
-          displayName: p.displayName || u?.name,
+          name: p.displayName || u?.name || "\u0985\u099C\u09CD\u099E\u09BE\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE",
+          displayName: p.displayName || u?.name || "\u0985\u099C\u09CD\u099E\u09BE\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE",
           bloodGroup: p.bloodGroup,
           division: p.division,
           district: p.district,
           upazila: p.upazila,
-          availabilityStatus: p.availabilityStatus,
+          isAvailable: p.availabilityStatus === "available" && p.isPubliclyListed !== false,
+          availabilityStatus: p.availabilityStatus || "available",
           lastDonationDate: p.lastDonationDate,
-          totalDonations: p.totalDonations,
+          totalDonations: p.totalDonations || 0,
           institutionId: p.institutionId,
+          institution: p.institutionId ? instMap.get(String(p.institutionId)) : void 0,
           institutionName: p.institutionId ? instMap.get(String(p.institutionId)) : void 0,
           institutionMembershipVerified: p.institutionMembershipVerified,
           emergencyAvailable: p.emergencyAvailable,
           consentToShareContact: p.consentToShareContact,
-          isPubliclyListed: p.isPubliclyListed,
-          phone: u?.phone,
+          isPubliclyListed: p.isPubliclyListed !== false,
+          phone: u?.phone || "",
+          role: u?.role || "MEMBER",
           userRole: u?.role || "MEMBER",
+          accountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
           userAccountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
           isActive: u?.isActive !== false,
           gender: p.gender || u?.gender,
@@ -106725,22 +106731,27 @@ async function getAdminDonors(req, res) {
       return {
         _id: p._id,
         userId: p.userId,
-        displayName: p.displayName || u?.name,
+        name: p.displayName || u?.name || "\u0985\u099C\u09CD\u099E\u09BE\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE",
+        displayName: p.displayName || u?.name || "\u0985\u099C\u09CD\u099E\u09BE\u09A4 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE",
         bloodGroup: p.bloodGroup,
         division: p.division,
         district: p.district,
         upazila: p.upazila,
-        availabilityStatus: p.availabilityStatus,
+        isAvailable: p.availabilityStatus === "available" && p.isPubliclyListed !== false,
+        availabilityStatus: p.availabilityStatus || "available",
         lastDonationDate: p.lastDonationDate,
-        totalDonations: p.totalDonations,
+        totalDonations: p.totalDonations || 0,
         institutionId: p.institutionId,
+        institution: inst?.nameBn || inst?.name,
         institutionName: inst?.nameBn || inst?.name,
         institutionMembershipVerified: p.institutionMembershipVerified,
         emergencyAvailable: p.emergencyAvailable,
         consentToShareContact: p.consentToShareContact,
-        isPubliclyListed: p.isPubliclyListed,
-        phone: u?.phone,
+        isPubliclyListed: p.isPubliclyListed !== false,
+        phone: u?.phone || "",
+        role: u?.role || "MEMBER",
         userRole: u?.role || "MEMBER",
+        accountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
         userAccountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
         isActive: u?.isActive !== false,
         gender: p.gender || u?.gender,
@@ -106751,7 +106762,7 @@ async function getAdminDonors(req, res) {
       list = list.filter((d) => !isConfirmedDemoDonor(d));
     }
     if (bloodGroup) list = list.filter((d) => d.bloodGroup === bloodGroup);
-    if (availabilityStatus) list = list.filter((d) => d.availabilityStatus === availabilityStatus);
+    if (statusFilter) list = list.filter((d) => d.availabilityStatus === statusFilter);
     if (search) {
       const q = String(search).toLowerCase();
       list = list.filter((d) => d.displayName && d.displayName.toLowerCase().includes(q) || d.phone && d.phone.includes(q));
@@ -106770,6 +106781,56 @@ async function getAdminDonors(req, res) {
       success: false,
       message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
     });
+  }
+}
+async function toggleDonorAvailabilityByAdmin(req, res) {
+  try {
+    const { id } = req.params;
+    const { availabilityStatus } = req.body;
+    const validStatuses = ["available", "unavailable", "temporarily_unavailable"];
+    const newStatus = validStatuses.includes(availabilityStatus) ? availabilityStatus : "available";
+    if (isDatabaseConnected()) {
+      const donor2 = await DonorProfileModel.findById(id);
+      if (!donor2) {
+        res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09DF\u09BE \u09AF\u09BE\u09DF\u09A8\u09BF\u0964" });
+        return;
+      }
+      donor2.availabilityStatus = newStatus;
+      await donor2.save();
+      await AuditLogModel.create({
+        action: "UPDATE_DONOR_AVAILABILITY",
+        actorId: req.user?.userId,
+        actorRole: req.user?.role,
+        targetType: "DONOR_PROFILE",
+        targetId: String(donor2._id),
+        details: { newStatus }
+      });
+      notifyStatsChanged();
+      res.json({
+        success: true,
+        message: `\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09AF\u09A4\u09BE \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 '${newStatus === "available" ? "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7 \u09AA\u09CD\u09B0\u09B8\u09CD\u09A4\u09C1\u09A4" : "\u09B8\u09BE\u09AE\u09DF\u09BF\u0995 \u09AC\u09BF\u09B0\u09A4\u09BF"}' \u0995\u09B0\u09BE \u09B9\u09DF\u09C7\u099B\u09C7\u0964`,
+        donor: {
+          _id: donor2._id,
+          availabilityStatus: donor2.availabilityStatus,
+          isAvailable: donor2.availabilityStatus === "available" && donor2.isPubliclyListed !== false
+        }
+      });
+      return;
+    }
+    const donor = dataStore.donorProfiles.find((d) => String(d._id) === String(id));
+    if (!donor) {
+      res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09AA\u09BE\u0993\u09DF\u09BE \u09AF\u09BE\u09DF\u09A8\u09BF\u0964" });
+      return;
+    }
+    donor.availabilityStatus = newStatus;
+    notifyStatsChanged();
+    res.json({
+      success: true,
+      message: `\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09BE\u09AA\u09CD\u09AF\u09A4\u09BE \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 '${newStatus === "available" ? "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A8\u09C7 \u09AA\u09CD\u09B0\u09B8\u09CD\u09A4\u09C1\u09A4" : "\u09B8\u09BE\u09AE\u09DF\u09BF\u0995 \u09AC\u09BF\u09B0\u09A4\u09BF"}' \u0995\u09B0\u09BE \u09B9\u09DF\u09C7\u099B\u09C7\u0964`,
+      donor
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err?.message || "\u09B8\u09BE\u09B0\u09CD\u09AD\u09BE\u09B0 \u09B8\u09AE\u09B8\u09CD\u09AF\u09BE\u0964" });
   }
 }
 async function getUsers(req, res) {
@@ -107169,6 +107230,7 @@ router6.post(
 router6.use(requireAuth, requireRoles("SUPER_ADMIN", "ADMIN"));
 router6.get("/overview", getAdminOverview);
 router6.get("/donors", getAdminDonors);
+router6.patch("/donors/:id/availability", toggleDonorAvailabilityByAdmin);
 router6.get("/users", getUsers);
 router6.get("/users/:id", getUserById);
 router6.patch("/users/:id/profile", validateBody(AdminEditProfileSchema), editUserProfileByAdmin);

@@ -255,7 +255,7 @@ export const DonorSearch: React.FC = () => {
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-900 font-semibold shadow-soft">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>আপনার বর্তমান অবস্থান অনুযায়ী <strong>{detectedDistrictName}</strong> জেলার রক্তদাতাদের তালিকা দেখানো হচ্ছে (প্রতি পৃষ্ঠায় সর্বোচ্চ ৯ জন)। মোট ফলাফল: <strong>{totalCount} জন</strong></span>
+              <span>আপনার বর্তমান অবস্থান অনুযায়ী <strong>{detectedDistrictName}</strong> জেলার রক্তদাতাদের তালিকা দেখানো হচ্ছে। মোট রক্তদাতা পাওয়া গেছে: <strong>{totalCount} জন</strong></span>
             </div>
             <button onClick={handleReset} className="text-emerald-700 hover:text-emerald-800 underline text-xs whitespace-nowrap">
               সব জেলা দেখুন

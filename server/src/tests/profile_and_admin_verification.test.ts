@@ -358,4 +358,42 @@ test('Profile & Admin Workflow Suite', async (t) => {
     assert.ok(instVal.pendingRequest);
     assert.equal(instVal.pendingRequest.targetInstitutionId, TEST_INST_ID);
   });
+
+  // 10. Admin Direct Donor Availability Toggle (Super Admin can pause/reactivate donor profile)
+  await t.test('10. Admin Direct Availability Toggle: Admin can pause and reactivate donor profile', async () => {
+    // 1. Get donor profile ID for member
+    const donorsRes = await fetch(`${baseUrl}/api/v1/admin/donors`, {
+      headers: { Authorization: `Bearer ${superAdminToken}` }
+    });
+    const donorsData: any = await donorsRes.json();
+    assert.equal(donorsData.success, true);
+    const targetDonor = donorsData.donors.find((d: any) => d.userId === MEMBER_ID);
+    assert.ok(targetDonor, 'Member donor profile must exist in admin donors list');
+
+    // 2. Admin pauses donor
+    const pauseRes = await fetch(`${baseUrl}/api/v1/admin/donors/${targetDonor._id}/availability`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({ availabilityStatus: 'temporarily_unavailable' })
+    });
+    const pauseData: any = await pauseRes.json();
+    assert.equal(pauseData.success, true);
+    assert.equal(pauseData.donor.availabilityStatus, 'temporarily_unavailable');
+
+    // 3. Admin reactivates donor
+    const reactivateRes = await fetch(`${baseUrl}/api/v1/admin/donors/${targetDonor._id}/availability`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({ availabilityStatus: 'available' })
+    });
+    const reactivateData: any = await reactivateRes.json();
+    assert.equal(reactivateData.success, true);
+    assert.equal(reactivateData.donor.availabilityStatus, 'available');
+  });
 });

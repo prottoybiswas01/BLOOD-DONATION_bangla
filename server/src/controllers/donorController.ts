@@ -7,6 +7,7 @@ import { logAuditEvent } from '../services/auditService.js';
 
 export const UpdateDonorProfileSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
+  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
   division: z.string().optional(),
   district: z.string().optional(),
   upazila: z.string().optional(),
@@ -18,6 +19,17 @@ export const UpdateDonorProfileSchema = z.object({
   bio: z.string().max(500).optional(),
   emergencyAvailable: z.boolean().optional(),
   isPubliclyListed: z.boolean().optional()
+});
+
+export const ActivateDonorProfileSchema = z.object({
+  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+  division: z.string().optional(),
+  district: z.string().optional(),
+  upazila: z.string().optional(),
+  availabilityStatus: z.enum(['available', 'recently_donated', 'temporarily_unavailable']).default('available'),
+  consentToShareContact: z.boolean().default(true),
+  isPubliclyListed: z.boolean().default(true),
+  bio: z.string().max(500).optional()
 });
 
 export const RevealContactSchema = z.object({
@@ -192,6 +204,46 @@ export async function getMyDonorProfile(req: AuthRequest, res: Response): Promis
   });
 }
 
+export async function activateMyDonorProfile(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const existing = await dataStore.findDonorProfileByUserId(req.user.userId);
+  if (existing) {
+    res.status(400).json({
+      success: false,
+      message: 'আপনার রক্তদাতা প্রোফাইলটি ইতিমধ্যে সক্রিয় রয়েছে।'
+    });
+    return;
+  }
+
+  const user = await dataStore.findUserById(req.user.userId);
+  const data = req.body;
+  const newProfile = await dataStore.createDonorProfile({
+    userId: req.user.userId,
+    displayName: user?.name || req.user.name,
+    bloodGroup: data.bloodGroup || 'O+',
+    division: data.division || user?.division || 'dhaka',
+    district: data.district || user?.district || 'dhaka',
+    upazila: data.upazila || user?.upazila || '',
+    dateOfBirth: new Date('2000-01-01'),
+    gender: (user?.gender as any) || 'unspecified',
+    availabilityStatus: data.availabilityStatus || 'available',
+    consentToShareContact: data.consentToShareContact ?? true,
+    isPubliclyListed: data.isPubliclyListed ?? true,
+    emergencyAvailable: true,
+    bio: data.bio
+  });
+
+  res.status(201).json({
+    success: true,
+    message: 'রক্তদাতা প্রোফাইল সফলভাবে চালু করা হয়েছে।',
+    profile: newProfile
+  });
+}
+
 export async function updateMyDonorProfile(req: AuthRequest, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ success: false, message: 'অননুমোদিত।' });
@@ -204,7 +256,28 @@ export async function updateMyDonorProfile(req: AuthRequest, res: Response): Pro
     updatePayload.lastDonationDate = new Date(data.lastDonationDate);
   }
 
-  const updated = await dataStore.updateDonorProfile(req.user.userId, updatePayload);
+  let updated = await dataStore.updateDonorProfile(req.user.userId, updatePayload);
+  
+  // If user does not have a donor profile yet and provides a bloodGroup, automatically activate
+  if (!updated && data.bloodGroup) {
+    const user = await dataStore.findUserById(req.user.userId);
+    updated = await dataStore.createDonorProfile({
+      userId: req.user.userId,
+      displayName: user?.name || req.user.name,
+      bloodGroup: data.bloodGroup,
+      division: data.division || user?.division || 'dhaka',
+      district: data.district || user?.district || 'dhaka',
+      upazila: data.upazila || user?.upazila || '',
+      dateOfBirth: new Date('2000-01-01'),
+      gender: (user?.gender as any) || 'unspecified',
+      availabilityStatus: data.availabilityStatus || 'available',
+      consentToShareContact: data.consentToShareContact ?? true,
+      isPubliclyListed: data.isPubliclyListed ?? true,
+      emergencyAvailable: true,
+      bio: data.bio
+    });
+  }
+
   if (!updated) {
     res.status(404).json({ success: false, message: 'রক্তদাতা প্রোফাইল পাওয়া যায়নি।' });
     return;

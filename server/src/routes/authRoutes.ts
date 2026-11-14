@@ -15,7 +15,9 @@ import {
   VerifyOtpSchema,
   RegisterSchema,
   LoginSchema,
-  ChangeFirstLoginPasswordSchema
+  ChangeFirstLoginPasswordSchema,
+  ChangePasswordSchema,
+  changePassword
 } from '../controllers/authController.js';
 import { validateBody } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -29,6 +31,7 @@ router.post('/register', authRateLimiter, validateBody(RegisterSchema), register
 router.post('/login', authRateLimiter, validateBody(LoginSchema), login);
 router.get('/me', requireAuth, getMe);
 router.post(['/change-first-login-password', '/change-password-first-login'], requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
+router.post('/change-password', requireAuth, validateBody(ChangePasswordSchema), changePassword);
 
 // Password Recovery System (Supports both /recovery-requests and /recovery/requests)
 router.post(['/forgot-password', '/recovery/forgot-password', '/recovery-requests', '/recovery/requests'], authRateLimiter, submitForgotPassword);

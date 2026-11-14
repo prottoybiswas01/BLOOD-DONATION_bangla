@@ -80,6 +80,8 @@ const DonorProfileSchema = new Schema<IDonorProfile>(
 );
 
 // Compound indexes for high-speed location + blood group searches
+DonorProfileSchema.index({ isPubliclyListed: 1, availabilityStatus: 1, bloodGroup: 1, division: 1, district: 1 });
+DonorProfileSchema.index({ isPubliclyListed: 1, district: 1 });
 DonorProfileSchema.index({ bloodGroup: 1, division: 1, district: 1, availabilityStatus: 1 });
 DonorProfileSchema.index({ division: 1, district: 1, upazila: 1 });
 

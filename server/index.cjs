@@ -95916,6 +95916,8 @@ var UserSchema = new import_mongoose.Schema(
     timestamps: true
   }
 );
+UserSchema.index({ role: 1, accountStatus: 1, isActive: 1 });
+UserSchema.index({ createdAt: 1 });
 var UserModel = import_mongoose.default.model("User", UserSchema);
 
 // src/models/DonorProfile.ts
@@ -97030,6 +97032,8 @@ var DonorProfileSchema = new import_mongoose2.Schema(
     timestamps: true
   }
 );
+DonorProfileSchema.index({ isPubliclyListed: 1, availabilityStatus: 1, bloodGroup: 1, division: 1, district: 1 });
+DonorProfileSchema.index({ isPubliclyListed: 1, district: 1 });
 DonorProfileSchema.index({ bloodGroup: 1, division: 1, district: 1, availabilityStatus: 1 });
 DonorProfileSchema.index({ division: 1, district: 1, upazila: 1 });
 var DonorProfileModel = import_mongoose2.default.model("DonorProfile", DonorProfileSchema);
@@ -97110,6 +97114,8 @@ var BloodRequestSchema = new import_mongoose3.Schema(
     timestamps: true
   }
 );
+BloodRequestSchema.index({ status: 1, urgencyLevel: -1, requiredDate: 1 });
+BloodRequestSchema.index({ status: 1, bloodGroup: 1, division: 1, district: 1 });
 BloodRequestSchema.index({ status: 1, requiredDate: -1 });
 BloodRequestSchema.index({ division: 1, status: 1 });
 var BloodRequestModel = import_mongoose3.default.model("BloodRequest", BloodRequestSchema);
@@ -97568,11 +97574,7 @@ var ENV = {
   SMS_API_KEY: process.env.SMS_API_KEY || "",
   CLIENT_URL: process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : [],
-  DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10),
-  SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || "",
-  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || "",
-  SUPER_ADMIN_NAME: process.env.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || ""
+  DAILY_CONTACT_LIMIT: parseInt(process.env.DAILY_CONTACT_LIMIT || "5", 10)
 };
 
 // src/config/db.ts
@@ -97689,25 +97691,17 @@ function isConfirmedDemoRequest(r) {
   }
   return CONFIRMED_DEMO_REQUEST_IDS.has(id) || CONFIRMED_DEMO_PUBLIC_IDS.has(publicId) || CONFIRMED_DEMO_USER_IDS.has(requesterId);
 }
-function getBuiltInSuperAdmin() {
-  const now = /* @__PURE__ */ new Date();
-  const rawPass = ENV.SUPER_ADMIN_PASSWORD;
-  const passwordHash = rawPass ? bcryptjs_default.hashSync(rawPass, 10) : "$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin";
-  return {
-    _id: "usr_superadmin",
-    name: ENV.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-    phone: ENV.SUPER_ADMIN_PHONE || "01700000000",
-    email: ENV.SUPER_ADMIN_EMAIL || "admin@bloodbd.org",
-    passwordHash,
-    role: "SUPER_ADMIN",
-    accountStatus: "active",
-    gender: "male",
-    isActive: true,
-    isPhoneVerified: true,
-    tokenVersion: 2,
-    createdAt: now,
-    updatedAt: now
-  };
+var onStatsChangedListener = null;
+function setOnStatsChangedListener(listener) {
+  onStatsChangedListener = listener;
+}
+function notifyStatsChanged() {
+  if (onStatsChangedListener) {
+    try {
+      onStatsChangedListener();
+    } catch (e) {
+    }
+  }
 }
 var DataStore = class {
   // Website launch suppression: stops returning confirmed demo data in public lists and direct URLs
@@ -97734,7 +97728,7 @@ var DataStore = class {
     }
   }
   seedInitialData() {
-    this.users = [getBuiltInSuperAdmin()];
+    this.users = [];
     this.institutions = [];
     this.donorProfiles = [];
     this.bloodRequests = [];
@@ -97784,51 +97778,9 @@ var DataStore = class {
       this.notifications = dbNotifs || [];
       const dbLogs = await ContactAccessLogModel.find().lean();
       this.contactAccessLogs = dbLogs || [];
-      await this.ensureSingleSuperAdmin();
       console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err) {
       console.warn("[Database Sync Warning]:", err.message);
-    }
-  }
-  async ensureSingleSuperAdmin() {
-    const defaultAdmin = getBuiltInSuperAdmin();
-    const existing = this.users.find((u) => u._id === defaultAdmin._id || u.role === "SUPER_ADMIN");
-    if (existing) {
-      if (ENV.SUPER_ADMIN_PASSWORD) {
-        existing.passwordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-      }
-      if (ENV.SUPER_ADMIN_PHONE) {
-        existing.phone = ENV.SUPER_ADMIN_PHONE;
-      }
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: existing._id },
-            {
-              $set: {
-                ...ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {},
-                ...ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {},
-                updatedAt: /* @__PURE__ */ new Date()
-              }
-            }
-          );
-        } catch (err) {
-          console.warn("[DataStore] ensureSingleSuperAdmin sync error:", err?.message);
-        }
-      }
-    } else {
-      this.users.unshift(defaultAdmin);
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: defaultAdmin._id },
-            { $set: defaultAdmin },
-            { upsert: true }
-          );
-        } catch (err) {
-          console.warn("[DataStore] ensureSingleSuperAdmin DB error:", err?.message);
-        }
-      }
     }
   }
   assertWritable() {
@@ -98268,6 +98220,7 @@ var DataStore = class {
   async createDonorProfile(data) {
     const profile = this.createDonorProfileSync(data);
     await this.persistDonorProfile(profile);
+    notifyStatsChanged();
     return profile;
   }
   async updateDonorProfile(userId, update) {
@@ -98285,6 +98238,7 @@ var DataStore = class {
           const idx = this.donorProfiles.findIndex((d) => d.userId === userId);
           if (idx >= 0) this.donorProfiles[idx] = profile;
           else this.donorProfiles.push(profile);
+          notifyStatsChanged();
           return profile;
         }
       } catch (e) {
@@ -98295,6 +98249,7 @@ var DataStore = class {
     if (!memProf) return null;
     Object.assign(memProf, update, { updatedAt: /* @__PURE__ */ new Date() });
     await this.persistDonorProfile(memProf);
+    notifyStatsChanged();
     return memProf;
   }
   async searchDonors(filters) {
@@ -98309,18 +98264,22 @@ var DataStore = class {
         if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, "i");
         if (filters.institutionId) query.institutionId = filters.institutionId;
         if (filters.availabilityStatus) query.availabilityStatus = filters.availabilityStatus;
+        if (this.suppressDemoData) {
+          query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
+          query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
+        }
         const total = await DonorProfileModel.countDocuments(query);
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
+        const page = Math.max(1, filters.page || 1);
+        const limit = Math.max(1, Math.min(100, filters.limit || 10));
         const skip = (page - 1) * limit;
-        const profiles = await DonorProfileModel.find(query).skip(skip).limit(limit).lean();
+        const profiles = await DonorProfileModel.find(query).select("_id userId displayName bloodGroup division district upazila availabilityStatus lastDonationDate totalDonations institutionId institutionMembershipVerified emergencyAvailable consentToShareContact bio createdAt").skip(skip).limit(limit).lean();
         const userIds = profiles.map((p) => String(p.userId));
         const users = await UserModel.find({ _id: { $in: userIds } }).select("_id phone accountStatus isActive").lean();
         const activeUserMap = new Map(
           users.filter((u) => u.accountStatus === "active" && u.isActive !== false).map((u) => [String(u._id), u.phone])
         );
         const instIds = profiles.map((p) => p.institutionId).filter(Boolean);
-        const insts = await InstitutionModel.find({ _id: { $in: instIds } }).lean();
+        const insts = await InstitutionModel.find({ _id: { $in: instIds } }).select("_id name nameBn").lean();
         const instMap = new Map(insts.map((i) => [String(i._id), i.nameBn || i.name]));
         let safeDonors = profiles.filter((p) => activeUserMap.has(String(p.userId))).map((p) => {
           const isPublicContactAllowed = Boolean(p.consentToShareContact);
@@ -98347,12 +98306,11 @@ var DataStore = class {
         if (this.suppressDemoData) {
           safeDonors = safeDonors.filter((p) => !isConfirmedDemoDonor(p));
         }
-        const effectiveTotal = this.suppressDemoData ? safeDonors.length : total;
         return {
           donors: safeDonors,
-          total: effectiveTotal,
+          total,
           page,
-          totalPages: Math.ceil(effectiveTotal / limit)
+          totalPages: Math.ceil(total / limit) || 1
         };
       } catch (e) {
         console.warn("[DataStore] searchDonors DB error:", e?.message);
@@ -98525,6 +98483,7 @@ var DataStore = class {
   async createBloodRequest(data) {
     const req = this.createBloodRequestSync(data);
     await this.persistBloodRequest(req);
+    notifyStatsChanged();
     return req;
   }
   async updateBloodRequest(id, update) {
@@ -98542,6 +98501,7 @@ var DataStore = class {
           const idx = this.bloodRequests.findIndex((r) => r._id === req._id);
           if (idx >= 0) this.bloodRequests[idx] = req;
           else this.bloodRequests.unshift(req);
+          notifyStatsChanged();
           return req;
         }
       } catch (e) {
@@ -98552,6 +98512,7 @@ var DataStore = class {
     if (!memReq) return null;
     Object.assign(memReq, update, { updatedAt: /* @__PURE__ */ new Date() });
     await this.persistBloodRequest(memReq);
+    notifyStatsChanged();
     return memReq;
   }
   async searchBloodRequests(filters) {
@@ -98569,11 +98530,15 @@ var DataStore = class {
         if (filters.upazila) query.upazila = new RegExp(`^${escapeRegex(filters.upazila)}$`, "i");
         if (filters.urgencyLevel) query.urgencyLevel = filters.urgencyLevel;
         if (filters.institutionId) query.institutionId = filters.institutionId;
+        if (this.suppressDemoData) {
+          query._id = { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) };
+          query.publicId = { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) };
+        }
         const total = await BloodRequestModel.countDocuments(query);
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
+        const page = Math.max(1, filters.page || 1);
+        const limit = Math.max(1, Math.min(100, filters.limit || 10));
         const skip = (page - 1) * limit;
-        const docs = await BloodRequestModel.find(query).sort({
+        const docs = await BloodRequestModel.find(query).select("_id publicId requesterId patientName bloodGroup unitsRequired unitsFulfilled hospitalName hospitalAddress division district upazila requiredDate requiredWithin urgencyLevel reason contactPersonName contactNumber alternativeContactNumber additionalNotes consentForPublicShare status statusHistory institutionId expiresAt createdAt updatedAt").sort({
           urgencyLevel: -1,
           requiredDate: 1
         }).skip(skip).limit(limit).lean();
@@ -98587,12 +98552,11 @@ var DataStore = class {
         if (this.suppressDemoData) {
           results = results.filter((r) => !isConfirmedDemoRequest(r));
         }
-        const effectiveTotal = this.suppressDemoData ? results.length : total;
         return {
           requests: results,
-          total: effectiveTotal,
+          total,
           page,
-          totalPages: Math.ceil(effectiveTotal / limit)
+          totalPages: Math.ceil(total / limit) || 1
         };
       } catch (e) {
         console.warn("[DataStore] searchBloodRequests DB error:", e?.message);
@@ -104061,6 +104025,10 @@ var LoginSchema = external_exports.object({
 var ChangeFirstLoginPasswordSchema = external_exports.object({
   newPassword: external_exports.string().min(6, "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EC \u0985\u0995\u09CD\u09B7\u09B0\u09C7\u09B0 \u09B9\u09A4\u09C7 \u09B9\u09AC\u09C7")
 });
+var ChangePasswordSchema = external_exports.object({
+  currentPassword: external_exports.string().min(1, "\u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u0986\u09AC\u09B6\u09CD\u09AF\u0995"),
+  newPassword: external_exports.string().min(6, "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u0995\u09AE\u09AA\u0995\u09CD\u09B7\u09C7 \u09EC \u0985\u0995\u09CD\u09B7\u09B0\u09C7\u09B0 \u09B9\u09A4\u09C7 \u09B9\u09AC\u09C7")
+});
 function normalizePhone(raw) {
   if (!raw) return "";
   const bengaliDigits = ["\u09E6", "\u09E7", "\u09E8", "\u09E9", "\u09EA", "\u09EB", "\u09EC", "\u09ED", "\u09EE", "\u09EF"];
@@ -104173,7 +104141,8 @@ async function register(req, res) {
       name: newUser.name,
       assignedDivision: newUser.assignedDivision,
       assignedInstitution: newUser.assignedInstitution,
-      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin
+      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin,
+      tokenVersion: newUser.tokenVersion || 1
     },
     ENV.JWT_SECRET,
     { expiresIn: "7d" }
@@ -104210,12 +104179,8 @@ async function login(req, res) {
   let user = phone ? await dataStore.findUserByPhone(phone) : void 0;
   if (!user && rawIdentifier) {
     user = await dataStore.findUserById(rawIdentifier) || dataStore.users.find(
-      (u) => u.phone && u.phone === rawIdentifier || u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase() || u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase() || (rawIdentifier.toLowerCase() === "superadmin" || rawIdentifier.toLowerCase() === "admin") && u.role === "SUPER_ADMIN"
+      (u) => u.phone && u.phone === rawIdentifier || u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase() || u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase()
     );
-    if (!user && (rawIdentifier.toLowerCase() === "superadmin" || rawIdentifier.toLowerCase() === "admin" || phone === "01700000000" || rawIdentifier === "01700000000" || rawIdentifier === "usr_superadmin" || ENV.SUPER_ADMIN_PHONE && (phone === ENV.SUPER_ADMIN_PHONE || rawIdentifier === ENV.SUPER_ADMIN_PHONE))) {
-      await dataStore.ensureSingleSuperAdmin();
-      user = dataStore.users.find((u) => u._id === "usr_superadmin" || u.role === "SUPER_ADMIN");
-    }
     if (!user && isDatabaseConnected()) {
       try {
         const doc = await UserModel.findOne({
@@ -104248,14 +104213,7 @@ async function login(req, res) {
     });
     return;
   }
-  let isPasswordValid = bcryptjs_default.compareSync(password, user.passwordHash);
-  if (!isPasswordValid && user.role === "SUPER_ADMIN" && ENV.SUPER_ADMIN_PASSWORD && password === ENV.SUPER_ADMIN_PASSWORD) {
-    isPasswordValid = true;
-    const newHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-    user.passwordHash = newHash;
-    dataStore.updateUser(user._id, { passwordHash: newHash }).catch(() => {
-    });
-  }
+  const isPasswordValid = bcryptjs_default.compareSync(password, user.passwordHash);
   if (!isPasswordValid) {
     res.status(401).json({
       success: false,
@@ -104349,6 +104307,36 @@ async function changeFirstLoginPassword(req, res) {
   res.json({
     success: true,
     message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09A4\u09C1\u09A8 \u09B8\u09CD\u09A5\u09BE\u09AF\u09BC\u09C0 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09BF\u09A4 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964 \u098F\u0996\u09A8 \u0986\u09AA\u09A8\u09BF \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u09B8\u0995\u09B2 \u09B8\u09C7\u09AC\u09BE \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8\u0964"
+  });
+}
+async function changePassword(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { currentPassword, newPassword } = req.body;
+  const user = await dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  const isCurrentValid = bcryptjs_default.compareSync(currentPassword, user.passwordHash);
+  if (!isCurrentValid) {
+    res.status(400).json({ success: false, message: "\u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8 \u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B8\u09A0\u09BF\u0995 \u09A8\u09AF\u09BC\u0964" });
+    return;
+  }
+  const newHash = bcryptjs_default.hashSync(newPassword, 10);
+  await dataStore.updateUser(user._id, { passwordHash: newHash });
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "PASSWORD_CHANGED",
+    targetType: "User",
+    targetId: req.user.userId
+  });
+  res.json({
+    success: true,
+    message: "\u09AA\u09BE\u09B8\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
   });
 }
 async function submitForgotPassword(req, res) {
@@ -104547,7 +104535,7 @@ async function requireAuth(req, res, next) {
       return;
     }
     const tokenVer = decoded.tokenVersion;
-    if (user.tokenVersion !== void 0 && (tokenVer === void 0 || tokenVer < user.tokenVersion)) {
+    if (user.tokenVersion && user.tokenVersion > 1 && (tokenVer === void 0 || tokenVer < user.tokenVersion)) {
       res.status(401).json({
         success: false,
         sessionInvalidated: true,
@@ -105456,6 +105444,7 @@ router.post("/register", authRateLimiter, validateBody(RegisterSchema), register
 router.post("/login", authRateLimiter, validateBody(LoginSchema), login);
 router.get("/me", requireAuth, getMe);
 router.post(["/change-first-login-password", "/change-password-first-login"], requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
+router.post("/change-password", requireAuth, validateBody(ChangePasswordSchema), changePassword);
 router.post(["/forgot-password", "/recovery/forgot-password", "/recovery-requests", "/recovery/requests"], authRateLimiter, submitForgotPassword);
 router.get(["/recovery-requests", "/recovery/requests"], requireAuth, getPasswordRecoveryRequests);
 router.post(["/recovery-requests/:id/approve", "/recovery/requests/:id/approve"], requireAuth, approvePasswordRecoveryRequest);
@@ -105469,6 +105458,7 @@ var import_express2 = __toESM(require_express2());
 // src/controllers/donorController.ts
 var UpdateDonorProfileSchema = external_exports.object({
   displayName: external_exports.string().min(2).max(80).optional(),
+  bloodGroup: external_exports.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
   division: external_exports.string().optional(),
   district: external_exports.string().optional(),
   upazila: external_exports.string().optional(),
@@ -105480,6 +105470,16 @@ var UpdateDonorProfileSchema = external_exports.object({
   bio: external_exports.string().max(500).optional(),
   emergencyAvailable: external_exports.boolean().optional(),
   isPubliclyListed: external_exports.boolean().optional()
+});
+var ActivateDonorProfileSchema = external_exports.object({
+  bloodGroup: external_exports.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
+  division: external_exports.string().optional(),
+  district: external_exports.string().optional(),
+  upazila: external_exports.string().optional(),
+  availabilityStatus: external_exports.enum(["available", "recently_donated", "temporarily_unavailable"]).default("available"),
+  consentToShareContact: external_exports.boolean().default(true),
+  isPubliclyListed: external_exports.boolean().default(true),
+  bio: external_exports.string().max(500).optional()
 });
 var RevealContactSchema = external_exports.object({
   purpose: external_exports.enum(["blood_request", "emergency_search", "direct_request"]).default("emergency_search"),
@@ -105622,6 +105622,42 @@ async function getMyDonorProfile(req, res) {
     profile
   });
 }
+async function activateMyDonorProfile(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const existing = await dataStore.findDonorProfileByUserId(req.user.userId);
+  if (existing) {
+    res.status(400).json({
+      success: false,
+      message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2\u099F\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    });
+    return;
+  }
+  const user = await dataStore.findUserById(req.user.userId);
+  const data = req.body;
+  const newProfile = await dataStore.createDonorProfile({
+    userId: req.user.userId,
+    displayName: user?.name || req.user.name,
+    bloodGroup: data.bloodGroup || "O+",
+    division: data.division || user?.division || "dhaka",
+    district: data.district || user?.district || "dhaka",
+    upazila: data.upazila || user?.upazila || "",
+    dateOfBirth: /* @__PURE__ */ new Date("2000-01-01"),
+    gender: user?.gender || "unspecified",
+    availabilityStatus: data.availabilityStatus || "available",
+    consentToShareContact: data.consentToShareContact ?? true,
+    isPubliclyListed: data.isPubliclyListed ?? true,
+    emergencyAvailable: true,
+    bio: data.bio
+  });
+  res.status(201).json({
+    success: true,
+    message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u099A\u09BE\u09B2\u09C1 \u0995\u09B0\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
+    profile: newProfile
+  });
+}
 async function updateMyDonorProfile(req, res) {
   if (!req.user) {
     res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
@@ -105632,7 +105668,25 @@ async function updateMyDonorProfile(req, res) {
   if (data.lastDonationDate) {
     updatePayload.lastDonationDate = new Date(data.lastDonationDate);
   }
-  const updated = await dataStore.updateDonorProfile(req.user.userId, updatePayload);
+  let updated = await dataStore.updateDonorProfile(req.user.userId, updatePayload);
+  if (!updated && data.bloodGroup) {
+    const user = await dataStore.findUserById(req.user.userId);
+    updated = await dataStore.createDonorProfile({
+      userId: req.user.userId,
+      displayName: user?.name || req.user.name,
+      bloodGroup: data.bloodGroup,
+      division: data.division || user?.division || "dhaka",
+      district: data.district || user?.district || "dhaka",
+      upazila: data.upazila || user?.upazila || "",
+      dateOfBirth: /* @__PURE__ */ new Date("2000-01-01"),
+      gender: user?.gender || "unspecified",
+      availabilityStatus: data.availabilityStatus || "available",
+      consentToShareContact: data.consentToShareContact ?? true,
+      isPubliclyListed: data.isPubliclyListed ?? true,
+      emergencyAvailable: true,
+      bio: data.bio
+    });
+  }
   if (!updated) {
     res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
@@ -105672,6 +105726,7 @@ var router2 = (0, import_express2.Router)();
 router2.get(["/me", "/dashboard"], requireAuth, getMyDonorProfile);
 router2.patch(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.put(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router2.post(["/me/activate", "/activate"], requireAuth, validateBody(ActivateDonorProfileSchema), activateMyDonorProfile);
 router2.post("/record-donation", requireAuth, recordDonation);
 router2.get(["/", "/search"], searchDonors);
 router2.get(["/profile/:id", "/:id"], getDonorById);
@@ -106408,6 +106463,32 @@ async function getDivisionModeratorsSummary(req, res) {
 }
 
 // src/controllers/adminController.ts
+function getBangladeshLast6Months() {
+  const BENGALI_MONTHS = ["\u099C\u09BE\u09A8\u09C1\u09DF\u09BE\u09B0\u09BF", "\u09AB\u09C7\u09AC\u09CD\u09B0\u09C1\u09DF\u09BE\u09B0\u09BF", "\u09AE\u09BE\u09B0\u09CD\u099A", "\u098F\u09AA\u09CD\u09B0\u09BF\u09B2", "\u09AE\u09C7", "\u099C\u09C1\u09A8", "\u099C\u09C1\u09B2\u09BE\u0987", "\u0986\u0997\u09B8\u09CD\u099F", "\u09B8\u09C7\u09AA\u09CD\u099F\u09C7\u09AE\u09CD\u09AC\u09B0", "\u0985\u0995\u09CD\u099F\u09CB\u09AC\u09B0", "\u09A8\u09AD\u09C7\u09AE\u09CD\u09AC\u09B0", "\u09A1\u09BF\u09B8\u09C7\u09AE\u09CD\u09AC\u09B0"];
+  const now = /* @__PURE__ */ new Date();
+  const bstTime = new Date(now.getTime() + 6 * 3600 * 1e3);
+  const curYear = bstTime.getUTCFullYear();
+  const curMonth = bstTime.getUTCMonth();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = curMonth - i;
+    let y = curYear;
+    while (m < 0) {
+      m += 12;
+      y -= 1;
+    }
+    const start = new Date(Date.UTC(y, m, 1, -6, 0, 0, 0));
+    const end = new Date(Date.UTC(y, m + 1, 1, -6, 0, 0, 0));
+    months.push({
+      label: BENGALI_MONTHS[m],
+      year: y,
+      month: m + 1,
+      start,
+      end
+    });
+  }
+  return months;
+}
 var UpdateRoleSchema = external_exports.object({
   role: external_exports.enum(["SUPER_ADMIN", "ADMIN", "DIVISION_COORDINATOR", "INSTITUTION_MODERATOR", "MEMBER", "DONOR", "REQUESTER"]),
   assignedDivision: external_exports.string().optional(),
@@ -106431,27 +106512,265 @@ var AdminEditProfileSchema = external_exports.object({
   assignedInstitution: external_exports.string().optional()
 });
 async function getAdminOverview(req, res) {
-  const usersCount = dataStore.users.length;
-  const donorsCount = dataStore.donorProfiles.length;
-  const requestsCount = dataStore.bloodRequests.length;
-  const institutionsCount = dataStore.institutions.length;
-  const pendingInstitutions = dataStore.institutionRequests.filter((i) => i.status === "pending_review").length;
-  const pendingReports = dataStore.reports.filter((r) => r.status === "pending").length;
-  const totalContactReveals = dataStore.contactAccessLogs.length;
-  const blockedUsersCount = dataStore.users.filter((u) => u.accountStatus !== "active" || !u.isActive).length;
-  res.json({
-    success: true,
-    stats: {
-      usersCount,
-      donorsCount,
-      requestsCount,
-      institutionsCount,
-      pendingInstitutions,
-      pendingReports,
-      totalContactReveals,
-      blockedUsersCount
+  try {
+    const ALL_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+    const months = getBangladeshLast6Months();
+    const demoUserIds = Array.from(CONFIRMED_DEMO_USER_IDS).concat(["usr_superadmin"]);
+    if (isDatabaseConnected()) {
+      const [
+        usersCount,
+        activeAccounts,
+        blockedUsersCount,
+        donorsCount,
+        availableDonors,
+        requestsCount,
+        activeRequests,
+        institutionsCount,
+        pendingInstitutions,
+        pendingPhoneRequests,
+        pendingRecoveryRequests,
+        pendingInstitutionChanges,
+        pendingReports,
+        totalContactReveals,
+        groupCountsRaw,
+        monthlyCountsRaw
+      ] = await Promise.all([
+        UserModel.countDocuments({ _id: { $nin: demoUserIds } }),
+        UserModel.countDocuments({ accountStatus: "active", isActive: true, _id: { $nin: demoUserIds } }),
+        UserModel.countDocuments({
+          $or: [{ accountStatus: { $ne: "active" } }, { isActive: false }],
+          _id: { $nin: demoUserIds }
+        }),
+        DonorProfileModel.countDocuments({
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: demoUserIds }
+        }),
+        DonorProfileModel.countDocuments({
+          availabilityStatus: "available",
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: demoUserIds }
+        }),
+        BloodRequestModel.countDocuments({
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) }
+        }),
+        BloodRequestModel.countDocuments({
+          status: { $in: ["open", "partially_fulfilled"] },
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) }
+        }),
+        InstitutionModel.countDocuments(),
+        InstitutionRequestModel.countDocuments({ status: "pending_review" }),
+        PhoneChangeRequestModel.countDocuments({ status: "pending" }),
+        PasswordRecoveryRequestModel.countDocuments({ status: "pending" }),
+        InstitutionChangeRequestModel.countDocuments({ status: "pending" }),
+        ReportModel.countDocuments({ status: "pending" }),
+        ContactAccessLogModel.countDocuments(),
+        DonorProfileModel.aggregate([
+          {
+            $match: {
+              _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+              userId: { $nin: demoUserIds }
+            }
+          },
+          {
+            $group: {
+              _id: "$bloodGroup",
+              count: { $sum: 1 }
+            }
+          }
+        ]),
+        Promise.all(months.map((m) => UserModel.countDocuments({
+          createdAt: { $gte: m.start, $lt: m.end },
+          _id: { $nin: demoUserIds }
+        })))
+      ]);
+      const groupMap = new Map((groupCountsRaw || []).map((g) => [g._id, g.count]));
+      const bloodGroupDistribution2 = ALL_GROUPS.map((grp) => ({
+        group: grp,
+        count: groupMap.get(grp) || 0
+      }));
+      const monthlyTrends2 = months.map((m, idx) => ({
+        label: m.label,
+        value: monthlyCountsRaw[idx] || 0
+      }));
+      return res.json({
+        success: true,
+        stats: {
+          usersCount,
+          activeAccounts,
+          blockedUsersCount,
+          donorsCount,
+          availableDonors,
+          requestsCount,
+          activeRequests,
+          institutionsCount,
+          pendingInstitutions,
+          pendingPhoneRequests,
+          pendingRecoveryRequests,
+          pendingInstitutionChanges,
+          pendingReports,
+          totalContactReveals,
+          bloodGroupDistribution: bloodGroupDistribution2,
+          monthlyTrends: monthlyTrends2
+        }
+      });
     }
-  });
+    const activeUsers = dataStore.users.filter((u) => !demoUserIds.includes(u._id));
+    const activeDonors = dataStore.donorProfiles.filter((d) => !isConfirmedDemoDonor(d));
+    const activeRequestsList = dataStore.bloodRequests.filter((r) => r.status === "open" || r.status === "partially_fulfilled");
+    const groupCountMap = /* @__PURE__ */ new Map();
+    for (const d of activeDonors) {
+      groupCountMap.set(d.bloodGroup, (groupCountMap.get(d.bloodGroup) || 0) + 1);
+    }
+    const bloodGroupDistribution = ALL_GROUPS.map((grp) => ({
+      group: grp,
+      count: groupCountMap.get(grp) || 0
+    }));
+    const monthlyTrends = months.map((m) => ({
+      label: m.label,
+      value: activeUsers.filter((u) => new Date(u.createdAt) >= m.start && new Date(u.createdAt) < m.end).length
+    }));
+    res.json({
+      success: true,
+      stats: {
+        usersCount: activeUsers.length,
+        activeAccounts: activeUsers.filter((u) => u.accountStatus === "active" && u.isActive).length,
+        blockedUsersCount: activeUsers.filter((u) => u.accountStatus !== "active" || !u.isActive).length,
+        donorsCount: activeDonors.length,
+        availableDonors: activeDonors.filter((d) => d.availabilityStatus === "available" && d.isPubliclyListed).length,
+        requestsCount: dataStore.bloodRequests.length,
+        activeRequests: activeRequestsList.length,
+        institutionsCount: dataStore.institutions.length,
+        pendingInstitutions: dataStore.institutionRequests.filter((i) => i.status === "pending_review").length,
+        pendingPhoneRequests: dataStore.phoneChangeRequests.filter((p) => p.status === "pending").length,
+        pendingRecoveryRequests: dataStore.passwordRecoveryRequests.filter((r) => r.status === "pending").length,
+        pendingInstitutionChanges: dataStore.institutionChangeRequests.filter((i) => i.status === "pending").length,
+        pendingReports: dataStore.reports.filter((r) => r.status === "pending").length,
+        totalContactReveals: dataStore.contactAccessLogs.length,
+        bloodGroupDistribution,
+        monthlyTrends
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "\u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AA\u09B0\u09BF\u09B8\u0982\u0996\u09CD\u09AF\u09BE\u09A8 \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    });
+  }
+}
+async function getAdminDonors(req, res) {
+  try {
+    const { bloodGroup, availabilityStatus, search, page, limit } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+    if (isDatabaseConnected()) {
+      const query = {};
+      if (bloodGroup) query.bloodGroup = bloodGroup;
+      if (availabilityStatus) query.availabilityStatus = availabilityStatus;
+      if (dataStore.suppressDemoData) {
+        query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
+        query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
+      }
+      const total2 = await DonorProfileModel.countDocuments(query);
+      const profiles = await DonorProfileModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum).lean();
+      const userIds = profiles.map((p) => String(p.userId));
+      const users = await UserModel.find({ _id: { $in: userIds } }).select("_id name phone email role accountStatus isActive gender").lean();
+      const userMap = new Map(users.map((u) => [String(u._id), u]));
+      const instIds = profiles.map((p) => p.institutionId).filter(Boolean);
+      const insts = await InstitutionModel.find({ _id: { $in: instIds } }).select("_id name nameBn").lean();
+      const instMap = new Map(insts.map((i) => [String(i._id), i.nameBn || i.name]));
+      let list2 = profiles.map((p) => {
+        const u = userMap.get(String(p.userId));
+        return {
+          _id: p._id,
+          userId: p.userId,
+          displayName: p.displayName || u?.name,
+          bloodGroup: p.bloodGroup,
+          division: p.division,
+          district: p.district,
+          upazila: p.upazila,
+          availabilityStatus: p.availabilityStatus,
+          lastDonationDate: p.lastDonationDate,
+          totalDonations: p.totalDonations,
+          institutionId: p.institutionId,
+          institutionName: p.institutionId ? instMap.get(String(p.institutionId)) : void 0,
+          institutionMembershipVerified: p.institutionMembershipVerified,
+          emergencyAvailable: p.emergencyAvailable,
+          consentToShareContact: p.consentToShareContact,
+          isPubliclyListed: p.isPubliclyListed,
+          phone: u?.phone,
+          userRole: u?.role || "MEMBER",
+          userAccountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
+          isActive: u?.isActive !== false,
+          gender: p.gender || u?.gender,
+          createdAt: p.createdAt
+        };
+      });
+      if (search) {
+        const q = String(search).toLowerCase();
+        list2 = list2.filter((d) => d.displayName && d.displayName.toLowerCase().includes(q) || d.phone && d.phone.includes(q));
+      }
+      return res.json({
+        success: true,
+        donors: list2,
+        total: total2,
+        page: pageNum,
+        totalPages: Math.ceil(total2 / limitNum) || 1
+      });
+    }
+    let list = dataStore.donorProfiles.map((p) => {
+      const u = dataStore.findUserByIdSync(p.userId);
+      const inst = p.institutionId ? dataStore.findInstitutionByIdSync(p.institutionId) : void 0;
+      return {
+        _id: p._id,
+        userId: p.userId,
+        displayName: p.displayName || u?.name,
+        bloodGroup: p.bloodGroup,
+        division: p.division,
+        district: p.district,
+        upazila: p.upazila,
+        availabilityStatus: p.availabilityStatus,
+        lastDonationDate: p.lastDonationDate,
+        totalDonations: p.totalDonations,
+        institutionId: p.institutionId,
+        institutionName: inst?.nameBn || inst?.name,
+        institutionMembershipVerified: p.institutionMembershipVerified,
+        emergencyAvailable: p.emergencyAvailable,
+        consentToShareContact: p.consentToShareContact,
+        isPubliclyListed: p.isPubliclyListed,
+        phone: u?.phone,
+        userRole: u?.role || "MEMBER",
+        userAccountStatus: u?.accountStatus || (u?.isActive ? "active" : "suspended"),
+        isActive: u?.isActive !== false,
+        gender: p.gender || u?.gender,
+        createdAt: p.createdAt
+      };
+    });
+    if (dataStore.suppressDemoData) {
+      list = list.filter((d) => !isConfirmedDemoDonor(d));
+    }
+    if (bloodGroup) list = list.filter((d) => d.bloodGroup === bloodGroup);
+    if (availabilityStatus) list = list.filter((d) => d.availabilityStatus === availabilityStatus);
+    if (search) {
+      const q = String(search).toLowerCase();
+      list = list.filter((d) => d.displayName && d.displayName.toLowerCase().includes(q) || d.phone && d.phone.includes(q));
+    }
+    const total = list.length;
+    const paginated = list.slice(skip, skip + limitNum);
+    res.json({
+      success: true,
+      donors: paginated,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+    });
+  }
 }
 async function getUsers(req, res) {
   const { role, search, accountStatus } = req.query;
@@ -106849,6 +107168,7 @@ router6.post(
 );
 router6.use(requireAuth, requireRoles("SUPER_ADMIN", "ADMIN"));
 router6.get("/overview", getAdminOverview);
+router6.get("/donors", getAdminDonors);
 router6.get("/users", getUsers);
 router6.get("/users/:id", getUserById);
 router6.patch("/users/:id/profile", validateBody(AdminEditProfileSchema), editUserProfileByAdmin);
@@ -107211,6 +107531,7 @@ var UpdateProfileSchema = external_exports.object({
   upazila: external_exports.string().optional(),
   bio: external_exports.string().max(500).optional(),
   availabilityStatus: external_exports.enum(["available", "recently_donated", "temporarily_unavailable"]).optional(),
+  isPubliclyListed: external_exports.boolean().optional(),
   consentToShareContact: external_exports.boolean().optional(),
   preferredContactMethod: external_exports.enum(["phone", "sms", "platform"]).optional()
 });
@@ -107303,10 +107624,32 @@ async function updateMyProfile(req, res) {
   if (data.district) donorUpdates.district = data.district;
   if (data.upazila !== void 0) donorUpdates.upazila = data.upazila;
   if (data.bio !== void 0) donorUpdates.bio = data.bio;
-  if (data.availabilityStatus) donorUpdates.availabilityStatus = data.availabilityStatus;
+  if (data.availabilityStatus) {
+    donorUpdates.availabilityStatus = data.availabilityStatus;
+    donorUpdates.isAvailable = data.availabilityStatus === "available";
+  }
+  if (data.isPubliclyListed !== void 0) donorUpdates.isPubliclyListed = data.isPubliclyListed;
   if (data.consentToShareContact !== void 0) donorUpdates.consentToShareContact = data.consentToShareContact;
   if (data.preferredContactMethod) donorUpdates.preferredContactMethod = data.preferredContactMethod;
-  const updatedProfile = await dataStore.updateDonorProfile(req.user.userId, donorUpdates);
+  let updatedProfile = await dataStore.updateDonorProfile(req.user.userId, donorUpdates);
+  if (!updatedProfile && data.bloodGroup) {
+    const userDoc = await dataStore.findUserById(req.user.userId);
+    if (userDoc) {
+      updatedProfile = await dataStore.createDonorProfile({
+        userId: userDoc._id,
+        displayName: data.name || userDoc.name,
+        bloodGroup: data.bloodGroup,
+        division: data.division || userDoc.division || "dhaka",
+        district: data.district || userDoc.district || "dhaka",
+        upazila: data.upazila || userDoc.upazila || "",
+        bio: data.bio || "",
+        availabilityStatus: data.availabilityStatus || "available",
+        isAvailable: (data.availabilityStatus || "available") === "available",
+        isPubliclyListed: data.isPubliclyListed !== void 0 ? data.isPubliclyListed : true,
+        consentToShareContact: data.consentToShareContact !== void 0 ? data.consentToShareContact : true
+      });
+    }
+  }
   res.json({
     success: true,
     message: "\u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09A4\u09A5\u09CD\u09AF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09B9\u09BE\u09B2\u09A8\u09BE\u0997\u09BE\u09A6 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964",
@@ -107788,7 +108131,21 @@ router16.get("/health", (req, res) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
+var statsCache = null;
+function invalidatePublicStatsCache() {
+  statsCache = null;
+}
+setOnStatsChangedListener(invalidatePublicStatsCache);
 router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
+  if (statsCache && Date.now() < statsCache.expiresAt) {
+    res.set("Cache-Control", "public, max-age=30, s-maxage=30, stale-while-revalidate=60");
+    return res.json({
+      success: true,
+      stats: statsCache.stats,
+      cached: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
   try {
     let totalDonors = 0;
     let availableDonors = 0;
@@ -107797,42 +108154,56 @@ router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
     let totalInstitutions = 0;
     if (isDatabaseConnected()) {
       if (dataStore.suppressDemoData) {
-        totalDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
-        availableDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          availabilityStatus: "available",
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
-        activeRequests = await BloodRequestModel.countDocuments({
-          status: { $in: ["open", "partially_fulfilled"] },
-          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
-          publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
-        });
-        const districtList = await DonorProfileModel.distinct("district", {
-          isPubliclyListed: true,
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
+        const [tDonors, aDonors, aRequests, districtList, tInsts] = await Promise.all([
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            availabilityStatus: "available",
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          BloodRequestModel.countDocuments({
+            status: { $in: ["open", "partially_fulfilled"] },
+            _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
+            publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
+          }),
+          DonorProfileModel.distinct("district", {
+            isPubliclyListed: true,
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          InstitutionModel.countDocuments()
+        ]);
+        totalDonors = tDonors;
+        availableDonors = aDonors;
+        activeRequests = aRequests;
         districtsCovered = districtList.filter(Boolean).length;
+        totalInstitutions = tInsts;
       } else {
-        totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
-        availableDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          availabilityStatus: "available"
-        });
-        activeRequests = await BloodRequestModel.countDocuments({
-          status: { $in: ["open", "partially_fulfilled"] }
-        });
-        const districtList = await DonorProfileModel.distinct("district", { isPubliclyListed: true });
+        const [tDonors, aDonors, aRequests, districtList, tInsts] = await Promise.all([
+          DonorProfileModel.countDocuments({ isPubliclyListed: true }),
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            availabilityStatus: "available"
+          }),
+          BloodRequestModel.countDocuments({
+            status: { $in: ["open", "partially_fulfilled"] }
+          }),
+          DonorProfileModel.distinct("district", { isPubliclyListed: true }),
+          InstitutionModel.countDocuments()
+        ]);
+        totalDonors = tDonors;
+        availableDonors = aDonors;
+        activeRequests = aRequests;
         districtsCovered = districtList.filter(Boolean).length;
+        totalInstitutions = tInsts;
       }
-      totalInstitutions = await InstitutionModel.countDocuments();
     } else if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+      res.set("Cache-Control", "no-store, private");
       return res.status(503).json({
         success: false,
         code: "DATABASE_UNAVAILABLE",
@@ -107850,18 +108221,26 @@ router16.get(["/stats", "/statistics", "/public/stats"], async (req, res) => {
       districtsCovered = uniqueDistricts.size;
       totalInstitutions = dataStore.institutions.length;
     }
+    const statsPayload = {
+      totalDonors,
+      availableDonors,
+      activeRequests,
+      districtsCovered: districtsCovered > 0 ? districtsCovered : totalDonors > 0 ? 1 : 0,
+      totalInstitutions
+    };
+    statsCache = {
+      stats: statsPayload,
+      expiresAt: Date.now() + 3e4
+    };
+    res.set("Cache-Control", "public, max-age=30, s-maxage=30, stale-while-revalidate=60");
     res.json({
       success: true,
-      stats: {
-        totalDonors,
-        availableDonors,
-        activeRequests,
-        districtsCovered: districtsCovered > 0 ? districtsCovered : totalDonors > 0 ? 1 : 0,
-        totalInstitutions
-      },
+      stats: statsPayload,
+      cached: false,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   } catch (err) {
+    res.set("Cache-Control", "no-store, private");
     res.status(500).json({
       success: false,
       message: "\u09AA\u09B0\u09BF\u09B8\u0982\u0996\u09CD\u09AF\u09BE\u09A8 \u09B2\u09CB\u09A1 \u0995\u09B0\u09A4\u09C7 \u09AC\u09CD\u09AF\u09B0\u09CD\u09A5 \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
@@ -107915,11 +108294,7 @@ async function ensureDbInitialized() {
   if (!ENV.MONGO_URI) return false;
   try {
     const isConnected2 = await connectDB();
-    if (isConnected2) {
-      await dataStore.syncWithMongoDB();
-      return true;
-    }
-    return false;
+    return isConnected2;
   } catch (err) {
     console.warn("[Database Init Warning]:", err?.message);
     return false;

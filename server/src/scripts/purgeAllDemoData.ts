@@ -55,11 +55,12 @@ async function purgeAllDemoData() {
   const donorRes = await db.collection('donorprofiles').deleteMany({});
   console.log(`  - donorprofiles: deleted ${donorRes.deletedCount} demo/test donor profiles`);
 
-  // C. Users -> Keep ONLY usr_superadmin and usr_admin
+  // C. Users -> Keep real administrative and organic users (do not delete SUPER_ADMIN)
   const userRes = await db.collection('users').deleteMany({
-    _id: { $nin: ['usr_superadmin', 'usr_admin'] as any }
+    _id: { $nin: ['usr_admin'] as any },
+    role: { $ne: 'SUPER_ADMIN' }
   });
-  console.log(`  - users: deleted ${userRes.deletedCount} demo/test users. Preserved usr_superadmin and usr_admin.`);
+  console.log(`  - users: deleted ${userRes.deletedCount} demo/test users. Preserved SUPER_ADMIN accounts.`);
 
   // D. Institutions -> Keep partner institutions but reset registered donors to 0 and remove demo moderator
   const instRes = await db.collection('institutions').updateMany(
@@ -102,7 +103,7 @@ async function purgeAllDemoData() {
     const count = await db.collection(c.name).countDocuments();
     let status = 'Clean (0 records - Ready for Real Data)';
     if (c.name === 'users') {
-      status = '2 Protected Admin Accounts (usr_superadmin, usr_admin)';
+      status = 'Authoritative Database Admin & Super Admin Accounts';
     } else if (c.name === 'institutions') {
       status = '5 Approved Universities/Colleges (0 registered donors)';
     }

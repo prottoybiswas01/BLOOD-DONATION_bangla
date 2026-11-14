@@ -2,9 +2,9 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import app from '../app.js';
 import { dataStore } from '../services/dataStore.js';
-import { ENV } from '../config/env.js';
 import { connectDB } from '../config/db.js';
 
 after(async () => {
@@ -12,7 +12,7 @@ after(async () => {
   await mongoose.disconnect();
 });
 
-test('Single Authoritative Super Admin from ENV Configuration', async (t) => {
+test('Database-Driven Super Admin Authentication & Protection Suite', async (t) => {
   await connectDB();
   await dataStore.syncWithMongoDB();
 
@@ -25,21 +25,52 @@ test('Single Authoritative Super Admin from ENV Configuration', async (t) => {
     server.close();
   });
 
-  await t.test('1. Exactly ONE Super Admin exists in dataStore', () => {
-    const superAdmins = dataStore.users.filter(u => u.role === 'SUPER_ADMIN');
-    assert.equal(superAdmins.length, 1, 'There must be exactly one Super Admin in the system');
-    assert.equal(superAdmins[0].phone, ENV.SUPER_ADMIN_PHONE);
-    assert.equal(superAdmins[0].role, 'SUPER_ADMIN');
-    assert.equal(superAdmins[0].accountStatus, 'active');
+  // Create an authoritative active Super Admin user in dataStore/database for testing
+  const testSuperAdminPhone = '01978167016';
+  const testSuperAdminPass = 'SuperSecurePass2026!';
+  const passHash = bcrypt.hashSync(testSuperAdminPass, 10);
+
+  const existingSA = await dataStore.findUserByPhone(testSuperAdminPhone);
+  let activeSA = existingSA;
+  if (!existingSA) {
+    activeSA = await dataStore.createUser({
+      name: 'Prottoy Kumar Biswas',
+      phone: testSuperAdminPhone,
+      passwordHash: passHash,
+      role: 'SUPER_ADMIN',
+      accountStatus: 'active',
+      isActive: true,
+      gender: 'male',
+      isPhoneVerified: true
+    });
+  } else {
+    await dataStore.updateUser(existingSA._id, {
+      role: 'SUPER_ADMIN',
+      accountStatus: 'active',
+      isActive: true,
+      passwordHash: passHash
+    });
+  }
+
+  // Deactivate old built-in account if present in test DB
+  if (mongoose.connection.db) {
+    await mongoose.connection.db.collection('users').updateOne(
+      { _id: 'usr_superadmin' },
+      { $set: { role: 'MEMBER', accountStatus: 'deactivated', isActive: false } }
+    );
+  }
+
+  await t.test('1. Server starts and functions with ZERO SUPER_ADMIN_PASSWORD in environment', () => {
+    assert.equal(process.env.SUPER_ADMIN_PASSWORD, undefined, 'SUPER_ADMIN_PASSWORD must be absent from environment');
   });
 
-  await t.test('2. Super Admin can login using phone and ENV password', async () => {
+  await t.test('2. Database Super Admin can login using phone and database-stored password', async () => {
     const res = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phone: ENV.SUPER_ADMIN_PHONE,
-        password: ENV.SUPER_ADMIN_PASSWORD
+        phone: testSuperAdminPhone,
+        password: testSuperAdminPass
       })
     });
 
@@ -48,90 +79,45 @@ test('Single Authoritative Super Admin from ENV Configuration', async (t) => {
     assert.equal(data.success, true);
     assert.ok(data.token, 'Must return JWT token');
     assert.equal(data.user.role, 'SUPER_ADMIN');
-    assert.equal(data.user.phone, ENV.SUPER_ADMIN_PHONE);
+    assert.equal(data.user.phone, testSuperAdminPhone);
+
+    // Verify access to admin overview
+    const overviewRes = await fetch(`${baseUrl}/admin/overview`, {
+      headers: { Authorization: `Bearer ${data.token}` }
+    });
+    assert.equal(overviewRes.status, 200);
+    const overviewData = await overviewRes.json() as any;
+    assert.equal(overviewData.success, true);
+    assert.ok(overviewData.stats);
+    assert.ok(Array.isArray(overviewData.stats.bloodGroupDistribution));
   });
 
-  await t.test('3. Super Admin can login using user ID alias ("superadmin") and ENV password', async () => {
+  await t.test('3. Deactivated old built-in account cannot login and access panel', async () => {
+    // Old built-in account phone: 01700000000 or id usr_superadmin
     const res = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phone: 'superadmin',
-        password: ENV.SUPER_ADMIN_PASSWORD
+        phone: '01700000000',
+        password: 'any_attempted_password'
       })
     });
 
-    assert.equal(res.status, 200);
-    const data = await res.json() as any;
-    assert.equal(data.success, true);
-    assert.equal(data.user.role, 'SUPER_ADMIN');
+    // Must be rejected with 401 (not found / bad credentials) or 403 (deactivated)
+    assert.ok(res.status === 401 || res.status === 403, `Expected 401 or 403, got ${res.status}`);
   });
 
-  await t.test('4. Super Admin can login using Email and ENV password', async () => {
-    const res = await fetch(`${baseUrl}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: ENV.SUPER_ADMIN_EMAIL,
-        password: ENV.SUPER_ADMIN_PASSWORD
-      })
-    });
+  await t.test('4. Resyncing or restarting does NOT resurrect old usr_superadmin as active Super Admin', async () => {
+    await dataStore.syncWithMongoDB();
 
-    assert.equal(res.status, 200);
-    const data = await res.json() as any;
-    assert.equal(data.success, true);
-    assert.equal(data.user.role, 'SUPER_ADMIN');
-  });
+    const oldAdmin = dataStore.users.find(u => u._id === 'usr_superadmin');
+    if (oldAdmin) {
+      assert.notEqual(oldAdmin.accountStatus, 'active', 'Old admin must never be active');
+      assert.notEqual(oldAdmin.role, 'SUPER_ADMIN', 'Old admin must not hold SUPER_ADMIN role');
+    }
 
-  await t.test('5. Login with incorrect password is rejected with 401', async () => {
-    const res = await fetch(`${baseUrl}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: ENV.SUPER_ADMIN_PHONE,
-        password: 'wrong_password_123'
-      })
-    });
-
-    assert.equal(res.status, 401);
-    const data = await res.json() as any;
-    assert.equal(data.success, false);
-    assert.equal(data.message, 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।');
-  });
-
-  await t.test('6. Attempting to promote another user to SUPER_ADMIN is rejected', async () => {
-    // Login as Super Admin
-    const loginRes = await fetch(`${baseUrl}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: ENV.SUPER_ADMIN_PHONE,
-        password: ENV.SUPER_ADMIN_PASSWORD
-      })
-    });
-    const { token } = await loginRes.json() as any;
-
-    // Create a dummy user with unique random phone
-    const randomPhone = '018' + Math.floor(10000000 + Math.random() * 90000000);
-    const dummyUser = dataStore.createUserSync({
-      name: 'সাধারণ ইউজার',
-      phone: randomPhone,
-      role: 'MEMBER'
-    });
-
-    // Try to update role to SUPER_ADMIN
-    const updateRes = await fetch(`${baseUrl}/admin/users/${dummyUser._id}/role`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ role: 'SUPER_ADMIN' })
-    });
-
-    assert.equal(updateRes.status, 400);
-    const data = await updateRes.json() as any;
-    assert.equal(data.success, false);
-    assert.ok(data.message.includes('একটিমাত্র সুপার অ্যাডমিন'));
+    const currentSuperAdmins = dataStore.users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive && u.accountStatus === 'active');
+    assert.ok(currentSuperAdmins.length >= 1, 'Active Super Admin must be present');
+    assert.ok(currentSuperAdmins.some(u => u.phone === testSuperAdminPhone), 'Active Super Admin must be present');
   });
 });

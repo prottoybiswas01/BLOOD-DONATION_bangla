@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   dataStore, 
+  setOnStatsChangedListener,
   CONFIRMED_DEMO_DONOR_IDS, 
   CONFIRMED_DEMO_USER_IDS, 
   CONFIRMED_DEMO_REQUEST_IDS, 
@@ -56,8 +57,27 @@ router.get('/health', (req, res) => {
   });
 });
 
+// In-memory 30-second cache for public homepage statistics
+let statsCache: { stats: any; expiresAt: number } | null = null;
+
+export function invalidatePublicStatsCache(): void {
+  statsCache = null;
+}
+setOnStatsChangedListener(invalidatePublicStatsCache);
+
 // Live Public Statistics Endpoint (Verified backend data for Web & Mobile)
 router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
+  // Check 30-second shared public cache
+  if (statsCache && Date.now() < statsCache.expiresAt) {
+    res.set('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=60');
+    return res.json({
+      success: true,
+      stats: statsCache.stats,
+      cached: true,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   try {
     let totalDonors = 0;
     let availableDonors = 0;
@@ -67,42 +87,56 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
 
     if (isDatabaseConnected()) {
       if (dataStore.suppressDemoData) {
-        totalDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
-        availableDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          availabilityStatus: 'available',
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
-        activeRequests = await BloodRequestModel.countDocuments({
-          status: { $in: ['open', 'partially_fulfilled'] },
-          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
-          publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
-        });
-        const districtList = await DonorProfileModel.distinct('district', {
-          isPubliclyListed: true,
-          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
-          userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
-        });
+        const [tDonors, aDonors, aRequests, districtList, tInsts] = await Promise.all([
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            availabilityStatus: 'available',
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          BloodRequestModel.countDocuments({
+            status: { $in: ['open', 'partially_fulfilled'] },
+            _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) },
+            publicId: { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) }
+          }),
+          DonorProfileModel.distinct('district', {
+            isPubliclyListed: true,
+            _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+            userId: { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) }
+          }),
+          InstitutionModel.countDocuments()
+        ]);
+        totalDonors = tDonors;
+        availableDonors = aDonors;
+        activeRequests = aRequests;
         districtsCovered = districtList.filter(Boolean).length;
+        totalInstitutions = tInsts;
       } else {
-        totalDonors = await DonorProfileModel.countDocuments({ isPubliclyListed: true });
-        availableDonors = await DonorProfileModel.countDocuments({
-          isPubliclyListed: true,
-          availabilityStatus: 'available'
-        });
-        activeRequests = await BloodRequestModel.countDocuments({
-          status: { $in: ['open', 'partially_fulfilled'] }
-        });
-        const districtList = await DonorProfileModel.distinct('district', { isPubliclyListed: true });
+        const [tDonors, aDonors, aRequests, districtList, tInsts] = await Promise.all([
+          DonorProfileModel.countDocuments({ isPubliclyListed: true }),
+          DonorProfileModel.countDocuments({
+            isPubliclyListed: true,
+            availabilityStatus: 'available'
+          }),
+          BloodRequestModel.countDocuments({
+            status: { $in: ['open', 'partially_fulfilled'] }
+          }),
+          DonorProfileModel.distinct('district', { isPubliclyListed: true }),
+          InstitutionModel.countDocuments()
+        ]);
+        totalDonors = tDonors;
+        availableDonors = aDonors;
+        activeRequests = aRequests;
         districtsCovered = districtList.filter(Boolean).length;
+        totalInstitutions = tInsts;
       }
-      totalInstitutions = await InstitutionModel.countDocuments();
     } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      res.set('Cache-Control', 'no-store, private');
       return res.status(503).json({
         success: false,
         code: 'DATABASE_UNAVAILABLE',
@@ -122,18 +156,29 @@ router.get(['/stats', '/statistics', '/public/stats'], async (req, res) => {
       totalInstitutions = dataStore.institutions.length;
     }
 
+    const statsPayload = {
+      totalDonors,
+      availableDonors,
+      activeRequests,
+      districtsCovered: districtsCovered > 0 ? districtsCovered : (totalDonors > 0 ? 1 : 0),
+      totalInstitutions
+    };
+
+    // Cache valid payload for 30 seconds
+    statsCache = {
+      stats: statsPayload,
+      expiresAt: Date.now() + 30000
+    };
+
+    res.set('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=60');
     res.json({
       success: true,
-      stats: {
-        totalDonors,
-        availableDonors,
-        activeRequests,
-        districtsCovered: districtsCovered > 0 ? districtsCovered : (totalDonors > 0 ? 1 : 0),
-        totalInstitutions
-      },
+      stats: statsPayload,
+      cached: false,
       timestamp: new Date().toISOString()
     });
   } catch (err: any) {
+    res.set('Cache-Control', 'no-store, private');
     res.status(500).json({
       success: false,
       message: 'পরিসংখ্যান লোড করতে ব্যর্থ হয়েছে।'

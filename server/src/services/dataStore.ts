@@ -411,28 +411,18 @@ export function isConfirmedDemoRequest(r: any): boolean {
          CONFIRMED_DEMO_USER_IDS.has(requesterId);
 }
 
-// Authoritative Super Admin Template (Secret password must be provided via environment variable SUPER_ADMIN_PASSWORD)
-export function getBuiltInSuperAdmin(): StoredUser {
-  const now = new Date();
-  const rawPass = ENV.SUPER_ADMIN_PASSWORD;
-  const passwordHash = rawPass 
-    ? bcrypt.hashSync(rawPass, 10) 
-    : '$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin';
-  return {
-    _id: 'usr_superadmin',
-    name: ENV.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)',
-    phone: ENV.SUPER_ADMIN_PHONE || '01700000000',
-    email: ENV.SUPER_ADMIN_EMAIL || 'admin@bloodbd.org',
-    passwordHash,
-    role: 'SUPER_ADMIN',
-    accountStatus: 'active',
-    gender: 'male',
-    isActive: true,
-    isPhoneVerified: true,
-    tokenVersion: 2,
-    createdAt: now,
-    updatedAt: now
-  };
+let onStatsChangedListener: (() => void) | null = null;
+export function setOnStatsChangedListener(listener: () => void): void {
+  onStatsChangedListener = listener;
+}
+export function notifyStatsChanged(): void {
+  if (onStatsChangedListener) {
+    try {
+      onStatsChangedListener();
+    } catch (e) {
+      // ignore
+    }
+  }
 }
 
 // In-Memory Repository
@@ -466,8 +456,8 @@ class DataStore {
   }
 
   seedInitialData() {
-    // 1. Initial Users: Always guarantee the built-in Super Admin in code
-    this.users = [getBuiltInSuperAdmin()];
+    // 1. Initial Users start clean - real registered accounts from database only
+    this.users = [];
 
     // 2. All institutions start clean (0 pre-seeded institutions; only real registered institutions)
     this.institutions = [];
@@ -523,55 +513,9 @@ class DataStore {
       const dbLogs = await ContactAccessLogModel.find().lean();
       this.contactAccessLogs = (dbLogs || []) as any;
       
-      // Enforce single authoritative Super Admin from ENV configuration
-      await this.ensureSingleSuperAdmin();
-
       console.log(`[Database] Hydrated ${this.users.length} users, ${this.donorProfiles.length} donors, ${this.bloodRequests.length} requests, and ${this.institutions.length} institutions from MongoDB Atlas.`);
     } catch (err: any) {
       console.warn('[Database Sync Warning]:', err.message);
-    }
-  }
-
-  async ensureSingleSuperAdmin(): Promise<void> {
-    const defaultAdmin = getBuiltInSuperAdmin();
-    // Ensure Super Admin exists and synchronize with environment secret if provided
-    const existing = this.users.find(u => u._id === defaultAdmin._id || u.role === 'SUPER_ADMIN');
-    if (existing) {
-      if (ENV.SUPER_ADMIN_PASSWORD) {
-        existing.passwordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-      }
-      if (ENV.SUPER_ADMIN_PHONE) {
-        existing.phone = ENV.SUPER_ADMIN_PHONE;
-      }
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: existing._id },
-            {
-              $set: {
-                ...(ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {}),
-                ...(ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {}),
-                updatedAt: new Date()
-              }
-            }
-          );
-        } catch (err: any) {
-          console.warn('[DataStore] ensureSingleSuperAdmin sync error:', err?.message);
-        }
-      }
-    } else {
-      this.users.unshift(defaultAdmin);
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: defaultAdmin._id },
-            { $set: defaultAdmin },
-            { upsert: true }
-          );
-        } catch (err: any) {
-          console.warn('[DataStore] ensureSingleSuperAdmin DB error:', err?.message);
-        }
-      }
     }
   }
 
@@ -1096,6 +1040,7 @@ class DataStore {
   async createDonorProfile(data: Partial<StoredDonorProfile>): Promise<StoredDonorProfile> {
     const profile = this.createDonorProfileSync(data);
     await this.persistDonorProfile(profile);
+    notifyStatsChanged();
     return profile;
   }
 
@@ -1114,6 +1059,7 @@ class DataStore {
           const idx = this.donorProfiles.findIndex(d => d.userId === userId);
           if (idx >= 0) this.donorProfiles[idx] = profile!;
           else this.donorProfiles.push(profile!);
+          notifyStatsChanged();
           return profile;
         }
       } catch (e: any) {
@@ -1124,6 +1070,7 @@ class DataStore {
     if (!memProf) return null;
     Object.assign(memProf, update, { updatedAt: new Date() });
     await this.persistDonorProfile(memProf);
+    notifyStatsChanged();
     return memProf;
   }
 
@@ -1150,12 +1097,18 @@ class DataStore {
         if (filters.institutionId) query.institutionId = filters.institutionId;
         if (filters.availabilityStatus) query.availabilityStatus = filters.availabilityStatus;
 
+        if (this.suppressDemoData) {
+          query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
+          query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
+        }
+
         const total = await DonorProfileModel.countDocuments(query);
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
+        const page = Math.max(1, filters.page || 1);
+        const limit = Math.max(1, Math.min(100, filters.limit || 10));
         const skip = (page - 1) * limit;
 
         const profiles = await DonorProfileModel.find(query)
+          .select('_id userId displayName bloodGroup division district upazila availabilityStatus lastDonationDate totalDonations institutionId institutionMembershipVerified emergencyAvailable consentToShareContact bio createdAt')
           .skip(skip)
           .limit(limit)
           .lean();
@@ -1168,7 +1121,7 @@ class DataStore {
         );
 
         const instIds = profiles.map(p => p.institutionId).filter(Boolean);
-        const insts = await InstitutionModel.find({ _id: { $in: instIds } }).lean();
+        const insts = await InstitutionModel.find({ _id: { $in: instIds } }).select('_id name nameBn').lean();
         const instMap = new Map(insts.map(i => [String(i._id), i.nameBn || i.name]));
 
         let safeDonors = profiles
@@ -1200,12 +1153,11 @@ class DataStore {
           safeDonors = safeDonors.filter(p => !isConfirmedDemoDonor(p));
         }
 
-        const effectiveTotal = this.suppressDemoData ? safeDonors.length : total;
         return {
           donors: safeDonors,
-          total: effectiveTotal,
+          total,
           page,
-          totalPages: Math.ceil(effectiveTotal / limit)
+          totalPages: Math.ceil(total / limit) || 1
         };
       } catch (e: any) {
         console.warn('[DataStore] searchDonors DB error:', e?.message);
@@ -1400,6 +1352,7 @@ class DataStore {
   async createBloodRequest(data: Partial<StoredBloodRequest>): Promise<StoredBloodRequest> {
     const req = this.createBloodRequestSync(data);
     await this.persistBloodRequest(req);
+    notifyStatsChanged();
     return req;
   }
 
@@ -1418,6 +1371,7 @@ class DataStore {
           const idx = this.bloodRequests.findIndex(r => r._id === req!._id);
           if (idx >= 0) this.bloodRequests[idx] = req!;
           else this.bloodRequests.unshift(req!);
+          notifyStatsChanged();
           return req;
         }
       } catch (e: any) {
@@ -1428,6 +1382,7 @@ class DataStore {
     if (!memReq) return null;
     Object.assign(memReq, update, { updatedAt: new Date() });
     await this.persistBloodRequest(memReq);
+    notifyStatsChanged();
     return memReq;
   }
 
@@ -1457,12 +1412,18 @@ class DataStore {
         if (filters.urgencyLevel) query.urgencyLevel = filters.urgencyLevel;
         if (filters.institutionId) query.institutionId = filters.institutionId;
 
+        if (this.suppressDemoData) {
+          query._id = { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) };
+          query.publicId = { $nin: Array.from(CONFIRMED_DEMO_PUBLIC_IDS) };
+        }
+
         const total = await BloodRequestModel.countDocuments(query);
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
+        const page = Math.max(1, filters.page || 1);
+        const limit = Math.max(1, Math.min(100, filters.limit || 10));
         const skip = (page - 1) * limit;
 
         const docs = await BloodRequestModel.find(query)
+          .select('_id publicId requesterId patientName bloodGroup unitsRequired unitsFulfilled hospitalName hospitalAddress division district upazila requiredDate requiredWithin urgencyLevel reason contactPersonName contactNumber alternativeContactNumber additionalNotes consentForPublicShare status statusHistory institutionId expiresAt createdAt updatedAt')
           .sort({
             urgencyLevel: -1,
             requiredDate: 1
@@ -1483,12 +1444,11 @@ class DataStore {
           results = results.filter(r => !isConfirmedDemoRequest(r));
         }
 
-        const effectiveTotal = this.suppressDemoData ? results.length : total;
         return {
           requests: results,
-          total: effectiveTotal,
+          total,
           page,
-          totalPages: Math.ceil(effectiveTotal / limit)
+          totalPages: Math.ceil(total / limit) || 1
         };
       } catch (e: any) {
         console.warn('[DataStore] searchBloodRequests DB error:', e?.message);

@@ -126,6 +126,8 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
   }
 );
 
+BloodRequestSchema.index({ status: 1, urgencyLevel: -1, requiredDate: 1 });
+BloodRequestSchema.index({ status: 1, bloodGroup: 1, division: 1, district: 1 });
 BloodRequestSchema.index({ status: 1, requiredDate: -1 });
 BloodRequestSchema.index({ division: 1, status: 1 });
 

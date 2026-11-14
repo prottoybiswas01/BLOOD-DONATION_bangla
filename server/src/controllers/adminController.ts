@@ -1,8 +1,53 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.js';
-import { dataStore } from '../services/dataStore.js';
+import { 
+  dataStore, 
+  CONFIRMED_DEMO_USER_IDS, 
+  CONFIRMED_DEMO_DONOR_IDS, 
+  CONFIRMED_DEMO_REQUEST_IDS, 
+  isConfirmedDemoDonor 
+} from '../services/dataStore.js';
 import { inMemoryAuditLogs, logAuditEvent } from '../services/auditService.js';
+import { isDatabaseConnected } from '../config/db.js';
+import { UserModel } from '../models/User.js';
+import { DonorProfileModel } from '../models/DonorProfile.js';
+import { BloodRequestModel } from '../models/BloodRequest.js';
+import { InstitutionModel } from '../models/Institution.js';
+import { InstitutionRequestModel } from '../models/InstitutionRequest.js';
+import { PhoneChangeRequestModel } from '../models/PhoneChangeRequest.js';
+import { PasswordRecoveryRequestModel } from '../models/PasswordRecoveryRequest.js';
+import { InstitutionChangeRequestModel } from '../models/InstitutionChangeRequest.js';
+import { ReportModel } from '../models/Report.js';
+import { ContactAccessLogModel } from '../models/ContactAccessLog.js';
+
+export function getBangladeshLast6Months(): { label: string; year: number; month: number; start: Date; end: Date }[] {
+  const BENGALI_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+  const now = new Date();
+  const bstTime = new Date(now.getTime() + 6 * 3600 * 1000);
+  const curYear = bstTime.getUTCFullYear();
+  const curMonth = bstTime.getUTCMonth(); // 0-11
+
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = curMonth - i;
+    let y = curYear;
+    while (m < 0) {
+      m += 12;
+      y -= 1;
+    }
+    const start = new Date(Date.UTC(y, m, 1, -6, 0, 0, 0));
+    const end = new Date(Date.UTC(y, m + 1, 1, -6, 0, 0, 0));
+    months.push({
+      label: BENGALI_MONTHS[m],
+      year: y,
+      month: m + 1,
+      start,
+      end
+    });
+  }
+  return months;
+}
 
 export const UpdateRoleSchema = z.object({
   role: z.enum(['SUPER_ADMIN', 'ADMIN', 'DIVISION_COORDINATOR', 'INSTITUTION_MODERATOR', 'MEMBER', 'DONOR', 'REQUESTER']),
@@ -31,28 +76,291 @@ export const AdminEditProfileSchema = z.object({
 });
 
 export async function getAdminOverview(req: AuthRequest, res: Response): Promise<void> {
-  const usersCount = dataStore.users.length;
-  const donorsCount = dataStore.donorProfiles.length;
-  const requestsCount = dataStore.bloodRequests.length;
-  const institutionsCount = dataStore.institutions.length;
-  const pendingInstitutions = dataStore.institutionRequests.filter(i => i.status === 'pending_review').length;
-  const pendingReports = dataStore.reports.filter(r => r.status === 'pending').length;
-  const totalContactReveals = dataStore.contactAccessLogs.length;
-  const blockedUsersCount = dataStore.users.filter(u => u.accountStatus !== 'active' || !u.isActive).length;
+  try {
+    const ALL_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    const months = getBangladeshLast6Months();
+    const demoUserIds = Array.from(CONFIRMED_DEMO_USER_IDS).concat(['usr_superadmin']);
 
-  res.json({
-    success: true,
-    stats: {
-      usersCount,
-      donorsCount,
-      requestsCount,
-      institutionsCount,
-      pendingInstitutions,
-      pendingReports,
-      totalContactReveals,
-      blockedUsersCount
+    if (isDatabaseConnected()) {
+      const [
+        usersCount,
+        activeAccounts,
+        blockedUsersCount,
+        donorsCount,
+        availableDonors,
+        requestsCount,
+        activeRequests,
+        institutionsCount,
+        pendingInstitutions,
+        pendingPhoneRequests,
+        pendingRecoveryRequests,
+        pendingInstitutionChanges,
+        pendingReports,
+        totalContactReveals,
+        groupCountsRaw,
+        monthlyCountsRaw
+      ] = await Promise.all([
+        UserModel.countDocuments({ _id: { $nin: demoUserIds } }),
+        UserModel.countDocuments({ accountStatus: 'active', isActive: true, _id: { $nin: demoUserIds } }),
+        UserModel.countDocuments({
+          $or: [{ accountStatus: { $ne: 'active' } }, { isActive: false }],
+          _id: { $nin: demoUserIds }
+        }),
+        DonorProfileModel.countDocuments({
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: demoUserIds }
+        }),
+        DonorProfileModel.countDocuments({
+          availabilityStatus: 'available',
+          isPubliclyListed: true,
+          _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+          userId: { $nin: demoUserIds }
+        }),
+        BloodRequestModel.countDocuments({
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) }
+        }),
+        BloodRequestModel.countDocuments({
+          status: { $in: ['open', 'partially_fulfilled'] },
+          _id: { $nin: Array.from(CONFIRMED_DEMO_REQUEST_IDS) }
+        }),
+        InstitutionModel.countDocuments(),
+        InstitutionRequestModel.countDocuments({ status: 'pending_review' }),
+        PhoneChangeRequestModel.countDocuments({ status: 'pending' }),
+        PasswordRecoveryRequestModel.countDocuments({ status: 'pending' }),
+        InstitutionChangeRequestModel.countDocuments({ status: 'pending' }),
+        ReportModel.countDocuments({ status: 'pending' }),
+        ContactAccessLogModel.countDocuments(),
+        DonorProfileModel.aggregate([
+          {
+            $match: {
+              _id: { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) },
+              userId: { $nin: demoUserIds }
+            }
+          },
+          {
+            $group: {
+              _id: '$bloodGroup',
+              count: { $sum: 1 }
+            }
+          }
+        ]),
+        Promise.all(months.map(m => UserModel.countDocuments({
+          createdAt: { $gte: m.start, $lt: m.end },
+          _id: { $nin: demoUserIds }
+        })))
+      ]);
+
+      const groupMap = new Map((groupCountsRaw || []).map((g: any) => [g._id, g.count]));
+      const bloodGroupDistribution = ALL_GROUPS.map(grp => ({
+        group: grp,
+        count: groupMap.get(grp) || 0
+      }));
+
+      const monthlyTrends = months.map((m, idx) => ({
+        label: m.label,
+        value: monthlyCountsRaw[idx] || 0
+      }));
+
+      return res.json({
+        success: true,
+        stats: {
+          usersCount,
+          activeAccounts,
+          blockedUsersCount,
+          donorsCount,
+          availableDonors,
+          requestsCount,
+          activeRequests,
+          institutionsCount,
+          pendingInstitutions,
+          pendingPhoneRequests,
+          pendingRecoveryRequests,
+          pendingInstitutionChanges,
+          pendingReports,
+          totalContactReveals,
+          bloodGroupDistribution,
+          monthlyTrends
+        }
+      });
     }
-  });
+
+    // In-memory fallback
+    const activeUsers = dataStore.users.filter(u => !demoUserIds.includes(u._id));
+    const activeDonors = dataStore.donorProfiles.filter(d => !isConfirmedDemoDonor(d));
+    const activeRequestsList = dataStore.bloodRequests.filter(r => r.status === 'open' || r.status === 'partially_fulfilled');
+
+    const groupCountMap = new Map<string, number>();
+    for (const d of activeDonors) {
+      groupCountMap.set(d.bloodGroup, (groupCountMap.get(d.bloodGroup) || 0) + 1);
+    }
+    const bloodGroupDistribution = ALL_GROUPS.map(grp => ({
+      group: grp,
+      count: groupCountMap.get(grp) || 0
+    }));
+
+    const monthlyTrends = months.map(m => ({
+      label: m.label,
+      value: activeUsers.filter(u => new Date(u.createdAt) >= m.start && new Date(u.createdAt) < m.end).length
+    }));
+
+    res.json({
+      success: true,
+      stats: {
+        usersCount: activeUsers.length,
+        activeAccounts: activeUsers.filter(u => u.accountStatus === 'active' && u.isActive).length,
+        blockedUsersCount: activeUsers.filter(u => u.accountStatus !== 'active' || !u.isActive).length,
+        donorsCount: activeDonors.length,
+        availableDonors: activeDonors.filter(d => d.availabilityStatus === 'available' && d.isPubliclyListed).length,
+        requestsCount: dataStore.bloodRequests.length,
+        activeRequests: activeRequestsList.length,
+        institutionsCount: dataStore.institutions.length,
+        pendingInstitutions: dataStore.institutionRequests.filter(i => i.status === 'pending_review').length,
+        pendingPhoneRequests: dataStore.phoneChangeRequests.filter(p => p.status === 'pending').length,
+        pendingRecoveryRequests: dataStore.passwordRecoveryRequests.filter(r => r.status === 'pending').length,
+        pendingInstitutionChanges: dataStore.institutionChangeRequests.filter(i => i.status === 'pending').length,
+        pendingReports: dataStore.reports.filter(r => r.status === 'pending').length,
+        totalContactReveals: dataStore.contactAccessLogs.length,
+        bloodGroupDistribution,
+        monthlyTrends
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'অ্যাডমিন পরিসংখ্যান লোড করতে ব্যর্থ হয়েছে।'
+    });
+  }
+}
+
+export async function getAdminDonors(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { bloodGroup, availabilityStatus, search, page, limit } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    if (isDatabaseConnected()) {
+      const query: any = {};
+      if (bloodGroup) query.bloodGroup = bloodGroup;
+      if (availabilityStatus) query.availabilityStatus = availabilityStatus;
+      if (dataStore.suppressDemoData) {
+        query._id = { $nin: Array.from(CONFIRMED_DEMO_DONOR_IDS) };
+        query.userId = { $nin: Array.from(CONFIRMED_DEMO_USER_IDS) };
+      }
+
+      const total = await DonorProfileModel.countDocuments(query);
+      const profiles = await DonorProfileModel.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      const userIds = profiles.map(p => String(p.userId));
+      const users = await UserModel.find({ _id: { $in: userIds } }).select('_id name phone email role accountStatus isActive gender').lean();
+      const userMap = new Map(users.map(u => [String(u._id), u]));
+
+      const instIds = profiles.map(p => p.institutionId).filter(Boolean);
+      const insts = await InstitutionModel.find({ _id: { $in: instIds } }).select('_id name nameBn').lean();
+      const instMap = new Map(insts.map(i => [String(i._id), i.nameBn || i.name]));
+
+      let list = profiles.map(p => {
+        const u = userMap.get(String(p.userId));
+        return {
+          _id: p._id,
+          userId: p.userId,
+          displayName: p.displayName || u?.name,
+          bloodGroup: p.bloodGroup,
+          division: p.division,
+          district: p.district,
+          upazila: p.upazila,
+          availabilityStatus: p.availabilityStatus,
+          lastDonationDate: p.lastDonationDate,
+          totalDonations: p.totalDonations,
+          institutionId: p.institutionId,
+          institutionName: p.institutionId ? instMap.get(String(p.institutionId)) : undefined,
+          institutionMembershipVerified: p.institutionMembershipVerified,
+          emergencyAvailable: p.emergencyAvailable,
+          consentToShareContact: p.consentToShareContact,
+          isPubliclyListed: p.isPubliclyListed,
+          phone: u?.phone,
+          userRole: u?.role || 'MEMBER',
+          userAccountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
+          isActive: u?.isActive !== false,
+          gender: p.gender || u?.gender,
+          createdAt: p.createdAt
+        };
+      });
+
+      if (search) {
+        const q = String(search).toLowerCase();
+        list = list.filter(d => (d.displayName && d.displayName.toLowerCase().includes(q)) || (d.phone && d.phone.includes(q)));
+      }
+
+      return res.json({
+        success: true,
+        donors: list,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum) || 1
+      });
+    }
+
+    // In-memory fallback
+    let list = dataStore.donorProfiles.map(p => {
+      const u = dataStore.findUserByIdSync(p.userId);
+      const inst = p.institutionId ? dataStore.findInstitutionByIdSync(p.institutionId) : undefined;
+      return {
+        _id: p._id,
+        userId: p.userId,
+        displayName: p.displayName || u?.name,
+        bloodGroup: p.bloodGroup,
+        division: p.division,
+        district: p.district,
+        upazila: p.upazila,
+        availabilityStatus: p.availabilityStatus,
+        lastDonationDate: p.lastDonationDate,
+        totalDonations: p.totalDonations,
+        institutionId: p.institutionId,
+        institutionName: inst?.nameBn || inst?.name,
+        institutionMembershipVerified: p.institutionMembershipVerified,
+        emergencyAvailable: p.emergencyAvailable,
+        consentToShareContact: p.consentToShareContact,
+        isPubliclyListed: p.isPubliclyListed,
+        phone: u?.phone,
+        userRole: u?.role || 'MEMBER',
+        userAccountStatus: u?.accountStatus || (u?.isActive ? 'active' : 'suspended'),
+        isActive: u?.isActive !== false,
+        gender: p.gender || u?.gender,
+        createdAt: p.createdAt
+      };
+    });
+
+    if (dataStore.suppressDemoData) {
+      list = list.filter(d => !isConfirmedDemoDonor(d));
+    }
+    if (bloodGroup) list = list.filter(d => d.bloodGroup === bloodGroup);
+    if (availabilityStatus) list = list.filter(d => d.availabilityStatus === availabilityStatus);
+    if (search) {
+      const q = String(search).toLowerCase();
+      list = list.filter(d => (d.displayName && d.displayName.toLowerCase().includes(q)) || (d.phone && d.phone.includes(q)));
+    }
+
+    const total = list.length;
+    const paginated = list.slice(skip, skip + limitNum);
+
+    res.json({
+      success: true,
+      donors: paginated,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'রক্তদাতা তালিকা লোড করতে ব্যর্থ হয়েছে।'
+    });
+  }
 }
 
 export async function getUsers(req: AuthRequest, res: Response): Promise<void> {

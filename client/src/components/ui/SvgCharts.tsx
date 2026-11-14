@@ -6,20 +6,20 @@ export interface BloodGroupItem {
   count: number;
 }
 
-export const BloodGroupBarChart: React.FC<{ data: BloodGroupItem[]; title?: string }> = ({ data, title }) => {
-  const max = Math.max(...data.map(d => d.count), 1);
+export const BloodGroupBarChart: React.FC<{ data: BloodGroupItem[]; title?: string; totalDonors?: number }> = ({ data, title, totalDonors }) => {
+  const total = totalDonors !== undefined ? totalDonors : data.reduce((a, b) => a + b.count, 0);
 
   return (
     <div className="bg-surface rounded-2xl border border-appBorder p-5 shadow-soft">
       {title && (
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-appBorder">
           <h4 className="font-bold text-mainText text-sm sm:text-base">{title}</h4>
-          <span className="text-xs text-subText">সর্বমোট: {data.reduce((a, b) => a + b.count, 0)} জন</span>
+          <span className="text-xs text-subText font-medium">নিবন্ধিত রক্তদাতা: {total} জন</span>
         </div>
       )}
       <div className="space-y-3">
         {data.map((item) => {
-          const pct = Math.round((item.count / max) * 100);
+          const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
             <div key={item.group} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-semibold">
@@ -36,7 +36,7 @@ export const BloodGroupBarChart: React.FC<{ data: BloodGroupItem[]; title?: stri
               <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-red-500 to-primary rounded-full transition-all duration-500"
-                  style={{ width: `${Math.max(pct, 4)}%` }}
+                  style={{ width: `${item.count > 0 ? Math.max(pct, 2) : 0}%` }}
                 />
               </div>
             </div>

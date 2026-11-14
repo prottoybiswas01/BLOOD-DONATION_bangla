@@ -42,9 +42,9 @@ async function purgeAllTestData() {
   const contactLogRes = await db.collection('contactaccesslogs').deleteMany({});
   console.log('Deleted contactaccesslogs:', contactLogRes.deletedCount);
 
-  // 7. Delete all users EXCEPT usr_superadmin
+  // 7. Delete all users EXCEPT active SUPER_ADMIN accounts
   const userRes = await db.collection('users').deleteMany({
-    _id: { $ne: 'usr_superadmin' }
+    role: { $ne: 'SUPER_ADMIN' }
   });
   console.log('Deleted non-superadmin users:', userRes.deletedCount);
 

@@ -19,11 +19,7 @@ async function ensureDbInitialized(): Promise<boolean> {
   if (!ENV.MONGO_URI) return false;
   try {
     const isConnected = await connectDB();
-    if (isConnected) {
-      await dataStore.syncWithMongoDB();
-      return true;
-    }
-    return false;
+    return isConnected;
   } catch (err: any) {
     console.warn('[Database Init Warning]:', err?.message);
     return false;

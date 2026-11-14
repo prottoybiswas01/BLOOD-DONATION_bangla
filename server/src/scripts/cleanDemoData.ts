@@ -52,7 +52,6 @@ export const EXACT_SEED_USER_IDS = new Set([
 ]);
 
 export const PROTECTED_ADMIN_IDS = new Set([
-  'usr_superadmin',
   'usr_admin'
 ]);
 
@@ -357,7 +356,7 @@ export async function performFullClassification(db: mongoose.mongo.Db): Promise<
     confirmedDemo: usersDemo,
     ambiguousPendingReview: usersAmbiguous,
     preserved: usersPreserved,
-    notes: 'Preserves usr_superadmin, usr_admin & organic users; separates unmodified seed/test fixtures from modified accounts.'
+    notes: 'Preserves database Super Admin, Admin & organic users; separates unmodified seed/test fixtures from modified accounts.'
   });
 
   // 2. Donor Profiles

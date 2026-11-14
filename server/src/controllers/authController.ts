@@ -56,6 +56,11 @@ export const ChangeFirstLoginPasswordSchema = z.object({
   newPassword: z.string().min(6, 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
 });
 
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'বর্তমান পাসওয়ার্ড আবশ্যক'),
+  newPassword: z.string().min(6, 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
+});
+
 /**
  * Clean phone to standardized local format 01XXXXXXXXX
  * Supports Bengali digits conversion (০-৯ -> 0-9)
@@ -190,7 +195,8 @@ export async function register(req: Request, res: Response): Promise<void> {
       name: newUser.name,
       assignedDivision: newUser.assignedDivision,
       assignedInstitution: newUser.assignedInstitution,
-      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin
+      requirePasswordChangeAtFirstLogin: newUser.requirePasswordChangeAtFirstLogin,
+      tokenVersion: newUser.tokenVersion || 1
     },
     ENV.JWT_SECRET,
     { expiresIn: '7d' }
@@ -234,22 +240,8 @@ export async function login(req: Request, res: Response): Promise<void> {
            dataStore.users.find(u => 
              (u.phone && u.phone === rawIdentifier) ||
              (u.email && u.email.toLowerCase() === rawIdentifier.toLowerCase()) ||
-             (u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase()) ||
-             ((rawIdentifier.toLowerCase() === 'superadmin' || rawIdentifier.toLowerCase() === 'admin') && u.role === 'SUPER_ADMIN')
+             (u._id && u._id.toLowerCase() === rawIdentifier.toLowerCase())
            );
-
-    // If superadmin or admin requested but not loaded yet
-    if (!user && (
-      rawIdentifier.toLowerCase() === 'superadmin' || 
-      rawIdentifier.toLowerCase() === 'admin' || 
-      phone === '01700000000' || 
-      rawIdentifier === '01700000000' || 
-      rawIdentifier === 'usr_superadmin' ||
-      (ENV.SUPER_ADMIN_PHONE && (phone === ENV.SUPER_ADMIN_PHONE || rawIdentifier === ENV.SUPER_ADMIN_PHONE))
-    )) {
-      await dataStore.ensureSingleSuperAdmin();
-      user = dataStore.users.find(u => u._id === 'usr_superadmin' || u.role === 'SUPER_ADMIN');
-    }
 
     if (!user && isDatabaseConnected()) {
       try {
@@ -292,14 +284,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  let isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
-  // Authoritative runtime environment secret match for Super Admin
-  if (!isPasswordValid && user.role === 'SUPER_ADMIN' && ENV.SUPER_ADMIN_PASSWORD && password === ENV.SUPER_ADMIN_PASSWORD) {
-    isPasswordValid = true;
-    const newHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
-    user.passwordHash = newHash;
-    dataStore.updateUser(user._id, { passwordHash: newHash }).catch(() => {});
-  }
+  const isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
   if (!isPasswordValid) {
     res.status(401).json({
       success: false,
@@ -410,6 +395,42 @@ export async function changeFirstLoginPassword(req: AuthRequest, res: Response):
   res.json({
     success: true,
     message: 'আপনার নতুন স্থায়ী পাসওয়ার্ড সফলভাবে সংরক্ষিত হয়েছে। এখন আপনি প্ল্যাটফর্মের সকল সেবা ব্যবহার করতে পারবেন।'
+  });
+}
+
+export async function changePassword(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  const user = await dataStore.findUserById(req.user.userId);
+  if (!user) {
+    res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  const isCurrentValid = bcrypt.compareSync(currentPassword, user.passwordHash);
+  if (!isCurrentValid) {
+    res.status(400).json({ success: false, message: 'বর্তমান পাসওয়ার্ড সঠিক নয়।' });
+    return;
+  }
+
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  await dataStore.updateUser(user._id, { passwordHash: newHash });
+
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: 'PASSWORD_CHANGED',
+    targetType: 'User',
+    targetId: req.user.userId
+  });
+
+  res.json({
+    success: true,
+    message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।'
   });
 }
 

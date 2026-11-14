@@ -4,6 +4,21 @@ import { dataStore } from '../services/dataStore.js';
 
 before(async () => {
   // Ensure required test fixtures exist for permissions unit testing
+  if (!dataStore.users.some(u => u.role === 'SUPER_ADMIN' && u.isActive)) {
+    dataStore.users.push({
+      _id: 'usr_sa_test',
+      name: 'Prottoy Kumar Biswas',
+      phone: '01978167016',
+      passwordHash: 'dummy_hash',
+      role: 'SUPER_ADMIN',
+      accountStatus: 'active',
+      isActive: true,
+      gender: 'male',
+      isPhoneVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
   if (!dataStore.users.some(u => u.phone === '01711111111')) {
     await dataStore.createUser({
       phone: '01711111111',

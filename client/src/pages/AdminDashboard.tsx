@@ -46,6 +46,7 @@ import { StatsCard } from '../components/ui/StatsCard';
 import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { Modal } from '../components/ui/Modal';
 import { BloodGroupBarChart, TrendLineChart, StatusDonutChart } from '../components/ui/SvgCharts';
+import { getReadableLocation } from '../utils/locationNames';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -86,6 +87,19 @@ export const AdminDashboard: React.FC = () => {
   const [recoveryRequests, setRecoveryRequests] = useState<any[]>([]);
   const [recoveryHistory, setRecoveryHistory] = useState<any[]>([]);
   const [instChanges, setInstChanges] = useState<any[]>([]);
+
+  // Donors Tab Specific States
+  const [adminDonors, setAdminDonors] = useState<any[]>([]);
+  const [adminDonorsTotal, setAdminDonorsTotal] = useState(0);
+  const [donorBloodGroupFilter, setDonorBloodGroupFilter] = useState('');
+  const [donorAvailabilityFilter, setDonorAvailabilityFilter] = useState('');
+  const [donorPage, setDonorPage] = useState(1);
+  const donorsPerPage = 9;
+
+  // Isolated tab states
+  const [tabLoading, setTabLoading] = useState<Record<string, boolean>>({});
+  const [tabErrors, setTabErrors] = useState<Record<string, string | null>>({});
+  const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({});
 
   // Scoped User Search states (PART 04)
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,64 +185,181 @@ export const AdminDashboard: React.FC = () => {
   // Detail Modal
   const [viewingUser, setViewingUser] = useState<any | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadOverview = async (force = false) => {
+    if (!force && tabLoaded['overview']) return;
+    setTabLoading(prev => ({ ...prev, overview: true }));
+    setTabErrors(prev => ({ ...prev, overview: null }));
     try {
-      const results = await Promise.allSettled([
-        api.getAdminOverview(),
-        api.getAdminUsers({ search: userSearch }),
-        api.getContactAccessLogs(),
-        api.getAuditLogs(),
-        api.getBlockedUsers(),
-        api.getAccountStatusHistories(),
-        api.getInstitutionRequests(),
-        api.getInstitutions(),
-        api.searchRequests({ limit: 10 }),
-        api.getPhoneChangeRequests(),
-        api.getPasswordRecoveryRequests(),
-        api.getPasswordRecoveryHistory(),
-        api.getInstitutionChangeRequests()
-      ]);
-
-      const [
-        overviewRes, 
-        usersRes, 
-        contactRes, 
-        auditRes, 
-        blockedRes, 
-        histRes, 
-        instReqRes,
-        instRes,
-        reqsRes,
-        phoneReqsRes,
-        recRes,
-        recHistRes,
-        chgRes
-      ] = results.map(r => (r.status === 'fulfilled' ? r.value : { success: false }));
-
-      if (overviewRes?.success) setStats(overviewRes.stats);
-      if (usersRes?.success) setUsers(usersRes.users || []);
-      if (contactRes?.success) setContactLogs(contactRes.logs || []);
-      if (auditRes?.success) setAuditLogs(auditRes.logs || []);
-      if (blockedRes?.success) setBlockedUsers(blockedRes.blockedUsers || []);
-      if (histRes?.success) setStatusHistories(histRes.histories || []);
-      if (instReqRes?.success) setInstitutionRequests(instReqRes.requests || []);
-      if (instRes?.success) setInstitutions(instRes.institutions || []);
-      if (reqsRes?.success) setBloodRequests(reqsRes.requests || []);
-      if (phoneReqsRes?.success) setPhoneRequests(phoneReqsRes.requests || []);
-      if (recRes && recRes.success) setRecoveryRequests(recRes.requests || []);
-      if (recHistRes && recHistRes.success) setRecoveryHistory(recHistRes.history || []);
-      if (chgRes && chgRes.success) setInstChanges(chgRes.requests || []);
+      const res = await api.getAdminOverview();
+      if (res?.success) {
+        setStats(res.stats);
+        setTabLoaded(prev => ({ ...prev, overview: true }));
+      } else {
+        throw new Error(res?.message || 'সারাংশ তথ্য লোড করা যায়নি।');
+      }
     } catch (err: any) {
-      console.error('Admin data load failed:', err);
+      setTabErrors(prev => ({ ...prev, overview: err.message || 'সার্ভার সমস্যা।' }));
     } finally {
+      setTabLoading(prev => ({ ...prev, overview: false }));
       setLoading(false);
     }
   };
 
+  const loadTabData = async (tab: TabKey, force = false) => {
+    if (tab === 'settings') return;
+    if (tab === 'overview') {
+      return loadOverview(force);
+    }
+    if (!force && tabLoaded[tab]) return;
+
+    setTabLoading(prev => ({ ...prev, [tab]: true }));
+    setTabErrors(prev => ({ ...prev, [tab]: null }));
+
+    try {
+      let res: any;
+      switch (tab) {
+        case 'users':
+          res = await api.getAdminUsers({ search: userSearch, role: roleFilter, status: statusFilter });
+          if (res?.success) {
+            setUsers(res.users || []);
+          } else {
+            throw new Error(res?.message || 'ব্যবহারকারী তালিকা লোড করা যায়নি।');
+          }
+          break;
+        case 'donors':
+          res = await api.getAdminDonors({
+            bloodGroup: donorBloodGroupFilter || undefined,
+            availability: donorAvailabilityFilter || undefined,
+            page: donorPage,
+            limit: donorsPerPage
+          });
+          if (res?.success) {
+            setAdminDonors(res.donors || []);
+            setAdminDonorsTotal(res.total || 0);
+          } else {
+            throw new Error(res?.message || 'রক্তদাতা প্রোফাইল লোড করা যায়নি।');
+          }
+          break;
+        case 'phone_requests':
+          res = await api.getPhoneChangeRequests();
+          if (res?.success) {
+            setPhoneRequests(res.requests || []);
+          } else {
+            throw new Error(res?.message || 'নম্বর পরিবর্তন আবেদন লোড করা যায়নি।');
+          }
+          break;
+        case 'blocked_users':
+          res = await api.getBlockedUsers();
+          if (res?.success) {
+            setBlockedUsers(res.blockedUsers || []);
+          } else {
+            throw new Error(res?.message || 'স্থগিত ও ব্লককৃত তালিকা লোড করা যায়নি।');
+          }
+          break;
+        case 'institutions':
+          res = await api.getInstitutions();
+          if (res?.success) {
+            setInstitutions(res.institutions || []);
+          } else {
+            throw new Error(res?.message || 'প্রতিষ্ঠান তালিকা লোড করা যায়নি।');
+          }
+          break;
+        case 'institution_requests':
+          res = await api.getInstitutionRequests();
+          if (res?.success) {
+            setInstitutionRequests(res.requests || []);
+          } else {
+            throw new Error(res?.message || 'প্রতিষ্ঠান আবেদন তালিকা লোড করা যায়নি।');
+          }
+          break;
+        case 'status_history':
+          res = await api.getAccountStatusHistories();
+          if (res?.success) {
+            setStatusHistories(res.histories || []);
+          } else {
+            throw new Error(res?.message || 'স্ট্যাটাস হিস্ট্রি লোড করা যায়নি।');
+          }
+          break;
+        case 'contact_logs':
+          res = await api.getContactAccessLogs();
+          if (res?.success) {
+            setContactLogs(res.logs || []);
+          } else {
+            throw new Error(res?.message || 'যোগাযোগ অডিট লগ লোড করা যায়নি।');
+          }
+          break;
+        case 'audit_logs':
+          res = await api.getAuditLogs();
+          if (res?.success) {
+            setAuditLogs(res.logs || []);
+          } else {
+            throw new Error(res?.message || 'অডিট ট্রেইল লোড করা যায়নি।');
+          }
+          break;
+        case 'password_recovery':
+          res = await api.getPasswordRecoveryRequests();
+          if (res?.success) {
+            setRecoveryRequests(res.requests || []);
+          } else {
+            throw new Error(res?.message || 'পাসওয়ার্ড রিকভারি আবেদন লোড করা যায়নি।');
+          }
+          break;
+        case 'institution_changes':
+          res = await api.getInstitutionChangeRequests();
+          if (res?.success) {
+            setInstChanges(res.requests || []);
+          } else {
+            throw new Error(res?.message || 'প্রতিষ্ঠান পরিবর্তন আবেদন লোড করা যায়নি।');
+          }
+          break;
+        case 'recovery_history':
+          res = await api.getPasswordRecoveryHistory();
+          if (res?.success) {
+            setRecoveryHistory(res.history || []);
+          } else {
+            throw new Error(res?.message || 'রিকভারি ইতিহাস লোড করা যায়নি।');
+          }
+          break;
+      }
+      setTabLoaded(prev => ({ ...prev, [tab]: true }));
+    } catch (err: any) {
+      const errorMsg = err?.status === 403 || err?.message?.includes('403') || err?.message?.includes('অনুমতি')
+        ? 'FORBIDDEN'
+        : (err.message || 'ডাটা লোড ব্যর্থ হয়েছে।');
+      setTabErrors(prev => ({ ...prev, [tab]: errorMsg }));
+    } finally {
+      setTabLoading(prev => ({ ...prev, [tab]: false }));
+    }
+  };
+
+  const loadData = async (tab?: TabKey) => {
+    await loadOverview(true);
+    if (tab) {
+      await loadTabData(tab, true);
+    } else if (activeTab !== 'overview') {
+      await loadTabData(activeTab, true);
+    }
+  };
+
   useEffect(() => {
-    loadData();
-  }, [userSearch]);
+    loadOverview();
+  }, []);
+
+  useEffect(() => {
+    loadTabData(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadTabData('users', true);
+    }
+  }, [userSearch, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'donors') {
+      loadTabData('donors', true);
+    }
+  }, [donorBloodGroupFilter, donorAvailabilityFilter, donorPage]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     setMsg(null);
@@ -552,43 +683,43 @@ export const AdminDashboard: React.FC = () => {
     {
       title: 'সদস্য ও রক্তদাতা',
       items: [
-        { key: 'users', label: 'ব্যবহারকারী ও সদস্য', icon: <Users className="w-4 h-4" />, count: users.length },
-        { key: 'donors', label: 'রক্তদাতা প্রোফাইল', icon: <Heart className="w-4 h-4" />, count: stats?.donorsCount || 0 },
+        { key: 'users', label: 'ব্যবহারকারী ও সদস্য', icon: <Users className="w-4 h-4" />, count: stats?.usersCount },
+        { key: 'donors', label: 'রক্তদাতা প্রোফাইল', icon: <Heart className="w-4 h-4" />, count: stats?.donorsCount },
         { 
           key: 'phone_requests', 
           label: 'নম্বর পরিবর্তন আবেদন', 
           icon: <Phone className="w-4 h-4" />, 
-          count: phoneRequests.filter(r => r.status === 'pending').length 
+          count: stats?.pendingPhoneRequestsCount 
         },
         {
           key: 'password_recovery',
           label: 'পাসওয়ার্ড রিকভারি',
           icon: <KeyRound className="w-4 h-4" />,
-          count: recoveryRequests.filter(r => r.status === 'pending').length
+          count: stats?.pendingRecoveryRequestsCount
         },
         {
           key: 'institution_changes',
           label: 'প্রতিষ্ঠান পরিবর্তন আবেদন',
           icon: <Building2 className="w-4 h-4" />,
-          count: instChanges.filter(r => r.status === 'pending').length
+          count: stats?.pendingInstChangeRequestsCount
         },
-        { key: 'blocked_users', label: 'স্থগিত ও ব্লককৃত', icon: <UserX className="w-4 h-4" />, count: blockedUsers.length },
+        { key: 'blocked_users', label: 'স্থগিত ও ব্লককৃত', icon: <UserX className="w-4 h-4" />, count: stats?.blockedUsersCount },
       ]
     },
     {
       title: 'প্রতিষ্ঠান ও অঞ্চল',
       items: [
-        { key: 'institutions', label: 'অনুমোদিত প্রতিষ্ঠান', icon: <Building2 className="w-4 h-4" />, count: institutions.length },
-        { key: 'institution_requests', label: 'প্রতিষ্ঠান আবেদন', icon: <FileText className="w-4 h-4" />, count: institutionRequests.length },
+        { key: 'institutions', label: 'অনুমোদিত প্রতিষ্ঠান', icon: <Building2 className="w-4 h-4" />, count: stats?.approvedInstitutionsCount },
+        { key: 'institution_requests', label: 'প্রতিষ্ঠান আবেদন', icon: <FileText className="w-4 h-4" />, count: stats?.institutionRequestsCount },
       ]
     },
     {
       title: 'নিরাপত্তা ও অডিট',
       items: [
-        { key: 'contact_logs', label: 'ফোন নম্বর অডিট', icon: <Eye className="w-4 h-4" />, count: contactLogs.length },
+        { key: 'contact_logs', label: 'ফোন নম্বর অডিট', icon: <Eye className="w-4 h-4" />, count: stats?.contactLogsCount },
         { key: 'recovery_history', label: 'রিকভারি অডিট ট্রেইল', icon: <History className="w-4 h-4" /> },
-        { key: 'status_history', label: 'স্ট্যাটাস হিস্ট্রি', icon: <History className="w-4 h-4" />, count: statusHistories.length },
-        { key: 'audit_logs', label: 'অডিট ট্রেইল', icon: <Lock className="w-4 h-4" />, count: auditLogs.length },
+        { key: 'status_history', label: 'স্ট্যাটাস হিস্ট্রি', icon: <History className="w-4 h-4" /> },
+        { key: 'audit_logs', label: 'অডিট ট্রেইল', icon: <Lock className="w-4 h-4" />, count: stats?.auditLogsCount },
       ]
     },
     {
@@ -610,31 +741,38 @@ export const AdminDashboard: React.FC = () => {
   const totalUserPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
   const paginatedUsers = filteredUsers.slice((userPage - 1) * itemsPerPage, userPage * itemsPerPage);
 
-  // Real or realistic distribution charts data
-  const bloodGroupChartData = [
-    { group: 'O+', count: 5 },
-    { group: 'A+', count: 3 },
-    { group: 'B+', count: 4 },
-    { group: 'AB+', count: 2 },
-    { group: 'O-', count: 1 },
-    { group: 'A-', count: 1 },
-    { group: 'B-', count: 1 },
-    { group: 'AB-', count: 0 },
-  ];
+  // Real database-driven distribution charts data
+  const defaultBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const bloodGroupChartData = defaultBloodGroups.map(bg => {
+    const found = stats?.bloodGroupDistribution?.find((d: any) => d.group === bg);
+    return {
+      group: bg,
+      count: found ? Number(found.count) || 0 : 0
+    };
+  });
 
-  const trendChartData = [
-    { label: 'মে', value: 8 },
-    { label: 'জুন', value: 14 },
-    { label: 'জুলাই', value: 22 },
-    { label: 'আগস্ট', value: 35 },
-    { label: 'সেপ্টেম্বর', value: 48 },
-    { label: 'অক্টোবর', value: stats?.usersCount || 60 },
-  ];
+  const trendChartData = stats?.monthlyTrends && stats.monthlyTrends.length > 0
+    ? stats.monthlyTrends.map((t: any) => ({
+        label: t.label,
+        value: Number(t.value) || 0
+      }))
+    : [
+        { label: 'মে', value: 0 },
+        { label: 'জুন', value: 0 },
+        { label: 'জুলাই', value: 0 },
+        { label: 'আগস্ট', value: 0 },
+        { label: 'সেপ্টেম্বর', value: 0 },
+        { label: 'অক্টোবর', value: 0 },
+      ];
+
+  const activeAccountsCount = stats?.activeAccounts ?? 0;
+  const blockedAccountsCount = stats?.blockedUsersCount ?? 0;
+  const otherAccountsCount = Math.max(0, (stats?.usersCount ?? 0) - activeAccountsCount - blockedAccountsCount);
 
   const statusSlices = [
-    { label: 'সক্রিয় অ্যাকাউন্ট', value: users.length - blockedUsers.length, color: '#16865B' },
-    { label: 'অপেক্ষমাণ আবেদন', value: institutionRequests.length, color: '#D97706' },
-    { label: 'স্থগিত / ব্লকড', value: blockedUsers.length, color: '#DC2626' },
+    { label: 'সক্রিয় অ্যাকাউন্ট', value: activeAccountsCount, color: '#16865B' },
+    ...(otherAccountsCount > 0 ? [{ label: 'অপেক্ষমাণ / অন্যান্য', value: otherAccountsCount, color: '#D97706' }] : []),
+    { label: 'স্থগিত / ব্লকড', value: blockedAccountsCount, color: '#DC2626' },
   ];
 
   return (
@@ -671,7 +809,7 @@ export const AdminDashboard: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadData}
+              onClick={() => loadData()}
               isLoading={loading}
               icon={<RotateCcw className="w-3.5 h-3.5" />}
               className="text-xs"
@@ -820,97 +958,112 @@ export const AdminDashboard: React.FC = () => {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 
-                {/* 8 Real Database-Driven Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  <StatsCard
-                    title="মোট সদস্য"
-                    value={stats?.usersCount || users.length}
-                    subtitle="যাচাইকৃত রেজিস্টার্ড"
-                    icon={<Users className="w-5 h-5" />}
-                    iconColor="primary"
-                    trend={{ value: '১২%', isPositive: true, text: 'এই মাসে বৃদ্ধি' }}
-                    onClick={() => setActiveTab('users')}
-                  />
-                  <StatsCard
-                    title="স্বেচ্ছাসেবী রক্তদাতা"
-                    value={stats?.donorsCount || 0}
-                    subtitle="রক্তদানের জন্য নিবন্ধিত"
-                    icon={<Heart className="w-5 h-5" />}
-                    iconColor="emerald"
-                    trend={{ value: '১৮%', isPositive: true, text: 'সক্রিয় বৃদ্ধি' }}
-                    onClick={() => setActiveTab('donors')}
-                  />
-                  <StatsCard
-                    title="অনুমোদিত প্রতিষ্ঠান"
-                    value={institutions.length}
-                    subtitle="বিশ্ববিদ্যালয় ও কলেজ"
-                    icon={<Building2 className="w-5 h-5" />}
-                    iconColor="teal"
-                    onClick={() => setActiveTab('institutions')}
-                  />
-                  <StatsCard
-                    title="স্থগিত / ব্লকড"
-                    value={blockedUsers.length}
-                    subtitle="নীতিভঙ্গ বা তদন্তাধীন"
-                    icon={<UserX className="w-5 h-5" />}
-                    iconColor="amber"
-                    onClick={() => setActiveTab('blocked_users')}
-                  />
-                </div>
+                {tabLoading['overview'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">সারাংশ ড্যাশবোর্ড লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['overview'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">{tabErrors['overview']}</p>
+                    <Button size="sm" variant="outline" onClick={() => loadOverview(true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {/* 8 Real Database-Driven Summary Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      <StatsCard
+                        title="মোট সদস্য"
+                        value={stats?.usersCount ?? 0}
+                        subtitle="নিবন্ধিত অ্যাকাউন্ট"
+                        icon={<Users className="w-5 h-5" />}
+                        iconColor="primary"
+                        onClick={() => setActiveTab('users')}
+                      />
+                      <StatsCard
+                        title="সক্রিয় অ্যাকাউন্ট"
+                        value={stats?.activeAccounts ?? 0}
+                        subtitle="স্বাভাবিক ব্যবহারের উপযোগী"
+                        icon={<UserCheck className="w-5 h-5" />}
+                        iconColor="emerald"
+                        onClick={() => setActiveTab('users')}
+                      />
+                      <StatsCard
+                        title="নিবন্ধিত রক্তদাতা"
+                        value={stats?.donorsCount ?? 0}
+                        subtitle="রক্তদানের জন্য প্রোফাইলভুক্ত"
+                        icon={<Heart className="w-5 h-5" />}
+                        iconColor="teal"
+                        onClick={() => setActiveTab('donors')}
+                      />
+                      <StatsCard
+                        title="রক্তদানে প্রস্তুত"
+                        value={stats?.availableDonorsCount ?? 0}
+                        subtitle="জরুরী প্রয়োজনে উপলব্ধ"
+                        icon={<Droplet className="w-5 h-5" />}
+                        iconColor="emerald"
+                        onClick={() => setActiveTab('donors')}
+                      />
+                    </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  <StatsCard
-                    title="রক্তের অনুরোধ"
-                    value={bloodRequests.length}
-                    subtitle="চলমান ও সাম্প্রতিক"
-                    icon={<PhoneCall className="w-5 h-5" />}
-                    iconColor="blue"
-                  />
-                  <StatsCard
-                    title="অপেক্ষমাণ আবেদন"
-                    value={institutionRequests.length}
-                    subtitle="প্রতিষ্ঠান অন্তর্ভুক্তি"
-                    icon={<FileText className="w-5 h-5" />}
-                    iconColor="purple"
-                    onClick={() => setActiveTab('institution_requests')}
-                  />
-                  <StatsCard
-                    title="ফোন প্রকাশ অডিট"
-                    value={contactLogs.length}
-                    subtitle="কন্টাক্ট রিভিল রেকর্ড"
-                    icon={<Eye className="w-5 h-5" />}
-                    iconColor="slate"
-                    onClick={() => setActiveTab('contact_logs')}
-                  />
-                  <StatsCard
-                    title="অডিট ট্রেইল ইভেন্ট"
-                    value={auditLogs.length}
-                    subtitle="প্রশাসনিক নিরাপত্তা লগ"
-                    icon={<Lock className="w-5 h-5" />}
-                    iconColor="primary"
-                    onClick={() => setActiveTab('audit_logs')}
-                  />
-                </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      <StatsCard
+                        title="রক্তের অনুরোধ"
+                        value={stats?.bloodRequestsCount ?? 0}
+                        subtitle="মোট সংগৃহীত অনুরোধ"
+                        icon={<PhoneCall className="w-5 h-5" />}
+                        iconColor="blue"
+                      />
+                      <StatsCard
+                        title="অপেক্ষমাণ আবেদন"
+                        value={stats?.institutionRequestsCount ?? 0}
+                        subtitle="প্রতিষ্ঠান অন্তর্ভুক্তি"
+                        icon={<FileText className="w-5 h-5" />}
+                        iconColor="purple"
+                        onClick={() => setActiveTab('institution_requests')}
+                      />
+                      <StatsCard
+                        title="অনুমোদিত প্রতিষ্ঠান"
+                        value={stats?.approvedInstitutionsCount ?? 0}
+                        subtitle="বিশ্ববিদ্যালয় ও ক্যাম্পাস"
+                        icon={<Building2 className="w-5 h-5" />}
+                        iconColor="teal"
+                        onClick={() => setActiveTab('institutions')}
+                      />
+                      <StatsCard
+                        title="স্থগিত / ব্লকড"
+                        value={stats?.blockedUsersCount ?? 0}
+                        subtitle="নীতিভঙ্গ বা তদন্তাধীন"
+                        icon={<UserX className="w-5 h-5" />}
+                        iconColor="amber"
+                        onClick={() => setActiveTab('blocked_users')}
+                      />
+                    </div>
 
-                {/* Database-Driven Real SVG Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <BloodGroupBarChart 
-                    data={bloodGroupChartData} 
-                    title="রক্তের গ্রুপভিত্তিক নিবন্ধিত রক্তদাতা পরিসংখ্যান"
-                  />
-                  <StatusDonutChart 
-                    slices={statusSlices} 
-                    title="প্ল্যাটফর্ম অ্যাকাউন্ট ও আবেদনের বর্তমান অনুপাত"
-                  />
-                </div>
+                    {/* Database-Driven Real SVG Charts */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <BloodGroupBarChart 
+                        data={bloodGroupChartData} 
+                        title="রক্তের গ্রুপভিত্তিক নিবন্ধিত রক্তদাতা পরিসংখ্যান"
+                        totalDonors={stats?.donorsCount}
+                      />
+                      <StatusDonutChart 
+                        slices={statusSlices} 
+                        title="প্ল্যাটফর্ম অ্যাকাউন্ট স্ট্যাটাসের বর্তমান অনুপাত"
+                      />
+                    </div>
 
-                {/* Monthly Registration Trend Chart */}
-                <TrendLineChart
-                  data={trendChartData}
-                  title="মাসিক সদস্য নিবন্ধনের অগ্রগতির সূচক"
-                  subtitle="চলতি অর্থবছরে রক্তদান নেটওয়ার্কের সম্প্রসারণ"
-                  color="#C62828"
-                />
+                    {/* Monthly Registration Trend Chart */}
+                    <TrendLineChart
+                      data={trendChartData}
+                      title="মাসিক সদস্য নিবন্ধনের অগ্রগতির সূচক"
+                      subtitle="বাংলাদেশ সময় অনুযায়ী সর্বশেষ ৬ ক্যালেন্ডার মাস"
+                      color="#C62828"
+                    />
+                  </>
+                )}
 
                 {/* Safety & Administrative Policy Banner */}
                 <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-soft space-y-3">
@@ -1101,7 +1254,24 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto border border-appBorder rounded-xl">
+                {tabLoading['users'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">ব্যবহারকারী তালিকা লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['users'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['users'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: ব্যবহারকারী তালিকা দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['users']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('users', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
                       <tr>
@@ -1199,6 +1369,7 @@ export const AdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+                )}
 
                 {/* Pagination */}
                 {totalUserPages > 1 && (
@@ -1231,39 +1402,199 @@ export const AdminDashboard: React.FC = () => {
             {/* TAB 3: DONORS LIST */}
             {activeTab === 'donors' && (
               <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-base font-bold text-mainText flex items-center gap-2">
                       <Heart className="w-5 h-5 text-rose-600" />
                       <span>রক্তদাতা ডিরেক্টরি প্রোফাইল</span>
                     </h3>
-                    <p className="text-xs text-subText mt-0.5">স্বেচ্ছাসেবী রক্তদাতাদের তালিকা ও প্রাপ্যতা ট্র্যাকিং</p>
+                    <p className="text-xs text-subText mt-0.5">
+                      প্ল্যাটফর্মের সকল অনুমোদিত ভূমিকার (Super Admin, Admin, Moderator, Member) রক্তদাতা প্রোফাইল ও প্রাপ্যতা
+                    </p>
                   </div>
-                  <Badge variant="success">নিবন্ধিত রক্তদাতা: {stats?.donorsCount || 0} জন</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="success">
+                      নিবন্ধিত রক্তদাতা: {stats?.donorsCount ?? adminDonorsTotal} জন
+                    </Badge>
+                    {(donorBloodGroupFilter || donorAvailabilityFilter) && (
+                      <Badge variant="neutral">
+                        ফিল্টারকৃত: {adminDonorsTotal} জন
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {users.filter(u => u.role === 'DONOR' || u.role === 'MEMBER').map((d: any) => (
-                    <div key={d._id} className="p-4 rounded-2xl border border-appBorder bg-slate-50/50 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-10 h-10 rounded-xl bg-red-100 text-primary font-black flex items-center justify-center text-sm border border-red-200">
-                            {d.bloodGroup || 'O+'}
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-mainText">{d.name}</p>
-                            <p className="text-[11px] text-subText font-mono">{d.phone}</p>
-                          </div>
-                        </div>
-                        <Badge variant="success" size="sm">প্রস্তুত</Badge>
-                      </div>
-                      <div className="text-xs text-subText space-y-1">
-                        <p>📍 অবস্থান: {d.division || 'ঢাকা'}, {d.district || 'ঢাকা'}</p>
-                        <p>🔒 অনুমতি: জরুরী ভিত্তিতে ফোন প্রদর্শন অনুমোদিত</p>
-                      </div>
-                    </div>
-                  ))}
+                {/* Filters bar */}
+                <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50/80 rounded-xl border border-appBorder">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-subText">গ্রুপ:</span>
+                    <select
+                      value={donorBloodGroupFilter}
+                      onChange={e => {
+                        setDonorBloodGroupFilter(e.target.value);
+                        setDonorPage(1);
+                      }}
+                      className="text-xs px-2.5 py-1.5 bg-surface border border-appBorder rounded-lg font-bold text-primary focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">সকল গ্রুপ</option>
+                      {BLOOD_GROUPS.map(bg => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-subText">উপলব্ধতা:</span>
+                    <select
+                      value={donorAvailabilityFilter}
+                      onChange={e => {
+                        setDonorAvailabilityFilter(e.target.value);
+                        setDonorPage(1);
+                      }}
+                      className="text-xs px-2.5 py-1.5 bg-surface border border-appBorder rounded-lg text-mainText focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">সকল প্রাপ্যতা</option>
+                      <option value="available">রক্তদানে প্রস্তুত (সক্রিয়)</option>
+                      <option value="unavailable">সাময়িক স্থগিত / বিরতি</option>
+                    </select>
+                  </div>
+
+                  {(donorBloodGroupFilter || donorAvailabilityFilter) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-rose-600 hover:text-rose-700"
+                      onClick={() => {
+                        setDonorBloodGroupFilter('');
+                        setDonorAvailabilityFilter('');
+                        setDonorPage(1);
+                      }}
+                    >
+                      ফিল্টার রিসেট
+                    </Button>
+                  )}
                 </div>
+
+                {/* State: Loading, Error, Empty, List */}
+                {tabLoading['donors'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">রক্তদাতা তালিকা লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['donors'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['donors'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: রক্তদাতা প্রোফাইল তালিকা দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['donors']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('donors', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : adminDonors.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">
+                    {donorBloodGroupFilter || donorAvailabilityFilter
+                      ? 'এই ফিল্টারের শর্তে কোনো রক্তদাতা পাওয়া যায়নি।'
+                      : 'বর্তমানে ডাটাবেসে কোনো রক্তদাতা প্রোফাইল নিবন্ধিত নেই।'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {adminDonors.map((d: any) => {
+                        const loc = getReadableLocation(d.division, d.district, d.upazila);
+                        const isAvail = d.isAvailable && d.availabilityStatus === 'available';
+                        const roleBadgeVariant = 
+                          d.role === 'SUPER_ADMIN' ? 'danger' :
+                          d.role === 'ADMIN' ? 'primary' :
+                          d.role === 'DIVISION_COORDINATOR' ? 'teal' :
+                          d.role === 'INSTITUTION_HEAD' || d.role === 'INSTITUTION_MODERATOR' ? 'teal' :
+                          'neutral';
+                        const roleLabel =
+                          d.role === 'SUPER_ADMIN' ? 'সুপার অ্যাডমিন' :
+                          d.role === 'ADMIN' ? 'অ্যাডমিন' :
+                          d.role === 'DIVISION_COORDINATOR' ? 'সমন্বয়ক' :
+                          d.role === 'INSTITUTION_HEAD' ? 'প্রতিষ্ঠান প্রধান' :
+                          d.role === 'INSTITUTION_MODERATOR' ? 'মডারেটর' :
+                          'সাধারণ সদস্য';
+
+                        return (
+                          <div key={d._id} className="p-4 rounded-2xl border border-appBorder bg-slate-50/50 hover:bg-white hover:shadow-card transition-all space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-10 h-10 rounded-xl bg-red-100 text-primary font-black flex items-center justify-center text-sm border border-red-200">
+                                  {d.bloodGroup}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm text-mainText">{d.name}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <Badge variant={roleBadgeVariant} size="sm">
+                                      {roleLabel}
+                                    </Badge>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      {d.accountStatus === 'active' ? 'সক্রিয়' : 'স্থগিত'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <Badge variant={isAvail ? 'success' : 'neutral'} size="sm">
+                                {isAvail ? 'প্রস্তুত' : 'সাময়িক স্থগিত'}
+                              </Badge>
+                            </div>
+
+                            <div className="text-xs text-subText space-y-1 pt-1 border-t border-slate-100">
+                              <p className="font-mono text-slate-600 flex items-center gap-1">
+                                <Phone className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{d.phone}</span>
+                              </p>
+                              <p className="text-slate-600 flex items-center gap-1">
+                                <span className="text-slate-400">📍</span>
+                                <span>{loc.displayText || `${d.district || ''}, ${d.division || ''}`}</span>
+                              </p>
+                              {d.institution && (
+                                <p className="text-teal-700 flex items-center gap-1">
+                                  <Building2 className="w-3.5 h-3.5" />
+                                  <span>{d.institution}</span>
+                                </p>
+                              )}
+                              <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400">
+                                <span>রক্তদান সংখ্যা: <strong className="text-mainText">{d.totalDonations || 0}</strong> বার</span>
+                                <span>{d.consentToShareContact ? 'নম্বর উন্মুক্ত' : 'নম্বর গোপন'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination */}
+                    {Math.ceil(adminDonorsTotal / donorsPerPage) > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t border-appBorder text-xs text-subText">
+                        <span>
+                          পৃষ্ঠা {donorPage} / {Math.ceil(adminDonorsTotal / donorsPerPage)} (মোট {adminDonorsTotal} জন)
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={donorPage <= 1}
+                            onClick={() => setDonorPage(p => p - 1)}
+                          >
+                            পূর্ববর্তী
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={donorPage >= Math.ceil(adminDonorsTotal / donorsPerPage)}
+                            onClick={() => setDonorPage(p => p + 1)}
+                          >
+                            পরবর্তী
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -1281,7 +1612,23 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="teal">{phoneRequests.length} টি আবেদন</Badge>
                 </div>
 
-                {phoneRequests.length === 0 ? (
+                {tabLoading['phone_requests'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">নম্বর পরিবর্তনের আবেদনসমূহ লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['phone_requests'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['phone_requests'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: নম্বর পরিবর্তনের আবেদন দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['phone_requests']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('phone_requests', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : phoneRequests.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">
                     বর্তমানে কোনো নম্বর পরিবর্তনের আবেদন নেই।
                   </div>
@@ -1365,7 +1712,23 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="danger">{blockedUsers.length} টি অ্যাকাউন্ট</Badge>
                 </div>
 
-                {blockedUsers.length === 0 ? (
+                {tabLoading['blocked_users'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">স্থগিত ও ব্লককৃত তালিকা লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['blocked_users'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['blocked_users'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: এই তালিকা দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['blocked_users']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('blocked_users', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : blockedUsers.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">
                     বর্তমানে কোনো স্থগিত বা ব্লককৃত অ্যাকাউন্ট নেই।
                   </div>
@@ -1440,37 +1803,57 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {institutions.map(inst => (
-                    <div key={inst._id} className="p-4 rounded-2xl border border-appBorder bg-slate-50/50 space-y-2.5">
-                      <div className="flex items-start justify-between">
-                        <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">
-                          🎓
+                {tabLoading['institutions'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">প্রতিষ্ঠান তালিকা লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['institutions'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['institutions'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: প্রতিষ্ঠান তালিকা দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['institutions']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('institutions', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : institutions.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো অনুমোদিত শিক্ষা প্রতিষ্ঠান পাওয়া যায়নি।</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {institutions.map(inst => (
+                      <div key={inst._id} className="p-4 rounded-2xl border border-appBorder bg-slate-50/50 space-y-2.5">
+                        <div className="flex items-start justify-between">
+                          <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">
+                            🎓
+                          </div>
+                          <Badge variant="teal" size="sm">{inst.code}</Badge>
                         </div>
-                        <Badge variant="teal" size="sm">{inst.code}</Badge>
+                        <div>
+                          <h4 className="font-bold text-sm text-mainText">{inst.nameBn}</h4>
+                          <p className="text-[11px] text-subText">{inst.name}</p>
+                        </div>
+                        <div className="text-xs text-subText pt-1 border-t border-slate-200 flex items-center justify-between">
+                          <span>📍 {inst.district}, {inst.division}</span>
+                          <span className="font-semibold text-teal-700">যাচাইকৃত</span>
+                        </div>
+                        <div className="pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs text-teal-700 border-teal-200 hover:bg-teal-50"
+                            onClick={() => handleOpenDrillDown(inst)}
+                            icon={<Users className="w-3.5 h-3.5" />}
+                          >
+                            সদস্য ও রক্তদাতা ডাটা ({inst.code})
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-mainText">{inst.nameBn}</h4>
-                        <p className="text-[11px] text-subText">{inst.name}</p>
-                      </div>
-                      <div className="text-xs text-subText pt-1 border-t border-slate-200 flex items-center justify-between">
-                        <span>📍 {inst.district}, {inst.division}</span>
-                        <span className="font-semibold text-teal-700">যাচাইকৃত</span>
-                      </div>
-                      <div className="pt-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs text-teal-700 border-teal-200 hover:bg-teal-50"
-                          onClick={() => handleOpenDrillDown(inst)}
-                          icon={<Users className="w-3.5 h-3.5" />}
-                        >
-                          সদস্য ও রক্তদাতা ডাটা ({inst.code})
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1488,7 +1871,23 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="teal">মোট: {institutionRequests.length} টি আবেদন</Badge>
                 </div>
 
-                {institutionRequests.length === 0 ? (
+                {tabLoading['institution_requests'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">প্রতিষ্ঠান নিবন্ধন আবেদনসমূহ লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['institution_requests'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['institution_requests'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: এই আবেদন তালিকা দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['institution_requests']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('institution_requests', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : institutionRequests.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">কোনো প্রাতিষ্ঠানিক আবেদন জমা নেই।</div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1562,7 +1961,23 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-xs text-subText mt-0.5">কে কোন সদস্যের অ্যাকাউন্ট কী কারণে পরিবর্তন করেছিলেন তার নিরবচ্ছিন্ন রেকর্ড</p>
                 </div>
 
-                {statusHistories.length === 0 ? (
+                {tabLoading['status_history'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">স্ট্যাটাস পরিবর্তন ইতিহাস লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['status_history'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['status_history'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: স্ট্যাটাস হিস্ট্রি দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['status_history']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('status_history', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : statusHistories.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">কোনো স্ট্যাটাস পরিবর্তনের রেকর্ড নেই।</div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1616,38 +2031,58 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-xs text-subText mt-0.5">রক্তদাতার গোপনীয়তা নিশ্চিত করতে কে কখন কার ফোন নম্বর দেখেছেন তার টাইমস্ট্যাম্প লগ</p>
                 </div>
 
-                <div className="overflow-x-auto border border-appBorder rounded-xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
-                      <tr>
-                        <th className="py-3 px-4">অনুসন্ধানকারী সদস্য</th>
-                        <th className="py-3 px-4">রক্তদাতা</th>
-                        <th className="py-3 px-4">উদ্দেশ্য</th>
-                        <th className="py-3 px-4">সময়</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {contactLogs.map((log: any) => (
-                        <tr key={log._id} className="hover:bg-slate-50/70">
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-mainText">{log.viewerName}</div>
-                            <div className="font-mono text-[10px] text-subText">{log.viewerPhone}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-primary">{log.donorName}</div>
-                            <div className="font-mono text-[10px] text-subText">{log.donorPhone}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge variant="neutral" size="sm">{log.purpose}</Badge>
-                          </td>
-                          <td className="py-3 px-4 text-subText">
-                            {new Date(log.createdAt).toLocaleString('bn-BD')}
-                          </td>
+                {tabLoading['contact_logs'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">ফোন নম্বর অডিট লগ লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['contact_logs'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['contact_logs'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: ফোন নম্বর অডিট দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['contact_logs']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('contact_logs', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : contactLogs.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো ফোন নম্বর উন্মুক্তকরণের রেকর্ড পাওয়া যায়নি।</div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">অনুসন্ধানকারী সদস্য</th>
+                          <th className="py-3 px-4">রক্তদাতা</th>
+                          <th className="py-3 px-4">উদ্দেশ্য</th>
+                          <th className="py-3 px-4">সময়</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {contactLogs.map((log: any) => (
+                          <tr key={log._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-mainText">{log.viewerName}</div>
+                              <div className="font-mono text-[10px] text-subText">{log.viewerPhone}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-primary">{log.donorName}</div>
+                              <div className="font-mono text-[10px] text-subText">{log.donorPhone}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="neutral" size="sm">{log.purpose}</Badge>
+                            </td>
+                            <td className="py-3 px-4 text-subText">
+                              {new Date(log.createdAt).toLocaleString('bn-BD')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1662,32 +2097,52 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-xs text-subText mt-0.5">প্ল্যাটফর্মের প্রতিটি গুরুত্বপূর্ণ অ্যাকশনের অপরিবর্তনীয় লগ</p>
                 </div>
 
-                <div className="overflow-x-auto border border-appBorder rounded-xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
-                      <tr>
-                        <th className="py-3 px-4">অ্যাকশন</th>
-                        <th className="py-3 px-4">কর্তা (Actor)</th>
-                        <th className="py-3 px-4">লক্ষ্য অবজেক্ট</th>
-                        <th className="py-3 px-4">সময়</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {auditLogs.map((log: any) => (
-                        <tr key={log._id} className="hover:bg-slate-50/70">
-                          <td className="py-3 px-4 font-mono font-bold text-primary">{log.action}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="neutral" size="sm">{log.actorRole}</Badge>
-                          </td>
-                          <td className="py-3 px-4 font-mono text-subText">{log.targetType}: {log.targetId}</td>
-                          <td className="py-3 px-4 text-subText">
-                            {new Date(log.createdAt).toLocaleString('bn-BD')}
-                          </td>
+                {tabLoading['audit_logs'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">প্রশাসনিক অডিট ট্রেইল লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['audit_logs'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['audit_logs'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: অডিট ট্রেইল দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['audit_logs']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('audit_logs', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">কোনো প্রশাসনিক অডিট লগ পাওয়া যায়নি।</div>
+                ) : (
+                  <div className="overflow-x-auto border border-appBorder rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">অ্যাকশন</th>
+                          <th className="py-3 px-4">কর্তা (Actor)</th>
+                          <th className="py-3 px-4">লক্ষ্য অবজেক্ট</th>
+                          <th className="py-3 px-4">সময়</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {auditLogs.map((log: any) => (
+                          <tr key={log._id} className="hover:bg-slate-50/70">
+                            <td className="py-3 px-4 font-mono font-bold text-primary">{log.action}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant="neutral" size="sm">{log.actorRole}</Badge>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-subText">{log.targetType}: {log.targetId}</td>
+                            <td className="py-3 px-4 text-subText">
+                              {new Date(log.createdAt).toLocaleString('bn-BD')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1705,7 +2160,23 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="warning">মোট: {recoveryRequests.length} টি আবেদন</Badge>
                 </div>
 
-                {recoveryRequests.length === 0 ? (
+                {tabLoading['password_recovery'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">পাসওয়ার্ড রিকভারি আবেদনসমূহ লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['password_recovery'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['password_recovery'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: পাসওয়ার্ড রিকভারি আবেদন দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['password_recovery']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('password_recovery', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : recoveryRequests.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">কোনো পাসওয়ার্ড রিকভারি আবেদন অপেক্ষমাণ নেই।</div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1792,7 +2263,23 @@ export const AdminDashboard: React.FC = () => {
                   <Badge variant="neutral">মোট: {instChanges.length} টি আবেদন</Badge>
                 </div>
 
-                {instChanges.length === 0 ? (
+                {tabLoading['institution_changes'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">প্রতিষ্ঠান পরিবর্তন আবেদনসমূহ লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['institution_changes'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['institution_changes'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: এই আবেদন দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['institution_changes']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('institution_changes', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : instChanges.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">কোনো ক্যাম্পাস পরিবর্তন আবেদন অপেক্ষমাণ নেই।</div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">
@@ -1877,7 +2364,23 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-xs text-subText mt-0.5">কে কোন সদস্যের জন্য এককালীন পাসওয়ার্ড অনুমোদন করেছেন তার অপরিবর্তনীয় নিরাপত্তা অডিট রেকর্ড</p>
                 </div>
 
-                {recoveryHistory.length === 0 ? (
+                {tabLoading['recovery_history'] ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-xs text-subText">রিকভারি অডিট হিস্ট্রি লোড হচ্ছে...</p>
+                  </div>
+                ) : tabErrors['recovery_history'] ? (
+                  <div className="p-6 text-center rounded-2xl border border-red-200 bg-red-50/50 space-y-3">
+                    <p className="text-sm font-semibold text-rose-700">
+                      {tabErrors['recovery_history'] === 'FORBIDDEN'
+                        ? 'অনধিকার চর্চা: রিকভারি অডিট দেখার প্রশাসনিক অনুমতি নেই।'
+                        : tabErrors['recovery_history']}
+                    </p>
+                    <Button size="sm" variant="outline" onClick={() => loadTabData('recovery_history', true)}>
+                      পুনরায় চেষ্টা করুন
+                    </Button>
+                  </div>
+                ) : recoveryHistory.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs">কোনো রিকভারি ইতিহাস পাওয়া যায়নি।</div>
                 ) : (
                   <div className="overflow-x-auto border border-appBorder rounded-xl">

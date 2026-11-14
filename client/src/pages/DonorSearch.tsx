@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, RotateCcw, Filter, AlertCircle, Users, CheckCircle, MapPin, Compass, Navigation } from 'lucide-react';
 import { BLOOD_GROUPS, BANGLADESH_DIVISIONS } from '../data/bangladeshLocations';
@@ -40,6 +40,7 @@ export const DonorSearch: React.FC = () => {
 
   // Reporting
   const [reportingDonorId, setReportingDonorId] = useState<string | null>(null);
+  const searchRequestIdRef = useRef<number>(0);
 
   // Automatically detect visitor location on initial mount if no district in URL
   useEffect(() => {
@@ -76,11 +77,11 @@ export const DonorSearch: React.FC = () => {
   }, []);
 
   const fetchDonors = async () => {
+    const currentReqId = ++searchRequestIdRef.current;
     setLoading(true);
     setErrorMsg(null);
     try {
-      // Default local search shows maximum 7 donors per user requirement
-      const searchLimit = isAutoLocationActive ? 7 : 9;
+      const searchLimit = 9;
 
       const res = await api.searchDonors({
         bloodGroup,
@@ -92,6 +93,9 @@ export const DonorSearch: React.FC = () => {
         limit: searchLimit,
       });
 
+      // Avoid race conditions: discard response if a newer search query was started
+      if (currentReqId !== searchRequestIdRef.current) return;
+
       if (res.success) {
         setDonors(res.donors || []);
         setTotalPages(res.totalPages || 1);
@@ -100,9 +104,12 @@ export const DonorSearch: React.FC = () => {
         setErrorMsg(res.message || 'রক্তদাতা তথ্য লোড করা যায়নি।');
       }
     } catch (err: any) {
+      if (currentReqId !== searchRequestIdRef.current) return;
       setErrorMsg(err.message || 'সার্ভারে সংযোগ স্থাপন সম্ভব হয়নি।');
     } finally {
-      setLoading(false);
+      if (currentReqId === searchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -248,7 +255,7 @@ export const DonorSearch: React.FC = () => {
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-900 font-semibold shadow-soft">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>আপনার বর্তমান অবস্থান অনুযায়ী <strong>{detectedDistrictName}</strong> জেলার রক্তদাতাদের তালিকা দেখানো হচ্ছে (সর্বোচ্চ ৭ জন)।</span>
+              <span>আপনার বর্তমান অবস্থান অনুযায়ী <strong>{detectedDistrictName}</strong> জেলার রক্তদাতাদের তালিকা দেখানো হচ্ছে (প্রতি পৃষ্ঠায় সর্বোচ্চ ৯ জন)। মোট ফলাফল: <strong>{totalCount} জন</strong></span>
             </div>
             <button onClick={handleReset} className="text-emerald-700 hover:text-emerald-800 underline text-xs whitespace-nowrap">
               সব জেলা দেখুন

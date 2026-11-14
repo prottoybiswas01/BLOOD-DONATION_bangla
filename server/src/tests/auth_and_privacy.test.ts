@@ -5,6 +5,21 @@ import { SmsService } from '../services/smsService.js';
 
 before(async () => {
   // Test fixtures for auth & privacy testing
+  if (!dataStore.users.some(u => u.role === 'SUPER_ADMIN' && u.isActive)) {
+    dataStore.users.push({
+      _id: 'usr_sa_test',
+      name: 'Prottoy Kumar Biswas',
+      phone: '01978167016',
+      passwordHash: 'dummy_hash',
+      role: 'SUPER_ADMIN',
+      accountStatus: 'active',
+      isActive: true,
+      gender: 'male',
+      isPhoneVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
   if (!dataStore.users.some(u => u._id === 'usr_donor_1')) {
     dataStore.users.push({
       _id: 'usr_donor_1',

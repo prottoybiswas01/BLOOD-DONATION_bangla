@@ -103,4 +103,7 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+UserSchema.index({ role: 1, accountStatus: 1, isActive: 1 });
+UserSchema.index({ createdAt: 1 });
+
 export const UserModel = mongoose.model<IUser>('User', UserSchema);

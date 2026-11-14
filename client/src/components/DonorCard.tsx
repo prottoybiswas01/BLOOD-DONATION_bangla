@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
+import { getReadableLocation } from '../utils/locationNames';
 
 interface DonorCardProps {
   donor: DonorProfile;
@@ -67,7 +68,7 @@ export const DonorCard: React.FC<DonorCardProps> = ({ donor, onReport }) => {
               <p className="text-xs text-subText flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 <span>
-                  {donor.upazila ? `${donor.upazila}, ` : ''}{donor.district}, {donor.division}
+                  {getReadableLocation(donor.division, donor.district, donor.upazila).displayText}
                 </span>
               </p>
             </div>

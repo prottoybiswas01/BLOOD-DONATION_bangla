@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getAdminOverview, 
+  getAdminDonors,
   getUsers, 
   getUserById,
   editUserProfileByAdmin,
@@ -44,6 +45,7 @@ router.post(
 router.use(requireAuth, requireRoles('SUPER_ADMIN', 'ADMIN'));
 
 router.get('/overview', getAdminOverview);
+router.get('/donors', getAdminDonors);
 router.get('/users', getUsers);
 router.get('/users/:id', getUserById);
 router.patch('/users/:id/profile', validateBody(AdminEditProfileSchema), editUserProfileByAdmin);

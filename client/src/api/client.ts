@@ -60,6 +60,12 @@ export const api = {
       body: JSON.stringify({ newPassword }),
     }),
 
+  changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+    fetchWithAuth('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   // Members & Moderator creation
   createMemberByModerator: (payload: any) =>
     fetchWithAuth('/members', {
@@ -91,6 +97,12 @@ export const api = {
     }),
 
   getMyDonorProfile: () => fetchWithAuth('/donors/me'),
+
+  activateDonorProfile: (payload: any) =>
+    fetchWithAuth('/donors/me/activate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 
   updateMyDonorProfile: (payload: any) =>
     fetchWithAuth('/donors/me', {
@@ -221,6 +233,14 @@ export const api = {
 
   // Admin & User Management
   getAdminOverview: () => fetchWithAuth('/admin/overview'),
+
+  getAdminDonors: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== null) query.append(k, String(v));
+    });
+    return fetchWithAuth(`/admin/donors?${query.toString()}`);
+  },
 
   getAdminUsers: (params: Record<string, any> = {}) => {
     const query = new URLSearchParams();

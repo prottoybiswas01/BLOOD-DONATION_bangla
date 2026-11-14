@@ -47,7 +47,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
 
     // Invalidate previous session tokens if tokenVersion has been incremented
     const tokenVer = (decoded as any).tokenVersion;
-    if (user.tokenVersion !== undefined && (tokenVer === undefined || tokenVer < user.tokenVersion)) {
+    if (user.tokenVersion && user.tokenVersion > 1 && (tokenVer === undefined || tokenVer < user.tokenVersion)) {
       res.status(401).json({
         success: false,
         sessionInvalidated: true,

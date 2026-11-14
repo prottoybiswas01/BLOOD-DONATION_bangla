@@ -3,10 +3,8 @@ import { Link } from 'react-router-dom';
 import { 
   User as UserIcon, 
   Phone, 
-  Mail, 
   MapPin, 
   Droplet, 
-  Calendar, 
   ShieldCheck, 
   AlertCircle, 
   CheckCircle2, 
@@ -15,7 +13,13 @@ import {
   KeyRound, 
   ArrowRight,
   Send,
-  Building2
+  Building2,
+  Heart,
+  Eye,
+  EyeOff,
+  Lock,
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -25,26 +29,48 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { PhoneChangeRequest } from '../types';
+import { getReadableLocation } from '../utils/locationNames';
 
 export const ProfileSettings: React.FC = () => {
   const { user, donorProfile, refreshUser } = useAuth();
 
-  // Editable Profile fields
+  // Personal Info Fields
   const [name, setName] = useState(user?.name || '');
   const [gender, setGender] = useState(user?.gender || 'unspecified');
-  const [bloodGroup, setBloodGroup] = useState<BloodGroup>(donorProfile?.bloodGroup || 'O+');
-  const [division, setDivision] = useState(donorProfile?.division || 'dhaka');
-  const [district, setDistrict] = useState(donorProfile?.district || 'dhaka');
-  const [upazila, setUpazila] = useState(donorProfile?.upazila || '');
-  const [bio, setBio] = useState(donorProfile?.bio || '');
-  const [availabilityStatus, setAvailabilityStatus] = useState(donorProfile?.availabilityStatus || 'available');
-  const [consentToShareContact, setConsentToShareContact] = useState(donorProfile?.consentToShareContact ?? true);
+  const [division, setDivision] = useState(user?.division || donorProfile?.division || 'dhaka');
+  const [district, setDistrict] = useState(user?.district || donorProfile?.district || 'dhaka');
+  const [upazila, setUpazila] = useState(user?.upazila || donorProfile?.upazila || '');
 
-  // States
+  // Donor Profile Specific Fields
+  const hasDonorProfile = Boolean(donorProfile);
+  const [bloodGroup, setBloodGroup] = useState<BloodGroup>(donorProfile?.bloodGroup || 'O+');
+  const [bio, setBio] = useState(donorProfile?.bio || '');
+  const [availabilityStatus, setAvailabilityStatus] = useState<'available' | 'recently_donated' | 'temporarily_unavailable'>(
+    donorProfile?.availabilityStatus || 'available'
+  );
+  const [isPubliclyListed, setIsPubliclyListed] = useState<boolean>(
+    donorProfile?.isPubliclyListed ?? true
+  );
+  const [consentToShareContact, setConsentToShareContact] = useState<boolean>(
+    donorProfile?.consentToShareContact ?? true
+  );
+
+  // Voluntary Activation State (for users without a donor profile)
+  const [activateBloodGroup, setActivateBloodGroup] = useState<BloodGroup>('O+');
+  const [activatingDonor, setActivatingDonor] = useState(false);
+
+  // Password Change Fields
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Status & Feedback Messages
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Phone Change Modal & Status
+  // Phone Change Modal & States
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [newPhone, setNewPhone] = useState('');
   const [changeReason, setChangeReason] = useState('');
@@ -52,7 +78,7 @@ export const ProfileSettings: React.FC = () => {
   const [phoneChangeMsg, setPhoneChangeMsg] = useState<string | null>(null);
   const [pendingPhoneRequest, setPendingPhoneRequest] = useState<PhoneChangeRequest | null>(null);
 
-  // Institution Membership & Change States
+  // Institution Change Modal & States
   const [showInstModal, setShowInstModal] = useState(false);
   const [approvedInstitutions, setApprovedInstitutions] = useState<any[]>([]);
   const [targetInstId, setTargetInstId] = useState('');
@@ -67,14 +93,18 @@ export const ProfileSettings: React.FC = () => {
     if (user) {
       setName(user.name);
       setGender(user.gender || 'unspecified');
+      if (user.division) setDivision(user.division);
+      if (user.district) setDistrict(user.district);
+      if (user.upazila !== undefined) setUpazila(user.upazila);
     }
     if (donorProfile) {
       setBloodGroup(donorProfile.bloodGroup);
-      setDivision(donorProfile.division);
-      setDistrict(donorProfile.district);
-      setUpazila(donorProfile.upazila || '');
+      if (donorProfile.division) setDivision(donorProfile.division);
+      if (donorProfile.district) setDistrict(donorProfile.district);
+      if (donorProfile.upazila !== undefined) setUpazila(donorProfile.upazila || '');
       setBio(donorProfile.bio || '');
-      setAvailabilityStatus(donorProfile.availabilityStatus);
+      setAvailabilityStatus(donorProfile.availabilityStatus || 'available');
+      setIsPubliclyListed(donorProfile.isPubliclyListed ?? true);
       setConsentToShareContact(donorProfile.consentToShareContact ?? true);
     }
 
@@ -86,13 +116,13 @@ export const ProfileSettings: React.FC = () => {
           api.getMyInstitutionChangeRequest(),
           api.getInstitutions()
         ]);
-        if (phoneRes.success && phoneRes.pendingRequest) {
+        if (phoneRes?.success && phoneRes.pendingRequest) {
           setPendingPhoneRequest(phoneRes.pendingRequest);
         }
-        if (instRes.success && instRes.pendingRequest) {
+        if (instRes?.success && instRes.pendingRequest) {
           setPendingInstRequest(instRes.pendingRequest);
         }
-        if (instListRes.success && instListRes.institutions) {
+        if (instListRes?.success && instListRes.institutions) {
           setApprovedInstitutions(instListRes.institutions);
         }
       } catch {}
@@ -100,60 +130,59 @@ export const ProfileSettings: React.FC = () => {
     loadRequests();
   }, [user, donorProfile]);
 
-  const handleSubmitInstChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetInstId) {
-      setInstChangeMsg('অনুগ্রহ করে একটি শিক্ষা প্রতিষ্ঠান নির্বাচন করুন।');
-      return;
-    }
-    if (instChangeReason.trim().length < 5) {
-      setInstChangeMsg('প্রতিষ্ঠান পরিবর্তনের সুনির্দিষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।');
-      return;
-    }
-
-    setSubmittingInstChange(true);
-    setInstChangeMsg(null);
+  // Activate Donor Profile Voluntarily (Preserving User's Account Role)
+  const handleActivateDonor = async () => {
+    setActivatingDonor(true);
+    setProfileMsg(null);
     try {
-      const res = await api.submitInstitutionChangeRequest({
-        targetInstitutionId: targetInstId,
-        studentOrStaffId: studentId.trim() || undefined,
-        department: instDepartment.trim() || undefined,
-        reason: instChangeReason.trim()
+      const res = await api.activateDonorProfile({
+        bloodGroup: activateBloodGroup,
+        division,
+        district,
+        upazila,
+        isPubliclyListed: true,
+        consentToShareContact: true
       });
-
       if (res.success) {
-        setShowInstModal(false);
-        setInstChangeReason('');
-        setProfileMsg({ text: res.message || 'প্রতিষ্ঠান পরিবর্তনের আবেদন জমা হয়েছে।', type: 'success' });
-        const myRes = await api.getMyInstitutionChangeRequest();
-        if (myRes.success && myRes.pendingRequest) setPendingInstRequest(myRes.pendingRequest);
+        setProfileMsg({ 
+          text: 'স্বেচ্ছাসেবী রক্তদাতা প্রোফাইল সফলভাবে চালু হয়েছে! আপনার মূল অ্যাকাউন্ট পদবি অপরিবর্তিত রাখা হয়েছে।', 
+          type: 'success' 
+        });
+        await refreshUser();
       } else {
-        setInstChangeMsg(res.message || 'আবেদন জমা দেওয়া সম্ভব হয়নি।');
+        setProfileMsg({ text: res.message || 'রক্তদাতা প্রোফাইল সক্রিয় করা যায়নি।', type: 'error' });
       }
     } catch (err: any) {
-      setInstChangeMsg(err.message || 'আবেদন প্রক্রিয়াকরণে সমস্যা হয়েছে।');
+      setProfileMsg({ text: err.message || 'অনুরোধ প্রক্রিয়াকরণে সমস্যা হয়েছে।', type: 'error' });
     } finally {
-      setSubmittingInstChange(false);
+      setActivatingDonor(false);
     }
   };
 
+  // Update Personal Profile & Donor Profile
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     setProfileMsg(null);
 
     try {
-      const res = await api.updateProfile({
+      const payload: Record<string, any> = {
         name,
         gender,
-        bloodGroup: user?.role === 'DONOR' ? bloodGroup : undefined,
         division,
         district,
-        upazila,
-        bio,
-        availabilityStatus: user?.role === 'DONOR' ? availabilityStatus : undefined,
-        consentToShareContact
-      });
+        upazila
+      };
+
+      if (hasDonorProfile) {
+        payload.bloodGroup = bloodGroup;
+        payload.bio = bio;
+        payload.availabilityStatus = availabilityStatus;
+        payload.isPubliclyListed = isPubliclyListed;
+        payload.consentToShareContact = consentToShareContact;
+      }
+
+      const res = await api.updateProfile(payload);
 
       if (res.success) {
         setProfileMsg({ text: 'আপনার প্রোফাইল তথ্য সফলভাবে সংরক্ষণ করা হয়েছে।', type: 'success' });
@@ -168,6 +197,43 @@ export const ProfileSettings: React.FC = () => {
     }
   };
 
+  // Change Password Handler
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+
+    if (newPassword.length < 6) {
+      setPasswordMsg({ text: 'নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।', type: 'error' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ text: 'নতুন পাসওয়ার্ড ও নিশ্চিতকরণ পাসওয়ার্ড মেলেনি।', type: 'error' });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await api.changePassword({
+        currentPassword,
+        newPassword
+      });
+
+      if (res.success) {
+        setPasswordMsg({ text: 'আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।', type: 'success' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setPasswordMsg({ text: res.message || 'পাসওয়ার্ড পরিবর্তন করা যায়নি। বর্তমান পাসওয়ার্ড সঠিক কি না পরীক্ষা করুন।', type: 'error' });
+      }
+    } catch (err: any) {
+      setPasswordMsg({ text: err.message || 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে।', type: 'error' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  // Submit Phone Change Request
   const handleSubmitPhoneChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingPhoneChange(true);
@@ -205,6 +271,44 @@ export const ProfileSettings: React.FC = () => {
     }
   };
 
+  // Submit Institution Change Request
+  const handleSubmitInstChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetInstId) {
+      setInstChangeMsg('অনুগ্রহ করে একটি শিক্ষা প্রতিষ্ঠান নির্বাচন করুন।');
+      return;
+    }
+    if (instChangeReason.trim().length < 5) {
+      setInstChangeMsg('প্রতিষ্ঠান পরিবর্তনের সুনির্দিষ্ট কারণ (কমপক্ষে ৫ অক্ষর) উল্লেখ করুন।');
+      return;
+    }
+
+    setSubmittingInstChange(true);
+    setInstChangeMsg(null);
+    try {
+      const res = await api.submitInstitutionChangeRequest({
+        targetInstitutionId: targetInstId,
+        studentOrStaffId: studentId.trim() || undefined,
+        department: instDepartment.trim() || undefined,
+        reason: instChangeReason.trim()
+      });
+
+      if (res.success) {
+        setShowInstModal(false);
+        setInstChangeReason('');
+        setProfileMsg({ text: res.message || 'প্রতিষ্ঠান পরিবর্তনের আবেদন জমা হয়েছে।', type: 'success' });
+        const myRes = await api.getMyInstitutionChangeRequest();
+        if (myRes?.success && myRes.pendingRequest) setPendingInstRequest(myRes.pendingRequest);
+      } else {
+        setInstChangeMsg(res.message || 'আবেদন জমা দেওয়া সম্ভব হয়নি।');
+      }
+    } catch (err: any) {
+      setInstChangeMsg(err.message || 'আবেদন প্রক্রিয়াকরণে সমস্যা হয়েছে।');
+    } finally {
+      setSubmittingInstChange(false);
+    }
+  };
+
   const getDashboardPath = () => {
     switch (user?.role) {
       case 'SUPER_ADMIN':
@@ -223,11 +327,27 @@ export const ProfileSettings: React.FC = () => {
     }
   };
 
+  const getRoleDisplayName = (r?: string) => {
+    switch (r) {
+      case 'SUPER_ADMIN': return 'সুপার অ্যাডমিন';
+      case 'ADMIN': return 'প্ল্যাটফর্ম অ্যাডমিন';
+      case 'DIVISION_COORDINATOR': return 'বিভাগীয় সমন্বয়ক';
+      case 'INSTITUTION_HEAD': return 'প্রতিষ্ঠান প্রধান';
+      case 'INSTITUTION_MODERATOR': return 'ক্যাম্পাস মডারেটর';
+      case 'DONOR': return 'স্বেচ্ছাসেবী রক্তদাতা';
+      case 'REQUESTER': return 'রক্তপ্রার্থী';
+      default: return 'সাধারণ সদস্য';
+    }
+  };
+
+  const readableLoc = getReadableLocation(division, district, upazila);
+
   if (!user) {
     return (
       <div className="max-w-md mx-auto my-16 p-8 bg-surface rounded-3xl border border-appBorder text-center space-y-4">
         <AlertCircle className="w-10 h-10 mx-auto text-primary" />
         <h2 className="text-xl font-bold text-mainText">লগইন আবশ্যক</h2>
+        <p className="text-xs text-subText">প্রোফাইল দেখতে অনুগ্রহ করে আপনার অ্যাকাউন্টে লগইন করুন।</p>
         <Link to="/login">
           <Button variant="primary" size="md">লগইন করুন</Button>
         </Link>
@@ -237,18 +357,33 @@ export const ProfileSettings: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      {/* Top Banner */}
+      {/* Top Banner / Summary Card */}
       <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-rose-600 text-white flex items-center justify-center font-black text-2xl shadow-soft">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-rose-600 text-white flex items-center justify-center font-black text-2xl shadow-soft flex-shrink-0">
             {user.name.slice(0, 1)}
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-xl sm:text-2xl font-black text-mainText">{user.name}</h1>
-              <Badge variant="primary" size="sm">{user.role}</Badge>
+              <Badge variant="primary" size="sm">
+                {getRoleDisplayName(user.role)}
+              </Badge>
+              {hasDonorProfile ? (
+                <Badge variant="success" size="sm">
+                  {donorProfile?.bloodGroup} রক্তদাতা ({donorProfile?.availabilityStatus === 'available' ? 'প্রস্তুত' : 'স্থগিত'})
+                </Badge>
+              ) : (
+                <Badge variant="neutral" size="sm">
+                  রক্তদাতা প্রোফাইল সক্রিয় নেই
+                </Badge>
+              )}
             </div>
-            <p className="text-xs text-subText font-mono">আইডি: {user._id}</p>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-subText font-mono">
+              <span>আইডি: {user._id}</span>
+              <span>•</span>
+              <span className="font-sans">📍 {readableLoc.displayText || 'অবস্থান নির্ধারিত নেই'}</span>
+            </div>
           </div>
         </div>
 
@@ -265,65 +400,73 @@ export const ProfileSettings: React.FC = () => {
             ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
             : 'bg-rose-50 text-rose-700 border border-rose-200'
         }`}>
-          {profileMsg.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />}
+          {profileMsg.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+          )}
           <span>{profileMsg.text}</span>
         </div>
       )}
 
-      {/* Phone Number & Safety Section */}
-      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-appBorder pb-4">
+      {/* SECTION 1: ব্যক্তিগত তথ্য ও এলাকা (Personal Information & Location) */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-6">
+        <div className="border-b border-appBorder pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-black text-mainText flex items-center gap-2">
-              <Phone className="w-5 h-5 text-primary" />
-              <span>নিবন্ধিত মোবাইল নম্বর</span>
+              <UserIcon className="w-5 h-5 text-primary" />
+              <span>১. ব্যক্তিগত ও ভৌগোলিক তথ্য</span>
             </h2>
-            <p className="text-xs text-subText mt-0.5">নিরাপত্তা ও অপব্যবহার রোধে নম্বর পরিবর্তন প্রক্রিয়ায় প্রশাসনিক অনুমোদন প্রয়োজন হয়</p>
+            <p className="text-xs text-subText mt-0.5">আপনার নাম, মোবাইল নম্বর ও অবস্থান হালনাগাদ রাখুন</p>
+          </div>
+        </div>
+
+        {/* Phone Number Display & Modal Trigger */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div>
+            <span className="text-xs text-subText block mb-0.5">নিবন্ধিত মোবাইল নম্বর:</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-base font-black text-mainText">{user.phone}</span>
+              <Badge variant="success" size="sm" dot>সক্রিয় ও সংরক্ষিত</Badge>
+            </div>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowPhoneModal(true)}
-            className="text-xs font-bold"
+            className="text-xs font-bold self-start sm:self-auto"
           >
-            নম্বর পরিবর্তন আবেদন
+            মোবাইল নম্বর পরিবর্তন আবেদন
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <div>
-            <span className="text-xs text-subText block mb-0.5">বর্তমান নম্বর:</span>
-            <span className="font-mono text-base font-black text-mainText">{user.phone}</span>
-          </div>
-          <Badge variant="success" size="sm" dot>সক্রিয় ও যাচাইকৃত</Badge>
-        </div>
-
-        {/* Pending Request Indicator */}
+        {/* Pending Phone Request Banner */}
         {pendingPhoneRequest && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm space-y-1">
             <div className="flex items-center gap-2 font-bold text-amber-800">
               <Clock className="w-4 h-4 text-amber-600" />
-              <span>নম্বর পরিবর্তনের একটি আবেদন অপেক্ষমাণ রয়েছে</span>
+              <span>মোবাইল নম্বর পরিবর্তনের আবেদন পর্যালোচনার অপেক্ষায় রয়েছে</span>
             </div>
             <p className="text-xs text-amber-700">
               অনুরোধকৃত নতুন নম্বর: <strong className="font-mono">{pendingPhoneRequest.newPhone}</strong> | কারণ: "{pendingPhoneRequest.reason}"
             </p>
-            <p className="text-[11px] text-amber-600">
-              আপনার বিভাগীয় সমন্বয়ক বা প্রতিষ্ঠান মডারেটর এটি খতিয়ে দেখে অনুমোদন করবেন।
-            </p>
           </div>
         )}
-      </div>
 
-      {/* PART 06: My Institution / প্রতিষ্ঠান সংযুক্তকরণ Section */}
-      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-appBorder pb-4">
+        {/* Institution Attachment Display & Trigger */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
           <div>
-            <h2 className="text-base font-black text-mainText flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-teal-700" />
-              <span>আমার প্রতিষ্ঠান (My Institution)</span>
-            </h2>
-            <p className="text-xs text-subText mt-0.5">বিশ্ববিদ্যালয় বা কলেজ ক্যাম্পাসের সাথে যুক্ত হয়ে ক্যাম্পাস রক্তদান কার্যক্রমে অংশ নিন</p>
+            <span className="text-xs text-subText block mb-0.5">সংযুক্ত শিক্ষা প্রতিষ্ঠান:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-mainText">
+                {user.assignedInstitution 
+                  ? (approvedInstitutions.find(i => i._id === user.assignedInstitution)?.nameBn || 'ক্যাম্পাস অধিভুক্ত') 
+                  : 'বর্তমানে কোনো শিক্ষা প্রতিষ্ঠানের সাথে সংযুক্ত নন'}
+              </span>
+              <Badge variant={user.assignedInstitution ? 'teal' : 'neutral'} size="sm">
+                {user.assignedInstitution ? 'ক্যাম্পাস সদস্য' : 'সাধারণ সদস্য'}
+              </Badge>
+            </div>
           </div>
           <Button
             variant="outline"
@@ -332,51 +475,27 @@ export const ProfileSettings: React.FC = () => {
               setShowInstModal(true);
               setInstChangeMsg(null);
             }}
-            className="text-xs font-bold text-teal-800 border-teal-200 hover:bg-teal-50"
+            className="text-xs font-bold text-teal-800 border-teal-200 hover:bg-teal-50 self-start sm:self-auto"
           >
             প্রতিষ্ঠান পরিবর্তন / যুক্ত করুন
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <div>
-            <span className="text-xs text-subText block mb-0.5">বর্তমান প্রতিষ্ঠান:</span>
-            <span className="text-sm font-bold text-mainText">
-              {user.assignedInstitution 
-                ? (approvedInstitutions.find(i => i._id === user.assignedInstitution)?.nameBn || 'অধিভুক্ত প্রতিষ্ঠান') 
-                : 'বর্তমানে কোনো শিক্ষা প্রতিষ্ঠানের সাথে সংযুক্ত নন'}
-            </span>
-          </div>
-          <Badge variant={user.assignedInstitution ? 'teal' : 'neutral'} size="sm">
-            {user.assignedInstitution ? 'ক্যাম্পাস সদস্য' : 'সাধারণ সদস্য'}
-          </Badge>
-        </div>
-
-        {/* Pending Institution Change Indicator */}
+        {/* Pending Institution Request Banner */}
         {pendingInstRequest && (
           <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs sm:text-sm space-y-1">
             <div className="flex items-center gap-2 font-bold text-teal-800">
               <Clock className="w-4 h-4 text-teal-600" />
-              <span>প্রতিষ্ঠান পরিবর্তনের একটি আবেদন পর্যালোচনার অপেক্ষায় রয়েছে</span>
+              <span>শিক্ষা প্রতিষ্ঠান পরিবর্তনের আবেদন অপেক্ষমাণ রয়েছে</span>
             </div>
             <p className="text-xs text-teal-800">
-              অনুরোধকৃত নতুন প্রতিষ্ঠান: <strong>{pendingInstRequest.targetInstitutionName}</strong> | কারণ: "{pendingInstRequest.reason}"
+              অনুরোধকৃত প্রতিষ্ঠান: <strong>{pendingInstRequest.targetInstitutionName}</strong> | কারণ: "{pendingInstRequest.reason}"
             </p>
           </div>
         )}
-      </div>
 
-      {/* Main Profile Details Form */}
-      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-6">
-        <div className="border-b border-appBorder pb-4">
-          <h2 className="text-base font-black text-mainText flex items-center gap-2">
-            <UserIcon className="w-5 h-5 text-primary" />
-            <span>ব্যক্তিগত ও স্বাস্থ্য তথ্য</span>
-          </h2>
-          <p className="text-xs text-subText mt-0.5">আপনার নাম, রক্তের গ্রুপ ও ভৌগোলিক তথ্য হালনাগাদ রাখুন</p>
-        </div>
-
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
+        {/* Personal Details Form */}
+        <form onSubmit={handleUpdateProfile} className="space-y-6 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-mainText mb-1.5">সম্পূর্ণ নাম *</label>
@@ -399,45 +518,14 @@ export const ProfileSettings: React.FC = () => {
                 <option value="male">পুরুষ</option>
                 <option value="female">নারী</option>
                 <option value="other">অন্যান্য</option>
-                <option value="unspecified">অনির্দিষ্ট</option>
+                <option value="unspecified">বলতে অনিচ্ছুক</option>
               </select>
             </div>
           </div>
 
-          {/* Blood Group & Availability (For Donors) */}
-          {user.role === 'DONOR' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-mainText mb-1.5">রক্তের গ্রুপ</label>
-                <select
-                  value={bloodGroup}
-                  onChange={e => setBloodGroup(e.target.value as BloodGroup)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm font-black text-primary"
-                >
-                  {BLOOD_GROUPS.map(bg => (
-                    <option key={bg} value={bg}>{bg}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-mainText mb-1.5">রক্তদানে বর্তমান উপলব্ধতা</label>
-                <select
-                  value={availabilityStatus}
-                  onChange={e => setAvailabilityStatus(e.target.value as any)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
-                >
-                  <option value="available">রক্তদানে প্রস্তুত (সক্রিয়)</option>
-                  <option value="recently_donated">সম্প্রতি রক্তদান করেছি (বিশ্রামে)</option>
-                  <option value="temporarily_unavailable">সাময়িক বিরতি (শারীরিক কারণ)</option>
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Location Selector */}
-          <div className="space-y-2 pt-2">
-            <label className="block text-xs font-bold text-mainText">আপনার এলাকা / অবস্থান</label>
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-mainText">আপনার ভৌগোলিক এলাকা / বর্তমান ঠিকানা</label>
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
               <LocationSelector
                 division={division}
@@ -450,44 +538,163 @@ export const ProfileSettings: React.FC = () => {
             </div>
           </div>
 
-          {/* Privacy & Public Contact Visibility (PART 02) */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-appBorder space-y-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <label className="text-xs font-bold text-mainText block">
-                  পাবলিক অনুসন্ধানে সরাসরি যোগাযোগের অনুমতি (Privacy & Visibility)
-                </label>
-                <p className="text-[11px] text-subText mt-0.5 leading-relaxed">
-                  চিহ্নিত থাকলে জরুরি রক্তের সন্ধানে আসা যে কোনো ভিজিটর লগইন না করেই আপনার সাথে সরাসরি ফোনে যোগাযোগ করতে পারবেন। আনচেক করলে পাবলিক অনুসন্ধানে আপনার মোবাইল নম্বর সম্পূর্ণ গোপন থাকবে।
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
-                <input
-                  type="checkbox"
-                  checked={consentToShareContact}
-                  onChange={e => setConsentToShareContact(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-              </label>
+          {/* SECTION 2: স্বেচ্ছাসেবী রক্তদান ও গোপনীয়তা সেটিংস */}
+          <div className="pt-6 border-t border-appBorder space-y-5">
+            <div>
+              <h3 className="text-base font-black text-mainText flex items-center gap-2">
+                <Heart className="w-5 h-5 text-rose-600" />
+                <span>২. স্বেচ্ছাসেবী রক্তদান ও গোপনীয়তা সেটিংস</span>
+              </h3>
+              <p className="text-xs text-subText mt-0.5">
+                আপনার বিদ্যমান অ্যাকাউন্ট পদবি নির্বিশেষে স্বেচ্ছায় রক্তদাতা হিসেবে প্রাপ্যতা ও গোপনীয়তা নিয়ন্ত্রণ করুন
+              </p>
             </div>
-            <div className="flex items-center gap-2 pt-1 text-[11px]">
-              <span className={`font-semibold ${consentToShareContact ? 'text-emerald-700' : 'text-amber-700'}`}>
-                {consentToShareContact ? '✓ বর্তমানে নম্বর উন্মুক্ত রয়েছে' : '⚠ বর্তমানে নম্বর গোপন রাখা হয়েছে'}
-              </span>
-            </div>
-          </div>
 
-          {/* Bio / Motivation */}
-          <div>
-            <label className="block text-xs font-bold text-mainText mb-1.5">সংক্ষিপ্ত পরিচয় বা বার্তা</label>
-            <textarea
-              rows={3}
-              value={bio}
-              onChange={e => setBio(e.target.value)}
-              placeholder="রক্তদান সংক্রান্ত আপনার অভিজ্ঞতা বা বার্তা..."
-              className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
-            />
+            {!hasDonorProfile ? (
+              /* Voluntary Activation Prompt if user has no donor profile */
+              <div className="p-5 rounded-2xl border border-rose-200 bg-rose-50/50 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-primary flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-mainText">স্বেচ্ছাসেবী রক্তদাতা হিসেবে যুক্ত হতে চান?</h4>
+                    <p className="text-xs text-subText mt-1 leading-relaxed">
+                      আপনি সুপার অ্যাডমিন, অ্যাডমিন, সমন্বয়ক, মডারেটর বা সাধারণ সদস্য—যেকোনো ভূমিকাতেই থাকুন না কেন, 
+                      রক্তদানের জন্য নিজেকে প্ল্যাটফর্মে নিবন্ধিত করতে পারেন। এটি আপনার বিদ্যমান প্রশাসনিক পদবি পরিবর্তন করবে না।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-mainText">আপনার রক্তের গ্রুপ:</span>
+                    <select
+                      value={activateBloodGroup}
+                      onChange={e => setActivateBloodGroup(e.target.value as BloodGroup)}
+                      className="px-3 py-1.5 bg-white border border-rose-200 rounded-xl text-sm font-black text-primary focus:ring-2 focus:ring-primary/20"
+                    >
+                      {BLOOD_GROUPS.map(bg => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    isLoading={activatingDonor}
+                    onClick={handleActivateDonor}
+                    icon={<Heart className="w-4 h-4" />}
+                    className="bg-rose-600 hover:bg-rose-700 shadow-soft"
+                  >
+                    স্বেচ্ছাসেবী রক্তদাতা প্রোফাইল চালু করুন
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Donor Configuration when user already has donor profile */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-mainText mb-1.5">রক্তের গ্রুপ</label>
+                    <select
+                      value={bloodGroup}
+                      onChange={e => setBloodGroup(e.target.value as BloodGroup)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm font-black text-primary"
+                    >
+                      {BLOOD_GROUPS.map(bg => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-mainText mb-1.5">
+                      ১. রক্তদানের অবস্থা (Availability Status)
+                    </label>
+                    <select
+                      value={availabilityStatus}
+                      onChange={e => setAvailabilityStatus(e.target.value as any)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
+                    >
+                      <option value="available">রক্তদানে প্রস্তুত (সক্রিয়)</option>
+                      <option value="temporarily_unavailable">রক্তদান সাময়িক স্থগিত (বিরতি)</option>
+                      <option value="recently_donated">সম্প্রতি রক্তদান করেছি (বিশ্রামে)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 2. Public Visibility Toggle */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-appBorder space-y-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-mainText block">
+                        ২. পাবলিক রক্তদাতা অনুসন্ধানে প্রদর্শন (Public Directory Visibility)
+                      </label>
+                      <p className="text-[11px] text-subText mt-0.5 leading-relaxed">
+                        চিহ্নিত থাকলে সাধারণ অনুসন্ধান তালিকায় রক্তদাতা হিসেবে আপনার প্রোফাইলটি দেখা যাবে। আনচেক করলে পাবলিক রক্তদাতা তালিকা থেকে আপনার নাম ও প্রোফাইল সম্পূর্ণ গোপন থাকবে।
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
+                      <input
+                        type="checkbox"
+                        checked={isPubliclyListed}
+                        onChange={e => setIsPubliclyListed(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 text-[11px]">
+                    <span className={`font-semibold ${isPubliclyListed ? 'text-emerald-700' : 'text-slate-600'}`}>
+                      {isPubliclyListed ? '✓ পাবলিক রক্তদাতা তালিকায় দৃশ্যমান' : '⊘ পাবলিক তালিকা থেকে গোপন রাখা হয়েছে'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Contact Disclosure Toggle */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-appBorder space-y-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-mainText block">
+                        ৩. সরাসরি ফোন নম্বর প্রকাশের অনুমতি (Direct Phone Disclosure)
+                      </label>
+                      <p className="text-[11px] text-subText mt-0.5 leading-relaxed">
+                        চিহ্নিত থাকলে জরুরি রক্তের সন্ধানে আসা যে কেউ সরাসরি আপনার ফোনে যোগাযোগ করতে পারবেন। আনচেক করলে সরাসরি নম্বর দৃশ্যমান হবে না; কেবল মডারেটরের মাধ্যমে যোগাযোগ সম্ভব হবে।
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
+                      <input
+                        type="checkbox"
+                        checked={consentToShareContact}
+                        onChange={e => setConsentToShareContact(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 text-[11px]">
+                    <span className={`font-semibold ${consentToShareContact ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {consentToShareContact ? '✓ বর্তমানে নম্বর উন্মুক্ত রয়েছে' : '🔒 বর্তমানে নম্বর গোপন রাখা হয়েছে'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bio / Message */}
+                <div>
+                  <label className="block text-xs font-bold text-mainText mb-1.5">রক্তদাতা হিসেবে সংক্ষিপ্ত বার্তা বা অভিজ্ঞতা</label>
+                  <textarea
+                    rows={2}
+                    value={bio}
+                    onChange={e => setBio(e.target.value)}
+                    placeholder="রক্তদান সংক্রান্ত আপনার অনুপ্রেরণা বা বার্তা..."
+                    className="w-full px-4 py-2 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2">
@@ -500,6 +707,144 @@ export const ProfileSettings: React.FC = () => {
               className="shadow-soft"
             >
               তথ্য সংরক্ষণ করুন
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* SECTION 3: আমার আবেদন ও হিস্ট্রি (My Applications & Requests) */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-4">
+        <div className="border-b border-appBorder pb-3">
+          <h2 className="text-base font-black text-mainText flex items-center gap-2">
+            <Clock className="w-5 h-5 text-teal-700" />
+            <span>৩. আমার প্রশাসনিক আবেদনসমূহ</span>
+          </h2>
+          <p className="text-xs text-subText mt-0.5">আপনার জমা দেওয়া নম্বর ও প্রতিষ্ঠান পরিবর্তন আবেদনের অবস্থা</p>
+        </div>
+
+        <div className="space-y-3">
+          {pendingPhoneRequest ? (
+            <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/60 flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-amber-900">মোবাইল নম্বর পরিবর্তন আবেদন</span>
+                  <Badge variant="warning" size="sm">অপেক্ষমাণ</Badge>
+                </div>
+                <p className="text-xs text-amber-800">
+                  অনুরোধকৃত নতুন নম্বর: <strong className="font-mono">{pendingPhoneRequest.newPhone}</strong> (বর্তমান: {user.phone})
+                </p>
+                <p className="text-[11px] text-amber-700">কারণ: "{pendingPhoneRequest.reason}"</p>
+              </div>
+              <span className="text-[10px] text-amber-600 whitespace-nowrap">
+                {new Date(pendingPhoneRequest.createdAt || Date.now()).toLocaleDateString('bn-BD')}
+              </span>
+            </div>
+          ) : null}
+
+          {pendingInstRequest ? (
+            <div className="p-4 rounded-2xl border border-teal-200 bg-teal-50/60 flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-teal-900">শিক্ষা প্রতিষ্ঠান পরিবর্তন আবেদন</span>
+                  <Badge variant="teal" size="sm">অপেক্ষমাণ</Badge>
+                </div>
+                <p className="text-xs text-teal-800">
+                  অনুরোধকৃত নতুন প্রতিষ্ঠান: <strong>{pendingInstRequest.targetInstitutionName}</strong>
+                </p>
+                <p className="text-[11px] text-teal-700">কারণ: "{pendingInstRequest.reason}"</p>
+              </div>
+              <span className="text-[10px] text-teal-600 whitespace-nowrap">
+                {new Date(pendingInstRequest.createdAt || Date.now()).toLocaleDateString('bn-BD')}
+              </span>
+            </div>
+          ) : null}
+
+          {!pendingPhoneRequest && !pendingInstRequest && (
+            <div className="p-4 rounded-2xl border border-dashed border-appBorder text-center text-xs text-subText">
+              বর্তমানে কোনো প্রশাসনিক আবেদন অপেক্ষমাণ নেই। আপনার সকল তথ্য হালনাগাদ রয়েছে।
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 4: অ্যাকাউন্ট নিরাপত্তা ও পাসওয়ার্ড পরিবর্তন (Account Security) */}
+      <div className="bg-surface rounded-3xl border border-appBorder shadow-card p-6 sm:p-8 space-y-5">
+        <div className="border-b border-appBorder pb-4">
+          <h2 className="text-base font-black text-mainText flex items-center gap-2">
+            <Lock className="w-5 h-5 text-amber-600" />
+            <span>৪. অ্যাকাউন্ট নিরাপত্তা ও পাসওয়ার্ড পরিবর্তন</span>
+          </h2>
+          <p className="text-xs text-subText mt-0.5">
+            নিয়মিত পাসওয়ার্ড পরিবর্তন করে আপনার অ্যাকাউন্টের নিরাপত্তা নিশ্চিত করুন
+          </p>
+        </div>
+
+        {passwordMsg && (
+          <div className={`p-4 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 ${
+            passwordMsg.type === 'success' 
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+              : 'bg-rose-50 text-rose-700 border border-rose-200'
+          }`}>
+            {passwordMsg.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+            )}
+            <span>{passwordMsg.text}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
+          <div>
+            <label className="block text-xs font-bold text-mainText mb-1.5">বর্তমান পাসওয়ার্ড *</label>
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              placeholder="বর্তমান অ্যাকাউন্টের পাসওয়ার্ড"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">নতুন পাসওয়ার্ড *</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="কমপক্ষে ৬ অক্ষর"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-mainText mb-1.5">নতুন পাসওয়ার্ড নিশ্চিতকরণ *</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="পুনরায় নতুন পাসওয়ার্ড দিন"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-appBorder rounded-xl text-sm text-mainText focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={changingPassword}
+              icon={<KeyRound className="w-4 h-4" />}
+              className="bg-amber-600 hover:bg-amber-700 shadow-soft"
+            >
+              পাসওয়ার্ড পরিবর্তন করুন
             </Button>
           </div>
         </form>
@@ -577,7 +922,7 @@ export const ProfileSettings: React.FC = () => {
         </Modal>
       )}
 
-      {/* Institution Change / Attachment Modal (PART 06) */}
+      {/* Institution Change / Attachment Modal */}
       {showInstModal && (
         <Modal
           isOpen={showInstModal}
@@ -670,4 +1015,3 @@ export const ProfileSettings: React.FC = () => {
     </div>
   );
 };
-

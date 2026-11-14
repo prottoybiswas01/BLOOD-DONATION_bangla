@@ -23,6 +23,9 @@ export interface User {
   blockReason?: string;
   blockedBy?: string;
   blockedAt?: string;
+  division?: string;
+  district?: string;
+  upazila?: string;
   assignedDivision?: string;
   assignedInstitution?: string;
   assignedInstitutions?: string[];

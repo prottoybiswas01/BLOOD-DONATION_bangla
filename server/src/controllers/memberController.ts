@@ -38,6 +38,7 @@ export const UpdateProfileSchema = z.object({
   upazila: z.string().optional(),
   bio: z.string().max(500).optional(),
   availabilityStatus: z.enum(['available', 'recently_donated', 'temporarily_unavailable']).optional(),
+  isPubliclyListed: z.boolean().optional(),
   consentToShareContact: z.boolean().optional(),
   preferredContactMethod: z.enum(['phone', 'sms', 'platform']).optional()
 });
@@ -156,11 +157,33 @@ export async function updateMyProfile(req: AuthRequest, res: Response): Promise<
   if (data.district) donorUpdates.district = data.district;
   if (data.upazila !== undefined) donorUpdates.upazila = data.upazila;
   if (data.bio !== undefined) donorUpdates.bio = data.bio;
-  if (data.availabilityStatus) donorUpdates.availabilityStatus = data.availabilityStatus;
+  if (data.availabilityStatus) {
+    donorUpdates.availabilityStatus = data.availabilityStatus;
+    donorUpdates.isAvailable = data.availabilityStatus === 'available';
+  }
+  if (data.isPubliclyListed !== undefined) donorUpdates.isPubliclyListed = data.isPubliclyListed;
   if (data.consentToShareContact !== undefined) donorUpdates.consentToShareContact = data.consentToShareContact;
   if (data.preferredContactMethod) donorUpdates.preferredContactMethod = data.preferredContactMethod;
 
-  const updatedProfile = await dataStore.updateDonorProfile(req.user.userId, donorUpdates);
+  let updatedProfile = await dataStore.updateDonorProfile(req.user.userId, donorUpdates);
+  if (!updatedProfile && data.bloodGroup) {
+    const userDoc = await dataStore.findUserById(req.user.userId);
+    if (userDoc) {
+      updatedProfile = await dataStore.createDonorProfile({
+        userId: userDoc._id,
+        displayName: data.name || userDoc.name,
+        bloodGroup: data.bloodGroup,
+        division: data.division || userDoc.division || 'dhaka',
+        district: data.district || userDoc.district || 'dhaka',
+        upazila: data.upazila || userDoc.upazila || '',
+        bio: data.bio || '',
+        availabilityStatus: data.availabilityStatus || 'available',
+        isAvailable: (data.availabilityStatus || 'available') === 'available',
+        isPubliclyListed: data.isPubliclyListed !== undefined ? data.isPubliclyListed : true,
+        consentToShareContact: data.consentToShareContact !== undefined ? data.consentToShareContact : true
+      });
+    }
+  }
 
   res.json({
     success: true,

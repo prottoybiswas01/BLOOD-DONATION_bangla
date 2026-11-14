@@ -22,13 +22,14 @@ after(async () => {
   await mongoose.disconnect();
 });
 
-function createTestToken(user: { _id: string; role: string; assignedDivision?: string }) {
+function createTestToken(user: { _id: string; role: string; assignedDivision?: string; tokenVersion?: number }) {
   return jwt.sign(
     {
       userId: user._id,
       phone: '01711111111',
       role: user.role,
-      assignedDivision: user.assignedDivision
+      assignedDivision: user.assignedDivision,
+      tokenVersion: user.tokenVersion || 1
     },
     ENV.JWT_SECRET,
     { expiresIn: '1h' }

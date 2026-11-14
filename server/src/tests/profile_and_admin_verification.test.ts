@@ -341,4 +341,21 @@ test('Profile & Admin Workflow Suite', async (t) => {
     const inAdmin = items.some((i: any) => i.userId === MEMBER_ID);
     assert.equal(inAdmin, true, 'Institution change request must appear in admin list');
   });
+
+  // 9. Partial Application Failure Isolation (Task 2 verification)
+  await t.test('9. Error Isolation: Phone request failure does not hide institution request', async () => {
+    const [phoneResult, instResult] = await Promise.allSettled([
+      Promise.reject(new Error('Simulated phone request endpoint failure')),
+      fetch(`${baseUrl}/api/v1/institution-change/my`, {
+        headers: { Authorization: `Bearer ${memberToken}` }
+      }).then(r => r.json())
+    ]);
+
+    assert.equal(phoneResult.status, 'rejected');
+    assert.equal(instResult.status, 'fulfilled');
+    const instVal = (instResult as any).value;
+    assert.equal(instVal.success, true);
+    assert.ok(instVal.pendingRequest);
+    assert.equal(instVal.pendingRequest.targetInstitutionId, TEST_INST_ID);
+  });
 });

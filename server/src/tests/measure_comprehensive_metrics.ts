@@ -108,14 +108,17 @@ async function measureMetrics() {
     console.log(`Warm Cache Hits (Runs 2-10, N=9): Avg=${avgWarm.toFixed(2)}ms (Min=${Math.min(...warmHits).toFixed(1)}ms, Max=${Math.max(...warmHits).toFixed(1)}ms)`);
     console.log(`Latency Reduction on Cache Hits: ${(((coldMissTime - avgWarm) / coldMissTime) * 100).toFixed(1)}%`);
 
-    // Invalidation Test: Create a new blood request in session A and check session B
-    console.log('\n--- METRIC 4: Cache Invalidation Across Separate Browser Sessions ---');
+    // -------------------------------------------------------------
+    // METRIC 4: Cache Invalidation Across Separate Browser Sessions (Strict +1 & -1 Verification)
+    // -------------------------------------------------------------
+    console.log('\n--- METRIC 4: Cache Invalidation Across Separate Browser Sessions (Strict +1 & -1 Verification) ---');
     const beforeStatsRes = await fetch(`${baseUrl}/api/v1/stats`);
     const beforeData: any = await beforeStatsRes.json();
     const initialActive = beforeData.stats.activeRequests;
-    console.log(`Session B Initial Stats: activeRequests=${initialActive} (Cached: ${beforeData.cached})`);
+    console.log(`Session B Initial Public Stats: activeRequests=${initialActive} (Cached: ${beforeData.cached}, Cache-Control: ${beforeStatsRes.headers.get('cache-control')})`);
 
-    // Session A posts a new blood request
+    // Step A: Session A creates an emergency request
+    const createStartTime = performance.now();
     const postReqRes = await fetch(`${baseUrl}/api/v1/requests`, {
       method: 'POST',
       headers: {
@@ -123,7 +126,7 @@ async function measureMetrics() {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        patientName: 'টেস্ট রোগী',
+        patientName: 'জরুরি টেস্ট রোগী',
         bloodGroup: 'AB+',
         unitsRequired: 2,
         hospitalName: 'ঢাকা মেডিকেল কলেজ হাসপাতাল',
@@ -134,21 +137,66 @@ async function measureMetrics() {
         requiredDate: new Date().toISOString(),
         urgencyLevel: 'critical',
         contactNumber: '01712345678',
-        reason: 'জরুরি সার্জারি'
+        reason: 'জরুরি কার্ডিয়াক সার্জারি'
       })
     });
     const postData: any = await postReqRes.json();
-    console.log(`Session A created emergency request: publicId=${postData?.request?.publicId || postData?.data?.publicId}`);
+    const createdReqId = postData?.request?._id || postData?.data?._id;
+    const createdPublicId = postData?.request?.publicId || postData?.data?.publicId;
+    console.log(`Session A created emergency request: ID=${createdReqId}, PublicId=${createdPublicId}`);
 
-    // Session B immediately requests /stats (MUST be cache invalidated: cached=false and activeRequests incremented!)
+    // Step B: Session B immediately requests public /stats
+    const sessionBCheck1Start = performance.now();
     const afterStatsRes = await fetch(`${baseUrl}/api/v1/stats`);
+    const sessionBCheck1Time = performance.now() - sessionBCheck1Start;
     const afterData: any = await afterStatsRes.json();
-    console.log(`Session B Instant Re-check: activeRequests=${afterData.stats.activeRequests} (Cached: ${afterData.cached})`);
-    console.log(`Invalidation verified: ${afterData.stats.activeRequests >= initialActive ? 'PASSED (Stats cache invalidated immediately)' : 'FAILED'}`);
+    console.log(`Session B Re-check (Post-Create): activeRequests=${afterData.stats.activeRequests} | Cached: ${afterData.cached} | Time: ${sessionBCheck1Time.toFixed(2)}ms | Cache-Control: ${afterStatsRes.headers.get('cache-control')}`);
 
-    // Clean up created request
-    if (postData?.request?._id || postData?.data?._id) {
-      await BloodRequestModel.deleteOne({ _id: postData?.request?._id || postData?.data?._id });
+    // STRICT ASSERTION: Active count MUST increase by exactly +1
+    if (afterData.stats.activeRequests !== initialActive + 1) {
+      throw new Error(`[CACHE TEST FAILURE] Count remained unchanged or invalid after request creation! Expected exact +1 (${initialActive + 1}), got: ${afterData.stats.activeRequests}`);
+    }
+    if (afterData.cached !== false) {
+      throw new Error(`[CACHE TEST FAILURE] Response was served from stale cache instead of being invalidated! cached=${afterData.cached}`);
+    }
+    console.log(`✔ Step A Passed: Exact +1 count increase verified (${initialActive} -> ${afterData.stats.activeRequests}) with instant cache invalidation.`);
+
+    // Step C: Session A closes / fulfills the request
+    console.log('\nClosing the emergency request...');
+    const closeStartTime = performance.now();
+    const closeReqRes = await fetch(`${baseUrl}/api/v1/requests/${createdReqId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        status: 'fulfilled',
+        notes: 'রক্তদান সম্পন্ন হয়েছে'
+      })
+    });
+    const closeResData: any = await closeReqRes.json();
+    console.log(`Session A fulfilled request status: ${closeResData?.request?.status || closeResData?.data?.status || 'fulfilled'}`);
+
+    // Step D: Session B immediately requests public /stats again
+    const sessionBCheck2Start = performance.now();
+    const closedStatsRes = await fetch(`${baseUrl}/api/v1/stats`);
+    const sessionBCheck2Time = performance.now() - sessionBCheck2Start;
+    const closedData: any = await closedStatsRes.json();
+    console.log(`Session B Re-check (Post-Close): activeRequests=${closedData.stats.activeRequests} | Cached: ${closedData.cached} | Time: ${sessionBCheck2Time.toFixed(2)}ms | Cache-Control: ${closedStatsRes.headers.get('cache-control')}`);
+
+    // STRICT ASSERTION: Active count MUST decrement by exactly -1 back to initialActive
+    if (closedData.stats.activeRequests !== initialActive) {
+      throw new Error(`[CACHE TEST FAILURE] Count remained unchanged or invalid after request closure! Expected exact -1 back to (${initialActive}), got: ${closedData.stats.activeRequests}`);
+    }
+    if (closedData.cached !== false) {
+      throw new Error(`[CACHE TEST FAILURE] Response was served from stale cache after closure! cached=${closedData.cached}`);
+    }
+    console.log(`✔ Step B Passed: Exact -1 count decrease verified (${afterData.stats.activeRequests} -> ${closedData.stats.activeRequests}) with instant cache invalidation.`);
+
+    // Clean up created request in DB
+    if (createdReqId) {
+      await BloodRequestModel.deleteOne({ _id: createdReqId });
     }
 
   } finally {

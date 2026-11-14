@@ -37,8 +37,8 @@ type ProfileSection = 'all' | 'personal' | 'donation' | 'requests' | 'security';
 export const ProfileSettings: React.FC = () => {
   const { user, donorProfile, refreshUser } = useAuth();
 
-  // Active Section for Ergonomic Mobile and Desktop Navigation
-  const [activeSection, setActiveSection] = useState<ProfileSection>('all');
+  // Active Section for Ergonomic Mobile and Desktop Navigation (Default to concise 'personal' view)
+  const [activeSection, setActiveSection] = useState<ProfileSection>('personal');
 
   // Form Initialized Tracker to Preserve User's Input on Save Failure
   const isInitializedRef = useRef(false);
@@ -130,26 +130,40 @@ export const ProfileSettings: React.FC = () => {
     }
   }, [user, donorProfile]);
 
-  // Lazy Load Applications when Section 3 is visible or opened
+  // Lazy Load Applications with Error Isolation (Phone request failure must NOT hide institution request)
   const loadMyRequests = async () => {
     setRequestsLoading(true);
     setRequestsError(null);
     try {
-      const [phoneRes, instRes] = await Promise.all([
+      const [phoneResult, instResult] = await Promise.allSettled([
         api.getMyPhoneChangeRequest(),
         api.getMyInstitutionChangeRequest()
       ]);
-      if (phoneRes?.success && phoneRes.pendingRequest) {
-        setPendingPhoneRequest(phoneRes.pendingRequest);
+
+      if (phoneResult.status === 'fulfilled' && phoneResult.value?.success) {
+        setPendingPhoneRequest(phoneResult.value.pendingRequest || null);
       } else {
         setPendingPhoneRequest(null);
+        if (phoneResult.status === 'rejected') {
+          console.warn('[ProfileSettings] Phone change request fetch error:', phoneResult.reason);
+        }
       }
-      if (instRes?.success && instRes.pendingRequest) {
-        setPendingInstRequest(instRes.pendingRequest);
+
+      if (instResult.status === 'fulfilled' && instResult.value?.success) {
+        setPendingInstRequest(instResult.value.pendingRequest || null);
       } else {
         setPendingInstRequest(null);
+        if (instResult.status === 'rejected') {
+          console.warn('[ProfileSettings] Institution change request fetch error:', instResult.reason);
+        }
       }
-      setRequestsLoaded(true);
+
+      // If both requests failed with network/server rejection
+      if (phoneResult.status === 'rejected' && instResult.status === 'rejected') {
+        setRequestsError('আবেদনসমূহ লোড করতে ব্যর্থ হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করুন।');
+      } else {
+        setRequestsLoaded(true);
+      }
     } catch (err: any) {
       setRequestsError(err?.message || 'আবেদনসমূহ লোড করতে ব্যর্থ হয়েছে।');
     } finally {
@@ -157,9 +171,9 @@ export const ProfileSettings: React.FC = () => {
     }
   };
 
-  // Trigger lazy loading of requests if Section 3 is selected or opened
+  // Trigger lazy loading of requests strictly when Section 3 is opened
   useEffect(() => {
-    if ((activeSection === 'requests' || activeSection === 'all') && !requestsLoaded && !requestsLoading && user) {
+    if (activeSection === 'requests' && !requestsLoaded && !requestsLoading && user) {
       loadMyRequests();
     }
   }, [activeSection, requestsLoaded, requestsLoading, user]);

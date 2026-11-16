@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { ENV } from '../config/env.js';
-import { dataStore } from '../services/dataStore.js';
+import { dataStore, isRootSuperAdmin } from '../services/dataStore.js';
 import { SmsService } from '../services/smsService.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { logAuditEvent } from '../services/auditService.js';
@@ -603,6 +603,15 @@ export async function deleteMyAccount(req: AuthRequest, res: Response): Promise<
   const user = await dataStore.findUserById(userId);
   if (!user) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  // Root Super Admin Prottoy Kumar Biswas cannot self-delete
+  if (isRootSuperAdmin(user)) {
+    res.status(403).json({
+      success: false,
+      message: 'সুরক্ষা সতর্কতা: প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্ট মুছে ফেলা সম্পূর্ণ নিষিদ্ধ ও অসম্ভব।'
+    });
     return;
   }
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Trash2, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Trash2, ShieldAlert, Lock } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { useAuth } from '../../context/AuthContext';
 
 interface AdminDeleteUserModalProps {
   user: any | null;
@@ -12,6 +13,10 @@ interface AdminDeleteUserModalProps {
   isSuperAdmin: boolean;
 }
 
+const isProttoy = (u: any) =>
+  u?.phone === '01978167016' ||
+  (u?.name && (u.name.includes('Prottoy') || u.name.includes('প্রত্যয়')));
+
 export const AdminDeleteUserModal: React.FC<AdminDeleteUserModalProps> = ({
   user,
   isOpen,
@@ -19,14 +24,21 @@ export const AdminDeleteUserModal: React.FC<AdminDeleteUserModalProps> = ({
   onConfirmDelete,
   isSuperAdmin
 }) => {
+  const { user: currentUser } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!user) return null;
 
+  const isTargetRoot = isProttoy(user);
+  const isActorRoot = isProttoy(currentUser);
   const isTargetSuperAdmin = user.role === 'SUPER_ADMIN';
 
+  // Can this deletion proceed?
+  const canDelete = !isTargetRoot && (!isTargetSuperAdmin || isActorRoot) && isSuperAdmin;
+
   const handleDelete = async () => {
+    if (!canDelete) return;
     setErrorMsg(null);
     setIsDeleting(true);
     try {
@@ -55,8 +67,8 @@ export const AdminDeleteUserModal: React.FC<AdminDeleteUserModalProps> = ({
             size="sm"
             isLoading={isDeleting}
             onClick={handleDelete}
-            disabled={isTargetSuperAdmin && !isSuperAdmin}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            disabled={!canDelete}
+            className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             icon={<Trash2 className="w-3.5 h-3.5" />}
           >
             হ্যাঁ, স্থায়ীভাবে মুছে ফেলুন
@@ -73,7 +85,10 @@ export const AdminDeleteUserModal: React.FC<AdminDeleteUserModalProps> = ({
 
         <div className="p-4 bg-slate-50 border border-appBorder rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-mainText">{user.name}</span>
+            <span className="text-xs font-bold text-mainText flex items-center gap-1.5">
+              <span>{user.name}</span>
+              {isTargetRoot && <span title="প্রধান সুপার অ্যাডমিন">👑</span>}
+            </span>
             <Badge variant="primary" size="sm">{user.role}</Badge>
           </div>
           <div className="text-xs text-subText font-mono space-y-0.5">
@@ -83,11 +98,18 @@ export const AdminDeleteUserModal: React.FC<AdminDeleteUserModalProps> = ({
           </div>
         </div>
 
-        {isTargetSuperAdmin && !isSuperAdmin ? (
+        {isTargetRoot ? (
+          <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-800 flex items-start gap-2">
+            <Lock className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+            <p className="font-medium">
+              সুরক্ষা সতর্কতা: প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্ট মুছে ফেলা সম্পূর্ণ নিষিদ্ধ ও অসম্ভব। এই অ্যাকাউন্ট অপরিবর্তনীয়।
+            </p>
+          </div>
+        ) : isTargetSuperAdmin && !isActorRoot ? (
           <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-800 flex items-start gap-2">
             <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-            <p>
-              অনধিকার চর্চা: সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলার অনুমতি শুধুমাত্র অন্য একজন সুপার অ্যাডমিনের রয়েছে।
+            <p className="font-medium">
+              অনধিকার চর্চা: কোনো সাধারণ সুপার অ্যাডমিন অন্য কোনো সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলতে পারবেন না। শুধুমাত্র প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) এই অধিকার রাখেন।
             </p>
           </div>
         ) : (

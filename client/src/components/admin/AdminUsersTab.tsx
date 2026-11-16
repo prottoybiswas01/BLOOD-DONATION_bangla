@@ -1,7 +1,8 @@
 import React from 'react';
-import { Users, Search, Trash2 } from 'lucide-react';
+import { Users, Search, Trash2, Lock } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface AdminUsersTabProps {
   users: any[];
@@ -61,6 +62,11 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   setUnblockReason,
   setDeletingUser
 }) => {
+  const { user: currentUser } = useAuth();
+  const isTargetProttoy = (u: any) =>
+    u?.phone === '01978167016' ||
+    (u?.name && (u.name.includes('Prottoy') || u.name.includes('প্রত্যয়')));
+  const isActorProttoy = isTargetProttoy(currentUser);
   return (
     <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -137,38 +143,50 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                   >
                     সম্পাদনা
                   </Button>
-                  {searchResult.user.accountStatus === 'active' ? (
+                  {!isTargetProttoy(searchResult.user) && (
+                    searchResult.user.accountStatus === 'active' ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setBlockingUser(searchResult.user);
+                          setBlockReason('');
+                        }}
+                      >
+                        স্থগিত করুন
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => {
+                          setUnblockingUser(searchResult.user);
+                          setUnblockReason('');
+                        }}
+                      >
+                        সচল করুন
+                      </Button>
+                    )
+                  )}
+                  {isTargetProttoy(searchResult.user) ? (
+                    <span className="px-2.5 py-1 text-slate-400 bg-slate-100 rounded-lg text-xs font-semibold cursor-not-allowed inline-flex items-center gap-1" title="প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্ট সুরক্ষিত ও অপসারণ অযোগ্য">
+                      <Lock className="w-3 h-3 text-slate-400" /> সুরক্ষিত
+                    </span>
+                  ) : searchResult.user.role === 'SUPER_ADMIN' && !isActorProttoy ? (
+                    <span className="px-2.5 py-1 text-slate-400 bg-slate-100 rounded-lg text-xs font-semibold cursor-not-allowed inline-flex items-center gap-1" title="শুধুমাত্র প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) সুপার অ্যাডমিন মুছতে পারবেন">
+                      <Lock className="w-3 h-3 text-slate-400" /> সুরক্ষিত
+                    </span>
+                  ) : (
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => {
-                        setBlockingUser(searchResult.user);
-                        setBlockReason('');
-                      }}
+                      onClick={() => setDeletingUser(searchResult.user)}
+                      className="bg-rose-600 hover:bg-rose-700 text-white"
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
                     >
-                      স্থগিত করুন
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="success"
-                      size="sm"
-                      onClick={() => {
-                        setUnblockingUser(searchResult.user);
-                        setUnblockReason('');
-                      }}
-                    >
-                      সচল করুন
+                      মুছুন
                     </Button>
                   )}
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setDeletingUser(searchResult.user)}
-                    className="bg-rose-600 hover:bg-rose-700 text-white"
-                    icon={<Trash2 className="w-3.5 h-3.5" />}
-                  >
-                    মুছুন
-                  </Button>
                 </div>
               </div>
             ) : (
@@ -250,12 +268,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             ) : (
               paginatedUsers.map((u: any) => {
                 const isBlocked = u.accountStatus && u.accountStatus !== 'active';
+                const isTargetRoot = isTargetProttoy(u);
+                const isTargetSuperAdmin = u.role === 'SUPER_ADMIN';
+                const canDeleteTarget = !isTargetRoot && (!isTargetSuperAdmin || isActorProttoy);
+
                 return (
                   <tr key={u._id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-bold text-mainText flex items-center gap-1.5">
                         <span>{u.name}</span>
-                        {u.role === 'SUPER_ADMIN' && <span title="সুপার অ্যাডমিন">👑</span>}
+                        {isTargetRoot ? (
+                          <span title="প্রধান সুপার অ্যাডমিন (অপরিবর্তনীয়)">👑</span>
+                        ) : isTargetSuperAdmin ? (
+                          <span title="সুপার অ্যাডমিন">⭐</span>
+                        ) : null}
                       </div>
                       <div className="text-[10px] text-subText">
                         {u.division ? `বিভাগ: ${u.division}` : 'অনির্দিষ্ট'} • {u.gender || 'unspecified'}
@@ -268,8 +294,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <select
                         value={u.role}
                         onChange={e => handleRoleChange(u._id, e.target.value)}
-                        disabled={!isSuperAdmin && u.role === 'SUPER_ADMIN'}
-                        className="text-xs font-semibold px-2 py-1 bg-white border border-appBorder rounded-lg shadow-sm focus:border-primary"
+                        disabled={isTargetRoot || (!isSuperAdmin && isTargetSuperAdmin)}
+                        title={isTargetRoot ? 'প্রধান সুপার অ্যাডমিন (অপরিবর্তনীয়)' : undefined}
+                        className="text-xs font-semibold px-2 py-1 bg-white border border-appBorder rounded-lg shadow-sm focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {isSuperAdmin && <option value="SUPER_ADMIN">SUPER_ADMIN</option>}
                         <option value="ADMIN">ADMIN</option>
@@ -294,39 +321,57 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       </button>
                       <button
                         onClick={() => openEditModal(u)}
-                        className="px-2.5 py-1 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors"
+                        disabled={isTargetRoot}
+                        title={isTargetRoot ? 'প্রধান সুপার অ্যাডমিন অ্যাকাউন্ট সুরক্ষিত' : 'তথ্য সম্পাদনা'}
+                        className="px-2.5 py-1 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         সম্পাদনা
                       </button>
-                      {!isBlocked ? (
+                      {!isTargetRoot && (
+                        !isBlocked ? (
+                          <button
+                            onClick={() => {
+                              setBlockingUser(u);
+                              setBlockReason('');
+                            }}
+                            className="px-2.5 py-1 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            স্থগিত
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setUnblockingUser(u);
+                              setUnblockReason('');
+                            }}
+                            className="px-2.5 py-1 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            সচল করুন
+                          </button>
+                        )
+                      )}
+                      {canDeleteTarget ? (
                         <button
-                          onClick={() => {
-                            setBlockingUser(u);
-                            setBlockReason('');
-                          }}
-                          className="px-2.5 py-1 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg text-xs font-bold transition-colors"
+                          onClick={() => setDeletingUser(u)}
+                          title="ব্যবহারকারী ও সমস্ত ডাটা স্থায়ীভাবে মুছে ফেলুন"
+                          className="px-2.5 py-1 text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1"
                         >
-                          স্থগিত
+                          <Trash2 className="w-3 h-3" />
+                          <span>মুছুন</span>
                         </button>
                       ) : (
-                        <button
-                          onClick={() => {
-                            setUnblockingUser(u);
-                            setUnblockReason('');
-                          }}
-                          className="px-2.5 py-1 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
+                        <span
+                          className="px-2.5 py-1 text-slate-400 bg-slate-100 rounded-lg text-xs font-medium inline-flex items-center gap-1 cursor-not-allowed"
+                          title={
+                            isTargetRoot
+                              ? 'প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অপরিবর্তনীয় ও সুরক্ষিত'
+                              : 'শুধুমাত্র প্রত্যয় কুমার বিশ্বাস অন্য সুপার অ্যাডমিনকে মুছে ফেলতে পারেন'
+                          }
                         >
-                          সচল করুন
-                        </button>
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          <span>সুরক্ষিত</span>
+                        </span>
                       )}
-                      <button
-                        onClick={() => setDeletingUser(u)}
-                        title="ব্যবহারকারী ও সমস্ত ডাটা স্থায়ীভাবে মুছে ফেলুন"
-                        className="px-2.5 py-1 text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>মুছুন</span>
-                      </button>
                     </td>
                   </tr>
                 );

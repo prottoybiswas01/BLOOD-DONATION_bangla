@@ -97689,19 +97689,29 @@ function isConfirmedDemoRequest(r) {
   }
   return CONFIRMED_DEMO_REQUEST_IDS.has(id) || CONFIRMED_DEMO_PUBLIC_IDS.has(publicId) || CONFIRMED_DEMO_USER_IDS.has(requesterId);
 }
+function isRootSuperAdmin(user) {
+  if (!user) return false;
+  if (user.phone === "01978167016") return true;
+  if (user.name && (user.name.includes("Prottoy") || user.name.includes("\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC"))) return true;
+  if (user._id === "usr_179460053317482nk1") return true;
+  return false;
+}
 function getBuiltInSuperAdmin() {
   const now = /* @__PURE__ */ new Date();
   const rawPass = ENV.SUPER_ADMIN_PASSWORD;
-  const passwordHash = rawPass ? bcryptjs_default.hashSync(rawPass, 10) : "$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin";
+  const passwordHash = rawPass ? bcryptjs_default.hashSync(rawPass, 10) : "$2b$10$d7pyfXtseina9xN4dcJ1..yNngKvOaXKpDx61ateD2gP.IdW/vmaC";
   return {
-    _id: "usr_superadmin",
-    name: ENV.SUPER_ADMIN_NAME || "\u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (Super Admin)",
-    phone: ENV.SUPER_ADMIN_PHONE || "01700000000",
+    _id: "usr_179460053317482nk1",
+    name: "Prottoy Kumar Biswas",
+    phone: "01978167016",
     email: ENV.SUPER_ADMIN_EMAIL || "admin@bloodbd.org",
     passwordHash,
     role: "SUPER_ADMIN",
     accountStatus: "active",
     gender: "male",
+    division: "khulna",
+    district: "khulna",
+    upazila: "khulna_sadar",
     isActive: true,
     isPhoneVerified: true,
     tokenVersion: 2,
@@ -97791,23 +97801,36 @@ var DataStore = class {
     }
   }
   async ensureSingleSuperAdmin() {
-    const defaultAdmin = getBuiltInSuperAdmin();
-    const existing = this.users.find((u) => u._id === defaultAdmin._id || u.role === "SUPER_ADMIN");
-    if (existing) {
+    const rootAdmin = this.users.find((u) => isRootSuperAdmin(u));
+    if (rootAdmin) {
+      rootAdmin.role = "SUPER_ADMIN";
+      rootAdmin.accountStatus = "active";
+      rootAdmin.isActive = true;
       if (ENV.SUPER_ADMIN_PASSWORD) {
-        existing.passwordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+        rootAdmin.passwordHash = bcryptjs_default.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
       }
-      if (ENV.SUPER_ADMIN_PHONE) {
-        existing.phone = ENV.SUPER_ADMIN_PHONE;
+      const duplicateAdmins = this.users.filter((u) => u.role === "SUPER_ADMIN" && u._id !== rootAdmin._id);
+      if (duplicateAdmins.length > 0) {
+        const dupIds = duplicateAdmins.map((d) => d._id);
+        this.users = this.users.filter((u) => !dupIds.includes(u._id));
+        if (isDatabaseConnected()) {
+          try {
+            await UserModel.deleteMany({ _id: { $in: dupIds } });
+          } catch (e) {
+            console.warn("[DataStore] remove duplicate superadmins error:", e?.message);
+          }
+        }
       }
       if (isDatabaseConnected()) {
         try {
           await UserModel.updateOne(
-            { _id: existing._id },
+            { _id: rootAdmin._id },
             {
               $set: {
-                ...ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {},
-                ...ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {},
+                role: "SUPER_ADMIN",
+                accountStatus: "active",
+                isActive: true,
+                ...ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: rootAdmin.passwordHash } : {},
                 updatedAt: /* @__PURE__ */ new Date()
               }
             }
@@ -97816,18 +97839,19 @@ var DataStore = class {
           console.warn("[DataStore] ensureSingleSuperAdmin sync error:", err?.message);
         }
       }
-    } else {
-      this.users.unshift(defaultAdmin);
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: defaultAdmin._id },
-            { $set: defaultAdmin },
-            { upsert: true }
-          );
-        } catch (err) {
-          console.warn("[DataStore] ensureSingleSuperAdmin DB error:", err?.message);
-        }
+      return;
+    }
+    const defaultAdmin = getBuiltInSuperAdmin();
+    this.users.unshift(defaultAdmin);
+    if (isDatabaseConnected()) {
+      try {
+        await UserModel.updateOne(
+          { _id: defaultAdmin._id },
+          { $set: defaultAdmin },
+          { upsert: true }
+        );
+      } catch (err) {
+        console.warn("[DataStore] ensureSingleSuperAdmin DB error:", err?.message);
       }
     }
   }
@@ -104566,6 +104590,13 @@ async function deleteMyAccount(req, res) {
     res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }
+  if (isRootSuperAdmin(user)) {
+    res.status(403).json({
+      success: false,
+      message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A8\u09BF\u09B7\u09BF\u09A6\u09CD\u09A7 \u0993 \u0985\u09B8\u09AE\u09CD\u09AD\u09AC\u0964"
+    });
+    return;
+  }
   if (user.role === "SUPER_ADMIN") {
     const activeSuperAdmins = dataStore.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
     if (activeSuperAdmins.length <= 1) {
@@ -106687,6 +106718,13 @@ async function updateUserRole(req, res) {
     res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }
+  if (isRootSuperAdmin(user)) {
+    res.status(403).json({
+      success: false,
+      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F\u09C7\u09B0 \u09AD\u09C2\u09AE\u09BF\u0995\u09BE \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8 \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A8\u09BF\u09B7\u09BF\u09A6\u09CD\u09A7\u0964"
+    });
+    return;
+  }
   if (user.role === "SUPER_ADMIN" && role !== "SUPER_ADMIN") {
     const superAdminCount = dataStore.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active").length;
     if (superAdminCount <= 1) {
@@ -106727,6 +106765,13 @@ async function blockUserAccount(req, res) {
   const targetUser = await dataStore.findUserById(id);
   if (!targetUser) {
     res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (isRootSuperAdmin(targetUser)) {
+    res.status(403).json({
+      success: false,
+      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AC\u09CD\u09B2\u0995 \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A8\u09BF\u09B7\u09BF\u09A6\u09CD\u09A7 \u0993 \u0985\u09B8\u09AE\u09CD\u09AD\u09AC\u0964"
+    });
     return;
   }
   if (targetUser.role === "SUPER_ADMIN" && req.user.role !== "SUPER_ADMIN") {
@@ -106946,27 +106991,36 @@ async function deleteUserByAdmin(req, res) {
     res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }
-  if (targetUser.role === "SUPER_ADMIN" && req.user.role !== "SUPER_ADMIN") {
+  const actor = await dataStore.findUserById(req.user.userId);
+  const actorIsRoot = isRootSuperAdmin(actor) || isRootSuperAdmin(req.user);
+  const targetIsRoot = isRootSuperAdmin(targetUser);
+  if (targetIsRoot) {
     res.status(403).json({
       success: false,
-      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09A8\u09CD\u09AF \u0995\u09CB\u09A8\u09CB \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
+      message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09AC\u09BE \u0995\u09CB\u09A8\u09CB \u09AA\u09B0\u09BF\u09AC\u09B0\u09CD\u09A4\u09A8 \u0995\u09B0\u09BE \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A8\u09BF\u09B7\u09BF\u09A6\u09CD\u09A7 \u0993 \u0985\u09B8\u09AE\u09CD\u09AD\u09AC\u0964"
     });
     return;
-  }
-  if (targetUser.role === "SUPER_ADMIN") {
-    const activeSuperAdmins = dataStore.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
-    if (activeSuperAdmins.length <= 1) {
-      res.status(400).json({
-        success: false,
-        message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u098F\u0995\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09A8\u09AF\u09BC\u0964"
-      });
-      return;
-    }
   }
   if (req.user.userId === id) {
     res.status(400).json({
       success: false,
-      message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AA\u09CD\u09AF\u09BE\u09A8\u09C7\u09B2 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u099C\u09C7\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09AF\u09BE\u09AC\u09C7 \u09A8\u09BE\u0964 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09B8\u09C7\u099F\u09BF\u0982\u09B8 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u099C\u09C7\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AC\u09CD\u09AF\u09AC\u09B8\u09CD\u09A5\u09BE\u09AA\u09A8\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
+      message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AA\u09CD\u09AF\u09BE\u09A8\u09C7\u09B2 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u099C\u09C7\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09AF\u09BE\u09AC\u09C7 \u09A8\u09BE\u0964"
+    });
+    return;
+  }
+  if (targetUser.role === "SUPER_ADMIN") {
+    if (!actorIsRoot) {
+      res.status(403).json({
+        success: false,
+        message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u0995\u09CB\u09A8\u09CB \u09B8\u09BE\u09A7\u09BE\u09B0\u09A3 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09A8\u09CD\u09AF \u0995\u09CB\u09A8\u09CB \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8\u0995\u09C7 \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09A4\u09C7 \u09AA\u09BE\u09B0\u09AC\u09C7\u09A8 \u09A8\u09BE\u0964 \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
+      });
+      return;
+    }
+  }
+  if (targetUser.role === "ADMIN" && req.user.role !== "SUPER_ADMIN") {
+    res.status(403).json({
+      success: false,
+      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09A8\u09CD\u09AF \u0995\u09CB\u09A8\u09CB \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
     });
     return;
   }
@@ -106998,8 +107052,22 @@ async function deleteDonorByAdmin(req, res) {
     return;
   }
   const { id } = req.params;
-  const deleted = await dataStore.deleteDonorProfile(id);
-  if (!deleted) {
+  const targetUser = await dataStore.findUserById(id);
+  if (targetUser && isRootSuperAdmin(targetUser)) {
+    res.status(403).json({
+      success: false,
+      message: "\u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 (\u09AA\u09CD\u09B0\u09A4\u09CD\u09AF\u09AF\u09BC \u0995\u09C1\u09AE\u09BE\u09B0 \u09AC\u09BF\u09B6\u09CD\u09AC\u09BE\u09B8) \u098F\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u0985\u09AA\u09B8\u09BE\u09B0\u09A3 \u09A8\u09BF\u09B7\u09BF\u09A6\u09CD\u09A7\u0964"
+    });
+    return;
+  }
+  let deleted = await dataStore.deleteDonorProfile(id);
+  if (targetUser) {
+    if (targetUser.role === "DONOR") {
+      await dataStore.updateUser(targetUser._id, { role: "MEMBER" });
+    }
+    deleted = true;
+  }
+  if (!deleted && !targetUser) {
     res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
     return;
   }

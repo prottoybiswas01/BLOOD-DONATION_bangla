@@ -908,6 +908,7 @@ export const AdminDashboard: React.FC = () => {
                 users={users}
                 stats={stats}
                 setDeletingDonor={setDeletingDonor}
+                setDeletingUser={setDeletingUser}
               />
             )}
 

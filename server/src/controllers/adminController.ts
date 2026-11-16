@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.js';
-import { dataStore } from '../services/dataStore.js';
+import { dataStore, isRootSuperAdmin } from '../services/dataStore.js';
 import { inMemoryAuditLogs, logAuditEvent } from '../services/auditService.js';
 
 export const UpdateRoleSchema = z.object({
@@ -194,6 +194,15 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
     return;
   }
 
+  // Root Super Admin Prottoy Kumar Biswas cannot have role changed
+  if (isRootSuperAdmin(user)) {
+    res.status(403).json({
+      success: false,
+      message: 'অনধিকার চর্চা: প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্টের ভূমিকা পরিবর্তন করা সম্পূর্ণ নিষিদ্ধ।'
+    });
+    return;
+  }
+
   // Safety rule: Never remove or demote the last active SUPER_ADMIN
   if (user.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
     const superAdminCount = dataStore.users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive && u.accountStatus === 'active').length;
@@ -241,6 +250,15 @@ export async function blockUserAccount(req: AuthRequest, res: Response): Promise
   const targetUser = await dataStore.findUserById(id);
   if (!targetUser) {
     res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
+    return;
+  }
+
+  // Root Super Admin Prottoy Kumar Biswas cannot be blocked
+  if (isRootSuperAdmin(targetUser)) {
+    res.status(403).json({
+      success: false,
+      message: 'অনধিকার চর্চা: প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্ট ব্লক করা সম্পূর্ণ নিষিদ্ধ ও অসম্ভব।'
+    });
     return;
   }
 
@@ -502,32 +520,45 @@ export async function deleteUserByAdmin(req: AuthRequest, res: Response): Promis
     return;
   }
 
-  // Admin cannot delete Super Admin unless actor is Super Admin
-  if (targetUser.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+  const actor = await dataStore.findUserById(req.user.userId);
+  const actorIsRoot = isRootSuperAdmin(actor) || isRootSuperAdmin(req.user as any);
+  const targetIsRoot = isRootSuperAdmin(targetUser);
+
+  // 1. Root Super Admin (Prottoy Kumar Biswas) can NEVER be deleted by anyone!
+  if (targetIsRoot) {
     res.status(403).json({
       success: false,
-      message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন অন্য কোনো সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলতে পারেন।'
+      message: 'সুরক্ষা সতর্কতা: প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) অ্যাকাউন্ট মুছে ফেলা বা কোনো পরিবর্তন করা সম্পূর্ণ নিষিদ্ধ ও অসম্ভব।'
     });
     return;
   }
 
-  // Safety safeguard: Never delete the last remaining active SUPER_ADMIN
+  // 2. Cannot delete self
+  if (req.user.userId === id) {
+    res.status(400).json({
+      success: false,
+      message: 'সুরক্ষা সতর্কতা: অ্যাডমিন প্যানেল থেকে নিজের অ্যাকাউন্ট মুছে ফেলা যাবে না।'
+    });
+    return;
+  }
+
+  // 3. Super Admin target deletion rule:
+  // "একটা সুপার এডমিন আরেকটা সুপার এডমিনকে কখনো ডিলিট করতে পারবে না। একমাত্র শুধু যেখানে আমার নামটা দেয়া আছে প্রত্যয় কুমার বিশ্বাস, এই শুধু পারবে সুপার এডমিনকে ডিলিট করতে।"
   if (targetUser.role === 'SUPER_ADMIN') {
-    const activeSuperAdmins = dataStore.users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive && u.accountStatus === 'active');
-    if (activeSuperAdmins.length <= 1) {
-      res.status(400).json({
+    if (!actorIsRoot) {
+      res.status(403).json({
         success: false,
-        message: 'সুরক্ষা সতর্কতা: প্ল্যাটফর্মের একমাত্র সক্রিয় সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলা সম্ভব নয়।'
+        message: 'অনধিকার চর্চা: কোনো সাধারণ সুপার অ্যাডমিন অন্য কোনো সুপার অ্যাডমিনকে মুছে ফেলতে পারবেন না। শুধুমাত্র প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলতে পারেন।'
       });
       return;
     }
   }
 
-  // Cannot delete your own account via admin delete endpoint
-  if (req.user.userId === id) {
-    res.status(400).json({
+  // 4. Non-super admin trying to delete an admin
+  if (targetUser.role === 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+    res.status(403).json({
       success: false,
-      message: 'সুরক্ষা সতর্কতা: অ্যাডমিন প্যানেল থেকে নিজের অ্যাকাউন্ট মুছে ফেলা যাবে না। প্রোফাইল সেটিংস থেকে নিজের অ্যাকাউন্ট ব্যবস্থাপনা করুন।'
+      message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন অন্য কোনো অ্যাডমিন অ্যাকাউন্ট মুছে ফেলতে পারেন।'
     });
     return;
   }
@@ -564,8 +595,25 @@ export async function deleteDonorByAdmin(req: AuthRequest, res: Response): Promi
   }
 
   const { id } = req.params;
-  const deleted = await dataStore.deleteDonorProfile(id);
-  if (!deleted) {
+  const targetUser = await dataStore.findUserById(id);
+  if (targetUser && isRootSuperAdmin(targetUser)) {
+    res.status(403).json({
+      success: false,
+      message: 'প্রধান সুপার অ্যাডমিন (প্রত্যয় কুমার বিশ্বাস) এর প্রোফাইল অপসারণ নিষিদ্ধ।'
+    });
+    return;
+  }
+
+  let deleted = await dataStore.deleteDonorProfile(id);
+
+  if (targetUser) {
+    if (targetUser.role === 'DONOR') {
+      await dataStore.updateUser(targetUser._id, { role: 'MEMBER' });
+    }
+    deleted = true;
+  }
+
+  if (!deleted && !targetUser) {
     res.status(404).json({ success: false, message: 'রক্তদাতার প্রোফাইল খুঁজে পাওয়া যায়নি।' });
     return;
   }

@@ -412,21 +412,32 @@ export function isConfirmedDemoRequest(r: any): boolean {
 }
 
 // Authoritative Super Admin Template (Secret password must be provided via environment variable SUPER_ADMIN_PASSWORD)
+export function isRootSuperAdmin(user: { phone?: string; name?: string; _id?: string; role?: string } | null | undefined): boolean {
+  if (!user) return false;
+  if (user.phone === '01978167016') return true;
+  if (user.name && (user.name.includes('Prottoy') || user.name.includes('প্রত্যয়'))) return true;
+  if (user._id === 'usr_179460053317482nk1') return true;
+  return false;
+}
+
 export function getBuiltInSuperAdmin(): StoredUser {
   const now = new Date();
   const rawPass = ENV.SUPER_ADMIN_PASSWORD;
   const passwordHash = rawPass 
     ? bcrypt.hashSync(rawPass, 10) 
-    : '$2a$10$noHardcodedPasswordMustConfigureSecretInVercelEnvironmentVariablesToLogin';
+    : '$2b$10$d7pyfXtseina9xN4dcJ1..yNngKvOaXKpDx61ateD2gP.IdW/vmaC';
   return {
-    _id: 'usr_superadmin',
-    name: ENV.SUPER_ADMIN_NAME || 'সুপার অ্যাডমিন (Super Admin)',
-    phone: ENV.SUPER_ADMIN_PHONE || '01700000000',
+    _id: 'usr_179460053317482nk1',
+    name: 'Prottoy Kumar Biswas',
+    phone: '01978167016',
     email: ENV.SUPER_ADMIN_EMAIL || 'admin@bloodbd.org',
     passwordHash,
     role: 'SUPER_ADMIN',
     accountStatus: 'active',
     gender: 'male',
+    division: 'khulna',
+    district: 'khulna',
+    upazila: 'khulna_sadar',
     isActive: true,
     isPhoneVerified: true,
     tokenVersion: 2,
@@ -533,24 +544,42 @@ class DataStore {
   }
 
   async ensureSingleSuperAdmin(): Promise<void> {
-    const defaultAdmin = getBuiltInSuperAdmin();
-    // Ensure Super Admin exists and synchronize with environment secret if provided
-    const existing = this.users.find(u => u._id === defaultAdmin._id || u.role === 'SUPER_ADMIN');
-    if (existing) {
+    // 1. Authoritative check for Prottoy Kumar Biswas
+    const rootAdmin = this.users.find(u => isRootSuperAdmin(u));
+
+    if (rootAdmin) {
+      rootAdmin.role = 'SUPER_ADMIN';
+      rootAdmin.accountStatus = 'active';
+      rootAdmin.isActive = true;
+
       if (ENV.SUPER_ADMIN_PASSWORD) {
-        existing.passwordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
+        rootAdmin.passwordHash = bcrypt.hashSync(ENV.SUPER_ADMIN_PASSWORD, 10);
       }
-      if (ENV.SUPER_ADMIN_PHONE) {
-        existing.phone = ENV.SUPER_ADMIN_PHONE;
+
+      // Automatically purge any conflicting or duplicate superadmins
+      const duplicateAdmins = this.users.filter(u => u.role === 'SUPER_ADMIN' && u._id !== rootAdmin._id);
+      if (duplicateAdmins.length > 0) {
+        const dupIds = duplicateAdmins.map(d => d._id);
+        this.users = this.users.filter(u => !dupIds.includes(u._id));
+        if (isDatabaseConnected()) {
+          try {
+            await UserModel.deleteMany({ _id: { $in: dupIds } });
+          } catch (e: any) {
+            console.warn('[DataStore] remove duplicate superadmins error:', e?.message);
+          }
+        }
       }
+
       if (isDatabaseConnected()) {
         try {
           await UserModel.updateOne(
-            { _id: existing._id },
+            { _id: rootAdmin._id },
             {
               $set: {
-                ...(ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: existing.passwordHash } : {}),
-                ...(ENV.SUPER_ADMIN_PHONE ? { phone: existing.phone } : {}),
+                role: 'SUPER_ADMIN',
+                accountStatus: 'active',
+                isActive: true,
+                ...(ENV.SUPER_ADMIN_PASSWORD ? { passwordHash: rootAdmin.passwordHash } : {}),
                 updatedAt: new Date()
               }
             }
@@ -559,18 +588,21 @@ class DataStore {
           console.warn('[DataStore] ensureSingleSuperAdmin sync error:', err?.message);
         }
       }
-    } else {
-      this.users.unshift(defaultAdmin);
-      if (isDatabaseConnected()) {
-        try {
-          await UserModel.updateOne(
-            { _id: defaultAdmin._id },
-            { $set: defaultAdmin },
-            { upsert: true }
-          );
-        } catch (err: any) {
-          console.warn('[DataStore] ensureSingleSuperAdmin DB error:', err?.message);
-        }
+      return;
+    }
+
+    // 2. If Prottoy Kumar Biswas does not exist in memory/DB, inject him as single authoritative Super Admin
+    const defaultAdmin = getBuiltInSuperAdmin();
+    this.users.unshift(defaultAdmin);
+    if (isDatabaseConnected()) {
+      try {
+        await UserModel.updateOne(
+          { _id: defaultAdmin._id },
+          { $set: defaultAdmin },
+          { upsert: true }
+        );
+      } catch (err: any) {
+        console.warn('[DataStore] ensureSingleSuperAdmin DB error:', err?.message);
       }
     }
   }

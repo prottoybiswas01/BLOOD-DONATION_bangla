@@ -98020,6 +98020,46 @@ var DataStore = class {
     await this.persistUser(memUser);
     return memUser;
   }
+  async deleteUser(id) {
+    this.assertWritable();
+    const user = await this.findUserById(id);
+    if (!user) return false;
+    const phone = user.phone;
+    this.users = this.users.filter((u) => u._id !== id);
+    this.donorProfiles = this.donorProfiles.filter((dp) => dp.userId !== id && dp._id !== id);
+    this.bloodRequests = this.bloodRequests.filter((br) => br.requesterId !== id);
+    this.notifications = this.notifications.filter((n) => n.userId !== id);
+    this.contactRequests = this.contactRequests.filter((cr) => cr.requesterUserId !== id && cr.donorUserId !== id);
+    this.contactAccessLogs = this.contactAccessLogs.filter((cal) => cal.viewerUserId !== id && cal.donorProfileId !== id);
+    this.accountStatusHistories = this.accountStatusHistories.filter((ash) => ash.userId !== id);
+    this.phoneChangeRequests = this.phoneChangeRequests.filter((pcr) => pcr.userId !== id);
+    this.institutionChangeRequests = this.institutionChangeRequests.filter((icr) => icr.userId !== id);
+    this.institutionRequests = this.institutionRequests.filter((ir) => ir.submittedByUserId !== id);
+    if (phone) {
+      this.passwordRecoveryRequests = this.passwordRecoveryRequests.filter((prr) => prr.phone !== phone);
+    }
+    if (isDatabaseConnected()) {
+      try {
+        await Promise.allSettled([
+          UserModel.deleteOne({ _id: id }),
+          DonorProfileModel.deleteMany({ $or: [{ userId: id }, { _id: id }] }),
+          BloodRequestModel.deleteMany({ requesterId: id }),
+          NotificationModel.deleteMany({ userId: id }),
+          ContactRequestModel.deleteMany({ $or: [{ requesterUserId: id }, { donorUserId: id }] }),
+          ContactAccessLogModel.deleteMany({ $or: [{ viewerUserId: id }, { donorProfileId: id }] }),
+          AccountStatusHistoryModel.deleteMany({ userId: id }),
+          PhoneChangeRequestModel.deleteMany({ userId: id }),
+          InstitutionChangeRequestModel.deleteMany({ userId: id }),
+          InstitutionRequestModel.deleteMany({ submittedByUserId: id }),
+          phone ? PasswordRecoveryRequestModel.deleteMany({ phone }) : Promise.resolve(),
+          phone ? OtpVerificationModel.deleteMany({ phone }) : Promise.resolve()
+        ]);
+      } catch (e) {
+        console.warn("[DataStore] deleteUser DB error:", e?.message);
+      }
+    }
+    return true;
+  }
   // --- Manual Member Creation with Temporary Password ---
   createMemberWithTemporaryPassword(params) {
     const temporaryPassword = "Temp#" + import_node_crypto.default.randomInt(1e5, 1e6);
@@ -98296,6 +98336,22 @@ var DataStore = class {
     Object.assign(memProf, update, { updatedAt: /* @__PURE__ */ new Date() });
     await this.persistDonorProfile(memProf);
     return memProf;
+  }
+  async deleteDonorProfile(targetId) {
+    this.assertWritable();
+    const profile = this.donorProfiles.find((dp) => dp._id === targetId || dp.userId === targetId);
+    if (!profile) return false;
+    const pId = profile._id;
+    const uId = profile.userId;
+    this.donorProfiles = this.donorProfiles.filter((dp) => dp._id !== pId && dp.userId !== uId);
+    if (isDatabaseConnected()) {
+      try {
+        await DonorProfileModel.deleteMany({ $or: [{ _id: pId }, { userId: uId }] });
+      } catch (e) {
+        console.warn("[DataStore] deleteDonorProfile DB error:", e?.message);
+      }
+    }
+    return true;
   }
   async searchDonors(filters) {
     if (isDatabaseConnected()) {
@@ -104499,6 +104555,48 @@ async function getMe(req, res) {
     unreadNotifications
   });
 }
+async function deleteMyAccount(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const userId = req.user.userId;
+  const user = await dataStore.findUserById(userId);
+  if (!user) {
+    res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (user.role === "SUPER_ADMIN") {
+    const activeSuperAdmins = dataStore.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
+    if (activeSuperAdmins.length <= 1) {
+      res.status(400).json({
+        success: false,
+        message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u098F\u0995\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09A8\u09AF\u09BC\u0964"
+      });
+      return;
+    }
+  }
+  const deleted = await dataStore.deleteUser(userId);
+  if (!deleted) {
+    res.status(500).json({ success: false, message: "\u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  await logAuditEvent({
+    actorId: userId,
+    actorRole: user.role,
+    action: "USER_SELF_DELETE_ACCOUNT",
+    targetType: "User",
+    targetId: userId,
+    details: {
+      name: user.name,
+      phone: user.phone
+    }
+  });
+  res.json({
+    success: true,
+    message: "\u0986\u09AA\u09A8\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u0993 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u09B8\u0995\u09B2 \u09A4\u09A5\u09CD\u09AF \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u098F\u09AC\u0982 \u09B8\u09CD\u09A5\u09BE\u09AF\u09BC\u09C0\u09AD\u09BE\u09AC\u09C7 \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+  });
+}
 
 // src/middleware/validate.ts
 function validateBody(schema) {
@@ -105455,6 +105553,7 @@ router.post("/verify-otp", authRateLimiter, validateBody(VerifyOtpSchema), verif
 router.post("/register", authRateLimiter, validateBody(RegisterSchema), register);
 router.post("/login", authRateLimiter, validateBody(LoginSchema), login);
 router.get("/me", requireAuth, getMe);
+router.delete(["/me", "/delete-account"], requireAuth, deleteMyAccount);
 router.post(["/change-first-login-password", "/change-password-first-login"], requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
 router.post(["/forgot-password", "/recovery/forgot-password", "/recovery-requests", "/recovery/requests"], authRateLimiter, submitForgotPassword);
 router.get(["/recovery-requests", "/recovery/requests"], requireAuth, getPasswordRecoveryRequests);
@@ -105666,12 +105765,29 @@ async function recordDonation(req, res) {
     profile: updated
   });
 }
+async function deleteMyDonorProfile(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const userId = req.user.userId;
+  const deleted = await dataStore.deleteDonorProfile(userId);
+  if (!deleted) {
+    res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  res.json({
+    success: true,
+    message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09A5\u09C7\u0995\u09C7 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+  });
+}
 
 // src/routes/donorRoutes.ts
 var router2 = (0, import_express2.Router)();
 router2.get(["/me", "/dashboard"], requireAuth, getMyDonorProfile);
 router2.patch(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router2.put(["/me", "/profile"], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router2.delete(["/me", "/profile"], requireAuth, deleteMyDonorProfile);
 router2.post("/record-donation", requireAuth, recordDonation);
 router2.get(["/", "/search"], searchDonors);
 router2.get(["/profile/:id", "/:id"], getDonorById);
@@ -106819,6 +106935,87 @@ async function manualCreateInstitution(req, res) {
   });
   res.json(result);
 }
+async function deleteUserByAdmin(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const targetUser = await dataStore.findUserById(id);
+  if (!targetUser) {
+    res.status(404).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  if (targetUser.role === "SUPER_ADMIN" && req.user.role !== "SUPER_ADMIN") {
+    res.status(403).json({
+      success: false,
+      message: "\u0985\u09A8\u09A7\u09BF\u0995\u09BE\u09B0 \u099A\u09B0\u09CD\u099A\u09BE: \u09B6\u09C1\u09A7\u09C1\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09A8\u09CD\u09AF \u0995\u09CB\u09A8\u09CB \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09A4\u09C7 \u09AA\u09BE\u09B0\u09C7\u09A8\u0964"
+    });
+    return;
+  }
+  if (targetUser.role === "SUPER_ADMIN") {
+    const activeSuperAdmins = dataStore.users.filter((u) => u.role === "SUPER_ADMIN" && u.isActive && u.accountStatus === "active");
+    if (activeSuperAdmins.length <= 1) {
+      res.status(400).json({
+        success: false,
+        message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u09AA\u09CD\u09B2\u09CD\u09AF\u09BE\u099F\u09AB\u09B0\u09CD\u09AE\u09C7\u09B0 \u098F\u0995\u09AE\u09BE\u09A4\u09CD\u09B0 \u09B8\u0995\u09CD\u09B0\u09BF\u09AF\u09BC \u09B8\u09C1\u09AA\u09BE\u09B0 \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09A8\u09AF\u09BC\u0964"
+      });
+      return;
+    }
+  }
+  if (req.user.userId === id) {
+    res.status(400).json({
+      success: false,
+      message: "\u09B8\u09C1\u09B0\u0995\u09CD\u09B7\u09BE \u09B8\u09A4\u09B0\u09CD\u0995\u09A4\u09BE: \u0985\u09CD\u09AF\u09BE\u09A1\u09AE\u09BF\u09A8 \u09AA\u09CD\u09AF\u09BE\u09A8\u09C7\u09B2 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u099C\u09C7\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09AF\u09BE\u09AC\u09C7 \u09A8\u09BE\u0964 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09B8\u09C7\u099F\u09BF\u0982\u09B8 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u099C\u09C7\u09B0 \u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F \u09AC\u09CD\u09AF\u09AC\u09B8\u09CD\u09A5\u09BE\u09AA\u09A8\u09BE \u0995\u09B0\u09C1\u09A8\u0964"
+    });
+    return;
+  }
+  const deleted = await dataStore.deleteUser(id);
+  if (!deleted) {
+    res.status(500).json({ success: false, message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u09AE\u09CB\u099B\u09BE \u09B8\u09AE\u09CD\u09AD\u09AC \u09B9\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "ADMIN_DELETE_USER",
+    targetType: "User",
+    targetId: id,
+    details: {
+      deletedUserName: targetUser.name,
+      deletedUserPhone: targetUser.phone,
+      deletedUserRole: targetUser.role
+    }
+  });
+  res.json({
+    success: true,
+    message: "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u0995\u09BE\u09B0\u09C0 \u098F\u09AC\u0982 \u09A4\u09BE\u09B0 \u09B8\u0982\u09B6\u09CD\u09B2\u09BF\u09B7\u09CD\u099F \u09B8\u0995\u09B2 \u09A4\u09A5\u09CD\u09AF \u09B8\u09CD\u09A5\u09BE\u09AF\u09BC\u09C0\u09AD\u09BE\u09AC\u09C7 \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+  });
+}
+async function deleteDonorByAdmin(req, res) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "\u0985\u09A8\u09A8\u09C1\u09AE\u09CB\u09A6\u09BF\u09A4\u0964" });
+    return;
+  }
+  const { id } = req.params;
+  const deleted = await dataStore.deleteDonorProfile(id);
+  if (!deleted) {
+    res.status(404).json({ success: false, message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u0996\u09C1\u0981\u099C\u09C7 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964" });
+    return;
+  }
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: "ADMIN_DELETE_DONOR_PROFILE",
+    targetType: "DonorProfile",
+    targetId: id,
+    details: {}
+  });
+  res.json({
+    success: true,
+    message: "\u09B0\u0995\u09CD\u09A4\u09A6\u09BE\u09A4\u09BE\u09B0 \u09AA\u09CD\u09B0\u09CB\u09AB\u09BE\u0987\u09B2 \u09B8\u09AB\u09B2\u09AD\u09BE\u09AC\u09C7 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09A5\u09C7\u0995\u09C7 \u09AE\u09C1\u099B\u09C7 \u09AB\u09C7\u09B2\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7\u0964"
+  });
+}
 
 // src/routes/coordinatorRoutes.ts
 var router5 = (0, import_express5.Router)();
@@ -106851,6 +107048,8 @@ router6.use(requireAuth, requireRoles("SUPER_ADMIN", "ADMIN"));
 router6.get("/overview", getAdminOverview);
 router6.get("/users", getUsers);
 router6.get("/users/:id", getUserById);
+router6.delete("/users/:id", deleteUserByAdmin);
+router6.delete("/donors/:id", deleteDonorByAdmin);
 router6.patch("/users/:id/profile", validateBody(AdminEditProfileSchema), editUserProfileByAdmin);
 router6.patch("/users/:id/role", validateBody(UpdateRoleSchema), updateUserRole);
 router6.post("/users/:id/block", validateBody(BlockUserSchema), blockUserAccount);

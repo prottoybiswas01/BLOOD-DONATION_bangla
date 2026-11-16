@@ -5,6 +5,7 @@ import {
   revealDonorContact, 
   getMyDonorProfile, 
   updateMyDonorProfile,
+  deleteMyDonorProfile,
   recordDonation,
   UpdateDonorProfileSchema,
   RevealContactSchema
@@ -19,6 +20,7 @@ const router = Router();
 router.get(['/me', '/dashboard'], requireAuth, getMyDonorProfile);
 router.patch(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
 router.put(['/me', '/profile'], requireAuth, validateBody(UpdateDonorProfileSchema), updateMyDonorProfile);
+router.delete(['/me', '/profile'], requireAuth, deleteMyDonorProfile);
 router.post('/record-donation', requireAuth, recordDonation);
 
 // Public search (no phone numbers exposed!)

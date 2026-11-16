@@ -54,6 +54,10 @@ export const api = {
 
   getMe: () => fetchWithAuth('/auth/me'),
 
+  deleteMyAccount: () => fetchWithAuth('/auth/me', { method: 'DELETE' }),
+
+  deleteMyDonorProfile: () => fetchWithAuth('/donors/me', { method: 'DELETE' }),
+
   changeFirstLoginPassword: (newPassword: string) =>
     fetchWithAuth('/auth/change-first-login-password', {
       method: 'POST',
@@ -231,6 +235,16 @@ export const api = {
   },
 
   getAdminUserById: (id: string) => fetchWithAuth(`/admin/users/${id}`),
+
+  adminDeleteUser: (id: string) =>
+    fetchWithAuth(`/admin/users/${id}`, {
+      method: 'DELETE',
+    }),
+
+  adminDeleteDonorProfile: (id: string) =>
+    fetchWithAuth(`/admin/donors/${id}`, {
+      method: 'DELETE',
+    }),
 
   adminEditUserProfile: (id: string, payload: any) =>
     fetchWithAuth(`/admin/users/${id}/profile`, {

@@ -5,6 +5,7 @@ import {
   register, 
   login, 
   getMe,
+  deleteMyAccount,
   changeFirstLoginPassword,
   submitForgotPassword,
   getPasswordRecoveryRequests,
@@ -28,6 +29,7 @@ router.post('/verify-otp', authRateLimiter, validateBody(VerifyOtpSchema), verif
 router.post('/register', authRateLimiter, validateBody(RegisterSchema), register);
 router.post('/login', authRateLimiter, validateBody(LoginSchema), login);
 router.get('/me', requireAuth, getMe);
+router.delete(['/me', '/delete-account'], requireAuth, deleteMyAccount);
 router.post(['/change-first-login-password', '/change-password-first-login'], requireAuth, validateBody(ChangeFirstLoginPasswordSchema), changeFirstLoginPassword);
 
 // Password Recovery System (Supports both /recovery-requests and /recovery/requests)

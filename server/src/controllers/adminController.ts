@@ -488,3 +488,99 @@ export async function manualCreateInstitution(req: AuthRequest, res: Response): 
 
   res.json(result);
 }
+
+export async function deleteUserByAdmin(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const { id } = req.params;
+  const targetUser = await dataStore.findUserById(id);
+  if (!targetUser) {
+    res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  // Admin cannot delete Super Admin unless actor is Super Admin
+  if (targetUser.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+    res.status(403).json({
+      success: false,
+      message: 'অনধিকার চর্চা: শুধুমাত্র সুপার অ্যাডমিন অন্য কোনো সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলতে পারেন।'
+    });
+    return;
+  }
+
+  // Safety safeguard: Never delete the last remaining active SUPER_ADMIN
+  if (targetUser.role === 'SUPER_ADMIN') {
+    const activeSuperAdmins = dataStore.users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive && u.accountStatus === 'active');
+    if (activeSuperAdmins.length <= 1) {
+      res.status(400).json({
+        success: false,
+        message: 'সুরক্ষা সতর্কতা: প্ল্যাটফর্মের একমাত্র সক্রিয় সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলা সম্ভব নয়।'
+      });
+      return;
+    }
+  }
+
+  // Cannot delete your own account via admin delete endpoint
+  if (req.user.userId === id) {
+    res.status(400).json({
+      success: false,
+      message: 'সুরক্ষা সতর্কতা: অ্যাডমিন প্যানেল থেকে নিজের অ্যাকাউন্ট মুছে ফেলা যাবে না। প্রোফাইল সেটিংস থেকে নিজের অ্যাকাউন্ট ব্যবস্থাপনা করুন।'
+    });
+    return;
+  }
+
+  const deleted = await dataStore.deleteUser(id);
+  if (!deleted) {
+    res.status(500).json({ success: false, message: 'ব্যবহারকারী মোছা সম্ভব হয়নি।' });
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: 'ADMIN_DELETE_USER',
+    targetType: 'User',
+    targetId: id,
+    details: {
+      deletedUserName: targetUser.name,
+      deletedUserPhone: targetUser.phone,
+      deletedUserRole: targetUser.role
+    }
+  });
+
+  res.json({
+    success: true,
+    message: 'ব্যবহারকারী এবং তার সংশ্লিষ্ট সকল তথ্য স্থায়ীভাবে মুছে ফেলা হয়েছে।'
+  });
+}
+
+export async function deleteDonorByAdmin(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const { id } = req.params;
+  const deleted = await dataStore.deleteDonorProfile(id);
+  if (!deleted) {
+    res.status(404).json({ success: false, message: 'রক্তদাতার প্রোফাইল খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: req.user.userId,
+    actorRole: req.user.role,
+    action: 'ADMIN_DELETE_DONOR_PROFILE',
+    targetType: 'DonorProfile',
+    targetId: id,
+    details: {}
+  });
+
+  res.json({
+    success: true,
+    message: 'রক্তদাতার প্রোফাইল সফলভাবে তালিকা থেকে মুছে ফেলা হয়েছে।'
+  });
+}

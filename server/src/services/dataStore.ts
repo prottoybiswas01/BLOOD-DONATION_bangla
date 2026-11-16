@@ -786,6 +786,53 @@ class DataStore {
     return memUser;
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    this.assertWritable();
+    const user = await this.findUserById(id);
+    if (!user) return false;
+
+    const phone = user.phone;
+
+    // 1. In-memory cleanup
+    this.users = this.users.filter(u => u._id !== id);
+    this.donorProfiles = this.donorProfiles.filter(dp => dp.userId !== id && dp._id !== id);
+    this.bloodRequests = this.bloodRequests.filter(br => br.requesterId !== id);
+    this.notifications = this.notifications.filter(n => n.userId !== id);
+    this.contactRequests = this.contactRequests.filter(cr => cr.requesterUserId !== id && cr.donorUserId !== id);
+    this.contactAccessLogs = this.contactAccessLogs.filter(cal => cal.viewerUserId !== id && cal.donorProfileId !== id);
+    this.accountStatusHistories = this.accountStatusHistories.filter(ash => ash.userId !== id);
+    this.phoneChangeRequests = this.phoneChangeRequests.filter(pcr => pcr.userId !== id);
+    this.institutionChangeRequests = this.institutionChangeRequests.filter(icr => icr.userId !== id);
+    this.institutionRequests = this.institutionRequests.filter(ir => ir.submittedByUserId !== id);
+    if (phone) {
+      this.passwordRecoveryRequests = this.passwordRecoveryRequests.filter(prr => prr.phone !== phone);
+    }
+
+    // 2. Database synchronization if connected
+    if (isDatabaseConnected()) {
+      try {
+        await Promise.allSettled([
+          UserModel.deleteOne({ _id: id }),
+          DonorProfileModel.deleteMany({ $or: [{ userId: id }, { _id: id }] }),
+          BloodRequestModel.deleteMany({ requesterId: id }),
+          NotificationModel.deleteMany({ userId: id }),
+          ContactRequestModel.deleteMany({ $or: [{ requesterUserId: id }, { donorUserId: id }] }),
+          ContactAccessLogModel.deleteMany({ $or: [{ viewerUserId: id }, { donorProfileId: id }] }),
+          AccountStatusHistoryModel.deleteMany({ userId: id }),
+          PhoneChangeRequestModel.deleteMany({ userId: id }),
+          InstitutionChangeRequestModel.deleteMany({ userId: id }),
+          InstitutionRequestModel.deleteMany({ submittedByUserId: id }),
+          phone ? PasswordRecoveryRequestModel.deleteMany({ phone }) : Promise.resolve(),
+          phone ? OtpVerificationModel.deleteMany({ phone }) : Promise.resolve(),
+        ]);
+      } catch (e: any) {
+        console.warn('[DataStore] deleteUser DB error:', e?.message);
+      }
+    }
+
+    return true;
+  }
+
   // --- Manual Member Creation with Temporary Password ---
   createMemberWithTemporaryPassword(params: {
     name: string;
@@ -1125,6 +1172,26 @@ class DataStore {
     Object.assign(memProf, update, { updatedAt: new Date() });
     await this.persistDonorProfile(memProf);
     return memProf;
+  }
+
+  async deleteDonorProfile(targetId: string): Promise<boolean> {
+    this.assertWritable();
+    const profile = this.donorProfiles.find(dp => dp._id === targetId || dp.userId === targetId);
+    if (!profile) return false;
+
+    const pId = profile._id;
+    const uId = profile.userId;
+
+    this.donorProfiles = this.donorProfiles.filter(dp => dp._id !== pId && dp.userId !== uId);
+
+    if (isDatabaseConnected()) {
+      try {
+        await DonorProfileModel.deleteMany({ $or: [{ _id: pId }, { userId: uId }] });
+      } catch (e: any) {
+        console.warn('[DataStore] deleteDonorProfile DB error:', e?.message);
+      }
+    }
+    return true;
   }
 
   async searchDonors(filters: {

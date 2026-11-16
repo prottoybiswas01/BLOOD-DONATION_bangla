@@ -244,3 +244,22 @@ export async function recordDonation(req: AuthRequest, res: Response): Promise<v
   });
 }
 
+export async function deleteMyDonorProfile(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const userId = req.user.userId;
+  const deleted = await dataStore.deleteDonorProfile(userId);
+  if (!deleted) {
+    res.status(404).json({ success: false, message: 'রক্তদাতার প্রোফাইল পাওয়া যায়নি।' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: 'রক্তদাতার প্রোফাইল তালিকা থেকে সফলভাবে মুছে ফেলা হয়েছে।'
+  });
+}
+

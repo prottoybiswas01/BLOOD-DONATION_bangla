@@ -35,7 +35,8 @@ import {
   Loader2,
   KeyRound,
   Copy,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -46,6 +47,12 @@ import { StatsCard } from '../components/ui/StatsCard';
 import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { Modal } from '../components/ui/Modal';
 import { BloodGroupBarChart, TrendLineChart, StatusDonutChart } from '../components/ui/SvgCharts';
+import { AdminDeleteUserModal } from '../components/admin/AdminDeleteUserModal';
+import { AdminDeleteDonorModal } from '../components/admin/AdminDeleteDonorModal';
+import { AdminOverviewTab } from '../components/admin/AdminOverviewTab';
+import { AdminUsersTab } from '../components/admin/AdminUsersTab';
+import { AdminDonorsTab } from '../components/admin/AdminDonorsTab';
+import { AdminBlockedUsersTab } from '../components/admin/AdminBlockedUsersTab';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -150,6 +157,10 @@ export const AdminDashboard: React.FC = () => {
   const [editGender, setEditGender] = useState('unspecified');
   const [editDivision, setEditDivision] = useState('dhaka');
   const [editDistrict, setEditDistrict] = useState('dhaka');
+
+  // Deletion Modals
+  const [deletingUser, setDeletingUser] = useState<any | null>(null);
+  const [deletingDonor, setDeletingDonor] = useState<any | null>(null);
 
   // Phone Change Review Modal
   const [reviewingPhoneReq, setReviewingPhoneReq] = useState<any | null>(null);
@@ -325,6 +336,30 @@ export const AdminDashboard: React.FC = () => {
       }
     } catch (err: any) {
       setMsg({ text: err.message || 'হালনাগাদ ব্যর্থ হয়েছে।', type: 'error' });
+    }
+  };
+
+  const handleAdminDeleteUser = async (userId: string) => {
+    const res = await api.adminDeleteUser(userId);
+    if (res.success) {
+      setMsg({ text: res.message || 'ব্যবহারকারী এবং তার সকল তথ্য সফলভাবে মুছে ফেলা হয়েছে।', type: 'success' });
+      setUsers(prev => prev.filter(u => u._id !== userId));
+      setBlockedUsers(prev => prev.filter(u => u._id !== userId));
+      setDeletingUser(null);
+      loadData();
+    } else {
+      throw new Error(res.message || 'ব্যবহারকারী মুছে ফেলা সম্ভব হয়নি।');
+    }
+  };
+
+  const handleAdminDeleteDonor = async (donorId: string) => {
+    const res = await api.adminDeleteDonorProfile(donorId);
+    if (res.success) {
+      setMsg({ text: res.message || 'রক্তদাতার প্রোফাইল সফলভাবে তালিকা থেকে মুছে ফেলা হয়েছে।', type: 'success' });
+      setDeletingDonor(null);
+      loadData();
+    } else {
+      throw new Error(res.message || 'রক্তদাতার প্রোফাইল মুছে ফেলা যায়নি।');
     }
   };
 
@@ -818,453 +853,62 @@ export const AdminDashboard: React.FC = () => {
 
             {/* TAB 1: OVERVIEW */}
             {activeTab === 'overview' && (
-              <div className="space-y-6">
-                
-                {/* 8 Real Database-Driven Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  <StatsCard
-                    title="মোট সদস্য"
-                    value={stats?.usersCount || users.length}
-                    subtitle="যাচাইকৃত রেজিস্টার্ড"
-                    icon={<Users className="w-5 h-5" />}
-                    iconColor="primary"
-                    trend={{ value: '১২%', isPositive: true, text: 'এই মাসে বৃদ্ধি' }}
-                    onClick={() => setActiveTab('users')}
-                  />
-                  <StatsCard
-                    title="স্বেচ্ছাসেবী রক্তদাতা"
-                    value={stats?.donorsCount || 0}
-                    subtitle="রক্তদানের জন্য নিবন্ধিত"
-                    icon={<Heart className="w-5 h-5" />}
-                    iconColor="emerald"
-                    trend={{ value: '১৮%', isPositive: true, text: 'সক্রিয় বৃদ্ধি' }}
-                    onClick={() => setActiveTab('donors')}
-                  />
-                  <StatsCard
-                    title="অনুমোদিত প্রতিষ্ঠান"
-                    value={institutions.length}
-                    subtitle="বিশ্ববিদ্যালয় ও কলেজ"
-                    icon={<Building2 className="w-5 h-5" />}
-                    iconColor="teal"
-                    onClick={() => setActiveTab('institutions')}
-                  />
-                  <StatsCard
-                    title="স্থগিত / ব্লকড"
-                    value={blockedUsers.length}
-                    subtitle="নীতিভঙ্গ বা তদন্তাধীন"
-                    icon={<UserX className="w-5 h-5" />}
-                    iconColor="amber"
-                    onClick={() => setActiveTab('blocked_users')}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  <StatsCard
-                    title="রক্তের অনুরোধ"
-                    value={bloodRequests.length}
-                    subtitle="চলমান ও সাম্প্রতিক"
-                    icon={<PhoneCall className="w-5 h-5" />}
-                    iconColor="blue"
-                  />
-                  <StatsCard
-                    title="অপেক্ষমাণ আবেদন"
-                    value={institutionRequests.length}
-                    subtitle="প্রতিষ্ঠান অন্তর্ভুক্তি"
-                    icon={<FileText className="w-5 h-5" />}
-                    iconColor="purple"
-                    onClick={() => setActiveTab('institution_requests')}
-                  />
-                  <StatsCard
-                    title="ফোন প্রকাশ অডিট"
-                    value={contactLogs.length}
-                    subtitle="কন্টাক্ট রিভিল রেকর্ড"
-                    icon={<Eye className="w-5 h-5" />}
-                    iconColor="slate"
-                    onClick={() => setActiveTab('contact_logs')}
-                  />
-                  <StatsCard
-                    title="অডিট ট্রেইল ইভেন্ট"
-                    value={auditLogs.length}
-                    subtitle="প্রশাসনিক নিরাপত্তা লগ"
-                    icon={<Lock className="w-5 h-5" />}
-                    iconColor="primary"
-                    onClick={() => setActiveTab('audit_logs')}
-                  />
-                </div>
-
-                {/* Database-Driven Real SVG Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <BloodGroupBarChart 
-                    data={bloodGroupChartData} 
-                    title="রক্তের গ্রুপভিত্তিক নিবন্ধিত রক্তদাতা পরিসংখ্যান"
-                  />
-                  <StatusDonutChart 
-                    slices={statusSlices} 
-                    title="প্ল্যাটফর্ম অ্যাকাউন্ট ও আবেদনের বর্তমান অনুপাত"
-                  />
-                </div>
-
-                {/* Monthly Registration Trend Chart */}
-                <TrendLineChart
-                  data={trendChartData}
-                  title="মাসিক সদস্য নিবন্ধনের অগ্রগতির সূচক"
-                  subtitle="চলতি অর্থবছরে রক্তদান নেটওয়ার্কের সম্প্রসারণ"
-                  color="#C62828"
-                />
-
-                {/* Safety & Administrative Policy Banner */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-soft space-y-3">
-                  <div className="flex items-center gap-2.5 text-rose-300">
-                    <ShieldCheck className="w-5 h-5 text-rose-400" />
-                    <h4 className="font-bold text-sm">প্রশাসনিক নিরাপত্তা ও নীতিমালার সুরক্ষা প্রোটোকল:</h4>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                      <p className="font-bold text-white mb-1">১. সুপার অ্যাডমিন সুরক্ষা:</p>
-                      <p>প্ল্যাটফর্মের শেষ সক্রিয় সুপার অ্যাডমিনকে কখনোই পদাবনতি বা ব্লক করা যাবে না।</p>
-                    </div>
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                      <p className="font-bold text-white mb-1">২. বাধ্যতামূলক অডিট লগ:</p>
-                      <p>যেকোনো অ্যাকাউন্ট ব্লক বা স্থগিত করার সময় কারণ ও অনুমোদনকারী সংরক্ষিত হয়।</p>
-                    </div>
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                      <p className="font-bold text-white mb-1">৩. গোপনীয়তার নিশ্চয়তা:</p>
-                      <p>পাসওয়ার্ড বা কোনো অথেনটিকেশন সিক্রেট কখনো ইন্টারফেসে প্রদর্শিত হয় না।</p>
-                    </div>
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                      <p className="font-bold text-white mb-1">৪. প্রাতিষ্ঠানিক অনুমোদন:</p>
-                      <p>শিক্ষা প্রতিষ্ঠানের আবেদন পর্যালোচনা শুধুমাত্র বিভাগীয় সমন্বয়ক বা সুপার অ্যাডমিনের এখতিয়ার।</p>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+              <AdminOverviewTab
+                stats={stats}
+                users={users}
+                blockedUsers={blockedUsers}
+                institutions={institutions}
+                bloodRequests={bloodRequests}
+                institutionRequests={institutionRequests}
+                contactLogs={contactLogs}
+                auditLogs={auditLogs}
+                bloodGroupChartData={bloodGroupChartData}
+                statusSlices={statusSlices}
+                trendChartData={trendChartData}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
             )}
 
             {/* TAB 2: USERS MANAGEMENT */}
             {activeTab === 'users' && (
-              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-                      <Users className="w-5 h-5 text-primary" />
-                      <span>ব্যবহারকারী ও সদস্য তালিকা</span>
-                    </h3>
-                    <p className="text-xs text-subText mt-0.5">সদস্যদের ভূমিকা নির্ধারণ, সম্পাদনা ও অ্যাকাউন্ট পরিচালনা</p>
-                  </div>
-                  <Badge variant="neutral">মোট: {filteredUsers.length} জন</Badge>
-                </div>
-
-                {/* Scoped Direct Search */}
-                <div className="p-4 bg-slate-50/70 border border-appBorder rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-mainText flex items-center gap-1.5">
-                      <Search className="w-3.5 h-3.5 text-primary" />
-                      নির্দিষ্ট অ্যাকাউন্ট নির্ভুল অনুসন্ধান (মোবাইল নম্বর বা ইউজার আইডি)
-                    </span>
-                  </div>
-                  <form onSubmit={handleScopedSearch} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="সরাসরি মোবাইল নম্বর (যেমন: 017XXXXXXXX) বা আইডি..."
-                      className="flex-1 px-3 py-2 bg-white border border-appBorder rounded-xl text-xs text-mainText font-mono focus:border-primary"
-                    />
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="sm"
-                      isLoading={searchingUser}
-                    >
-                      খুঁজুন
-                    </Button>
-                    {searchResult && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSearchResult(null);
-                          setSearchQuery('');
-                        }}
-                      >
-                        রিসেট
-                      </Button>
-                    )}
-                  </form>
-
-                  {searchResult && (
-                    <div className="p-3 bg-white rounded-xl border border-appBorder text-xs space-y-2 animate-in fade-in">
-                      {searchResult.success && searchResult.user ? (
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <div className="font-bold text-mainText text-sm flex items-center gap-2">
-                              <span>{searchResult.user.name}</span>
-                              <Badge variant="primary" size="sm">{searchResult.user.role}</Badge>
-                              <Badge variant={searchResult.user.accountStatus === 'active' ? 'success' : 'danger'} size="sm">
-                                {searchResult.user.accountStatus}
-                              </Badge>
-                            </div>
-                            <div className="text-[11px] text-subText mt-1">
-                              মোবাইল: <strong className="font-mono text-slate-800">{searchResult.user.phone}</strong> | আইডি: {searchResult.user._id} | অবস্থান: {searchResult.user.district}, {searchResult.user.division}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditModal(searchResult.user)}
-                            >
-                              সম্পাদনা
-                            </Button>
-                            {searchResult.user.accountStatus === 'active' ? (
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => {
-                                  setBlockingUser(searchResult.user);
-                                  setBlockReason('');
-                                }}
-                              >
-                                স্থগিত করুন
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="success"
-                                size="sm"
-                                onClick={() => {
-                                  setUnblockingUser(searchResult.user);
-                                  setUnblockReason('');
-                                }}
-                              >
-                                সচল করুন
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-rose-600 font-medium">
-                          {searchResult.guidanceBn || searchResult.message || 'কোনো ব্যবহারকারী পাওয়া যায়নি।'}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Filter and Search Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      value={userSearch}
-                      onChange={e => {
-                        setUserSearch(e.target.value);
-                        setUserPage(1);
-                      }}
-                      placeholder="নাম বা মোবাইল নম্বর..."
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:bg-surface focus:border-primary"
-                    />
-                  </div>
-
-                  <select
-                    value={roleFilter}
-                    onChange={e => {
-                      setRoleFilter(e.target.value);
-                      setUserPage(1);
-                    }}
-                    className="px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:bg-surface focus:border-primary"
-                  >
-                    <option value="">সকল ভূমিকা (All Roles)</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN (সুপার অ্যাডমিন)</option>
-                    <option value="ADMIN">ADMIN (অ্যাডমিন)</option>
-                    <option value="DIVISION_COORDINATOR">DIVISION_COORDINATOR (সমন্বয়ক)</option>
-                    <option value="INSTITUTION_MODERATOR">INSTITUTION_MODERATOR (মডারেটর)</option>
-                    <option value="DONOR">DONOR (রক্তদাতা)</option>
-                    <option value="MEMBER">MEMBER (সদস্য)</option>
-                    <option value="REQUESTER">REQUESTER (রক্তপ্রার্থী)</option>
-                  </select>
-
-                  <select
-                    value={statusFilter}
-                    onChange={e => {
-                      setStatusFilter(e.target.value);
-                      setUserPage(1);
-                    }}
-                    className="px-3 py-2 bg-slate-50 border border-appBorder rounded-xl text-xs text-mainText focus:bg-surface focus:border-primary"
-                  >
-                    <option value="">সকল অবস্থা (All Statuses)</option>
-                    <option value="active">সক্রিয় (Active)</option>
-                    <option value="blocked">স্থগিত / ব্লকড (Blocked)</option>
-                  </select>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto border border-appBorder rounded-xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
-                      <tr>
-                        <th className="py-3 px-4">সদস্যের বিবরণ</th>
-                        <th className="py-3 px-4">মোবাইল</th>
-                        <th className="py-3 px-4">দায়িত্ব / ভূমিকা</th>
-                        <th className="py-3 px-4">অবস্থা</th>
-                        <th className="py-3 px-4 text-right">পদক্ষেপ</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {paginatedUsers.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-400">
-                            কোনো সদস্যের রেকর্ড পাওয়া যায়নি।
-                          </td>
-                        </tr>
-                      ) : (
-                        paginatedUsers.map((u: any) => {
-                          const isBlocked = u.accountStatus && u.accountStatus !== 'active';
-                          return (
-                            <tr key={u._id} className="hover:bg-slate-50/70 transition-colors">
-                              <td className="py-3 px-4">
-                                <div className="font-bold text-mainText flex items-center gap-1.5">
-                                  <span>{u.name}</span>
-                                  {u.role === 'SUPER_ADMIN' && <span title="সুপার অ্যাডমিন">👑</span>}
-                                </div>
-                                <div className="text-[10px] text-subText">
-                                  {u.division ? `বিভাগ: ${u.division}` : 'অনির্দিষ্ট'} • {u.gender || 'unspecified'}
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 font-mono font-medium text-slate-700">
-                                {u.phone}
-                              </td>
-                              <td className="py-3 px-4">
-                                <select
-                                  value={u.role}
-                                  onChange={e => handleRoleChange(u._id, e.target.value)}
-                                  disabled={!isSuperAdmin && u.role === 'SUPER_ADMIN'}
-                                  className="text-xs font-semibold px-2 py-1 bg-white border border-appBorder rounded-lg shadow-sm focus:border-primary"
-                                >
-                                  {isSuperAdmin && <option value="SUPER_ADMIN">SUPER_ADMIN</option>}
-                                  <option value="ADMIN">ADMIN</option>
-                                  <option value="DIVISION_COORDINATOR">DIVISION_COORDINATOR</option>
-                                  <option value="INSTITUTION_MODERATOR">INSTITUTION_MODERATOR</option>
-                                  <option value="DONOR">DONOR</option>
-                                  <option value="MEMBER">MEMBER</option>
-                                  <option value="REQUESTER">REQUESTER</option>
-                                </select>
-                              </td>
-                              <td className="py-3 px-4">
-                                <Badge variant={!isBlocked ? 'success' : 'danger'} dot>
-                                  {!isBlocked ? 'সক্রিয়' : 'স্থগিত / ব্লকড'}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                                <button
-                                  onClick={() => setViewingUser(u)}
-                                  className="px-2.5 py-1 text-slate-600 hover:text-primary hover:bg-slate-100 rounded-lg text-xs font-semibold transition-colors"
-                                >
-                                  বিবরণ
-                                </button>
-                                <button
-                                  onClick={() => openEditModal(u)}
-                                  className="px-2.5 py-1 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors"
-                                >
-                                  সম্পাদনা
-                                </button>
-                                {!isBlocked ? (
-                                  <button
-                                    onClick={() => {
-                                      setBlockingUser(u);
-                                      setBlockReason('');
-                                    }}
-                                    className="px-2.5 py-1 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    স্থগিত
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      setUnblockingUser(u);
-                                      setUnblockReason('');
-                                    }}
-                                    className="px-2.5 py-1 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    সচল করুন
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                {totalUserPages > 1 && (
-                  <div className="flex items-center justify-between text-xs text-subText pt-2">
-                    <span>পৃষ্ঠা {userPage} / {totalUserPages}</span>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={userPage <= 1}
-                        onClick={() => setUserPage(p => p - 1)}
-                      >
-                        পূর্ববর্তী
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={userPage >= totalUserPages}
-                        onClick={() => setUserPage(p => p + 1)}
-                      >
-                        পরবর্তী
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-              </div>
+              <AdminUsersTab
+                users={users}
+                filteredUsers={filteredUsers}
+                paginatedUsers={paginatedUsers}
+                isSuperAdmin={isSuperAdmin}
+                userSearch={userSearch}
+                setUserSearch={setUserSearch}
+                roleFilter={roleFilter}
+                setRoleFilter={setRoleFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                userPage={userPage}
+                setUserPage={setUserPage}
+                totalUserPages={totalUserPages}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchingUser={searchingUser}
+                searchResult={searchResult}
+                setSearchResult={setSearchResult}
+                handleScopedSearch={handleScopedSearch}
+                handleRoleChange={handleRoleChange}
+                openEditModal={openEditModal}
+                setViewingUser={setViewingUser}
+                setBlockingUser={setBlockingUser}
+                setBlockReason={setBlockReason}
+                setUnblockingUser={setUnblockingUser}
+                setUnblockReason={setUnblockReason}
+                setDeletingUser={setDeletingUser}
+              />
             )}
 
             {/* TAB 3: DONORS LIST */}
             {activeTab === 'donors' && (
-              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-                      <Heart className="w-5 h-5 text-rose-600" />
-                      <span>রক্তদাতা ডিরেক্টরি প্রোফাইল</span>
-                    </h3>
-                    <p className="text-xs text-subText mt-0.5">স্বেচ্ছাসেবী রক্তদাতাদের তালিকা ও প্রাপ্যতা ট্র্যাকিং</p>
-                  </div>
-                  <Badge variant="success">নিবন্ধিত রক্তদাতা: {stats?.donorsCount || 0} জন</Badge>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {users.filter(u => u.role === 'DONOR' || u.role === 'MEMBER').map((d: any) => (
-                    <div key={d._id} className="p-4 rounded-2xl border border-appBorder bg-slate-50/50 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-10 h-10 rounded-xl bg-red-100 text-primary font-black flex items-center justify-center text-sm border border-red-200">
-                            {d.bloodGroup || 'O+'}
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-mainText">{d.name}</p>
-                            <p className="text-[11px] text-subText font-mono">{d.phone}</p>
-                          </div>
-                        </div>
-                        <Badge variant="success" size="sm">প্রস্তুত</Badge>
-                      </div>
-                      <div className="text-xs text-subText space-y-1">
-                        <p>📍 অবস্থান: {d.division || 'ঢাকা'}, {d.district || 'ঢাকা'}</p>
-                        <p>🔒 অনুমতি: জরুরী ভিত্তিতে ফোন প্রদর্শন অনুমোদিত</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <AdminDonorsTab
+                users={users}
+                stats={stats}
+                setDeletingDonor={setDeletingDonor}
+              />
             )}
 
             {/* TAB: PHONE CHANGE REQUESTS */}
@@ -1353,66 +997,12 @@ export const AdminDashboard: React.FC = () => {
 
             {/* TAB 4: BLOCKED USERS */}
             {activeTab === 'blocked_users' && (
-              <div className="bg-surface rounded-2xl border border-appBorder shadow-soft p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-mainText flex items-center gap-2">
-                      <UserX className="w-5 h-5 text-rose-600" />
-                      <span>স্থগিত ও ব্লককৃত অ্যাকাউন্ট তালিকা</span>
-                    </h3>
-                    <p className="text-xs text-subText mt-0.5">নীতিভঙ্গ বা তদন্তাধীন কারণে স্থগিতকৃত সদস্যদের সংরক্ষিত তথ্য</p>
-                  </div>
-                  <Badge variant="danger">{blockedUsers.length} টি অ্যাকাউন্ট</Badge>
-                </div>
-
-                {blockedUsers.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    বর্তমানে কোনো স্থগিত বা ব্লককৃত অ্যাকাউন্ট নেই।
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto border border-appBorder rounded-xl">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-subText border-b border-appBorder uppercase font-bold text-[11px]">
-                        <tr>
-                          <th className="py-3 px-4">সদস্যের নাম</th>
-                          <th className="py-3 px-4">মোবাইল</th>
-                          <th className="py-3 px-4">স্থগিত অবস্থা</th>
-                          <th className="py-3 px-4">বাধ্যতামূলক কারণ</th>
-                          <th className="py-3 px-4">তারিখ</th>
-                          <th className="py-3 px-4 text-right">পদক্ষেপ</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {blockedUsers.map(b => (
-                          <tr key={b._id} className="hover:bg-slate-50/70">
-                            <td className="py-3 px-4 font-bold text-mainText">{b.name}</td>
-                            <td className="py-3 px-4 font-mono">{b.phone}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant="danger" size="sm">{b.accountStatus}</Badge>
-                            </td>
-                            <td className="py-3 px-4 text-rose-700 max-w-xs">{b.blockReason || 'কারণ সংরক্ষিত নেই'}</td>
-                            <td className="py-3 px-4 text-subText">
-                              {b.blockedAt ? new Date(b.blockedAt).toLocaleDateString('bn-BD') : 'অজানা'}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <Button
-                                variant="success"
-                                size="sm"
-                                onClick={() => {
-                                  setUnblockingUser(b);
-                                  setUnblockReason('');
-                                }}
-                              >
-                                সচল করুন
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+              <AdminBlockedUsersTab
+                blockedUsers={blockedUsers}
+                setUnblockingUser={setUnblockingUser}
+                setUnblockReason={setUnblockReason}
+                setDeletingUser={setDeletingUser}
+              />
             )}
 
             {/* TAB 5: INSTITUTIONS */}
@@ -2731,6 +2321,23 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delete User Permanently Modal */}
+      <AdminDeleteUserModal
+        user={deletingUser}
+        isOpen={Boolean(deletingUser)}
+        onClose={() => setDeletingUser(null)}
+        onConfirmDelete={handleAdminDeleteUser}
+        isSuperAdmin={isSuperAdmin}
+      />
+
+      {/* Delete Donor Profile Modal */}
+      <AdminDeleteDonorModal
+        donor={deletingDonor}
+        isOpen={Boolean(deletingDonor)}
+        onClose={() => setDeletingDonor(null)}
+        onConfirmDelete={handleAdminDeleteDonor}
+      />
     </div>
   );
 };

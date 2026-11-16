@@ -14,6 +14,8 @@ import {
   getContactAccessLogs,
   searchScopedUser,
   manualCreateInstitution,
+  deleteUserByAdmin,
+  deleteDonorByAdmin,
   UpdateRoleSchema,
   BlockUserSchema,
   UnblockUserSchema,
@@ -46,6 +48,8 @@ router.use(requireAuth, requireRoles('SUPER_ADMIN', 'ADMIN'));
 router.get('/overview', getAdminOverview);
 router.get('/users', getUsers);
 router.get('/users/:id', getUserById);
+router.delete('/users/:id', deleteUserByAdmin);
+router.delete('/donors/:id', deleteDonorByAdmin);
 router.patch('/users/:id/profile', validateBody(AdminEditProfileSchema), editUserProfileByAdmin);
 router.patch('/users/:id/role', validateBody(UpdateRoleSchema), updateUserRole);
 router.post('/users/:id/block', validateBody(BlockUserSchema), blockUserAccount);

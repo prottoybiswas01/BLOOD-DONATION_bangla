@@ -592,3 +592,52 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
     unreadNotifications
   });
 }
+
+export async function deleteMyAccount(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: 'অননুমোদিত।' });
+    return;
+  }
+
+  const userId = req.user.userId;
+  const user = await dataStore.findUserById(userId);
+  if (!user) {
+    res.status(404).json({ success: false, message: 'ব্যবহারকারী খুঁজে পাওয়া যায়নি।' });
+    return;
+  }
+
+  // Prevent last Super Admin from self-deleting and breaking the platform
+  if (user.role === 'SUPER_ADMIN') {
+    const activeSuperAdmins = dataStore.users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive && u.accountStatus === 'active');
+    if (activeSuperAdmins.length <= 1) {
+      res.status(400).json({
+        success: false,
+        message: 'সুরক্ষা সতর্কতা: প্ল্যাটফর্মের একমাত্র সক্রিয় সুপার অ্যাডমিন অ্যাকাউন্ট মুছে ফেলা সম্ভব নয়।'
+      });
+      return;
+    }
+  }
+
+  const deleted = await dataStore.deleteUser(userId);
+  if (!deleted) {
+    res.status(500).json({ success: false, message: 'অ্যাকাউন্ট মুছে ফেলা সম্ভব হয়নি।' });
+    return;
+  }
+
+  await logAuditEvent({
+    actorId: userId,
+    actorRole: user.role,
+    action: 'USER_SELF_DELETE_ACCOUNT',
+    targetType: 'User',
+    targetId: userId,
+    details: {
+      name: user.name,
+      phone: user.phone
+    }
+  });
+
+  res.json({
+    success: true,
+    message: 'আপনার অ্যাকাউন্ট ও সংশ্লিষ্ট সকল তথ্য সফলভাবে এবং স্থায়ীভাবে মুছে ফেলা হয়েছে।'
+  });
+}
